@@ -13,15 +13,37 @@ revision is read, so nothing here can look ahead.
   window that the declared types call `ordinary`. The published types keep their precedence and the published column is not
   changed.
 
+- `add_columns` (#1095, finding #1004): the `tax_date_october` scratch-panel column, `october_tax_date` on each row's own date. A function of
+  the date and the table alone, written about the target day, so it is declared in `target_day_columns` (`asof` rule 2 serves it from the
+  scored row; a one-step fit on it is refused by `one_step_guard`). It is off in every published declaration.
+
 Not the published column: `data.tax_date` is, until a publish pull request rebuilds the panel. Stdlib only.
 """
 
 from __future__ import annotations
 
 from datetime import date, timedelta
-from typing import Mapping, Optional
+from typing import List, Mapping, Optional, Sequence
 
 from . import data
+from .data import DailyObservation
+
+__all__ = [
+    "AlternativeLabels",
+    "COLUMN",
+    "CONTROL_MONTHS",
+    "WINDOW_MARKET_DAYS",
+    "add_columns",
+    "control_deadline",
+    "control_window",
+    "extra_risk_flag",
+    "october_deadline",
+    "october_tax_date",
+    "october_window",
+]
+
+#: The scratch-panel column of `add_columns` (#1095): 1.0 in the October window, 0.0 on every other day.
+COLUMN = "tax_date_october"
 
 #: The months whose 15th is the control: the ones neither `data.TAX_DEADLINE_MONTHS` nor October holds.
 CONTROL_MONTHS = tuple(m for m in range(1, 13) if m not in data.TAX_DEADLINE_MONTHS + (10,))
@@ -130,3 +152,21 @@ class AlternativeLabels:
         if kind == "ordinary" and _WINDOWS[self.which](when):
             return "tax_date"
         return kind
+
+
+def add_columns(rows: Sequence[DailyObservation]) -> List[DailyObservation]:
+    """`rows` with the `tax_date_october` column, each from its own row's date and no other.
+
+    The column is written about the row's day, so a forecast of that day reads it from its row (`asof` rule 2, `target_day_columns`). Every other
+    value of every row is the frame's own, and a row that already carries the column is refused rather than overwritten.
+
+    Raises:
+        ValueError: a row already has the column, or a row in October is outside the market holiday table.
+    """
+
+    out = []
+    for row in rows:
+        if COLUMN in row.values:
+            raise ValueError(f"{row.date} already carries {COLUMN!r}; the column is written once")
+        out.append(DailyObservation(date=row.date, values={**row.values, COLUMN: october_tax_date(row.date)}))
+    return out

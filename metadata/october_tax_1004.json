@@ -1,0 +1,113 @@
+{
+ "arms": {
+  "gbm_funding_cal_aligned_october": {
+   "947_guard": "refused by repo_model.one_step_guard: the #1027 allow-list entries cover that variant's regressors only, and a new entry is Eleonora's decision. The arm is run only if she admits it; otherwise it is reported as not run (walk refuses and writes nothing)",
+   "adds": [
+    "tax_date_october"
+   ],
+   "base": "gbm_funding_cal_aligned",
+   "min_samples_leaf": 5,
+   "training_pairs": null
+  },
+  "gbm_funding_cal_direct_october": {
+   "947_guard": "passes: a direct fit is not checked",
+   "adds": [
+    "tax_date_october"
+   ],
+   "base": "gbm_funding_cal_direct",
+   "min_samples_leaf": 5,
+   "training_pairs": "direct"
+  }
+ },
+ "caveat": "Lens C of #958: the lag-10 standard error behind the block length is itself noisy on this many days; every interval here is read with that in mind, and the October cuts are 18 to 24 target days",
+ "column": {
+  "declared_in": "repo_model.target_day_columns (OCTOBER_TAX_TARGET_DAY_COLUMNS): written about the target day, so asof rule 2 serves it from the scored row and a one-step fit on it is refused by the #947 guard",
+  "definition": "repo_model.tax_date_october.add_columns: 1.0 on the 15th of October rolled forward off weekends and DC holidays (the rule of data.corporate_tax_deadline) and the two market days after it; 0.0 otherwise. A function of the row's own date and metadata/market_holidays.json",
+  "name": "tax_date_october",
+  "served_as": "a calendar column for the run only (october_tax_1004.switched): contract.CALENDAR_FEATURES and asof.CALENDAR_FEATURES gain it inside the walk; no published declaration reads it"
+ },
+ "comparisons": [
+  "each arm over its #1027 variant without the column",
+  "each arm over B1 and over B2 (the protocol's primary benchmarks, on the 23-level grid)",
+  "each arm over B3, the published distribution, on its five levels (the protocol's secondary comparison; the variants over B3 beside it)",
+  "each arm over gbm_funding",
+  "each variant over B1 and B2 beside them, for scale"
+ ],
+ "cuts": {
+  "calendar_days": [
+   "quarter_end",
+   "month_end",
+   "tax_date",
+   "settlement"
+  ],
+  "labels": "the October cuts label target days after the fact for scoring; they are never an input. Beside them the page lists the October window by year with the realised spread (bp) and each model's mean scores",
+  "minimum": "a regime or target-type group of fewer than 20 target days is listed and not tested; the three October cuts are scored from 10 target days, with their day counts and the weak intervals said on the page",
+  "october_2026": "the 2026 development days the lockbox leaves open (2026-01-01 to 2026-09-03): reported by reading_2026, not scored. The panel ends on 2026-09-03 and the October 2026 window (15, 16 and 19 October) is in the blind tier; the open 2026 days hold no October window. Extending the study window to them would need new walks of the control and of the variant and is a marked question for Eleonora",
+  "october_window": "the October window, every year (the 15th rolled, and the two market days after it)",
+  "october_without_2019_2025": "the October window of every year but 2019 and 2025, the years of the motivating prints (2019-10-15, 16 and 17; 2025-10-15 and 16): the reading the ruling asks for",
+  "ordinary_outside_october": "ordinary days outside the October window: where the column is 0, so a loss there is the cost of carrying the column",
+  "pooled": "all scored decision days",
+  "regimes": [
+   "2018-19",
+   "2020",
+   "2021-23",
+   "2024",
+   "2025-26"
+  ],
+  "target_day_types": [
+   "quarter_end",
+   "month_end",
+   "tax_date",
+   "settlement",
+   "ordinary"
+  ]
+ },
+ "finding": 1004,
+ "hypothesis": "H5 step 3, calendar first: the 15 October tax-date column on the calendar-aware variants of #1027",
+ "inputs": {
+  "added": [
+   "tax_date_october"
+  ],
+  "base": "the #1027 variant's inputs at the lead (scripts/aligned_calendar_1027.py variant_features), unchanged",
+  "panel": "#951's scratch panel AUG3, as #1027 (the walks of gbm_funding and of the two #1027 variants are #1027's, reused); the column is added to the rows inside the walk",
+  "read": "the target row, at every lead h = 1 to 5: asof rule 2 serves a calendar column from the scored row; a direct pair trains it from its own target row, the aligned arm from the frame whose row p carries row p + 1's"
+ },
+ "interval": "stationary bootstrap, seed 1095, the studentized interval of ruling 1 (#739); the lower end of the two-sided 90% interval is the one-sided 95% lower bound; each pair carries the interval of the mean difference and of the skill",
+ "issue": 1095,
+ "limits": [
+  "no day after 2025-12-31",
+  "no lockbox day",
+  "no published record is edited",
+  "no published declaration changes: every existing declaration stays as it is",
+  "tax_date and B2 are unchanged",
+  "gbm_funding's declaration and scripts/final_test_preregistration.py are not changed"
+ ],
+ "metrics": [
+  "grid_crps",
+  "upper_tail_twcrps",
+  "grid_crps_b3_levels (B3 only)"
+ ],
+ "questions_for_eleonora": [
+  "admit the aligned October arm to the #947 guard (allow-list entries per lead, with an end date)? Default: no, report it as not run",
+  "extend the study window to the open 2026 days (2026-01-01 to 2026-09-03), which needs new walks of the control and of the variant? They hold no October window, so it would only show the column costs nothing there. Default: no"
+ ],
+ "reading_rules": {
+  "context": "the same sentence is written for the October window in every year, to show what the two motivating years add; it is context, never the reading",
+  "does_not_lose_elsewhere": "and its mean difference over the variant on ordinary_outside_october has an upper interval end of 0 or more; 'loses' means an interval wholly below 0",
+  "helps_without_the_motivating_years": "an arm helps over its variant when the lower end of the studentized interval of its mean grid-CRPS difference over the variant on october_without_2019_2025 is above 0 (finding #1004 read the mean difference, whose interval covered zero)",
+  "no_verdict": "development data gives no verdict, and adopting the label (tax_date, B2, H8's calendar) is Eleonora's",
+  "twcrps": "the upper-tail twCRPS of the same cuts is reported beside grid CRPS and is not a second gate"
+ },
+ "ruling": "Eleonora, 20 October 2026, on #1004 (corrected by the orchestrating session): the 15 October label is deferred, not rejected; tested again with a candidate that reads calendar days at the target day, and only on a reading that leaves out the 2019 and 2025 October days that prompted it, or on 2026 development days",
+ "settings": {
+  "as_variant": [
+   "seed",
+   "quantile grid",
+   "refit every 21 scored days",
+   "minimum history 61",
+   "min_samples_leaf 5",
+   "n_estimators and depth of ml.fit_gradient_boosted_quantiles"
+  ]
+ },
+ "status": "declared by the pull request that closes #1095 before any number was computed; a measurement, not a record. Nothing is published: neither arm joins any published declaration, tax_date and B2 are unchanged, no day after 2025-12-31 is scored (docs/decisions/lockbox.md), no rule changes, the live record and pin do not move. Adopting the label is Eleonora's (a data meaning, #1004). Development data gives no verdict (scoring protocol v1, #46)."
+}

@@ -1,0 +1,10 @@
+{
+  "script": "scripts/october_tax_1004.py",
+  "declarations": [
+    "metadata/october_tax_1004.json"
+  ],
+  "model": "the two aligned_calendar_1027 variants with the 15 October tax-date column added: one-step pairs on the aligned frame (the aligned arm, not run unless the allow-list admits it), direct pairs (the direct arm)",
+  "calendar_inputs": "tax_date_october at every lead, with quarter_end, days_to_month_end, tax_date at every lead and the settlement columns at lead 1; all from the target row",
+  "pairing": "one_step+direct",
+  "class": "aligned"
+}

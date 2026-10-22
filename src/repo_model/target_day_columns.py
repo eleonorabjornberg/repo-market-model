@@ -14,8 +14,9 @@ from __future__ import annotations
 
 from .balance_sheet_days import CODED_COLUMNS, TURN_COLUMNS
 from .contract import CALENDAR_FEATURES
+from .tax_date_october import COLUMN as OCTOBER_TAX_COLUMN
 
-__all__ = ["BALANCE_SHEET_TARGET_DAY_COLUMNS", "FOMC_TARGET_DAY_COLUMNS", "TARGET_DAY_COLUMNS"]
+__all__ = ["BALANCE_SHEET_TARGET_DAY_COLUMNS", "FOMC_TARGET_DAY_COLUMNS", "OCTOBER_TAX_TARGET_DAY_COLUMNS", "TARGET_DAY_COLUMNS"]
 
 #: The FOMC meeting columns of `fomc_calendar.add_columns` (#1038): read at the decision instant, written about the
 #: target day, and not in `CALENDAR_FEATURES` (no published panel or declaration reads them).
@@ -25,4 +26,9 @@ FOMC_TARGET_DAY_COLUMNS = frozenset({"fomc_meeting_day", "fomc_days_to_next_meet
 #: function of the row's own date, so a forecast of that day reads it from its row; not in `CALENDAR_FEATURES` (no published panel reads them).
 BALANCE_SHEET_TARGET_DAY_COLUMNS = frozenset(CODED_COLUMNS) | frozenset(TURN_COLUMNS)
 
-TARGET_DAY_COLUMNS = CALENDAR_FEATURES | FOMC_TARGET_DAY_COLUMNS | BALANCE_SHEET_TARGET_DAY_COLUMNS
+#: The 15 October tax-date column of `tax_date_october.add_columns` (#1095, finding #1004): the 15th of October rolled off weekends and DC holidays, and the
+#: two market days after it. A function of the row's own date, so a forecast of that day reads it from its row; not in `CALENDAR_FEATURES` (no published
+#: panel reads it, and `tax_date` itself is unchanged).
+OCTOBER_TAX_TARGET_DAY_COLUMNS = frozenset({OCTOBER_TAX_COLUMN})
+
+TARGET_DAY_COLUMNS = CALENDAR_FEATURES | FOMC_TARGET_DAY_COLUMNS | BALANCE_SHEET_TARGET_DAY_COLUMNS | OCTOBER_TAX_TARGET_DAY_COLUMNS
