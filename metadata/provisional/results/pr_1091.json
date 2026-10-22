@@ -1,0 +1,15 @@
+{
+  "order": 197,
+  "directive": 1072,
+  "pull_request": 1091,
+  "hypothesis": "H5",
+  "result": "The randomised PIT for whole-bp outcomes, `gbm_funding` rows only",
+  "declarations": [],
+  "model": "`gbm_funding` as a series (the lead-1 walk); the rows of #1027's two variants are not provisional",
+  "pairing": "one_step",
+  "class": "series",
+  "on_the_page": [
+    "2026-10-21-model-01091-H5-step3"
+  ],
+  "concluded": "The 2021-23 share of PIT at or below 0.10 moves from 0.314 to 0.211 for `gbm_funding`; the 2021-23 reading stands at a smaller size."
+}
