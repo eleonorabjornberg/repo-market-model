@@ -9,8 +9,8 @@ stays; an arm changes only the scale, or what multiplies it:
 * (v2) an EWMA of the absolute daily spread changes, rescaled to a standard deviation (half-lives 3, 5 and 10 rows), and an
   asymmetric version in which an upward change weighs `1 + ASYM` and a downward one `1 - ASYM`;
 * (v3) miss feedback: after the anchor row was outside the 90% band the model gave it, the scale is multiplied by a factor fitted at
-  each refit (the ratio of the median absolute standardised residual of pairs whose origin followed a miss to that of pairs
-  whose origin did not, never below 1), and the pool is the residuals of pairs that did not follow a miss;
+  each refit (the ratio of the mean absolute standardised residual of pairs whose origin followed a miss to that of pairs
+  whose origin did not, between 1 and `FACTOR_CAP`), and the pool is the residuals of pairs that did not follow a miss;
 * (v4) one of the above plus a factor on the scale read at the target day's calendar type (quarter-end, tax date, month-end turn,
   coupon settlement), fitted per lead on the direct pairs.
 
@@ -57,6 +57,10 @@ ASYM = 0.5
 MISS_MIN = 20
 #: The 90% band whose miss is fed back, as grid levels.
 BAND = (0.05, 0.95)
+#: The most a miss factor or a calendar-type factor may widen the scale (and the floor of a type factor is
+#: `spread_mr_calendar.M_MIN`). Declared after a debug run showed the ratio of medians exploding where the ordinary residuals are
+#: nearly zero (a flat floor period): see `metadata/faster_scale_1153.json`, `amendments`.
+FACTOR_CAP = 4.0
 #: Pseudo-pairs in the shrinkage of a calendar-type factor toward 1: `1 + n / (n + CAL_K) * (ratio - 1)`.
 CAL_K = 10.0
 #: The calendar types, in priority order: a row carrying several is the first of them.
@@ -196,9 +200,9 @@ def missed_at(spreads: Sequence[float], row: int, *, centre: float, scale: float
 
 
 def split_pool(z: Sequence[float], missed: Sequence[bool]) -> Tuple[List[float], float]:
-    """The pool to take quantiles of and the miss factor: the pairs that did not follow a miss, and the ratio of the median
-    absolute standardised residuals after a miss to that after none (at least 1), when each side has `MISS_MIN` pairs; else the
-    whole pool and 1.
+    """The pool to take quantiles of and the miss factor: the pairs that did not follow a miss, and the ratio of the mean
+    absolute standardised residuals after a miss to that after none (between 1 and `FACTOR_CAP`), when each side has `MISS_MIN`
+    pairs; else the whole pool and 1.
     """
 
     after = [e for e, m in zip(z, missed) if m]
@@ -209,14 +213,14 @@ def split_pool(z: Sequence[float], missed: Sequence[bool]) -> Tuple[List[float],
 
 
 def miss_factor(after: Sequence[float], clear: Sequence[float]) -> float:
-    """The widening after a miss: the ratio of median absolute standardised residuals, never below 1; 1 with too few pairs."""
+    """The widening after a miss: the ratio of mean absolute standardised residuals, between 1 and `FACTOR_CAP`; 1 with too few pairs."""
 
     if len(after) < MISS_MIN or len(clear) < MISS_MIN:
         return 1.0
-    denominator = statistics.median(abs(e) for e in clear)
+    denominator = statistics.fmean(abs(e) for e in clear)
     if not denominator > 0.0:
         return 1.0
-    return max(1.0, statistics.median(abs(e) for e in after) / denominator)
+    return min(FACTOR_CAP, max(1.0, statistics.fmean(abs(e) for e in after) / denominator))
 
 
 def type_of(flags: Mapping[str, Optional[int]]) -> Optional[str]:
@@ -234,8 +238,8 @@ def fit_type_factors(
 ) -> Dict[str, float]:
     """The factor on the scale of each calendar type at one lead: `(z, type)` of the direct pairs, `z` the standardised residual.
 
-    A type enters only if `MIN_FLAGGED` pairs carry it. Its factor is the ratio of the median absolute `z` of its pairs to that of
-    the pairs of no type, shrunk toward 1 by `n / (n + CAL_K)` and floored at `spread_mr_calendar.M_MIN`. `regressors` are the panel
+    A type enters only if `MIN_FLAGGED` pairs carry it. Its factor is the ratio of the mean absolute `z` of its pairs to that of
+    the pairs of no type, shrunk toward 1 by `n / (n + CAL_K)` and kept between `spread_mr_calendar.M_MIN` and `FACTOR_CAP`. `regressors` are the panel
     columns the types read (for `one_step_guard`); `training_pairs` is required and `'direct'`, the type read from each pair's own
     target row, is the only value this fit trains on. The guard decorates this function: `'one_step'` with a calendar column raises
     `ValueError` from it.
@@ -251,7 +255,7 @@ def fit_type_factors(
     ordinary = [abs(z) for z, t in pairs if t is None]
     if not ordinary:
         return {}
-    reference = statistics.median(ordinary)
+    reference = statistics.fmean(ordinary)
     if not reference > 0.0:
         return {}
     out: Dict[str, float] = {}
@@ -260,8 +264,8 @@ def fit_type_factors(
         n = len(values)
         if n < cal.MIN_FLAGGED:
             continue
-        ratio = statistics.median(values) / reference
-        out[name] = max(cal.M_MIN, 1.0 + n / (n + CAL_K) * (ratio - 1.0))
+        ratio = statistics.fmean(values) / reference
+        out[name] = min(FACTOR_CAP, max(cal.M_MIN, 1.0 + n / (n + CAL_K) * (ratio - 1.0)))
     return out
 
 

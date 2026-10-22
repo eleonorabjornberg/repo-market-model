@@ -21,11 +21,24 @@
       "v2_ewma_hl5": "(v2) the same, half-life 5 rows",
       "v2_ewma_hl10": "(v2) the same, half-life 10 rows",
       "v2_ewma_hl5_asym": "(v2) the half-life 5 version in which an upward change weighs 1.5 and a downward change 0.5 (ASYM = 0.5, declared once, no grid), so upward residuals raise the scale more",
-      "v3_miss": "(v3) the base scale (mad20) multiplied, when the anchor row was outside the 90% band the model gave it (the closed band q05 to q95 of the one-lead forecast centred 1 + lag rows before the anchor; the outcome is known at the decision instant), by a factor fitted at each refit: the ratio of the median absolute standardised residual of training pairs whose origin followed such a miss to that of pairs whose origin did not, never below 1, fitted per lead, and 1 when either side has fewer than 20 pairs. The pool is then the residuals of pairs that did not follow a miss. The miss rule here is the arm's own input (the closed band) and is not the report's hit rule",
-      "v4": "(v4) the best of v1 to v3 by the rule below, with a factor on the scale read at the target day's calendar type, fitted per lead on direct pairs: the types are quarter-end, tax date, month-end turn (the last two business days of the month, #959), coupon settlement (lead 1 only), in that priority order, a row being the first it carries; a type's factor is the ratio of the median absolute standardised residual of its pairs to that of the pairs of no type, shrunk toward 1 by n / (n + 10), a type entering with 3 pairs, floored at 0.25; the pool is divided by the factor of each pair's own target row. Named v4_<winner>_cal"
+      "v3_miss": "(v3) the base scale (mad20) multiplied, when the anchor row was outside the 90% band the model gave it (the closed band q05 to q95 of the one-lead forecast centred 1 + lag rows before the anchor; the outcome is known at the decision instant), by a factor fitted at each refit: the ratio of the mean absolute standardised residual of training pairs whose origin followed such a miss to that of pairs whose origin did not, kept between 1 and 4, fitted per lead, and 1 when either side has fewer than 20 pairs. The pool is then the residuals of pairs that did not follow a miss. The miss rule here is the arm's own input (the closed band) and is not the report's hit rule",
+      "v4": "(v4) the best of v1 to v3 by the rule below, with a factor on the scale read at the target day's calendar type, fitted per lead on direct pairs: the types are quarter-end, tax date, month-end turn (the last two business days of the month, #959), coupon settlement (lead 1 only), in that priority order, a row being the first it carries; a type's factor is the ratio of the mean absolute standardised residual of its pairs to that of the pairs of no type, shrunk toward 1 by n / (n + 10), a type entering with 3 pairs, kept between 0.25 and 4; the pool is divided by the factor of each pair's own target row. Named v4_<winner>_cal"
     },
     "v4_selection_rule": "Declared now so that the choice is not made on a score read afterwards. Among v1 to v3, the arms eligible are those whose pooled mean grid CRPS (all scored days, mean over leads 1 to 5) is at most 1% above (a)'s. The winner is the eligible arm with the shortest mean run of misses of the 90% band (closed rule, runs of the five leads' sequences pooled). If none is eligible, the winner is the arm with the lowest pooled mean grid CRPS. The script computes the rule from the walks of (a) and v1 to v3 and records the choice in result.json.",
-    "constants": {"floor_bp": 0.5, "ewma_rows": 60, "asym": 0.5, "miss_min_pairs": 20, "miss_band": [0.05, 0.95], "calendar_shrinkage_k": 10, "calendar_min_flagged": 3, "calendar_floor": 0.25},
+    "constants": {
+      "floor_bp": 0.5,
+      "ewma_rows": 60,
+      "asym": 0.5,
+      "miss_min_pairs": 20,
+      "miss_band": [
+        0.05,
+        0.95
+      ],
+      "calendar_shrinkage_k": 10,
+      "calendar_min_flagged": 3,
+      "calendar_floor": 0.25,
+      "factor_cap": 4
+    },
     "no_others": "ten models are scored: (a), v1 (3), v2 (4), v3 (1) and v4 (1). No arm is added after a number is computed, and constants are declared once, not searched. Any arm dropped is stated on the page with the reason."
   },
   "references": {
@@ -72,5 +85,13 @@
       "Nothing in this study is a verdict, and the page says so."
     ]
   },
-  "long_run": "the walk of (a) and nine arms (each refitted 89 times) and the scoring are arithmetic on the panel; if the run exceeds about two hours the pull request says so and gives the paste for her Mac (.claude/skills/long-run)"
+  "long_run": "the walk of (a) and nine arms (each refitted 89 times) and the scoring are arithmetic on the panel; if the run exceeds about two hours the pull request says so and gives the paste for her Mac (.claude/skills/long-run)",
+  "amendments": [
+    {
+      "date": "2026-10-22",
+      "by": "this pull request, before the declared run: no score of the declared run existed",
+      "what": "A debug run of the script on a subset (decision days from 2023-01-02, 300 draws, 100 coverage resamples; not the declared run, its output discarded) showed arm v3's factor reaching about 5e14 in two refits of 2023: in a flat floor period the ordinary standardised residuals are float noise, so a ratio of medians divides by about zero. The factor of v3 and the type factors of v4 are therefore the ratio of MEAN absolute standardised residuals (which does not vanish where the median does) and are kept between 1 and 4 (v3) and between 0.25 and 4 (v4), a cap declared once (FACTOR_CAP = 4, no grid). The same debug run printed the other arms' pooled grid CRPS and miss-run means; no arm of v1 or v2 was changed, added or removed after it, and no constant of them was.",
+      "why_it_is_not_tuning": "the change repairs a numerical degeneracy (a factor of 5e14 gives a grid CRPS of 4e10), it was found by reading a diverging number, not by comparing arms, and it touches only the two factors named."
+    }
+  ]
 }

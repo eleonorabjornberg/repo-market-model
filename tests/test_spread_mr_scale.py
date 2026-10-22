@@ -130,11 +130,16 @@ class MissTests(unittest.TestCase):
         self.assertFalse(sc.missed_at([0.0, 2.0], 1, centre=0.0, scale=2.0, lo=-1.0, hi=1.0))
         self.assertTrue(sc.missed_at([0.0, -2.5], 1, centre=0.0, scale=2.0, lo=-1.0, hi=1.0))
 
-    def test_the_factor_is_the_ratio_of_median_absolute_standardised_residuals_floored_at_one(self):
+    def test_the_factor_is_the_ratio_of_mean_absolute_standardised_residuals_between_one_and_the_cap(self):
         miss = [2.0, -3.0, 4.0] * 10
         clear = [1.0, -1.0, 2.0] * 10
-        self.assertAlmostEqual(sc.miss_factor(miss, clear), statistics.median(abs(z) for z in miss) / statistics.median(abs(z) for z in clear))
+        self.assertAlmostEqual(sc.miss_factor(miss, clear), statistics.fmean(abs(z) for z in miss) / statistics.fmean(abs(z) for z in clear))
         self.assertEqual(sc.miss_factor(clear, miss), 1.0)  # never narrows
+
+    def test_the_factor_is_capped_where_the_ordinary_residuals_are_nearly_zero(self):
+        # a flat floor period: residuals of float noise on ordinary days, a few real ones after a miss (the case that made a ratio of medians explode)
+        self.assertEqual(sc.miss_factor([2.0] * 30, [1e-12] * 30), sc.FACTOR_CAP)
+        self.assertEqual(sc.miss_factor([2.0] * 30, [0.0] * 30), 1.0)  # an exactly flat pool has no ratio
 
     def test_too_few_misses_give_no_factor(self):
         self.assertEqual(sc.miss_factor([5.0] * (sc.MISS_MIN - 1), [1.0] * 100), 1.0)
@@ -151,7 +156,7 @@ class TypeTests(unittest.TestCase):
         self.assertIsNone(sc.type_of({"quarter_end": 0, "fomc_day": 1}))
         self.assertIsNone(sc.type_of({}))  # a settlement the as-of rule refuses at lead 2 is not in the flags read
 
-    def test_a_type_factor_is_the_shrunk_ratio_to_the_ordinary_median(self):
+    def test_a_type_factor_is_the_shrunk_ratio_to_the_ordinary_mean(self):
         pairs = [(1.0, None)] * 30 + [(3.0, "quarter_end")] * 10 + [(1.0, "month_end")] * 2
         out = sc.fit_type_factors(pairs, regressors=("quarter_end",), training_pairs="direct")
         # ratio 3, n = 10, shrink n / (n + CAL_K): 1 + 10/20 * 2
@@ -162,6 +167,11 @@ class TypeTests(unittest.TestCase):
         pairs = [(4.0, None)] * 20 + [(0.0, "tax_date")] * 200
         out = sc.fit_type_factors(pairs, regressors=("tax_date",), training_pairs="direct")
         self.assertEqual(out["tax_date"], cal.M_MIN)
+
+    def test_a_type_factor_is_capped(self):
+        pairs = [(1e-12, None)] * 20 + [(5.0, "quarter_end")] * 200
+        out = sc.fit_type_factors(pairs, regressors=("quarter_end",), training_pairs="direct")
+        self.assertEqual(out["quarter_end"], sc.FACTOR_CAP)
 
     def test_a_one_step_fit_of_a_calendar_column_is_refused_by_the_guard(self):
         with self.assertRaises(ValueError) as caught:
