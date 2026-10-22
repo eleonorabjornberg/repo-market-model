@@ -195,6 +195,7 @@ data, dating, holidays and panel declarations). None of their scripts calls a on
 | `metadata/unused_inputs.json` | `scripts/unused_inputs.py` | direct | the unused-input screen: pressure models on direct pairs |
 | `metadata/unwarned_onsets.json` | `scripts/unwarned_onsets.py` | direct | the onset diagnostic: pressure models on direct pairs |
 | `metadata/upper_bound_635.json` | `scripts/upper_bound_635.py` | direct | H2's cross-fitted ceiling and reachable fits on aligned reads (#951 §1: no) |
+| `metadata/walk_calibration_1133.json` | `scripts/walk_calibration_1133.py` | none | a walk-forward recalibration of #941's mean-reversion law: no gradient-boosted fit, and no calendar column trained or read as an input; the base reads no calendar column, so every figure is provisional under the calendar-first rule as #941's are, and the classification is Eleonora's (the pull request asks) |
 | `metadata/window_onset.json` | `scripts/window_onset.py` | direct | pressure models on direct pairs |
 <!-- end generated: register:cleared -->
 
