@@ -1,0 +1,10 @@
+{
+  "script": "scripts/aligned_announcement_1124.py",
+  "declarations": [
+    "metadata/aligned_announcement_1124.json"
+  ],
+  "model": "the aligned_calendar_1027 direct variant with the Treasury settlement columns dated from the auction announcement at leads 2 to 5 (the aggregate with its coupon and bill legs; the coupon leg alone). Direct pairs only: no one-step arm is run, and none is admitted by the one-step guard",
+  "calendar_inputs": "quarter_end, days_to_month_end, tax_date at every lead; treasury_settlement and its parts at lead 1 as published and at leads 2 to 5 as announced (the #541 announcement dating, measured and not in force); all from the target row",
+  "pairing": "one_step+direct",
+  "class": "aligned"
+}
