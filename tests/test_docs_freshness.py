@@ -51,6 +51,13 @@ written under. `EXCLUDED_PREFIXES` is asserted against `.gitignore` rather than
 trusted, because a scope anchored to nothing cannot fail: if those patterns ever
 stop being ignored, the working logs become published documents and this guard
 must start reading them.
+
+Reviews kept word for word are out of scope too, though tracked: `VERBATIM_PREFIXES`
+(`docs/reviews/`, Eleonora's ruling of 21 October 2026 on #987). A review is a dated
+outside reading of the repository, not a page that describes it, so its dates and
+counts are evidence of when and what it read and are never rewritten. Each review folder
+must carry a README saying it is kept as written (`VerbatimScopeTests`), so the
+exclusion cannot quietly cover anything else.
 """
 
 from __future__ import annotations
@@ -78,6 +85,9 @@ EXCLUDED_PREFIXES = (
     "docs/state-of-main-",
     "docs/track-",
 )
+
+# Tracked reviews kept word for word (ruling on #987). Each folder must say so in its README.
+VERBATIM_PREFIXES = ("docs/reviews/",)
 
 # A numeral standing within two words of "test", "pass" or "assertion", or right
 # before "skipped". Catches "409 tests", "361 standard-library tests", "360 passes",
@@ -151,6 +161,7 @@ def published_markdown(root=REPO_ROOT):
             (relative, root / relative)
             for relative in sorted(tracked)
             if not relative.startswith(EXCLUDED_PREFIXES)
+            and not relative.startswith(VERBATIM_PREFIXES)
             and (root / relative).is_file()
         ]
     warnings.warn(
@@ -163,7 +174,7 @@ def published_markdown(root=REPO_ROOT):
         relative = path.relative_to(root).as_posix()
         if relative.startswith(".git/") or "/.git/" in f"/{relative}":
             continue
-        if relative.startswith(EXCLUDED_PREFIXES):
+        if relative.startswith(EXCLUDED_PREFIXES) or relative.startswith(VERBATIM_PREFIXES):
             continue
         found.append((relative, path))
     return found
@@ -2013,3 +2024,20 @@ class RegistryQuotationTests(unittest.TestCase):
             "publishes; remove the declaration deliberately rather than "
             "leaving it to pass by absence:\n  " + "\n  ".join(missing),
         )
+
+
+class VerbatimScopeTests(unittest.TestCase):
+    """`VERBATIM_PREFIXES` excludes only review folders that say they are kept as written (#987)."""
+
+    def test_every_verbatim_folder_says_it_is_kept_as_written(self):
+        for prefix in VERBATIM_PREFIXES:
+            base = REPO_ROOT / prefix
+            if not base.is_dir():
+                continue
+            for folder in sorted(p for p in base.iterdir() if p.is_dir()):
+                readme = folder / "README.md"
+                self.assertTrue(readme.is_file(), f"{folder.relative_to(REPO_ROOT)} has no README.md")
+                self.assertIn("kept as written", readme.read_text(encoding="utf-8"),
+                              f"{readme.relative_to(REPO_ROOT)} does not say the review is kept as written")
+            stray = [p.name for p in base.iterdir() if p.is_file()]
+            self.assertEqual(stray, [], f"files directly under {prefix} are not in a review folder: {stray}")

@@ -42,6 +42,18 @@ from datetime import date
 from pathlib import Path
 from typing import Dict, List, Mapping, Optional, Sequence, Tuple
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_READS = {
+    "decision_forecasts": (
+        "not_entry",
+        "rebuilds the fold grid and the fit instants #706's walks used, from dates and the registry "
+        "alone, to key a target's laws by decision day (H9 step 3, #842); fits and scores nothing, "
+        "and `walk_command` calls require_unlocked, with `target_forecasts.attach` refusing a "
+        "locked decision or target day, before any fit (tests/test_h9_nested_842_script.py, "
+        "LockedDayTests)",
+    ),
+}
+
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 

@@ -60,6 +60,30 @@ from . import lockbox
 from .data import PointInTimeObservation
 from .metrics import _quantile, crps_from_quantiles, stationary_bootstrap_indices
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_CRPS = {
+    "grid_crps": (
+        "delegates",
+        "scoring protocol v1's loss of one vector at one outcome; `day_scores` calls "
+        "`require_unlocked` on every decision and target day before it computes any (#655)",
+    ),
+    "level_crps": (
+        "delegates",
+        "builds the B3 secondary comparison's loss on given levels; scores no day itself, and "
+        "`day_scores` calls `require_unlocked` before using it (PR #660 ruling)",
+    ),
+    "score": (
+        "delegates",
+        "the loss `level_crps` returns, of one vector at one outcome; `day_scores` calls "
+        "`require_unlocked` before it computes any",
+    ),
+    "upper_tail_twcrps": (
+        "delegates",
+        "the key secondary's loss of one vector at one outcome; `day_scores` calls "
+        "`require_unlocked` before it computes any (#655)",
+    ),
+}
+
 #: §3: the 23 quantile levels every forecast is made at.
 GRID: Tuple[float, ...] = (
     (0.01, 0.025, 0.05)

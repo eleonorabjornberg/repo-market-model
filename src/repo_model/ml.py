@@ -596,6 +596,42 @@ from .splits import (
     ensure_strictly_ascending,
 )
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_READS = {
+    "_combined_pairs": (
+        "not_entry",
+        "builds the combined model's training pairs, with their anchors, inside a fit's own "
+        "training frame (#561), as ml._pressure_pairs does; scores nothing, the backtest that calls "
+        "the predictor guards the scored days",
+    ),
+    "_direct_pairs": (
+        "not_entry",
+        "builds direct training pairs inside a fit's own training frame (#37); scores nothing, the "
+        "backtest that calls the forecaster guards the scored days",
+    ),
+    "_dynamic_rows": (
+        "not_entry",
+        "builds the dynamic pressure models' design rows and anchors inside a fit's own as-of "
+        "frames (#137); scores nothing, the backtest that calls the predictor guards the scored "
+        "days",
+    ),
+    "_held_out_mask": (
+        "not_entry",
+        "lists the training values before a calibration block that a held-out row could not yet "
+        "see, inside a fit's own training frame (#78); selects and scores nothing, the held-out "
+        "rows come from _held_out_read",
+    ),
+    "_held_out_read": (
+        "not_entry",
+        "a calibration read inside a fit's own training frame",
+    ),
+    "_pressure_pairs": (
+        "not_entry",
+        "builds the direct pressure models' training pairs inside a fit's own training frame "
+        "(#114); scores nothing, the backtest that calls the predictor guards the scored days",
+    ),
+}
+
 __all__ = [
     "UPPER_BOUND_SETTINGS",
     "grid_quantiles_gbm",
@@ -3782,6 +3818,7 @@ def fit_gradient_boosted_quantiles(
 V2_TREE_SETTINGS = MappingProxyType({"max_depth": 3})
 
 
+@guard_one_step_fit
 def fit_depth_limited_quantiles(
     train_frame: Sequence[DailyObservation],
     regressors: Sequence[str],

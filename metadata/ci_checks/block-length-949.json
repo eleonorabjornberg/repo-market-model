@@ -1,0 +1,8 @@
+{
+  "command": [
+    "scripts/block_length_949.py",
+    "check"
+  ],
+  "where": "suite",
+  "pre_review": false
+}

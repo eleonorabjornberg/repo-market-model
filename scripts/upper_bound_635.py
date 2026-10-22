@@ -42,6 +42,17 @@ from datetime import date, time
 from pathlib import Path
 from typing import Dict, List, Mapping, Optional, Sequence, Tuple
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_READS = {
+    "read_inputs": (
+        "not_entry",
+        "reads each input as of the decision instant at leads 1 to 5 on the lead-1 fold grid, for "
+        "the upper-bound study of #635; selects no model and scores no forecast, calls "
+        "lockbox.require_unlocked on every day before it reads one, and its `fit` refuses a panel "
+        "that runs past 2025-12-31 (tests/test_upper_bound_635.py)",
+    ),
+}
+
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 

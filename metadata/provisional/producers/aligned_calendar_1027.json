@@ -1,0 +1,10 @@
+{
+  "script": "scripts/aligned_calendar_1027.py",
+  "declarations": [
+    "metadata/aligned_calendar_1027.json"
+  ],
+  "model": "gbm_funding with calendar and scheduled columns read at the target day: one-step pairs on the aligned frame (i), direct pairs (ii)",
+  "calendar_inputs": "quarter_end, days_to_month_end, tax_date at every lead; treasury_settlement and its parts at lead 1; all from the target row",
+  "pairing": "one_step+direct",
+  "class": "aligned"
+}

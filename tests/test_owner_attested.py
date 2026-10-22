@@ -398,7 +398,7 @@ class PathKindTests(unittest.TestCase):
 
     def test_look_alike_paths_are_not(self):
         paths = ["docs/CLAUDE.md", "tests/CLAUDE.md", ".claudeignore", "metadata/registrations.json",
-                 "docs/decisions/scoring-protocol.md", "README.md"]
+                 "docs/decisions.md", "docs/decision/x.md", "docs/research/decisions/x.md", "README.md"]
         self.assertEqual(oa.path_kinds(paths), set())
 
     def test_binding_kinds_reads_the_changed_paths(self):
@@ -441,6 +441,60 @@ class PathKindTests(unittest.TestCase):
         with self.assertRaisesRegex(oa.NotOwnerAttested, "registration"):
             oa.check(base, head, CheckTests._fetch({OWNER["id"]: _owner_go()}),
                      lambda: ["metadata/registrations/h5.json"])
+
+
+class DecisionsPathTests(unittest.TestCase):
+    """#1074 (ruling on #1068, 21 October 2026): every file under `docs/decisions/`, drafts included, is binding.
+
+    Tests written first and watched failing: each raised `AssertionError` (`set()` is not `{'decisions'}`) or
+    `ValueError` (kind 'decisions' is not one of KINDS) before the change.
+
+    Recorded mutation (21 October 2026), on the path guard: in `path_kinds`,
+    `if path.startswith(DECISIONS_DIRS):` -> `if False:`. Run alone with
+    `PYTHONPATH=src:tests python3 -B -m unittest test_owner_attested.DecisionsPathTests`,
+    `test_a_decision_record_is_binding`, `test_a_draft_is_binding`, `test_moving_a_draft_out_is_binding` and
+    `test_a_new_decision_without_a_citation_fails` and
+    `test_a_citation_of_another_kind_does_not_cover_a_decision` failed with `AssertionError`
+    (`NotOwnerAttested not raised` for the last two). Restored, all pass.
+    """
+
+    PATH = "docs/decisions/x.md"
+
+    def test_a_decision_record_is_binding(self):
+        self.assertEqual(oa.path_kinds([self.PATH]), {"decisions"})
+
+    def test_a_draft_is_binding(self):
+        self.assertEqual(oa.path_kinds(["docs/decisions/drafts/y.md"]), {"decisions"})
+
+    def test_moving_a_draft_out_is_binding(self):
+        # `git diff --no-renames` lists the old and the new path, so a move shows as a delete and an add.
+        self.assertEqual(oa.path_kinds(["docs/decisions/drafts/y.md", "docs/decisions/y.md"]), {"decisions"})
+
+    def test_the_kind_may_be_cited_in_the_registry(self):
+        self.assertEqual(oa.load_registry(_registry(_entry(kind="decisions")))[0]["kind"], "decisions")
+
+    def test_a_new_decision_without_a_citation_fails(self):
+        tree = _tree(**{REGISTRY: _registry()})
+        with self.assertRaisesRegex(oa.NotOwnerAttested, "decisions"):
+            oa.check(tree, tree, CheckTests._no_fetch, lambda: [self.PATH])
+
+    def test_a_new_decision_citing_her_go_passes(self):
+        base = _tree(**{REGISTRY: _registry()})
+        head = _tree(**{REGISTRY: _registry(_entry(kind="decisions"))})
+        verified = oa.check(base, head, CheckTests._fetch({OWNER["id"]: _owner_go()}), lambda: [self.PATH])
+        self.assertEqual([c["id"] for c in verified], [OWNER["id"]])
+
+    def test_a_new_decision_citing_a_relay_fails(self):
+        base = _tree(**{REGISTRY: _registry()})
+        head = _tree(**{REGISTRY: _registry(_entry(kind="decisions", issue=151, comment_id=GO_RELAY["id"]))})
+        with self.assertRaises(oa.NotOwnerAttested):
+            oa.check(base, head, CheckTests._fetch({GO_RELAY["id"]: GO_RELAY}), lambda: [self.PATH])
+
+    def test_a_citation_of_another_kind_does_not_cover_a_decision(self):
+        base = _tree(**{REGISTRY: _registry()})
+        head = _tree(**{REGISTRY: _registry(_entry(kind="claude-files"))})
+        with self.assertRaisesRegex(oa.NotOwnerAttested, "decisions"):
+            oa.check(base, head, CheckTests._fetch({OWNER["id"]: _owner_go()}), lambda: [self.PATH])
 
 
 class GitPathTests(unittest.TestCase):

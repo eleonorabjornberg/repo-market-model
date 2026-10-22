@@ -210,6 +210,39 @@ from .splits import (
     ensure_strictly_ascending,
 )
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_READS = {
+    "paired_model_comparison": (
+        "entry",
+        "scores days through the fold loop; its runner is in LIBRARY_ENTRY_POINTS in "
+        "tests/test_lockbox.py",
+    ),
+    "rolling_exceedance_backtest": (
+        "entry",
+        "scores days through the fold loop; its runner is in LIBRARY_ENTRY_POINTS in "
+        "tests/test_lockbox.py",
+    ),
+    "rolling_persistence_backtest": (
+        "entry",
+        "scores days through the fold loop; its runner is in LIBRARY_ENTRY_POINTS in "
+        "tests/test_lockbox.py",
+    ),
+    "_as_of_folds": (
+        "not_entry",
+        "the shared fold loop; calls require_unlocked",
+    ),
+}
+LOCKBOX_CRPS = {
+    "_crps_at": (
+        "delegates",
+        "the loss callback of `paired_model_comparison`, which walks `_as_of_folds`",
+    ),
+    "rolling_persistence_backtest": (
+        "guard",
+        "the CRPS fold loop: `_as_of_folds` refuses a locked scored day",
+    ),
+}
+
 
 @dataclass(frozen=True)
 class ExceedanceCurves:

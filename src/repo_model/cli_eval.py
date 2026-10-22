@@ -1698,6 +1698,35 @@ def _side(args: argparse.Namespace, side: str) -> argparse.Namespace:
     )
 
 
+def _refuse_mixed_nested_pairing(args: argparse.Namespace) -> None:
+    """Refuse a nested comparison whose arms are trained on different pairs (#1071, finding #1067).
+
+    "Side b is side a's columns plus X" asks what X adds. If one arm is fitted on one-step pairs and the other on direct
+    pairs, the paired difference also carries the change of pairing (a calendar or scheduled column is learned a row
+    off on one-step pairs, #914), so it measures neither X nor the pairing. Both arms run on one pairing: the control
+    is then the published features fitted on that pairing, not the frozen one-step fit. Only a strictly nested pair of
+    declarations of one model is refused; two arms that differ in the pairing alone, or in unrelated columns, are not
+    an input test and are left alone.
+    """
+
+    if args.model_a != args.model_b:
+        return
+    columns_a, columns_b = set(args.feature_a or ()), set(args.feature_b or ())
+    if not columns_a < columns_b:
+        return
+    pairs_a = getattr(args, "training_pairs_a", None) or "one-step"
+    pairs_b = getattr(args, "training_pairs_b", None) or "one-step"
+    if pairs_a == pairs_b:
+        return
+    raise SplitError(
+        f"the comparison is nested (--feature-b adds {sorted(columns_b - columns_a)} to --feature-a) but the arms are "
+        f"trained on different pairs: --training-pairs-a is {pairs_a}, --training-pairs-b is {pairs_b}. The difference "
+        "would measure the change of pairing as well as the added input. Give both arms one --training-pairs-a and "
+        "--training-pairs-b (direct, for a model that reads calendar columns at the target day), so the control is the "
+        "published features fitted on that pairing"
+    )
+
+
 def _compare(args: argparse.Namespace) -> int:
     """Score two continuous models at the same origins and publish the gap.
 
@@ -1865,6 +1894,18 @@ def _compare(args: argparse.Namespace) -> int:
         )
     )
     return 0
+
+
+def _compare_nested_checked(args: argparse.Namespace) -> int:
+    """`compare`'s handler: refuse a nested comparison with mixed pairing (#1071), then run `_compare`.
+
+    A wrapper and not a line in `_compare`: `_compare` and what it calls are hashed into the final test's pinned CRPS
+    checksum (`scripts/final_test_preregistration.py`, `_CRPS_SOURCE`), which this refusal must not move. It runs before
+    the panel is read, so a refused comparison leaves no report behind.
+    """
+
+    _refuse_mixed_nested_pairing(args)
+    return _compare(args)
 
 
 def _event_holdout(args: argparse.Namespace) -> int:
@@ -2711,7 +2752,7 @@ def register(subparsers: argparse._SubParsersAction) -> None:
     # No --purge and no --source, on either side. See _compare: the obvious way
     # to make two declarations comparable is to overrule one of them, and that
     # is exactly what must not be available here.
-    compare.set_defaults(handler=_compare)
+    compare.set_defaults(handler=_compare_nested_checked)
 
 
     exceedance = subparsers.add_parser(

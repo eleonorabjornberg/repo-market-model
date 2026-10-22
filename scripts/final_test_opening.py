@@ -63,6 +63,23 @@ from repo_model.data import audit_panel, load_daily_panel  # noqa: E402
 from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
 from repo_model.metrics import crps_from_quantiles  # noqa: E402
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_READS = {
+    "distribution_walk": (
+        "not_entry",
+        "the final test opening's walk of the published distribution and as-of persistence at h = 2 "
+        "to 5 (#151), reported only; it refuses a locked scored day itself before any fit "
+        "(tests/test_final_test_opening.py, WindowGuardTests)",
+    ),
+}
+LOCKBOX_CRPS = {
+    "crps_horizon_command": (
+        "delegates",
+        "scores the days `final_test_opening.distribution_walk` walks, which calls "
+        "lockbox.require_unlocked before any fit, and `_window_positions` guards the window",
+    ),
+}
+
 
 def _script(name):
     spec = importlib.util.spec_from_file_location(f"opening_{name}", REPO / "scripts" / f"{name}.py")

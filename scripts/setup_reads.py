@@ -32,6 +32,17 @@ from repo_model.baseline import panel_sha256  # noqa: E402
 from repo_model.data import audit_panel, load_daily_panel  # noqa: E402
 from repo_model.lockbox import require_unlocked  # noqa: E402
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_READS = {
+    "measure": (
+        "not_entry",
+        "tabulates the age of what each input reads at the 16:00 decision, on the judge's scored "
+        "days (#517); scores no forecast, its caller drops every row after the declared last scored "
+        "day, refuses a later one (setup_diagnostic.require_window) and calls require_unlocked on "
+        "it before the first read",
+    ),
+}
+
 LAST = date(2025, 12, 31)
 DECISION = time(16, 0)
 MINIMUM_HISTORY = 61

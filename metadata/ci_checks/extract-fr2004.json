@@ -1,0 +1,8 @@
+{
+  "command": [
+    "scripts/extract_fr2004.py",
+    "--check"
+  ],
+  "where": "suite",
+  "pre_review": false
+}
