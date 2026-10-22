@@ -29,7 +29,7 @@ It fits nothing and needs no walk. Nothing here is a threshold or a rule: the pa
     PYTHONPATH=src python3 scripts/direct_pairs_diagnosis_1086.py decompose --published PUB.csv --panel AUG3.csv --walks ~/rmm-1027/WALKS \\
         --output docs/research/direct-pairs-diagnosis-1086/decompose.json
     PYTHONPATH=src python3 scripts/direct_pairs_diagnosis_1086.py report --training .../training.json --decompose .../decompose.json \\
-        --markdown docs/research/direct-pairs-diagnosis-1086-result.md
+        --markdown ... --result docs/research/direct-pairs-diagnosis-1086/result.json
 """
 
 from __future__ import annotations
@@ -383,12 +383,28 @@ def render_decomposition(decomposition: dict) -> List[str]:
     return lines
 
 
+def headline(decomposition: dict) -> dict:
+    """The figures the result page quotes, from `decompose`'s output: per pair, the 2021-23 total, its band shares, and the totals by lead, day type and year."""
+    out = {"issue": 1086, "label": decomposition["label"], "panel_sha256": decomposition["panel_sha256"], "pairs": {}}
+    for pair, windows in decomposition["pairs"].items():
+        groups = windows["2021-23"]
+        out["pairs"][pair] = {
+            "total": groups["all"]["total"],
+            "by_band": groups["all"]["by_band"],
+            "by_group": {name: g["total"] for name, g in groups.items() if name != "all"},
+        }
+    return out
+
+
 def report_command(args) -> int:
     training = json.loads(Path(args.training).read_text(encoding="utf-8"))
     lines = ["## Check results (criterion 2): the training pairs, 2021-23 refits", ""] + render_training(training) + [""]
     if args.decompose and Path(args.decompose).is_file():
         lines += ["## Decomposition (criterion 1)", ""] + render_decomposition(json.loads(Path(args.decompose).read_text(encoding="utf-8")))
     Path(args.markdown).write_text("\n".join(lines) + "\n", encoding="utf-8")
+    if args.result and args.decompose and Path(args.decompose).is_file():
+        decomposition = json.loads(Path(args.decompose).read_text(encoding="utf-8"))
+        args.result.write_text(json.dumps(headline(decomposition), indent=1, sort_keys=True) + "\n", encoding="utf-8")
     return 0
 
 
@@ -408,6 +424,7 @@ def main(argv=None) -> int:
     report.add_argument("--training", type=Path, required=True)
     report.add_argument("--decompose", type=Path)
     report.add_argument("--markdown", type=Path, required=True)
+    report.add_argument("--result", type=Path)
     report.set_defaults(run=report_command)
     args = parser.parse_args(argv)
     return args.run(args)

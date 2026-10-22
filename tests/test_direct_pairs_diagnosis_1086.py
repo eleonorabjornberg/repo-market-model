@@ -135,6 +135,15 @@ class DecomposeTests(unittest.TestCase):
             script.decompose([])
 
 
+class HeadlineTests(unittest.TestCase):
+    def test_the_headline_keeps_the_window_total_and_the_group_totals(self):
+        group = lambda total: {"total": total, "by_band": {"centre": total}, "days": 1}
+        decomposition = {"label": "x", "panel_sha256": "p", "pairs": {"a over b": {"2021-23": {"all": group(0.5), "lead 1": group(0.25)}, "outside 2021-23": {"all": group(9.0)}}}}
+        result = script.headline(decomposition)
+        self.assertEqual(result["pairs"]["a over b"]["total"], 0.5)
+        self.assertEqual(result["pairs"]["a over b"]["by_group"], {"lead 1": 0.25})
+
+
 class EffectiveSampleTests(unittest.TestCase):
     def test_a_constant_series_has_no_autocorrelation_and_keeps_its_size(self):
         self.assertEqual(script.lag1_autocorrelation([3.0] * 10), 0.0)
