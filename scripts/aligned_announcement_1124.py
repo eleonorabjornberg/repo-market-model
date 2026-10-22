@@ -424,15 +424,19 @@ def score_command(args) -> int:
     groups[("target_type", "settlement_any")] = ("target", [d for d in targets if types[d] in SETTLEMENT_TYPES])
 
     pairs = [(arm, benchmark) for arm in arms for benchmark in (ALIGNED, DIRECT, CONTROL) + BENCHMARKS] + [(ANN_COUPONS, ANN)]
-    jobs, skipped = [], {}
+    jobs, skipped, window_days = [], {}, {}
     for (split, label), (grain, members) in groups.items():
-        if len(members) < MIN_GROUP_DAYS:
-            skipped[f"{split}/{label}"] = len(members)
-            continue
         for window in WINDOWS:
+            # a target day reached only by a lead outside the window has no score in it: the window's group is the days it scores
+            scored = series[(f"{grain}:{window}", METRICS[0][0])][CONTROL]
+            kept = tuple(d for d in members if d in scored)
+            if len(kept) < MIN_GROUP_DAYS:
+                skipped[f"{split}/{label}/{window}"] = len(kept)
+                continue
+            window_days[(split, label, window)] = kept
             for metric, _ in METRICS:
                 for candidate, benchmark in pairs:
-                    jobs.append(((f"{grain}:{window}", f"{split}/{label}/{window}"), metric, candidate, benchmark, tuple(members)))
+                    jobs.append(((f"{grain}:{window}", f"{split}/{label}/{window}"), metric, candidate, benchmark, kept))
     _SERIES.update(series)
     _SERIES.update({"draws": args.draws, "s761": s761})
     with multiprocessing.get_context("fork").Pool(args.workers) as pool:
@@ -449,10 +453,11 @@ def score_command(args) -> int:
     }
     for (grain_window, name), metric, candidate, benchmark, row in out:
         split, label, window = name.split("/", 2)
-        members = groups[(split, label)][1]
-        entry = result["groups"].setdefault(split, {}).setdefault(label, {"days": len(members), "windows": {}})
+        members = window_days[(split, label, window)]
+        entry = result["groups"].setdefault(split, {}).setdefault(label, {"windows": {}})
         ser = _SERIES[(grain_window, metric)]
-        cell = entry["windows"].setdefault(window, {}).setdefault(metric, {"means": {m: sum(ser[m][d] for d in members) / len(members) for m in models}, "pairs": {}})
+        scored = entry["windows"].setdefault(window, {"days": len(members)})
+        cell = scored.setdefault(metric, {"means": {m: sum(ser[m][d] for d in members) / len(members) for m in models}, "pairs": {}})
         cell["pairs"][f"{candidate} vs {benchmark}"] = row
 
     def pick(label, candidate, benchmark, window="h2_5"):
@@ -522,8 +527,9 @@ def render_report(r: dict, s761) -> str:
                 lines += ["| group | days | " + " | ".join(p.replace(" vs ", " over ") for p in names) + " |", "|---|---|" + "---|" * len(names)]
                 for label in sorted(r["groups"][split], key=_group_order):
                     entry = r["groups"][split][label]
-                    row_cells = entry["windows"].get(window, {}).get(metric, {}).get("pairs", {})
-                    lines.append(f"| {label} | {entry['days']:,} | " + " | ".join(s761.skill_text(row_cells[p]) if p in row_cells else "n/a" for p in names) + " |")
+                    scored = entry["windows"].get(window, {})
+                    row_cells = scored.get(metric, {}).get("pairs", {})
+                    lines.append(f"| {label} | {scored.get('days', 0):,} | " + " | ".join(s761.skill_text(row_cells[p]) if p in row_cells else "n/a" for p in names) + " |")
                 lines.append("")
     if r["skipped_groups"]:
         lines += ["Groups of fewer than %d days, listed and not tested: " % MIN_GROUP_DAYS + ", ".join(f"{k} ({v})" for k, v in sorted(r["skipped_groups"].items())) + ".", ""]
