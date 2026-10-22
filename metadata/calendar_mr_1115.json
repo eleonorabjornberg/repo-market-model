@@ -1,0 +1,88 @@
+{
+  "status": "declared by the pull request that closes #1115 before any score was computed; a development study, never a verdict. Nothing is published: no arm or term joins any published declaration, `gbm_funding`'s declaration and `scripts/final_test_preregistration.py` do not change, no day after 2025-12-31 is scored, no lockbox day is scored, and no record in docs/runs/ is edited. Adopting any term, and naming any candidate, is Eleonora's decision. Amendments made after a number was computed would be listed in `amendments`; there are none.",
+  "issue": 1115,
+  "ruling": "Eleonora, 22 October 2026, relayed by the orchestrating session: 'Yeah let's do option 1.' The primary drivers of the spread, the calendar and the FOMC, are tested on the strongest model so far, as additive terms, not as extra columns in the gradient-boosted model",
+  "hypothesis": "H5 (primary goal): the SOFR - IORB spread distribution in bp. Step 3 (calendar first). Development tier",
+  "target": "spread_bps at the scored day, in basis points, as a 23-quantile distribution at each lead h = 1..5 (scoring_protocol.GRID)",
+  "stack": "stacked on #941 (PR #1099): the base is its declared variant `spread_mr_fhs_mad20_f0.5` (metadata/fhs_scale_941.json), unchanged; this study merges only after it",
+  "base": {
+    "name": "spread_mr_fhs_mad20_f0.5 (#941), arm (a)",
+    "module": "repo_model.spread_mr_fhs and repo_model.spread_mean_reversion, unchanged",
+    "formula": "q_p(t+h) = level + phi^k * (last - level) + scale(anchor) * z_h,p, with z_h,p the 23 empirical quantiles of the raw residuals (spread[s] - level[o]) - phi^k * (spread[o] - level[o]) divided by scale(o) at each pair's own origin o; scale(r) = max(0.5, 1.4826 * median of the 20 absolute daily changes ending at r). phi, level, the two-year training window, the minimum of 60 pairs and the refit every 21 decision days are the base model's. Arm (a)'s forecasts are fhs.walk's, not a re-implementation"
+  },
+  "terms": {
+    "definition": "a term is a 0/1 flag of the TARGET row of a pair, with an additive effect estimated per lead and re-estimated at every refit. The training pairs are the base model's direct pairs (origin o, target s, k = h + lag rows apart); a pair's flags are read from its own target row s, which is the row they are served from (asof rule 2), never from the origin. A term is a column of target_day_columns.TARGET_DAY_COLUMNS or a declared scheduled field, or a function of the target row's own date",
+    "listed_in_full": [
+      {"name": "month_end", "reads": "days_to_month_end", "flag": "days_to_month_end == 0", "leads": "1 to 5", "kind": "calendar column (TARGET_DAY_COLUMNS)"},
+      {"name": "quarter_end", "reads": "quarter_end", "flag": "quarter_end > 0; additive on top of month_end, since a quarter-end is also a month-end", "leads": "1 to 5", "kind": "calendar column (TARGET_DAY_COLUMNS)"},
+      {"name": "tax_date", "reads": "tax_date", "flag": "tax_date > 0", "leads": "1 to 5", "kind": "calendar column (TARGET_DAY_COLUMNS)"},
+      {"name": "settlement_coupon", "reads": "treasury_settlement_coupons", "flag": "treasury_settlement_coupons > 0", "leads": "1 only", "kind": "scheduled field, public at 15:00 on the panel day before the target (metadata/sources.json treasury_auctions): a decision at lead 2 or more cannot read it, and the as-of rule refuses it (asof.InformationRule raises LookAheadError), as #1027 found"},
+      {"name": "settlement_bill", "reads": "treasury_settlement_bills", "flag": "treasury_settlement_bills > 0", "leads": "1 only", "kind": "scheduled field, as settlement_coupon"},
+      {"name": "dom_19_23", "reads": "the target row's own date", "flag": "the day of the month is 19 to 23 (the trough of #1032, the bucket of its dom_calendar). A function of the date alone, always known; #1032's `dom_bucket` column is not on main, and this study defines the flag itself rather than depend on an unmerged branch", "leads": "1 to 5", "kind": "date"},
+      {"name": "iorb_window", "reads": "iorb_announced_change_bps (scheduled field, `scheduled_availability`: public at 16:00 on the panel day before the row)", "flag": "the column is not 0 at the target row j rows back, for any j in {0, 1, 2} that the decision can read: the day the change takes effect and the two panel days after it", "leads": "the row T - j is readable at lead h iff the as-of rule admits the column at row T - j for a decision h - j rows before it, or that row is the decision day or earlier: j in {0,1,2} at lead 1, {1,2} at lead 2, {2} at lead 3, none at leads 4 and 5 (the term is absent there)", "kind": "scheduled field of the overlay announced_iorb (OVERLAY_FEATURES), added to the panel in memory by announced_iorb.with_announced_iorb"},
+      {"name": "fomc_day", "reads": "fomc_meeting_day (fomc_calendar.add_columns with horizon = h, the calendar as it stood at the decision instant, #1038)", "flag": "fomc_meeting_day == 1 (both days of a two-day meeting)", "leads": "1 to 5", "kind": "calendar column (TARGET_DAY_COLUMNS, FOMC_TARGET_DAY_COLUMNS)"}
+    ],
+    "no_others": "no term is added after a number is computed",
+    "min_flagged": "a term enters a lead's fit only if at least 3 of that lead's training pairs carry its flag; otherwise its effect is 0 at that refit and lead and the refit records that it was absent",
+    "overlap": "the terms are fitted jointly, so overlapping flags (a quarter-end that is a month-end and a settlement day) do not count one effect twice"
+  },
+  "estimation": {
+    "location": "for lead h, with raw residual r_i of pair i (as above), the least-squares fit of r_i on [1, x_i1 .. x_ip] over the lead's training pairs, with an L2 penalty of 1.0 on every term coefficient and none on the intercept (a ridge of one pseudo-day, which keeps a three-day term from being fitted to its own noise and keeps the normal equations nonsingular when flags coincide). The coefficients are the term effects in bp, beta_h. The intercept is nuisance and is dropped: the residual pool keeps the ordinary-day centre",
+    "pool": "e_i = (r_i - sum_j beta_hj x_ij) / scale(o_i); the pool is the 23 empirical quantiles of e (arm b) or of z (arms c and d), as arm (a) does",
+    "scale_terms": "arms (c) and (d) only. The least-squares fit (same ridge) of |e_i| on [1, x_i1 .. x_ip] gives an intercept c0 and coefficients gamma_j; the scale term of j is g_j = gamma_j / c0, the additive uplift of the scale on a flagged day in units of the ordinary scale. The multiplier of a row is m = max(0.25, 1 + sum_j g_j x_j); the pool is z_i = e_i / m_i; if c0 <= 0 the arm's scale terms are 0 at that refit and lead",
+    "forecast": "q = level + phi^k (last - level) + sum_j beta_hj x_j(T) + scale(anchor) * m(T) * Q_z, with x_j(T) read from the target row T = decision row + h and m = 1 in arm (b). The order of the quantiles is kept, so no crossing",
+    "refit": "every 21 decision days with the base fit, as the base model and #941 do; between refits the effects and the pool are kept and last, level, k, the anchor, scale(anchor) and the flags of T are read afresh",
+    "pairs": "direct (training_pairs = 'direct'). The estimation routine is decorated with repo_model.one_step_guard.guard_one_step_fit: with training_pairs 'direct' the guard admits it with no allow-list entry; with 'one_step' (the flag read from the origin row) it raises ValueError naming the column. No entry is added to one_step_guard.ONE_STEP_ALLOW_LIST"
+  },
+  "arms": [
+    {"name": "mr_cal_a_base", "role": "(a) base: spread_mr_fhs_mad20_f0.5 of #941, no term", "location_terms": [], "scale_terms": []},
+    {"name": "mr_cal_b_location", "role": "(b) base plus location terms", "location_terms": ["month_end", "quarter_end", "tax_date", "settlement_coupon", "settlement_bill", "dom_19_23", "iorb_window", "fomc_day"], "scale_terms": []},
+    {"name": "mr_cal_c_location_scale", "role": "(c) base plus location and scale terms", "location_terms": ["month_end", "quarter_end", "tax_date", "settlement_coupon", "settlement_bill", "dom_19_23", "iorb_window", "fomc_day"], "scale_terms": ["month_end", "quarter_end", "tax_date", "settlement_coupon", "settlement_bill", "dom_19_23", "iorb_window", "fomc_day"]},
+    {"name": "mr_cal_d_no_fomc_iorb", "role": "(d) arm (c) without the FOMC and IORB terms, to isolate them", "location_terms": ["month_end", "quarter_end", "tax_date", "settlement_coupon", "settlement_bill", "dom_19_23"], "scale_terms": ["month_end", "quarter_end", "tax_date", "settlement_coupon", "settlement_bill", "dom_19_23"]}
+  ],
+  "references": {
+    "benchmarks": "B1, B1' (repo_model.b1_calendar, #960) and B2 of scoring protocol v1",
+    "gbm": "gbm_funding (#634) and gbm_funding_cal_aligned (#1027, the one-step variant on the aligned frame), read from their walks when supplied (`--walks`: gbm_funding_h<lead>.json, gbm_funding_cal_aligned_h<lead>.json). A comparison with either is on the decision days both it and the arm cover, a missing lead standing in as B1 as #634 fills it. An arm is never compared with a walk that was made from another panel. Without the walks those rows are absent and the page says so",
+    "pairs": "each of (b), (c), (d) against (a); (c) against (d) and against (b); each of (a), (b), (c), (d) against gbm_funding, gbm_funding_cal_aligned, B1, B1' and B2"
+  },
+  "scoring": {
+    "scorer": "repo_model.scoring_protocol (#655), the development tier: no verdict, no registration",
+    "days": "decision days with a forecast of every arm and the benchmarks, whose five targets fall on or before 2025-12-31; no day after 2025-12-31 is read; the scored days pass lockbox.require_unlocked",
+    "outcomes": "the panel's spread_bps at the target day",
+    "measures": ["grid CRPS (23 levels), by lead and the mean over leads 1..5", "upper-tail twCRPS, weight 1{z > 0 bp}, by lead and the mean over leads"],
+    "paired": "skill = mean(d) / mean(S(benchmark)) with d = S(benchmark) - S(candidate), positive favours the candidate; scoring_protocol.paired_tests, the studentized stationary bootstrap (ruling 1), mean block 10 business days, 10,000 draws, seed 1115; two-sided 90% interval, so the lower end is the one-sided 95% bound",
+    "politis_white": "beside the block of 10, the Politis-White automatic block length (scripts/block_length_949.py politis_white, with the Patton-Politis-White correction) of the paired loss differential of each arm against (a), pooled and within each regime (a regime is a run of consecutive days), and the pooled interval of each arm over (a) at that block length (rounded to a whole number of days). It is reported, never substituted for the protocol's 10",
+    "min_days": "a group of fewer than 20 days is listed and not tested"
+  },
+  "splits": {
+    "regime": "SplitDeclaration.regime of the target day (metadata/evaluation_splits.json): 2018-19, 2020, 2021-23, 2024, 2025-26",
+    "target_day_type": "by the target day: month_end, quarter_end, tax_date, settlement (coupon or bill settling), fomc_day, iorb_window, dom_19_23, ordinary. The groups overlap (a quarter-end is also a month-end); ordinary is a day with none of the seven flags. The flags of the day type are the ex-post readings at lead 1 (every column read as of the day before), not the leads' vintages",
+    "lead": "h = 1..5, one number per decision day at that lead",
+    "unit": "every split is on the target day: a target day's score is the mean over the leads that forecast it and it belongs to the group of its own date; a group's days are tested as a subsequence, as in #761"
+  },
+  "term_effects": {
+    "table": "per term, arm (b) and arm (c): the effect estimated at the refit in force for each scored (decision day, lead) cell whose target day carries the flag, averaged over the leads that forecast that target day, then averaged over the flagged target days of a regime (bp), with the 90% stationary-bootstrap percentile interval of that mean over the flagged days of the regime in date order (mean block 10 flagged days, 2,000 resamples, seed 1115); a regime with fewer than 5 flagged days gets the mean and no interval. Arm (c)'s scale term is reported as the uplift g_j in percent of the ordinary scale in the same way. The interval measures the spread of the estimates across the refits and days of the regime; it is not a standard error of the effect",
+    "realised": "beside each effect, the mean over the same flagged target days of the outcome less arm (a)'s median forecast, with the same interval: what arm (a) missed on those days"
+  },
+  "reading": {
+    "rules": [
+      "An arm's gain over (a) is read as present on a split when the 90% interval of its grid-CRPS skill over (a) excludes zero on the positive side, and as a loss when it excludes zero on the negative side; otherwise as undecided. A point estimate alone is not read.",
+      "A pooled figure is never read without the regime and target-day-type splits beside it; a gain pooled and a loss in 2018-19, 2021-23 or on ordinary days is reported as mixed.",
+      "(c) against (d) isolates the FOMC and IORB terms; (b) against (c) isolates the scale terms.",
+      "Each arm against gbm_funding and gbm_funding_cal_aligned is read on the calendar day types and on ordinary days separately (#1027's rule: an arm reads calendar days and beats a control when the lower end of its grid-CRPS skill interval over it on the union of the calendar day types is above 0, and loses on ordinary days when the upper end on ordinary days is below 0).",
+      "Nothing in this study is a verdict, and the page says so. Whether any term is adopted, and whether any arm is named a candidate, is Eleonora's decision. A kill applies only to a result that is not provisional; these arms read the calendar at the target day on direct pairs, so their class is not provisional."
+    ]
+  },
+  "questions": [
+    "Whether any term is adopted, and whether any arm is named a candidate, is Eleonora's.",
+    "The estimation choices that are this study's own and are open to her review: the ridge of 1.0, the 3-flag minimum, the 0.25 floor of the scale multiplier, the dom_19_23 flag defined here rather than from #1032's unmerged column, and the iorb_window of three rows. No other value was tried."
+  ],
+  "limits": {
+    "last_day": "2025-12-31",
+    "arms": 4,
+    "gbm_funding_declaration": "unchanged",
+    "preregistration": "scripts/final_test_preregistration.py is not touched",
+    "allow_list": "repo_model.one_step_guard.ONE_STEP_ALLOW_LIST is not changed"
+  },
+  "amendments": []
+}
