@@ -394,8 +394,13 @@ class ReadingRuleTests(unittest.TestCase):
 
     def test_an_unscored_or_undefined_cut_is_not_read(self):
         rows = {script.DIRECT_OCTOBER: {"october_without_2019_2025": {"undefined": "x"}, "ordinary_outside_october": self.row(0.0, -0.1, 0.1)}}
-        self.assertIn("not read", script.reading_rules(rows)[0])
+        self.assertIn("not read (x)", script.reading_rules(rows)[0], "the scorer's reason is carried to the page")
         self.assertIn("not read", script.reading_rules({script.DIRECT_OCTOBER: {}})[0])
+
+    def test_days_differing_counts_the_days_the_column_can_have_mattered_on(self):
+        a, b, c = date(2019, 10, 15), date(2019, 10, 16), date(2019, 10, 17)
+        self.assertEqual(script.days_differing({a: 1.0, b: 2.0, c: 3.0}, {a: 1.0, b: 2.5, c: 3.0}, [a, b, c]), 1)
+        self.assertEqual(script.days_differing({a: 1.0}, {a: 1.0}, [a]), 0)
 
 
 class FiveLevelTests(unittest.TestCase):

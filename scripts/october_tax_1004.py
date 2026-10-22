@@ -199,7 +199,7 @@ def reading_2026(targets: Sequence[date]) -> dict:
         "october_window_days": sum(1 for d in open_days if tdo.october_window(d)),
         "october_2026_window": [d.isoformat() for d in tdo._window_after(tdo.october_deadline(2026))],
         "why": (
-            "the October 2026 window falls after the panel's end (2026-09-03), in the blind tier, which no comparison may score (docs/decisions/lockbox.md); "
+            "October 2026 window falls after the panel's end (2026-09-03), in the blind tier, which no comparison may score (docs/decisions/lockbox.md); "
             "the open 2026 days hold no October window, and the study window ends on 2025-12-31 as #1027's walks do"
         ),
     }
@@ -387,7 +387,8 @@ def reading_rules(rows: Mapping[str, Mapping[str, Optional[dict]]], window: str 
     for arm, cells in rows.items():
         inside, outside = cells.get(window), cells.get("ordinary_outside_october")
         if inside is None or outside is None or "undefined" in inside or "undefined" in outside:
-            out.append(f"{arm}: not read (a cut is not scored or undefined).")
+            why = next((c["undefined"] for c in (inside, outside) if c and "undefined" in c), "a cut is not scored")
+            out.append(f"{arm}: not read ({why}).")
             continue
         helps = inside["difference_interval"][0] > 0.0
         loses = outside["difference_interval"][1] < 0.0
@@ -404,10 +405,17 @@ def reading_rules(rows: Mapping[str, Mapping[str, Optional[dict]]], window: str 
 _SERIES: Dict = {}
 
 
+def days_differing(candidate: Mapping[date, float], benchmark: Mapping[date, float], days: Sequence[date]) -> int:
+    """How many of `days` the two series score differently: the column can only matter on these, and a cut with none (or too few) cannot be studentized."""
+
+    return sum(1 for d in days if candidate[d] != benchmark[d])
+
+
 def _task(job):
     key, metric, candidate, benchmark, days = job
     series = _SERIES[(key[0], metric)]
-    return key, metric, candidate, benchmark, _SERIES["s761"].run_pairs({benchmark: series[benchmark]}, series[candidate], days, seed=SEED, draws=_SERIES["draws"])[benchmark]
+    row = _SERIES["s761"].run_pairs({benchmark: series[benchmark]}, series[candidate], days, seed=SEED, draws=_SERIES["draws"])[benchmark]
+    return key, metric, candidate, benchmark, {**row, "days_differing": days_differing(series[candidate], series[benchmark], days)}
 
 
 def _check_arm_walks(walks: Path, arm: str, panel: Path) -> None:
@@ -589,7 +597,7 @@ def render_report(r: dict, s761) -> str:
     lines += [f"- {a}: {why}." for a, why in sorted(r.get("not_run", {}).items())]
     w = r["reading_2026"]
     lines += ["", "## The 2026 development days", "",
-              f"{w['why'].capitalize()}. Scored 2026 target days: {w['scored_open_2026_days']}; October-window days among them: {w['october_window_days']}. "
+              f"The {w['why']}. Scored 2026 target days: {w['scored_open_2026_days']}; October-window days among them: {w['october_window_days']}. "
               f"The October 2026 window is {', '.join(w['october_2026_window'])}. Extending the study window to the open 2026 days is a marked question for Eleonora.", "",
               "## The October window by year", "",
               "Realised SOFR - IORB (bp) on the window's target days, and each model's mean grid CRPS on them. Marked years are the ones whose prints prompted the label.", "",
