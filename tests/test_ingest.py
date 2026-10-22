@@ -8258,6 +8258,28 @@ class NyFedSrfAdapterTests(unittest.TestCase):
         # keeps its row, at zero.
         self.assertEqual(rows[date(2025, 10, 8)].value, 0.0)
 
+    def test_the_registry_limitation_states_the_rule_and_the_recounted_days(self):
+        """The `nyfed_srf` limitation describes the rule `_nyfed_srf_rows` applies (#936).
+
+        The text names the three Desk-test marks (#933) and the test-trade rule (#802), and
+        its day counts, taken to 2025-12-31 as the text says, equal a recount from the tracked
+        snapshots: positive days and days of at least $0.1 bn.
+        """
+
+        registry = json.loads(
+            (Path(__file__).parents[1] / "metadata" / "sources.json").read_text()
+        )
+        text = registry["nyfed_srf"]["limitation"]
+        for phrase in ("operationLimit", "ends in \" 99\"", "$250 million", "whole number of millions"):
+            self.assertIn(phrase, text)
+        _artifacts, rows = self.tracked()
+        window = [row.value for day, row in rows.items() if day <= date(2025, 12, 31)]
+        positive = sum(value > 0 for value in window)
+        large = sum(value >= 0.1 - 1e-9 for value in window)
+        self.assertIn(
+            f"above zero on {positive} operation days and at least 0.1 billion on {large}", text
+        )
+
     def test_a_take_up_is_available_at_the_next_business_day_at_16(self):
         _artifacts, rows = self.tracked()
         # The Monday after is Martin Luther King Jr. Day (#201).
