@@ -1,9 +1,10 @@
-"""The cuts of `scripts/h5_state_splits_901.py` (#901, H5 step 3): #634's walks scored by the as-of scarcity state of the decision day.
+"""The cuts of `scripts/h5_state_splits_901.py` (#901, H5 step 3): the calendar-aware models scored by the as-of scarcity state of the decision day.
 
-The script re-reads #634's walks unchanged and reports each skill headline against B1 and B2 for the days whose scarcity
-state, public at the decision instant, is ample (states 0 and 1) or scarce (2 and 3), as #706 and #850 group it (ruling on
-#515). These tests pin the one new rule, that the state is the one read at the decision instant, and the helpers that
-cut the days.
+The script re-reads `gbm_funding`'s walks (#634) and #1027's two calendar-aware variants unchanged and reports each skill headline against
+B1, B2 and B1' for the days whose scarcity state, public at the decision instant, is ample (states 0 and 1) or scarce (2 and 3), as #706 and
+#850 group it (ruling on #515). Narrowed by Eleonora's ruling of 22 October 2026 on #901: #634's a_published_new, b_gbm_new and c_two_part_new
+and B3 are dropped, not re-walked. These tests pin the one new rule, that the state is the one read at the decision instant, the helpers that
+cut the days, the narrowed set, and the pooled check, which covers only what #634 and #805 tracked.
 
 Recorded mutation (CLAUDE.md), 22 October 2026, in a disposable copy: `scripts/h5_state_splits_901.py`, `decision_states`,
 `scored = [position[d] + 1 for d in days]` mutated to `[position[d] + 2 for d in days]` (the state is then the one public a day
@@ -152,6 +153,62 @@ class VariantForecastTests(unittest.TestCase):
         module = _module()
         with self.assertRaises(ValueError):
             module.variant_forecasts("v", {self.DAYS[0]: {h: [0.0] for h in range(1, 6)}}, self.B1, self.DAYS)
+
+
+class NarrowedSetTests(unittest.TestCase):
+    """The ruling of 22 October 2026: gbm_funding and #1027's two variants, beside B1, B1' and B2; #634's other candidates and B3 are dropped."""
+
+    def test_the_candidates_are_gbm_funding_and_the_two_calendar_variants(self):
+        module = _module()
+        self.assertEqual(module.CONTROL, "gbm_funding")
+        self.assertEqual(module.VARIANTS, ("gbm_funding_cal_aligned", "gbm_funding_cal_direct"))
+        self.assertEqual(module.DROPPED, ("a_published_new", "b_gbm_new", "c_two_part_new", "B3"))
+
+    def test_the_walks_needed_are_three_models_at_five_leads(self):
+        module = _module()
+        self.assertEqual(module.WALKS_NEEDED, ("gbm_funding", "gbm_funding_cal_aligned", "gbm_funding_cal_direct"))
+
+    def test_only_the_control_pairs_are_compared_with_the_tracked_pages(self):
+        module = _module()
+        pooled = {"B1 -> gbm_funding": {"skill": 0.2}, "B2 -> gbm_funding": {"skill": 0.1}, "B1 -> gbm_funding_cal_direct": {"skill": 0.9}}
+        self.assertEqual(sorted(module.reproducible(pooled)), ["B1 -> gbm_funding", "B2 -> gbm_funding"])
+
+    def test_a_control_figure_that_differs_stops_the_run_but_a_variant_is_not_compared(self):
+        module = _module()
+        tracked = {"B1 -> gbm_funding": {"skill": 0.2, "n": 10}}
+        ok = {"B1 -> gbm_funding": {"skill": 0.2, "n": 10}, "B1 -> gbm_funding_cal_direct": {"skill": 0.9, "n": 10}}
+        module.check_pooled(module.reproducible(ok), tracked)
+        bad = dict(ok, **{"B1 -> gbm_funding": {"skill": 0.3, "n": 10}})
+        with self.assertRaises(ValueError):
+            module.check_pooled(module.reproducible(bad), tracked)
+
+
+class BenchmarkPrimeTests(unittest.TestCase):
+    """B1' is absent on some days; a missing day is reported and left out of the B1' columns, never filled with B1."""
+
+    DAYS = weekdays(date(2024, 3, 4), 10)
+
+    def test_a_day_without_b1_prime_is_left_out_and_reported(self):
+        module = _module()
+        from repo_model import scoring_protocol as sp
+
+        def forecast(day):
+            if day == self.DAYS[1]:
+                raise sp.ProtocolError("no calendar history")
+            return {1: [0.0]}
+
+        out, missing = module.b1_prime_forecasts(forecast, self.DAYS)
+        self.assertEqual(sorted(out), [d for d in self.DAYS if d != self.DAYS[1]])
+        self.assertEqual(missing, [self.DAYS[1]])
+
+    def test_another_error_is_not_swallowed(self):
+        module = _module()
+
+        def forecast(day):
+            raise ValueError("a data error")
+
+        with self.assertRaises(ValueError):
+            module.b1_prime_forecasts(forecast, self.DAYS)
 
 
 class ReproduceTests(unittest.TestCase):

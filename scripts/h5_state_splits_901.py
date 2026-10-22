@@ -1,39 +1,39 @@
-"""#634's walks and #1027's calendar-aware variants scored by the as-of scarcity state of the decision day (#901, H5 step 3, M2 and M4).
+"""The calendar-aware models scored by the as-of scarcity state of the decision day (#901, H5 step 3, M2 and M4).
 
 A scratch measurement, not a record: it fits no model, writes JSON and Markdown to the paths it is given and nothing into
 `docs/runs/`, and changes no rule. Scoring protocol v1 section 7 asks for results "by the as-of scarcity state (public at
 the time)"; #634's page and #758's page did not run that split (`docs/model/validation.md` section 4 lists it). This script
-reads #634's walks unchanged (`scripts/spread_distribution_634.py walk`) and scores them as `scripts/h5_splits_805.py` does,
-so every pooled figure reproduces the tracked page's, and adds:
+reads the walks unchanged and scores them as `scripts/h5_splits_805.py` does, so the pooled figure of `gbm_funding` reproduces the
+tracked pages', and adds:
 
-1. each headline against B1 and B2 by the state of the decision day: ample (states 0 and 1) and scarce (2 and 3), the
+1. each headline against B1, B2 and B1' by the state of the decision day: ample (states 0 and 1) and scarce (2 and 3), the
    grouping ruled on #515 and applied as #706 and #850 apply it. The state is read at the decision instant
    (`richer_targets.as_of_rows`, lead 1: both guards run on every read), each leg at its own latest public row (#586). A
    day whose state is a hole is `unknown` and is reported, not dropped;
 2. the same cuts without decision day 2019-09-18 (#798);
 3. the paired per-day scores, so later splits need no new walk (`daily.json`).
 
-Redone on the #1027 candidate (Eleonora, 21 October 2026: PR #905 was closed unmerged, its walks being provisional under calendar first).
-#1027's two variants, `gbm_funding_cal_aligned` and `gbm_funding_cal_direct` (`scripts/aligned_calendar_1027.py`, declared and walked
-there, no new variant here), are scored beside #634's four candidates as further candidates, on #634's decision days. Which of them
-replaces `gbm_funding` is Eleonora's decision (ruling of 21 October 2026: keep `gbm_funding` for now), so every one is reported. #634's
-four candidates are provisional (`docs/research/provisional-calendar-register.md`); the page says so. The pooled column of the variants
-is on #634's 1868 decision days, not #1027's 1855 (which also needed B1' and `spread_mr_ctx`), so it is not compared with #1027's page;
-the pooled column of #634's four candidates and of B3 is checked against the tracked figures.
+Narrowed by Eleonora's ruling of 22 October 2026 on #901 (https://github.com/eleonorabjornberg/repo-market-model/issues/901#issuecomment-6343345137):
+the calendar-aware models only. The candidates are `gbm_funding` (#634's walk, the control) and #1027's two variants,
+`gbm_funding_cal_aligned` and `gbm_funding_cal_direct` (`scripts/aligned_calendar_1027.py`, declared and walked there; no new variant here),
+each against B1, B2 and B1'. #634's `a_published_new`, `b_gbm_new` and `c_two_part_new` and B3 (the published declaration) are dropped, not
+re-walked: they stay provisional under `docs/research/provisional-calendar-register.md` and the #947 guard refuses their walks. Which variant
+replaces `gbm_funding` is Eleonora's decision (ruling of 21 October 2026: keep `gbm_funding` for now), so every one is reported.
+`gbm_funding` is provisional (calendar not read at the target day); the page says so.
 
-The headlines are grid CRPS and upper-tail twCRPS of #634's four candidates, each against B1 and B2, and B3 (the published
-declaration, on its own five levels, like for like against B1 and B2 read at the same five). Before any split is written the
-pooled column is checked against the tracked figures of #634 and #805 (`check_pooled`); a column that differs stops the run.
+The decision days are those `gbm_funding`'s walk and the benchmarks cover (`h5_splits_805.prepare`, narrowed to that walk); B1' is absent on some days
+(`b1_calendar` raises `ProtocolError`), so the columns against B1' are on the days that have it, with their own day counts, and B1' is never
+filled with B1. The pooled column of `gbm_funding` against B1 and B2, for grid CRPS and upper-tail twCRPS, is checked against the tracked figures
+of #634 and #805 (`check_pooled`); a column that differs stops the run before anything is written. The variants are new, so their pooled
+column is not a reproduction of anything, and the page says so.
 
 No day after 2025-12-31 is read (`docs/decisions/lockbox.md`; `require_unlocked`). Development days give a score and an
 interval, never a verdict (scoring protocol v1, #640). Intervals are the studentized stationary bootstrap's (block 10,
 one-sided 95%), seed 634, the page being reproduced.
 
-The walks take hours (#898): this goes to the Mac. PUBLISHED.csv, AUG2D.csv and #634's walks in OUT are built exactly as in the
-docstring of scripts/spread_distribution_634.py; AUG3.csv (AUG2D.csv with the net settlement columns, which carries the same
-`reserve_scarcity_state`) and #1027's walks in OUT are built as in the docstring of scripts/aligned_calendar_1027.py. If #1027's walks
-are still on the Mac, they are reused (`finished_walk` skips a walk already written from the same panel bytes). Scoring takes about
-12 minutes.
+The walks take hours (#898): this goes to the Mac. PUBLISHED.csv and AUG3.csv (#951's scratch panel, which carries
+`reserve_scarcity_state`) and the three models' walks in OUT are built as in the docstring of scripts/aligned_calendar_1027.py. Walks #1027
+left on the Mac are reused (`finished_walk` skips a walk already written from the same panel bytes). Scoring takes about 12 minutes.
 
     PYTHONPATH=src python3 scripts/h5_state_splits_901.py score --published PUBLISHED.csv --panel AUG3.csv --walks OUT \\
         --output OUT/h5_state_splits_901.json --daily OUT/daily.json
@@ -67,6 +67,12 @@ UNKNOWN = "unknown"
 SEED = 634
 MIN_GROUP_DAYS = 20
 SCARCITY = scarcity.RESERVE_SCARCITY_STATE
+#: the narrowed set (ruling of 22 October 2026): the control and #1027's two variants. B1' is `b1_calendar_960.B1P`.
+CONTROL = "gbm_funding"
+VARIANTS = ("gbm_funding_cal_aligned", "gbm_funding_cal_direct")
+WALKS_NEEDED = (CONTROL, *VARIANTS)
+DROPPED = ("a_published_new", "b_gbm_new", "c_two_part_new", "B3")
+B1P = "B1_prime"
 TRACKED_805 = REPO / "docs" / "pivot" / "evidence" / "h5-splits-805" / "score.json"
 TRACKED_634 = REPO / "docs" / "pivot" / "evidence" / "spread-distribution-protocol" / "score.json"
 #: the fields a reproduced figure must match the tracked page's in.
@@ -164,6 +170,27 @@ def variant_forecasts(
     return sp.fill_missing({d: decisions[d] for d in common}, b1, list(common)).forecasts
 
 
+def b1_prime_forecasts(forecast, days: Sequence[date]):
+    """B1' on each of `days` it exists on, and the days it does not exist on (a `ProtocolError`; never filled with B1).
+
+    `forecast(day)` is B1' for that decision day. Any other error is raised.
+    """
+
+    out, missing = {}, []
+    for day in days:
+        try:
+            out[day] = forecast(day)
+        except sp.ProtocolError:
+            missing.append(day)
+    return out, missing
+
+
+def reproducible(pooled: Mapping[str, Mapping[str, float]]) -> Dict[str, Mapping[str, float]]:
+    """The pooled pairs a tracked page holds: those of the control. The variants are new; there is nothing to reproduce."""
+
+    return {pair: entry for pair, entry in pooled.items() if pair.endswith(f" -> {CONTROL}")}
+
+
 def check_pooled(computed: Mapping[str, Mapping[str, float]], tracked: Mapping[str, Mapping[str, float]]) -> None:
     """The pooled column must be the tracked page's before any split is written.
 
@@ -188,11 +215,22 @@ def mean_of(series: Mapping[date, float], group: Sequence[date]) -> Optional[flo
     return sum(series[d] for d in group) / len(group) if group else None
 
 
+def narrowed_prepare(h805, published: Path, walks: Path):
+    """`h805.prepare` on `gbm_funding`'s walk alone: #634's other walks are dropped (ruling of 22 October 2026), so they are neither read nor required."""
+
+    saved = h805.WALKS, h805.CANDIDATES
+    h805.WALKS, h805.CANDIDATES = (CONTROL,), (CONTROL,)
+    try:
+        return h805.prepare(published, walks)
+    finally:
+        h805.WALKS, h805.CANDIDATES = saved
+
+
 def score_command(args) -> int:
     h805 = _load("h5_splits_805")
     h707 = _load("h5_step3_707")
     a1027 = _load("aligned_calendar_1027")
-    ctx = h805.prepare(args.published, args.walks)
+    ctx = narrowed_prepare(h805, args.published, args.walks)
     sd = ctx["sd"]
     calendar, outcomes, common, b1, b2 = ctx["calendar"], ctx["outcomes"], ctx["common"], ctx["b1"], ctx["forecasts"]["B2"]
     forecasts = ctx["forecasts"]
@@ -212,24 +250,30 @@ def score_command(args) -> int:
         walk = sd.load_laws(args.walks, variant)
         decisions_v, _ = sd.lead_forecasts(walk, calendar)
         forecasts[variant] = variant_forecasts(variant, decisions_v, b1, common)
-    candidates = (*h805.CANDIDATES, *variants)
+    candidates = (CONTROL, *variants)
+    # B1': the calendar-aware persistence of #960, on the decision days that have it
+    b960 = _load("b1_calendar_960")
+    pub_rows, position_p, splits, registry = ctx["rows"], ctx["position"], ctx["splits"], ctx["registry"]
+    b1p, b1p_missing = b1_prime_forecasts(
+        lambda d: b960.b1c.b1_calendar_forecast(pub_rows, position_p[d], registry=registry, decision_time=sd.DECISION, splits=splits), common
+    )
     names = ["B1", "B2", *candidates]
     grid = {n: score_all(forecasts[n]) for n in names}
     tail = {n: score_all(forecasts[n], sp.upper_tail_twcrps) for n in names}
     days = sorted(grid["B1"])
-    # B3, the published declaration, on its own five levels; a missing lead takes B1's, read at the same five
-    published = sd.load_laws(args.walks, "published", native=True)
-    decisions, _ = sd.lead_forecasts(published, calendar)
-    five_b1 = {d: {h: sd.five_levels(b1[d][h]) for h in HORIZONS} for d in days}
-    filled = sp.fill_missing({d: decisions[d] for d in days}, five_b1, days)
-    five = {n: {d: {h: sd.five_levels(forecasts[n][d][h]) for h in HORIZONS} for d in days} for n in ("B1", "B2")}
-    five["B3"] = {d: {h: sd.five_levels(leads[h]) for h in HORIZONS} for d, leads in filled.forecasts.items()}
-    five_crps = {n: score_all(five[n], sd.five_crps) for n in five}
-    five_tw = {n: score_all(five[n], sd.five_twcrps) for n in five}
-    for table in (grid, tail, five_crps, five_tw):
+    days_p = sorted(b1p)
+    grid_p = {B1P: score_all(b1p)}
+    tail_p = {B1P: score_all(b1p, sp.upper_tail_twcrps)}
+    for table in (grid, tail):
         for n, scores in table.items():
             if sorted(scores) != days:
                 raise SystemExit(f"{n} does not score the same decision days as B1")
+    for table in (grid_p, tail_p):
+        if sorted(table[B1P]) != days_p:
+            raise SystemExit("B1' does not score the decision days it forecasts")
+    # the columns against B1' are on the days that have it: the candidates' scores on those days, beside B1' itself
+    grid_p.update({n: {d: grid[n][d] for d in days_p} for n in candidates})
+    tail_p.update({n: {d: tail[n][d] for d in days_p} for n in candidates})
 
     position = {row.date: i for i, row in enumerate(scratch)}
     for d in days:
@@ -237,18 +281,13 @@ def score_command(args) -> int:
             raise ValueError(f"decision day {d} is not a row of {args.panel}")
     states = decision_states(scratch, measurement_fields.load_registry(), days, position, DECISION)
     cuts = state_cuts(days, states)
+    cuts_p = state_cuts(days_p, states)
 
-    measures = {
-        "grid_crps": (grid, ("B1", "B2"), candidates),
-        "upper_tail_twcrps": (tail, ("B1", "B2"), candidates),
-        "b3_five_levels_crps": (five_crps, ("B1", "B2"), ("B3",)),
-        "b3_five_levels_twcrps": (five_tw, ("B1", "B2"), ("B3",)),
-    }
     sd.SEED = SEED
 
-    def headline(scores, benchmarks, candidate):
+    def headline(scores, benchmarks, candidate, groups):
         out = {}
-        for label, group in cuts.items():
+        for label, group in groups.items():
             if len(group) < MIN_GROUP_DAYS:
                 out[label] = {"days": len(group), "note": f"fewer than {MIN_GROUP_DAYS} days; not tested"}
                 continue
@@ -261,40 +300,42 @@ def score_command(args) -> int:
         return out
 
     headlines = {
-        measure: {c: headline(scores, benchmarks, c) for c in candidates}
-        for measure, (scores, benchmarks, candidates) in measures.items()
+        measure: {c: headline(scores, ("B1", "B2"), c, cuts) for c in candidates}
+        for measure, scores in (("grid_crps", grid), ("upper_tail_twcrps", tail))
+    }
+    headlines_b1p = {
+        measure: {c: headline(scores, (B1P,), c, cuts_p) for c in candidates}
+        for measure, scores in (("grid_crps", grid_p), ("upper_tail_twcrps", tail_p))
     }
 
-    # the pooled column is the tracked page's before anything is split
+    # the pooled column of gbm_funding is the tracked pages' before anything is split; the variants are new
     t805 = json.loads(TRACKED_805.read_text(encoding="utf-8"))
     t634 = json.loads(TRACKED_634.read_text(encoding="utf-8"))
     for measure, tracked in (("grid_crps", "pooled_primary"), ("upper_tail_twcrps", "pooled_key_secondary")):
-        pooled = {}
-        for c in h805.CANDIDATES:
-            pooled.update(headlines[measure][c]["pooled"]["tests"])
+        pooled = reproducible(headlines[measure][CONTROL]["pooled"]["tests"])
         check_pooled(pooled, t634[tracked])
-        check_pooled(
-            pooled,
-            {k: v for c in h805.CANDIDATES for k, v in t805["headlines"][measure][c]["pooled"]["tests"].items()},
-        )
-    for measure, tracked in (("b3_five_levels_crps", "pooled_primary_five"), ("b3_five_levels_twcrps", "pooled_key_secondary_five")):
-        check_pooled(headlines[measure]["B3"]["pooled"]["tests"], t634[tracked])
+        check_pooled(pooled, t805["headlines"][measure][CONTROL]["pooled"]["tests"])
 
     counts = {label: len(group) for label, group in cuts.items()}
+    counts_p = {label: len(group) for label, group in cuts_p.items()}
     document = {
         "panel_sha256": sd.panel_sha256(args.published),
         "scratch_panel_sha256": sd.panel_sha256(args.panel),
         "decision_days": {"n": len(days), "first": days[0].isoformat(), "last": days[-1].isoformat()},
+        "decision_days_b1_prime": {"n": len(days_p), "missing": [d.isoformat() for d in b1p_missing]},
         "draws": draws,
         "seed": SEED,
         "excluded_day": EXCLUDED_DAY.isoformat(),
         "min_group_days": MIN_GROUP_DAYS,
         "state_days": counts,
+        "state_days_b1_prime": counts_p,
         "candidates": list(candidates),
         "variants_not_run": not_run,
-        "provisional": list(h805.CANDIDATES),
+        "dropped": list(DROPPED),
+        "provisional": [CONTROL],
         "pooled_reproduces": ["docs/pivot/evidence/spread-distribution-protocol/score.json", "docs/pivot/evidence/h5-splits-805/score.json"],
         "headlines": headlines,
+        "headlines_b1_prime": headlines_b1p,
     }
     args.output.write_text(json.dumps(document, indent=1, sort_keys=True) + "\n", encoding="utf-8")
     daily = {
@@ -304,11 +345,11 @@ def score_command(args) -> int:
         "candidates": list(candidates),
         "grid_crps": {n: {d.isoformat(): grid[n][d] for d in days} for n in names},
         "upper_tail_twcrps": {n: {d.isoformat(): tail[n][d] for d in days} for n in names},
-        "b3_five_levels_crps": {n: {d.isoformat(): five_crps[n][d] for d in days} for n in five_crps},
-        "b3_five_levels_twcrps": {n: {d.isoformat(): five_tw[n][d] for d in days} for n in five_tw},
+        "b1_prime_grid_crps": {d.isoformat(): grid_p[B1P][d] for d in days_p},
+        "b1_prime_upper_tail_twcrps": {d.isoformat(): tail_p[B1P][d] for d in days_p},
     }
     args.daily.write_text(json.dumps(daily, indent=1, sort_keys=True) + "\n", encoding="utf-8")
-    print(json.dumps({"output": str(args.output), "daily": str(args.daily), "decision_days": len(days), "state_days": counts}))
+    print(json.dumps({"output": str(args.output), "daily": str(args.daily), "decision_days": len(days), "decision_days_b1_prime": len(days_p), "state_days": counts}))
     return 0
 
 
@@ -334,28 +375,34 @@ def _table(block: Mapping[str, dict], candidate: str, benchmark: str) -> List[st
 TITLES = {
     "grid_crps": "Grid CRPS (the primary score)",
     "upper_tail_twcrps": "Upper-tail twCRPS (weight 1{y > 0 bp})",
-    "b3_five_levels_crps": "B3 on its own five levels, CRPS (B1 and B2 read at the same five)",
-    "b3_five_levels_twcrps": "B3 on its own five levels, twCRPS",
 }
 
 
 def report_command(args) -> int:
     document = json.loads(args.score.read_text(encoding="utf-8"))
+    p = document["decision_days_b1_prime"]
     out = [
-        "# H5 headlines by the as-of scarcity state of the decision day (#901)",
+        "# H5 headlines by the as-of scarcity state of the decision day: the calendar-aware models (#901)",
         "",
         f"Decision days {document['decision_days']['first']} to {document['decision_days']['last']} (n = {document['decision_days']['n']}); "
         f"studentized stationary bootstrap, {document['draws']} draws, one-sided 95%, seed {document['seed']}; panel "
         f"`{document['panel_sha256'][:8]}…`. Development data, not a verdict.",
         "",
-        "State: ample is states 0 and 1, scarce is 2 and 3 (ruling on #515), public at the decision instant, each leg at its own latest public row. "
-        "Decision days by cut: " + ", ".join(f"{k} {v}" for k, v in document["state_days"].items()) + ".",
+        "Narrowed to the calendar-aware models by Eleonora's ruling of 22 October 2026 on #901: `gbm_funding` and #1027's two variants, each against "
+        "B1, B2 and B1'. #634's `" + "`, `".join(document["dropped"][:-1]) + "` and " + document["dropped"][-1] + " are dropped, not re-walked; they stay "
+        "provisional under the [register](provisional-calendar-register.md), and the #947 guard refuses their walks.",
         "",
-        "The pooled column of #634's four candidates and of B3 reproduces the tracked figures of #634 and #805 to the digit (checked by the script before it wrote anything). "
-        "`" + "`, `".join(document["provisional"]) + "` are provisional: calendar not read at the target day "
-        "([register](provisional-calendar-register.md)). The `gbm_funding_cal_*` rows are #1027's variants, on #634's decision days (not #1027's 1855). "
+        "State: ample is states 0 and 1, scarce is 2 and 3 (ruling on #515), public at the decision instant, each leg at its own latest public row. "
+        "Decision days by cut (against B1 and B2): " + ", ".join(f"{k} {v}" for k, v in document["state_days"].items()) + ".",
+        "",
+        "The pooled column of `gbm_funding` against B1 and B2 reproduces the tracked figures of #634 and #805 to the digit (checked by the script before it wrote anything). "
+        "`" + "`, `".join(document["provisional"]) + "` is provisional: calendar not read at the target day. The `gbm_funding_cal_*` rows are #1027's variants, "
+        "new here, so their pooled column reproduces nothing. "
         + ("Not run: " + "; ".join(f"{k} ({v})" for k, v in document["variants_not_run"].items()) + ". " if document["variants_not_run"] else "")
         + "Which candidate replaces `gbm_funding` is Eleonora's decision, not this page's.",
+        "",
+        f"B1' is absent on {len(p['missing'])} decision days, so the columns against B1' are on {p['n']} days "
+        "(B1' is never filled with B1). Decision days by cut (against B1'): " + ", ".join(f"{k} {v}" for k, v in document["state_days_b1_prime"].items()) + ".",
         "",
     ]
     for measure, title in TITLES.items():
@@ -363,6 +410,8 @@ def report_command(args) -> int:
         for candidate, block in document["headlines"][measure].items():
             for benchmark in ("B1", "B2"):
                 out += [f"### {candidate} against {benchmark}", "", *_table(block, candidate, benchmark), ""]
+        for candidate, block in document["headlines_b1_prime"][measure].items():
+            out += [f"### {candidate} against B1' (on the days B1' exists)", "", *_table(block, candidate, "B1_prime"), ""]
     args.output.write_text("\n".join(out) + "\n", encoding="utf-8")
     return 0
 
