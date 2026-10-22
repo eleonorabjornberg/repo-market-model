@@ -17,7 +17,7 @@ On from rows: 759; off 1,306; undefined 39. The runs of consecutive rows with th
 ## Kill rules, as declared
 
 - (ii) against its own pool (mean reversion) on the 2024-26 days: grid CRPS skill +4.1% [+3.2%, +5.1%]. Kill rule not met: the interval lies above 0.
-- (iii) against `gbm_funding`: **not run**: it needs `gbm_funding`'s walks, which go to Eleonora's Mac (#46). The commands are in the pull request.
+- (iii) against `gbm_funding`: **not run**, by Eleonora's ruling of 22 October 2026 on #966 (comment 6350221714): the Mac run of `gbm_funding`'s walks is skipped. Kill rule (iii) is not evaluated.
 - (iv) against its own pool (the scaled mean reversion, #941) on the 2024-26 days: grid CRPS skill -0.4% [-1.2%, +0.4%]. **Kill rule (iv) met**: the interval covers 0 or lies below it.
 - (v) the two-part rule on the scaled mean reversion, against the scaled mean reversion pooled: grid CRPS skill -1.2% [-2.1%, -0.4%]. **Kill rule (v) met**: the upper bound is below 0.
 
@@ -875,7 +875,7 @@ Added on Eleonora's ruling of 22 October 2026 (declaration amended before any sc
 
 ## Arm (iii)
 
-Not run in this record (`gbm_funding`'s walks are a long run; they go to Eleonora's Mac and the result returns as a commit on the pull request's branch).
+Not run in this record, by Eleonora's ruling of 22 October 2026 on #966 (comment 6350221714, relayed by the orchestrating session): the Mac run of `gbm_funding`'s walks, which would have scored arm (iii) and the `gbm_funding` reference rows, is skipped. Nothing is claimed about arm (iii) or those rows.
 
 ## Variant count
 

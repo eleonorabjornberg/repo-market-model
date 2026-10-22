@@ -13,7 +13,7 @@ against `gbm_funding`. Scored decision days have their five targets on or before
 Arms (i), (ii), (iv) and (v) run in the cloud in minutes: (iv) and (v) put the flag and the two-part rule on the best model,
 #941's scaled mean reversion (`repo_model.spread_mr_fhs`, variant "mad window 20 floor 0.5"), as well as on B1 (Eleonora's
 ruling of 22 October 2026). Arm (iii) and the reference rows of `gbm_funding` need `gbm_funding`'s walks, which take hours
-(#46: not run in the cloud). Build the published panel and the walks as the docstring of `scripts/spread_distribution_634.py`
+(#46: not run in the cloud; Eleonora's ruling of 22 October 2026 skips the Mac run, so the committed record has no (iii) section). Build the published panel and the walks as the docstring of `scripts/spread_distribution_634.py`
 says, then:
 
     PYTHONPATH=src python3 scripts/floor_flag_966.py score --panel PUB.csv --output OUT/floor_flag.json
@@ -384,8 +384,8 @@ def render(record: dict) -> str:
         out.append(f"- (ii) against its own pool (mean reversion) on the 2024-26 days: grid CRPS skill {skill_text(k2['row'])}. "
                    + ("**Kill rule met**: the interval covers 0 or lies below it." if k2["killed"] else "Kill rule not met: the interval lies above 0."))
     if k3 is None:
-        out.append("- (iii) against `gbm_funding`: **not run**: it needs `gbm_funding`'s walks, which go to Eleonora's Mac (#46). "
-                   "The commands are in the pull request.")
+        out.append("- (iii) against `gbm_funding`: **not run**, by Eleonora's ruling of 22 October 2026 on #966 "
+                   "(comment 6350221714): the Mac run of `gbm_funding`'s walks is skipped. Kill rule (iii) is not evaluated.")
     elif k3["killed"] is None:
         out.append("- (iii) against `gbm_funding` pooled: undefined (%s)." % k3["row"]["undefined"])
     else:
@@ -420,8 +420,9 @@ def render(record: dict) -> str:
     out += _sections("Arms (i) and (ii)", record["main"], (BASE, ff.ARM_B1, ff.ARM_MR, "B1", "B2"), ("B1", "B2", BASE), SPLITS)
     out += ["## Arm (iii)", ""]
     if "walks" not in record:
-        out += ["Not run in this record (`gbm_funding`'s walks are a long run; they go to Eleonora's Mac and the result returns as a commit "
-                "on the pull request's branch).", ""]
+        out += ["Not run in this record, by Eleonora's ruling of 22 October 2026 on #966 (comment 6350221714, relayed by the "
+                "orchestrating session): the Mac run of `gbm_funding`'s walks, which would have scored arm (iii) and the `gbm_funding` "
+                "reference rows, is skipped. Nothing is claimed about arm (iii) or those rows.", ""]
     else:
         w = record["walks_notes"]
         out += [f"{w['walk_days']:,} decision days covered by `gbm_funding`'s walks ({w['first']} to {w['last']}); its missing forecasts "
