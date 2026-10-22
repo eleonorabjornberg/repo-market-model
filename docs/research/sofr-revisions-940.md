@@ -27,6 +27,11 @@ already says. First prints from now on are kept by `scripts/sofr_first_print.py`
 
 ## Exposure of the labels (an upper bound, not an effect)
 
+> **Correction (#1019).** "Upper bound" here is wrong: this window is the reach of a 2 bp revision, the
+> smallest the New York Fed makes, and larger revisions reach further. The counts by revision size, and the
+> corrected wording, are in [`sofr-revision-exposure-1019-result.md`](sofr-revision-exposure-1019-result.md).
+> The figures below stand.
+
 Days 2018-04-03 to 2025-12-31 (1935 days with a SOFR row;
 `docs/decisions/lockbox.md` locks every later day). Spread = SOFR less the IOER or IORB in force that day (the
 tracked announcement table), on whole basis points, a day above a threshold when strictly above it. A revision

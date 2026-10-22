@@ -76,7 +76,8 @@ class ShardTests(unittest.TestCase):
         self.assertEqual(len(found), 1, "the suite lists its shards; the networking-off check waits on the same shards")
         for entry in found:
             self.assertEqual([int(n) for n in entry.split(",")], expected)
-        self.assertIn("'[1]' || '[" + ", ".join(map(str, expected)) + "]'", text, "the ml matrix lists the shards on a push")
+        pull_request = "[" + ", ".join(map(str, range(1, ci_shards.ML_SHARDS + 1))) + "]"
+        self.assertIn(f"'{pull_request}' || '[" + ", ".join(map(str, expected)) + "]'", text, "the ml matrix lists its shards on a pull request and the suite's on a push")
 
     def test_every_shard_job_gets_its_modules_from_the_script(self):
         text = (ROOT / ".github" / "workflows" / "tests.yml").read_text(encoding="utf-8")
@@ -121,6 +122,38 @@ class MlModuleTests(unittest.TestCase):
         self.assertIn("scripts/ci_shards.py ml-modules", text)
         self.assertNotIn("unittest test_ml test_tail_diagnostics test_cli_eval", text)
         self.assertNotIn("Every other module runs identically with or without it", text)
+
+    def test_each_ml_module_runs_in_exactly_one_ml_shard(self):
+        """The pull-request ml job is sharded (#1096): the scan's modules are split with the suite's weights."""
+        modules = sorted(ci_shards.ml_extra_modules())
+        split = ci_shards.assign(modules, ci_shards.load_weights(), ci_shards.ML_SHARDS)
+        self.assertEqual(len(split), ci_shards.ML_SHARDS)
+        ci_shards.check(modules, split)
+        self.assertEqual(sorted(m for mods in split.values() for m in mods), modules)
+
+    def test_the_ml_shard_command_prints_one_shard_and_the_shards_together_print_the_scan(self):
+        import contextlib
+        import io
+
+        def run(*argv):
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out):
+                self.assertEqual(ci_shards.main(list(argv)), 0)
+            return out.getvalue().split()
+
+        together = []
+        for n in range(1, ci_shards.ML_SHARDS + 1):
+            together += run("ml-modules", "--shard", str(n))
+        self.assertEqual(sorted(together), sorted(ci_shards.ml_extra_modules()))
+        self.assertEqual(len(together), len(set(together)))
+        with self.assertRaises(ValueError):
+            ci_shards.main(["ml-modules", "--shard", str(ci_shards.ML_SHARDS + 1)])
+
+    def test_the_pull_request_ml_job_runs_its_shard_and_keeps_the_slow_skip(self):
+        text = (ROOT / ".github" / "workflows" / "tests.yml").read_text(encoding="utf-8")
+        self.assertIn("scripts/ci_shards.py ml-modules --shard ${{ matrix.shard }}", text)
+        self.assertEqual(len(re.findall(r"REPO_MODEL_SKIP_SLOW=1 python3", text)), 1, "the slow skip is on the pull-request command only")
+        self.assertIn("REPO_MODEL_SKIP_SLOW=1 python3 -B -m unittest $(python3 scripts/ci_shards.py ml-modules --shard", text)
 
     def test_the_command_prints_the_scan(self):
         import contextlib

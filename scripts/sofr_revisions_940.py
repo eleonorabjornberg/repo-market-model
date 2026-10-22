@@ -22,6 +22,9 @@ What it can say and what it cannot:
   `tau - 1 <= s <= tau + 2` (up from `s <= tau`, down from `s > tau`). The count is an upper bound on the days at
   risk, given that some revision happened that day; it says nothing about how many did.
 
+Correction (#1019): "upper bound" below is wrong. The window is the reach of a 2 bp revision, the smallest the New
+York Fed makes; larger revisions reach further. See `docs/research/sofr-revision-exposure-1019-result.md`.
+
 Only days on or before 2025-12-31 are counted (`docs/decisions/lockbox.md` locks every later day).
 
 Stdlib only.
@@ -157,6 +160,11 @@ def render(result):
         "already says. First prints from now on are kept by `scripts/sofr_first_print.py` (`.github/workflows/sofr-first-print.yml`).",
         "",
         "## Exposure of the labels (an upper bound, not an effect)",
+        "",
+        "> **Correction (#1019).** \"Upper bound\" here is wrong: this window is the reach of a 2 bp revision, the",
+        "> smallest the New York Fed makes, and larger revisions reach further. The counts by revision size, and the",
+        "> corrected wording, are in [`sofr-revision-exposure-1019-result.md`](sofr-revision-exposure-1019-result.md).",
+        "> The figures below stand.",
         "",
         f"Days {result['window']['first']} to {result['window']['last']} ({result['window']['days']} days with a SOFR row;",
         "`docs/decisions/lockbox.md` locks every later day). Spread = SOFR less the IOER or IORB in force that day (the",
