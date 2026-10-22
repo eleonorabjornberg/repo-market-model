@@ -1,0 +1,93 @@
+{
+  "status": "declared by the pull request that closes #941 before any score was computed; a development study, never a verdict. Nothing is published: no variant joins any published declaration, `gbm_funding`'s declaration and `scripts/final_test_preregistration.py` do not change, no day after 2025-12-31 is scored, no lockbox day is scored, and no record in docs/runs/ is edited. Any change to the candidate is Eleonora's decision. Amendments made after a number was computed would be listed in `amendments` and named as such; there are none.",
+  "issue": 941,
+  "avenue": "#836 (filtered historical simulation); the ruling of 19 October 2026 on #941 and its comment 6273987279",
+  "hypothesis": "H5 (primary goal): the SOFR - IORB spread distribution in bp. Step 3, calibration of the predictive law, in particular the upper tail. Development tier",
+  "target": "spread_bps at the scored day, in basis points, as a 23-quantile distribution at each lead h = 1..5 (scoring_protocol.GRID)",
+  "base": {
+    "name": "spread_mr_level10 (#686), unscaled",
+    "module": "repo_model.spread_mean_reversion, unchanged",
+    "formula": "q_p(t+h) = level + phi^k * (last - level) + eps_h,p. level, k, phi, the two-year training window, the minimum of 60 pairs and the refit every 21 decision days are as in metadata/spread_distribution_686.json. Each variant reuses the base fit's phi, level and anchor and changes only the residual pool, as this file says"
+  },
+  "scale": {
+    "definition": "scale(r) at panel row r = max(floor, 1.4826 * median(|s_j - s_(j-1)|, j = r - window + 1 .. r)), where s is the panel's spread_bps. It reads rows r - window .. r and no row after r",
+    "named_estimator": "median absolute daily spread change (MAD of the changes about zero), times 1.4826",
+    "sensitivity_estimator": "the sample standard deviation (n - 1) of the same window of changes, in place of 1.4826 * median(|change|), with the same floor. It is the one named sensitivity: #836 found that the 2018-19 CRPS depends on the estimator",
+    "window_rows": 20,
+    "floor_bp": 0.5,
+    "as_of": "the scale at the anchor is read from rows at or before the anchor, the last row public at the decision instant (protocol_benchmarks._anchor runs both guards of the information-set rule); every row the scale reads is required public (protocol_benchmarks._require_public raises LookAheadError otherwise). No regime label and no other column is an input"
+  },
+  "fit": {
+    "pool": "for lead h, each training pair (origin o, target s, k rows apart) has the raw residual (spread[s] - level[o]) - phi^k * (spread[o] - level[o]), exactly as the base model forms it. It is divided by scale(o), the scale at its own origin; a pair whose origin has no scale (fewer than window + 1 rows) is left out. The 23 empirical quantiles of the standardised pool are kept (protocol_benchmarks.empirical_quantiles)",
+    "forecast": "level + phi^k * (last - level) + scale(anchor) * (the standardised pool's quantile), level by level; the order of the quantiles is kept, so no crossing",
+    "phi": "the base fit's, on all pairs: no new parameter",
+    "refit": "every 21 decision days, with the base fit; between refits the standardised pool is kept and last, level, k, the anchor and scale(anchor) are read afresh"
+  },
+  "variants": {
+    "count": 6,
+    "listed_in_full": [
+      {"name": "spread_mr_fhs_mad20_f0.5", "estimator": "mad", "window_rows": 20, "floor_bp": 0.5, "role": "the declared variant of #836"},
+      {"name": "spread_mr_fhs_mad10_f0.5", "estimator": "mad", "window_rows": 10, "floor_bp": 0.5, "role": "grid: window"},
+      {"name": "spread_mr_fhs_mad40_f0.5", "estimator": "mad", "window_rows": 40, "floor_bp": 0.5, "role": "grid: window"},
+      {"name": "spread_mr_fhs_mad20_f0.25", "estimator": "mad", "window_rows": 20, "floor_bp": 0.25, "role": "grid: floor"},
+      {"name": "spread_mr_fhs_mad20_f1.0", "estimator": "mad", "window_rows": 20, "floor_bp": 1.0, "role": "grid: floor"},
+      {"name": "spread_mr_fhs_sd20_f0.5", "estimator": "sd", "window_rows": 20, "floor_bp": 0.5, "role": "the one named sensitivity: the standard deviation"}
+    ],
+    "no_others": "no variant is added after a number is computed; the grid is a cross of one parameter at a time around the declared variant, not a full product"
+  },
+  "references": {
+    "unscaled": "spread_mr_level10 (#686): the base model, whose forecasts the walk reproduces exactly as spread_mean_reversion.walk does",
+    "benchmarks": "B1 and B2 of scoring protocol v1 (repo_model.protocol_benchmarks)",
+    "current_law": "gbm_funding (#634), walked per lead by scripts/spread_distribution_634.py walk, read only for the hit sequences below, and only when its walks are supplied; its declaration does not change"
+  },
+  "scoring": {
+    "scorer": "repo_model.scoring_protocol (#655), the development tier: no verdict, no registration",
+    "days": "decision days with a forecast of every model, whose five targets (h = 1..5 business days on the panel's calendar) fall on or before 2025-12-31; no day after 2025-12-31 is read; the scored days pass lockbox.require_unlocked",
+    "outcomes": "the panel's spread_bps at the target day, not the first-published vintage of protocol section 11",
+    "paired": "each variant against unscaled mean reversion, B1 and B2: skill = mean(d) / mean(S(benchmark)) with d = S(benchmark) - S(candidate), positive favours the candidate; scoring_protocol.paired_tests, the studentized stationary bootstrap (ruling 1), mean block 10 business days, 10,000 draws, seed 941; two-sided 90% interval. A comparison the studentization cannot resolve is reported as undefined, with the means",
+    "measures": [
+      "grid CRPS (23 levels), by lead and the mean over leads 1..5",
+      "upper-tail twCRPS, weight 1{z > 0 bp}, by lead and the mean over leads",
+      "exceedance calibration at +0, +5 and +10 bp: P(spread > tau) read off the 23 quantiles (repo_model.spread_mean_reversion.exceedance), the event on whole basis points strictly above tau (data.exceeds_bp); the Brier score paired like the CRPS, and the reliability slope and intercept of the logistic fit of the event on logit(p) (repo_model.reliability_regimes.fit; 1 and 0 for a reliable forecast) with a 90% stationary-bootstrap percentile interval and its difference from unscaled mean reversion on the same resamples",
+      "90% interval coverage (q05 to q95) and 50% interval coverage (q25 to q75): the share of cells whose outcome is inside, closed at both ends, with the same interval and its difference from unscaled mean reversion"
+    ]
+  },
+  "splits": {
+    "pooled": "one number per decision day (protocol section 3); the calibration measures are read on the cells (decision day, lead)",
+    "by_lead": "h = 1..5, one number per decision day at that lead",
+    "regime": "SplitDeclaration.regime of the target day (metadata/evaluation_splits.json): 2018-19, 2020, 2021-23, 2024, 2025-26; 2021-23 is called out",
+    "pressure_day_type": "SplitDeclaration.reporting_day_type of the target day: quarter_end, month_end, tax_date, ordinary; quarter-ends and ordinary days are called out",
+    "unit": "every split is on the target day: a target day's score is the mean over the leads that forecast it, and it belongs to the group of its own date; a group's days are tested as a subsequence, as in #761",
+    "min_days": "a group of fewer than 20 days is listed and not tested"
+  },
+  "hit_sequences": {
+    "ruling": "Eleonora, 19 October 2026, comment 6273987279 on #941: a by-lead hit sequence for gbm_funding's q90, q95 and q99, with three tests (Kupiec unconditional coverage, Christoffersen independence, Christoffersen conditional coverage), for the current law and for each recalibration variant",
+    "levels": [0.90, 0.95, 0.99],
+    "nominal_hit_probability": "1 - level: 0.10, 0.05, 0.01",
+    "sequence": "for lead h, the decision days in order, with hit = 1 when the outcome at day d + h is beyond the model's quantile at the level in its law for d + h. One sequence per model, level and lead",
+    "tests": "repo_model.coverage_tests: kupiec, christoffersen_independence, christoffersen_conditional_coverage (#993). Reporting only: nothing here sets a gate",
+    "hit_rule": "OPEN QUESTION, Eleonora's (#993, coverage_tests.hit_sequence takes the rule as a required argument): 'beyond' is y > q or y >= q, and whole-bp targets tie with a quantile. This study reports both rules, side by side, and chooses neither",
+    "days": "when gbm_funding's walks are supplied, every model is read on the decision days on which gbm_funding has a law at that lead, so the rows compare like with like; otherwise on the scored days. Pooled for all three tests; within a regime for all three (a regime is a run of consecutive days); within a pressure-day type for the Kupiec test only (the days of a type are not consecutive, so the independence tests are not read there)",
+    "models": "gbm_funding when its walks are supplied, unscaled mean reversion, each variant, B1 and B2"
+  },
+  "reading": {
+    "rules": [
+      "A variant's gain over unscaled mean reversion is read as present on a split when the 90% interval of its grid-CRPS skill over unscaled mean reversion excludes zero on the positive side, and as a loss when it excludes zero on the negative side; otherwise as undecided. A point estimate alone is not read.",
+      "A pooled figure is never read without the regime and pressure-day-type splits beside it; a gain pooled and a loss in 2018-19, 2021-23 or on quarter-end days is reported as mixed.",
+      "The standard deviation variant is read against the median-absolute-change variant of the same window and floor, as the one named sensitivity of the estimator.",
+      "A calibration measure moving toward its nominal value (slope toward 1, coverage toward 0.90 and 0.50, hit rate toward 1 - level) is reported with its interval; a hit-sequence p-value is reported as a p-value and is no gate.",
+      "Nothing in this study is a verdict, and the page says so. Whether any variant joins a candidate is Eleonora's decision."
+    ]
+  },
+  "questions": [
+    "The hit rule ('above' or 'at or above') for the hit sequences is open and is Eleonora's; both are reported.",
+    "The 2026 development days (#684) are not read here."
+  ],
+  "limits": {
+    "last_day": "2025-12-31",
+    "max_variants": 6,
+    "gbm_funding_declaration": "unchanged",
+    "preregistration": "scripts/final_test_preregistration.py is not touched"
+  },
+  "amendments": []
+}
