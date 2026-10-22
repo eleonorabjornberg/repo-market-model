@@ -131,6 +131,60 @@ class PageTests(unittest.TestCase):
         self.assertIn(script.base.fmt(cell, signed=True), self.text)
 
 
+class StudentizedTests(unittest.TestCase):
+
+    Y = [1 if i % 4 == 0 else 0 for i in range(60)]
+    MODEL = [0.8 if y else 0.2 + 0.01 * (i % 5) for i, y in enumerate(Y)]
+    REFERENCE = [0.5 + 0.1 * ((i * 7) % 5) for i in range(60)]
+
+    def test_the_influence_series_has_the_auroc_as_its_statistic_and_mean_zero(self):
+        theta, psi = script.auroc_influence(self.MODEL, self.Y)
+        self.assertAlmostEqual(theta, script.base.auroc(self.MODEL, self.Y))
+        self.assertAlmostEqual(sum(psi) / len(psi), 0.0)
+
+    def test_ties_count_half(self):
+        theta, _ = script.auroc_influence([1.0, 1.0, 1.0, 1.0], [1, 0, 1, 0])
+        self.assertAlmostEqual(theta, 0.5)
+
+    def test_no_auroc_without_both_kinds_of_day(self):
+        self.assertIsNone(script.auroc_influence([0.1, 0.2], [0, 0]))
+
+    def test_the_bound_is_below_the_point_value_and_reproducible(self):
+        a = script.studentized_bound(self.MODEL, self.REFERENCE, self.Y, seed=7, replications=200)
+        b = script.studentized_bound(self.MODEL, self.REFERENCE, self.Y, seed=7, replications=200)
+        self.assertEqual(a, b)
+        point = script.base.auroc(self.MODEL, self.Y) - script.base.auroc(self.REFERENCE, self.Y)
+        self.assertLess(a["lower_bound"], point)
+        self.assertEqual(a["draws_used"] + a["draws_dropped"], 200)
+        self.assertEqual(a["lag"], 10)
+        self.assertAlmostEqual(a["level"], 0.95)
+
+    def test_a_better_model_has_a_higher_bound_than_a_worse_one(self):
+        good = script.studentized_bound(self.MODEL, self.REFERENCE, self.Y, seed=3, replications=200)
+        worse = script.studentized_bound(self.REFERENCE, self.MODEL, self.Y, seed=3, replications=200)
+        self.assertGreater(good["lower_bound"], worse["lower_bound"])
+
+    def test_a_cell_with_no_variation_has_no_bound(self):
+        self.assertIsNone(script.studentized_bound(self.MODEL, self.MODEL, self.Y, seed=1, replications=50))
+
+    def test_score_document_attaches_the_bound_beside_the_percentile_interval(self):
+        rows = _cells({"2018-19": (date(2018, 4, 3), 60)})
+        result = script.score_document({"horizons": {"1": rows}, "panel_sha256": "x", "decision_days": 60, "walks": {}}, replications=30)
+        entry = result["definitions"]["non_ordinary"]["1"]["2018-19"]["rows"]["c_two_part_new"]["auroc_minus_reference"]
+        self.assertIn("interval", entry)
+        self.assertIn("lower_bound", entry["studentized"])
+
+    def test_the_page_shows_the_bound_and_records_the_ruling_not_a_question(self):
+        rows = _cells({"2018-19": (date(2018, 4, 3), 60)})
+        result = script.score_document({"horizons": {"1": rows}, "panel_sha256": "x", "decision_days": 60, "walks": {}}, replications=30)
+        text = script.render(result, json.loads(SCORE_934.read_text(encoding="utf-8")))
+        self.assertIn("studentized lower bound", text)
+        self.assertIn("6340379028", text)
+        self.assertNotIn("Marked question", text)
+        self.assertNotIn("is hers", text)
+        self.assertIn("over target days", text)
+
+
 class CommittedPageTests(unittest.TestCase):
 
     def test_the_committed_page_is_what_render_writes_from_the_committed_result(self):
