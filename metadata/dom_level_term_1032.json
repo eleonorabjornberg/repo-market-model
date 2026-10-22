@@ -1,0 +1,106 @@
+{
+ "calendar_first": "the term is read from the target row at every lead h = 1 to 5, on direct pairs (training_pairs=direct); a one-step fit is refused by repo_model.one_step_guard (#947)",
+ "caveat": "Lens C of #958: the lag-10 standard error behind the block length is itself noisy on this many days; every interval here is read with that in mind",
+ "cuts": {
+  "calendar_days": [
+   "quarter_end",
+   "month_end",
+   "tax_date",
+   "settlement"
+  ],
+  "dom_bucket": [
+   "1-5",
+   "6-14",
+   "15-18",
+   "19-23",
+   "24-31"
+  ],
+  "pooled": "all scored decision days",
+  "regimes": [
+   "2018-19",
+   "2020",
+   "2021-23",
+   "2024",
+   "2025-26"
+  ],
+  "target_day_types": [
+   "quarter_end",
+   "month_end",
+   "tax_date",
+   "settlement",
+   "ordinary"
+  ]
+ },
+ "hypothesis": "H5 step 2: a day-of-month level term for the 19th to 23rd trough (five-lens, Lens A of #958; #950 row 4)",
+ "interval": "stationary bootstrap, seed 1032, the studentized interval of ruling 1 (#739); the lower end of the two-sided 90% interval is the one-sided 95% lower bound",
+ "issue": 1032,
+ "limits": [
+  "no day after 2025-12-31",
+  "no lockbox day",
+  "no published record is edited",
+  "gbm_funding's declaration, contract.py and scripts/final_test_preregistration.py are not changed"
+ ],
+ "metrics": [
+  "grid_crps",
+  "upper_tail_twcrps"
+ ],
+ "panel": "#951's scratch panel AUG3 (as #1027); the term is written onto it at load by dom_calendar.add_columns, so the panel's bytes and digest do not move",
+ "reading_rules": {
+  "helps": "the term helps when the lower end of its grid-CRPS skill interval over gbm_funding_cal_direct on the pooled cut is above 0",
+  "loses": "'loses' means a skill interval wholly below 0, read on ordinary target days",
+  "no_verdict": "development data gives no verdict",
+  "pairing": "the term is read against gbm_funding_cal_direct, which differs from it by the term alone; the other references are reported on the same cuts",
+  "replacement": "adopting the term, or naming it with a variant of #1027 as the candidate, is a marked question for Eleonora",
+  "trough": "it helps on the trough when the same lower end on target days of the 19-23 bucket is above 0"
+ },
+ "references": [
+  "gbm_funding_cal_direct",
+  "gbm_funding_cal_aligned",
+  "gbm_funding",
+  "B1",
+  "B1_prime",
+  "B2",
+  "spread_mr_ctx"
+ ],
+ "settings": "as gbm_funding_cal_direct: seed, quantile grid, refit every 21 scored days, minimum history 61, n_estimators and depth of ml.fit_gradient_boosted_quantiles, leaf 5",
+ "status": "declared by the pull request that closes #1032 before any number was computed; a measurement, not a record. Nothing is published: the variant joins no published declaration, no day after 2025-12-31 is scored (docs/decisions/lockbox.md), no rule changes, the live record and pin do not move. Development data gives no verdict (scoring protocol v1, #46).",
+ "term": {
+  "buckets": [
+   [
+    1,
+    5
+   ],
+   [
+    6,
+    14
+   ],
+   [
+    15,
+    18
+   ],
+   [
+    19,
+    23
+   ],
+   [
+    24,
+    31
+   ]
+  ],
+  "column": "dom_bucket",
+  "definition": "the bucket number (0 to 4) of the calendar day of the month of the row's own date; the target row's value is served at every lead (rule 2 of asof.py, a calendar column)",
+  "module": "src/repo_model/dom_calendar.py (add_columns writes it onto the scratch panel; switched_on serves it as a calendar column for one run; it is not in contract.CALENDAR_FEATURES, whose bytes the final test freezes)",
+  "why_these_buckets": "the trough is the 19th to 23rd (-5.4 to -6.6 bp), the 6th to 14th sits at -4.8 to -5.6 bp and the 31st at +1.3 bp (Lens A of #958); the first week, the 15th to 18th and the 24th to month end are the remaining stretches. The edges are declared here, before any score, and a tree may split finer on days_to_month_end, which it already reads"
+ },
+ "variants": {
+  "gbm_funding_cal_direct_dom": {
+   "added": [
+    "dom_bucket"
+   ],
+   "aligned_one_step_with_the_term": "not declared: it would need an allow-list entry in repo_model.one_step_guard for its new regressors, which is Eleonora's decision (marked question on the pull request)",
+   "base": "gbm_funding_cal_direct of #1027 (metadata/aligned_calendar_1027.json): gbm_funding's published inputs at the lead, the calendar columns at every lead and the settlement columns at lead 1 from the target row, net_settlement and net_settlement_due_5d",
+   "min_samples_leaf": 5,
+   "training_pairs": "direct"
+  }
+ }
+}
