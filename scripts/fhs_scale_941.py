@@ -65,23 +65,6 @@ from repo_model.data import exceeds_bp, load_daily_panel  # noqa: E402
 from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
 from repo_model.splits import SplitError  # noqa: E402
 
-# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
-LOCKBOX_READS = {
-    "build_frame": (
-        "not_entry",
-        "forms the forecasts of the walk and the benchmarks on the decision days whose five targets are on or before the "
-        "declared last day; `score` passes every decision and target day to `require_scored_days` (the declared end and "
-        "`lockbox.require_unlocked`) in `cell_values` before any score is computed (#941)",
-    ),
-}
-LOCKBOX_CRPS = {
-    "cell_values": (
-        "guard",
-        "the grid CRPS and twCRPS of every (decision day, lead) cell: `require_scored_days` on every decision and "
-        "target day before any cell is computed (#941)",
-    ),
-}
-
 s686 = _load("spread_mean_reversion_686")
 s761 = _load("spread_mr_variants_761")
 

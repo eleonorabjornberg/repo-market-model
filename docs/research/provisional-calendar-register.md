@@ -149,6 +149,7 @@ data, dating, holidays and panel declarations). None of their scripts calls a on
 | `metadata/effr_pretrain.json` | `scripts/effr_pretrain.py` | direct | pressure models on direct pairs |
 | `metadata/evaluation_splits.json` | none | none | the regime and day-type splits: a declaration, no model |
 | `metadata/every_day_steps_687.json` | `scripts/every_day_steps_687.py` | direct | the every-day part, direct pairs |
+| `metadata/fhs_scale_941.json` | `scripts/fhs_scale_941.py` | none | mean reversion with volatility-scaled residuals: no gradient-boosted fit and no calendar column trained or read as an input (the day types only split the report); a development study whose figures are provisional under the calendar-first rule as #686's are, and the classification is Eleonora's (the pull request asks) |
 | `metadata/funding_panel_manifest.json` | none | none | the panel manifest: data |
 | `metadata/iorb_every_day_579.json` | `scripts/iorb_every_day_579.py` | direct | pressure models on direct pairs |
 | `metadata/market_holidays.json` | none | none | the holiday table: data |
