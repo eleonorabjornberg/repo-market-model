@@ -29,6 +29,16 @@ from typing import Dict, Mapping, Sequence
 from .asof import KIND_CALENDAR, KIND_OBSERVED, KIND_SCHEDULED, InformationRule
 from .splits import LookAheadError
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_READS = {
+    "field_flags_block": (
+        "not_entry",
+        "reads the as-of information set of the rows a live record's forecasts already read, only to flag "
+        "each field's age, carry and imputation; it scores nothing, selects no scored day, and the live "
+        "record's own scoring path refuses a locked day",
+    ),
+}
+
 FIELD_FLAGS_VERSION = 1
 FLAG_KEYS = ("age_hours", "latest_public", "carried", "imputed")
 CELL_KEYS = ("kind", "fields", "read_date", "rows_before_scored") + FLAG_KEYS
