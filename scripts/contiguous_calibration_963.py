@@ -31,7 +31,6 @@ Standard library only.
 from __future__ import annotations
 
 import argparse
-import contextlib
 import hashlib
 import importlib.util
 import json
@@ -49,7 +48,8 @@ sys.path.insert(0, str(REPO / "src"))
 
 from repo_model import lockbox, protocol_benchmarks as pb, scoring_protocol as sp  # noqa: E402
 from repo_model import spread_mr_variants as var  # noqa: E402
-from repo_model.metrics import stationary_bootstrap_indices  # noqa: E402
+# Defined in src so a spawn pool can import the scaled-score workers that read them (#1090).
+from repo_model.scaled_score_workers import contiguous_window_statistics, stationary_windows  # noqa: E402,F401
 
 RESEARCH = REPO / "docs" / "research"
 DECLARATION = REPO / "metadata" / "contiguous_calibration_963.json"
@@ -95,30 +95,6 @@ def _load(name):
 # -- the new pieces -------------------------------------------------------------------------------------------------------
 
 
-def contiguous_window_statistics(series: Sequence[float], *, days: int, hac_lag: int = sp.HAC_LAG) -> List[float]:
-    """Sorted studentized means of every window of `days` consecutive days of `series`, none wrapping.
-
-    A window starting at `s` holds `series[s:s + days]` for every `s` in `[0, n - days]`; its statistic is
-    `(mean_w - mean(series)) / se_w` with `se_w` its Newey-West standard error at `hac_lag`, as
-    `scoring_protocol.window_t_statistics` computes it.
-
-    Raises:
-        ValueError: the series is shorter than `days`, or `days` cannot carry the lag.
-    """
-
-    values = [sp._finite(v, "a daily difference") for v in series]
-    if days > len(values):
-        raise ValueError(f"a series of {len(values)} days holds no window of {days} days")
-    if days <= hac_lag:
-        raise ValueError(f"windows of {days} days cannot carry a lag-{hac_lag} long-run variance")
-    truth = sum(values) / len(values)
-    out = []
-    for start in range(len(values) - days + 1):
-        window = values[start:start + days]
-        out.append((sum(window) / days - truth) / sp._standard_error(window, hac_lag, "a window"))
-    return sorted(out)
-
-
 def effective_windows(n: int, days: int) -> float:
     """The non-overlapping windows of `days` days that `n` days hold."""
 
@@ -157,18 +133,6 @@ def events_per_year(events: Sequence[date]) -> float:
 
 def share_above(ordered: Sequence[float], value: float) -> float:
     return sum(1 for x in ordered if x > value) / len(ordered)
-
-
-@contextlib.contextmanager
-def stationary_windows():
-    """Within the block, `scoring_protocol`'s windows are stationary-bootstrap resamples (as #886 draws them)."""
-
-    original = sp._window_indices
-    sp._window_indices = lambda size, days, rng, block: list(stationary_bootstrap_indices(size, block, rng)[:days])
-    try:
-        yield
-    finally:
-        sp._window_indices = original
 
 
 def generator_statistics(series: Sequence[float], days: int, generator: str) -> List[float]:

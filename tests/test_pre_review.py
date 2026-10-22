@@ -14,6 +14,8 @@ class PreReviewTests(unittest.TestCase):
     def test_every_check_is_one_ci_runs(self):
         workflows = "".join(path.read_text() for path in (ROOT / ".github" / "workflows").glob("*.yml"))
         ran = {" ".join(line.split()) for line in re.findall(r"python3 (?:-B )?(scripts/\S+\.py[^\n$]*)", workflows)}
+        # The `pages` job runs the declared `ci:pages` checks through `ci_checks.py` (#1059), not one line each.
+        ran |= {" ".join(c["command"]) for c in pre_review.ci_checks.load() if c["where"] == "ci:pages"}
         for command in pre_review.commands():
             self.assertIn(" ".join(command[2:]), ran)
 

@@ -48,6 +48,15 @@ from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
 from repo_model.lockbox import require_unlocked  # noqa: E402
 from repo_model.splits import LookAheadError  # noqa: E402
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_READS = {
+    "alignment_row": (
+        "not_entry",
+        "reads one training pair's information set for a named decision day and checks both guards "
+        "(#865); scores nothing; the named days (`ALIGNMENT_DAYS`) all end on or before 2025-12-31",
+    ),
+}
+
 DECLARATION = REPO / "metadata" / "twin_diagnosis_865.json"
 SPLITS = REPO / "metadata" / "evaluation_splits.json"
 SOURCES = REPO / "metadata" / "sources.json"

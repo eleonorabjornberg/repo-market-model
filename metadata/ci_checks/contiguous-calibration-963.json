@@ -1,0 +1,8 @@
+{
+  "command": [
+    "scripts/contiguous_calibration_963.py",
+    "check"
+  ],
+  "where": "suite",
+  "pre_review": false
+}

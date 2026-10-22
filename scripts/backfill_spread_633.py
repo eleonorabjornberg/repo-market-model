@@ -50,6 +50,22 @@ from repo_model.data import load_daily_panel  # noqa: E402
 from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
 from repo_model.splits import SplitError  # noqa: E402
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_READS = {
+    "features": (
+        "not_entry",
+        "reads one forecast's declared inputs through InformationRule and checks both guards "
+        "(#633); scores nothing",
+    ),
+    "forecasts_command": (
+        "not_entry",
+        "makes the H4 measurement's forecasts and scores nothing (#633): its decision days end with "
+        "the lead-5 target on or before 2025-12-31 (`decision_indices`) and no training label after "
+        "it is read; `score_command` scores them only through scoring_protocol.day_scores, which "
+        "calls require_unlocked",
+    ),
+}
+
 DECLARATION = REPO / "metadata" / "backfill_spread_633.json"
 POSTING = REPO / "metadata" / "backfill_posting.json"
 REGISTRY = REPO / "metadata" / "sources.json"

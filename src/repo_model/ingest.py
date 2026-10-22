@@ -162,6 +162,15 @@ TEST_TRADE_MAX = 7_000_000
 #: `operationId` ends in " 99" (#933, Eleonora's ruling of 19 October 2026 on #916). A normal
 #: operation's limit is $500 bn; the labelled exercises are $75-250 mn.
 DESK_TEST_LIMIT_MAX = 250_000_000
+#: The pattern rule for the recurring afternoon operation (#938, Eleonora's ruling on #860 of 19 October 2026,
+#: read by her ruling of 20 October 2026): an overnight `Repo` operation with no note, released at one of these
+#: times (New York, as the Desk's results release states it), whose main line accepted between
+#: `PATTERN_BAND_MIN` and `PATTERN_BAND_MAX` (inclusive) and whose other lines each accepted under
+#: `PATTERN_SIDE_LINE_MAX`, is a test trade (`_is_afternoon_test_trade`). One band, no date.
+PATTERN_RELEASE_TIMES = ("13:29", "13:30")
+PATTERN_BAND_MIN = 90_000_000
+PATTERN_BAND_MAX = 130_000_000
+PATTERN_SIDE_LINE_MAX = 10_000_000
 #: The OFR's Short-term Funding Monitor, repo collection (#187): one
 #: unmodified `timeseries` response per series mnemonic, saved by
 #: `fetch_ofr_stfm_repo` and read by `_ofr_stfm_rows`. Off in every published
@@ -2089,6 +2098,71 @@ def _effective_accepted(accepted):
     return 0 if _is_test_trade(accepted) else accepted
 
 
+def _is_afternoon_test_trade(operation: Mapping[str, object]) -> bool:
+    """Whether the operation is the recurring afternoon test trade (#938, ruling on #860, option C as ruled 20 October 2026).
+
+    True for an overnight `Repo` operation with no note that was released at 13:29 or 13:30
+    (`PATTERN_RELEASE_TIMES`), whose main line (the line with the largest `amtAccepted`) accepted
+    `PATTERN_BAND_MIN` to `PATTERN_BAND_MAX` dollars, and whose other lines each accepted less than
+    `PATTERN_SIDE_LINE_MAX`. The main line must have one rate: if it states both `percentLowRate` and
+    `percentHighRate` they must be equal; a Full Allotment line states none and counts (a marked question
+    for Eleonora, #938). It reads only fields of the operation's own results release (`releaseTime`,
+    `term`, `note`, `details`), never a list of dates or ids. A morning (08:15) operation is a regular
+    operation, not a test trade. An operation the Desk labelled (`_is_small_value_exercise`) is dropped
+    before this is read.
+
+    An operation with no `releaseTime` is not one. Raises `ValueError` on a `Repo` operation whose
+    `releaseTime` is present and not "HH:MM", and on an afternoon one whose `details` is not a list of
+    lines with a numeric `amtAccepted`.
+    """
+
+    if operation.get("operationType") != "Repo" or operation.get("term") != "Overnight":
+        return False
+    note = operation.get("note")
+    if isinstance(note, str) and note.strip():
+        return False
+    release = operation.get("releaseTime")
+    if release is None or release == "":
+        return False
+    operation_id = operation.get("operationId")
+    if not isinstance(release, str) or not re.fullmatch(r"\d{1,2}:\d{2}", release):
+        raise ValueError(
+            f"New York Fed repo operation {operation_id!r} has a releaseTime that is not HH:MM ({release!r})"
+        )
+    if release.zfill(5) not in PATTERN_RELEASE_TIMES:
+        return False
+    details = operation.get("details")
+    if not isinstance(details, list):
+        raise ValueError(f"New York Fed repo operation {operation_id!r} has no list of details")
+    lines = []
+    for line in details:
+        amount = line.get("amtAccepted") if isinstance(line, dict) else None
+        if isinstance(amount, bool) or not isinstance(amount, (int, float)):
+            raise ValueError(
+                f"New York Fed repo operation {operation_id!r} has a detail line with no numeric amtAccepted ({amount!r})"
+            )
+        if amount > 0:
+            lines.append((amount, line))
+    if not lines:
+        return False
+    lines.sort(key=lambda pair: pair[0], reverse=True)
+    main_amount, main_line = lines[0]
+    if not PATTERN_BAND_MIN <= main_amount <= PATTERN_BAND_MAX:
+        return False
+    side = lines[1][0] if len(lines) > 1 else 0
+    if side >= PATTERN_SIDE_LINE_MAX:
+        return False
+    low, high = main_line.get("percentLowRate"), main_line.get("percentHighRate")
+    both_stated = all(isinstance(r, (int, float)) and not isinstance(r, bool) for r in (low, high))
+    return not both_stated or low == high
+
+
+def _effective_taken(operation: Mapping[str, object], accepted):
+    """The amount an operation accepted that counts as take-up: zero for a test trade (#802, #938)."""
+
+    return 0 if _is_afternoon_test_trade(operation) else _effective_accepted(accepted)
+
+
 def _is_small_value_exercise(operation: Mapping[str, object]) -> bool:
     """Whether the operation is a Desk test, a small-value exercise (#933, ruling on #916).
 
@@ -2131,7 +2205,8 @@ def _nyfed_srf_rows(artifact: SnapshotArtifact, payload: bytes):
     `Overnight`, on or after `SRF_INCEPTION`, that are not small-value
     exercises (`_is_small_value_exercise`), and sums `totalAmtAccepted` (US
     dollars) per `operationDate`, both operations of a two-operation day
-    included, in USD billions. A test trade (`_is_test_trade`, #802) adds
+    included, in USD billions. A test trade (`_is_test_trade`, #802, or the afternoon
+    pattern of `_is_afternoon_test_trade`, #938) adds
     nothing (#787). A day the facility operated and nothing was taken, a
     day of test trades only included, is 0.0. A day whose only operation was
     a small-value exercise yields no row. Term
@@ -2172,7 +2247,7 @@ def _nyfed_srf_rows(artifact: SnapshotArtifact, payload: bytes):
                 f"on {ref_date} has no numeric totalAmtAccepted ({accepted!r}); a "
                 f"day summed without one of its operations is not that day's total"
             )
-        totals[ref_date] = totals.get(ref_date, 0) + _effective_accepted(accepted)
+        totals[ref_date] = totals.get(ref_date, 0) + _effective_taken(operation, accepted)
     retrieved = datetime.fromisoformat(artifact.retrieved_at.replace("Z", "+00:00"))
     rows = []
     for ref_date in sorted(totals):
@@ -2266,7 +2341,7 @@ def _nyfed_repo_ops_rows(artifact: SnapshotArtifact, payload: bytes):
                     f"one of its operations is not that day's total"
                 )
             amounts.append(value)
-        taken = _effective_accepted(amounts[0])
+        taken = _effective_taken(operation, amounts[0])
         accepted[ref_date] = accepted.get(ref_date, 0) + taken
         submitted[ref_date] = submitted.get(ref_date, 0) + amounts[1]
         counts[ref_date] = counts.get(ref_date, 0) + (1 if taken > 0 else 0)

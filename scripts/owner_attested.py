@@ -28,7 +28,10 @@ are the ones a pull request may make only with her own approval:
 * `claude-files`: `CLAUDE.md` or any file under `.claude/` (ruling on PR #943, 19 October 2026);
 * `registration`: any file under `metadata/registrations/` or `docs/registrations/`, where a candidate's
   registration under `docs/decisions/scoring-protocol.md` section 2 is recorded (the protocol names no path yet;
-  these two are the ones the check watches until Eleonora names another).
+  these two are the ones the check watches until Eleonora names another);
+* `decisions`: any file under `docs/decisions/`, `docs/decisions/drafts/` included, added, changed, deleted or
+  moved (ruling on #1068, 21 October 2026; #1074). Moving a draft out of `drafts/` is a delete and an add, both
+  listed.
 
 A pull request that makes one cites her approval by appending an entry to
 `metadata/owner_attestations.json`: its kind, the issue, the comment id, and the
@@ -71,13 +74,14 @@ REGISTRY = "metadata/owner_attestations.json"
 RULE = "docs/decisions/drafts/owner-attestation.md"
 
 #: The binding kinds a registry entry may cite.
-KINDS = ("lockbox", "live-pin", "live-model", "claude-files", "registration")
+KINDS = ("lockbox", "live-pin", "live-model", "claude-files", "registration", "decisions")
 
 #: Binding by path: the exact files and the directories (with their trailing slash) that no pull request may change
 #: without her own GitHub action. `CLAUDE.md` is the one at the repository root, not a look-alike elsewhere.
 CLAUDE_FILES = ("CLAUDE.md",)
 CLAUDE_DIRS = (".claude/",)
 REGISTRATION_DIRS = ("metadata/registrations/", "docs/registrations/")
+DECISIONS_DIRS = ("docs/decisions/",)
 ENTRY_KEYS = {"kind", "issue", "comment_id", "phrase", "what"}
 
 
@@ -223,7 +227,7 @@ def _tiers(text):
 
 
 def path_kinds(paths) -> set:
-    """The path-bound kinds among `paths`: `CLAUDE.md` or `.claude/` files, and registration records."""
+    """The path-bound kinds among `paths`: """
 
     kinds = set()
     for path in paths:
@@ -231,6 +235,8 @@ def path_kinds(paths) -> set:
             kinds.add("claude-files")
         if path.startswith(REGISTRATION_DIRS):
             kinds.add("registration")
+        if path.startswith(DECISIONS_DIRS):
+            kinds.add("decisions")
     return kinds
 
 
@@ -375,6 +381,48 @@ def git_changed(base, head):
     return changed
 
 
+ZERO_SHA = "0" * 40
+
+
+def resolve_push_base(before, head):
+    """The base of a push range: `before`, or `head`'s first parent when `before` is absent or unreachable.
+
+    A push that creates a ref has an all-zero `before`, and a force-push can leave one this clone lacks.
+    """
+
+    if before and before != ZERO_SHA:
+        found = subprocess.run(
+            ["git", "cat-file", "-e", f"{before}^{{commit}}"], cwd=REPO, capture_output=True,
+        )
+        if found.returncode == 0:
+            return before
+    return f"{head}^"
+
+
+def push_range_report(base, head) -> str:
+    """One line per commit in `base..head` that touches a binding path: its short SHA, subject and those files."""
+
+    log = subprocess.run(
+        ["git", "log", "--no-merges", "--first-parent", "--format=%H%x09%s", f"{base}..{head}"],
+        cwd=REPO, capture_output=True, text=True,
+    ).stdout.splitlines()
+    log += subprocess.run(
+        ["git", "log", "--merges", "--first-parent", "--format=%H%x09%s", f"{base}..{head}"],
+        cwd=REPO, capture_output=True, text=True,
+    ).stdout.splitlines()
+    lines = []
+    for row in log:
+        sha, _, subject = row.partition("\t")
+        files = subprocess.run(
+            ["git", "diff", "--name-only", "--no-renames", f"{sha}^", sha],
+            cwd=REPO, capture_output=True, text=True,
+        ).stdout.splitlines()
+        bound = [path for path in files if path_kinds([path])]
+        if bound:
+            lines.append(f"  {sha[:8]} {subject}: {', '.join(bound)}")
+    return "\n".join(lines)
+
+
 # -- commands -----------------------------------------------------------------------
 
 
@@ -390,11 +438,19 @@ def _find(args):
 
 def _check(args):
     token = os.environ.get("GH_TOKEN")
-    verified = check(
-        git_reader(args.base), git_reader(args.head),
-        lambda comment_id: fetch_comment(args.repo, comment_id, token),
-        changed_paths=git_changed(args.base, args.head),
-    )
+    if args.push_before is not None:
+        args.base = resolve_push_base(args.push_before, args.head)
+    try:
+        verified = check(
+            git_reader(args.base), git_reader(args.head),
+            lambda comment_id: fetch_comment(args.repo, comment_id, token),
+            changed_paths=git_changed(args.base, args.head),
+        )
+    except NotOwnerAttested as exc:
+        report = push_range_report(args.base, args.head)
+        if report:
+            raise NotOwnerAttested(f"{exc}\nbinding paths changed in {args.base[:8]}..{args.head[:8]}:\n{report}") from exc
+        raise
     if not verified:
         print("owner-attested: no binding change and no new attestation")
     for comment in verified:
@@ -411,7 +467,9 @@ def build_parser():
     find.add_argument("--comments-file", help="a recorded REST payload instead of a fetch")
     find.set_defaults(func=_find)
     chk = sub.add_parser("check", help="binding changes between two commits cite her approval")
-    chk.add_argument("--base", required=True)
+    chk.add_argument("--base", help="the commit the change leaves from (a pull request's base)")
+    chk.add_argument("--push-before", help="a push's `before` SHA, used as the base; an all-zero or unknown SHA "
+                     "falls back to the head's first parent")
     chk.add_argument("--head", default="HEAD")
     chk.set_defaults(func=_check)
     return parser
@@ -419,6 +477,8 @@ def build_parser():
 
 def main(argv=None) -> int:
     args = build_parser().parse_args(argv)
+    if args.command == "check" and (args.base is None) == (args.push_before is None):
+        build_parser().error("check needs exactly one of --base and --push-before")
     try:
         args.func(args)
     except NotOwnerAttested as exc:

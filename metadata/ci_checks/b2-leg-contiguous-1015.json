@@ -1,0 +1,8 @@
+{
+  "command": [
+    "scripts/b2_leg_contiguous_1015.py",
+    "check"
+  ],
+  "where": "suite",
+  "pre_review": false
+}

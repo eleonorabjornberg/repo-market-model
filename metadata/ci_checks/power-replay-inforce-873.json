@@ -1,0 +1,8 @@
+{
+  "command": [
+    "scripts/power_replay_inforce_873.py",
+    "check"
+  ],
+  "where": "suite",
+  "pre_review": false
+}

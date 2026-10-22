@@ -51,6 +51,17 @@ from repo_model.data import audit_panel, exceeds_bp, load_daily_panel  # noqa: E
 from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
 from repo_model.lockbox import require_unlocked  # noqa: E402
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_READS = {
+    "lead_on_onsets": (
+        "not_entry",
+        "the pre-onset AUC of a modelled target's lead-1 median and of its as-of value (H9 step 2, "
+        "#706); walks the lead-1 fold grid, calls refuse_locked on every scored day before it reads "
+        "one, and fits and selects nothing (tests/test_richer_targets_706_script.py, "
+        "LockedDayTests)",
+    ),
+}
+
 DECLARATION = REPO / "metadata" / "richer_targets_706.json"
 SCREEN = REPO / "docs" / "pivot" / "evidence" / "richer-targets-639" / "screen.json"
 SPREAD_SCORE = REPO / "docs" / "pivot" / "evidence" / "spread-distribution-protocol" / "score.json"

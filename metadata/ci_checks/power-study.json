@@ -1,0 +1,8 @@
+{
+  "command": [
+    "scripts/power_study.py",
+    "check"
+  ],
+  "where": "suite",
+  "pre_review": false
+}

@@ -1,0 +1,11 @@
+{
+  "command": [
+    "scripts/emit_visual.py",
+    "--check"
+  ],
+  "env": {
+    "PYTHONPATH": "src"
+  },
+  "where": "ci:pages",
+  "pre_review": true
+}

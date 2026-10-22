@@ -1,0 +1,8 @@
+{
+  "command": [
+    "scripts/emit_results.py",
+    "--check"
+  ],
+  "where": "suite",
+  "pre_review": false
+}

@@ -1,0 +1,8 @@
+{
+  "command": [
+    "scripts/sofr_revisions_940.py",
+    "--check"
+  ],
+  "where": "suite",
+  "pre_review": false
+}

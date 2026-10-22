@@ -78,6 +78,32 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Dict, List, Mapping, Optional, Sequence, Tuple
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_READS = {
+    "distribution_history": (
+        "not_entry",
+        "the desk outputs' walk of the published distribution and as-of persistence at h = 1 to 5 "
+        "(#232), reporting only; it refuses a locked scored day itself before any fit "
+        "(tests/test_desk_outputs.py, DistributionHistoryLockboxTests, which calls the walk across "
+        "a blind-tier day with the fit stubbed unreachable)",
+    ),
+    "scarcity_at": (
+        "not_entry",
+        "reads the declared scarcity state as of one forecast's decision instant (#232) for display "
+        "beside it; reads no outcome and scores nothing",
+    ),
+}
+LOCKBOX_CRPS = {
+    "_series": (
+        "delegates",
+        "the series of days `history_command` chose, after its `require_unlocked`",
+    ),
+    "check_against_published": (
+        "delegates",
+        "compares the days `history_command` chose, after its `require_unlocked`",
+    ),
+}
+
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 

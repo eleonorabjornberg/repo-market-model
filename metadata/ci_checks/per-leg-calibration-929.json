@@ -1,0 +1,8 @@
+{
+  "command": [
+    "scripts/per_leg_calibration_929.py",
+    "check"
+  ],
+  "where": "suite",
+  "pre_review": false
+}

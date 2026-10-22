@@ -422,6 +422,8 @@ def walk(
         except smr.InsufficientHistory:
             out.skipped.append(day)
             continue
+        except LookAheadError:
+            raise  # a guard trip is never "no public row yet"
         except SplitError:
             if current is not None:
                 raise

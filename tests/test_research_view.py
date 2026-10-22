@@ -136,6 +136,107 @@ class Labels(unittest.TestCase):
         self.assertIn("Question for Eleonora", PAGE[at('id="best-performer"'):at('id="hypotheses"')])
 
 
+class Standings(unittest.TestCase):
+    """#1020: the page shows the development standings of the candidate the committed record names.
+
+    It used to print "not measured" for the development leader while `docs/pivot/evidence/h5-step4/score.json` named
+    `gbm_funding`. The page reads that record, `docs/pivot/evidence/b1-calendar-960/score.json` and its declaration, and
+    computes nothing.
+
+    Recorded mutation: in `scripts/research_view.py`, `best_html`, restore the old branch (render the development leader
+    as `NOT_MEASURED` whatever `standings` holds) and run
+    `PYTHONPATH=src:tests python3 -m unittest test_research_view.Standings`: `test_a_named_candidate_is_not_reported_as_not_measured`
+    failed with AssertionError.
+    """
+
+    STEP4 = "docs/pivot/evidence/h5-step4/score.json"
+    SCORE = "docs/pivot/evidence/b1-calendar-960/score.json"
+    DECLARATION = "metadata/b1_calendar_960.json"
+
+    def record(self, rel=None):
+        return json.loads((ROOT / (rel or self.SCORE)).read_text(encoding="utf-8"))
+
+    def best(self):
+        return PAGE[at('id="best-performer"'):at('id="hypotheses"')]
+
+    def leader(self):
+        block = self.best()
+        start = block.find("The development standings")
+        self.assertGreaterEqual(start, 0, "the page has no development standings paragraph")
+        return block[start:block.find("</table>", start) + 8]
+
+    def test_a_named_candidate_is_not_reported_as_not_measured(self):
+        name = self.record(self.STEP4)["best_candidate"]
+        self.assertTrue(name, "the step 4 record names no candidate")
+        block = self.best()
+        self.assertNotIn("The development leader.</span> <span class=\"rs-nm\">", block)
+        self.assertIn(name, self.leader())
+
+    def test_it_sets_the_candidate_against_all_three_and_names_no_single_leader(self):
+        leader = self.leader()
+        for model in ("B1", "B1&prime;", "spread_mr_ctx", "gbm_funding"):
+            self.assertIn(model, leader)
+        self.assertNotRegex(leader, r"(?i)\bleads\b|\bbest against\b|\bbeats B1\b")
+        # the reading rules are the record's own words, so the page does not call the gbm a winner
+        for rule in self.record()["reading_rules"]:
+            self.assertIn(research_view.esc(rule), self.best())
+
+    def test_it_is_labelled_and_marked_provisional_with_its_interval_type(self):
+        leader = self.leader()
+        self.assertIn(research_view.DEV_LABEL, leader)
+        self.assertIn(research_view.PROVISIONAL_LABEL, leader)
+        interval = self.record(self.DECLARATION)["scoring"]["interval"]
+        self.assertIn(research_view.esc(interval), self.best())
+
+    def test_every_number_is_in_the_record(self):
+        record = self.record()
+        allowed = set()
+
+        def collect(x):
+            if isinstance(x, dict):
+                for v in x.values():
+                    collect(v)
+            elif isinstance(x, list):
+                for v in x:
+                    collect(v)
+            elif isinstance(x, float):
+                allowed.update({f"{x:.2f}", f"{x:+.2f}", f"{100 * x:.1f}", f"{100 * x:+.1f}"})
+            elif isinstance(x, int) and not isinstance(x, bool):
+                allowed.add(str(x))
+
+        for key, label in (("pooled", "all decision days"), ("target_type", "ordinary")):
+            group = record["groups"][key][label]
+            grid = group["metrics"]["grid_crps"]
+            collect(group["days"])
+            collect(grid["means"])
+            for pair in grid["pairs"].values():
+                collect([pair["skill"], pair["skill_interval"]])
+        interval = research_view.esc(self.record(self.DECLARATION)["scoring"]["interval"])
+        text = re.sub(r"<code>.*?</code>", " ", self.leader().replace(interval, " "))
+        text = re.sub(r"<[^>]+>", " ", text)
+        text = re.sub(r"B1(?:&prime;)?|spread_mr_ctx|gbm_funding|[Ss]tep 4|\d{4}-\d{2}-\d{2}", " ", text)
+        found = re.findall(r"[+-]?\d+(?:\.\d+)?", text.replace("\u2212", "-").replace("&minus;", "-"))
+        self.assertTrue(found)
+        for number in found:
+            self.assertIn(number, allowed, f"{number} is on the page and in no committed record")
+
+    def test_it_reads_the_records_not_a_constant(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            for rel in (self.STEP4, self.SCORE, self.DECLARATION):
+                (Path(tmp) / rel).parent.mkdir(parents=True, exist_ok=True)
+                (Path(tmp) / rel).write_bytes((ROOT / rel).read_bytes())
+            score = Path(tmp) / self.SCORE
+            doc = json.loads(score.read_text(encoding="utf-8"))
+            doc["groups"]["pooled"]["all decision days"]["metrics"]["grid_crps"]["means"]["B1"] = 9.87
+            score.write_text(json.dumps(doc), encoding="utf-8")
+            self.assertIn("9.87", research_view.standings_html(research_view.standings(tmp)))
+
+    def test_no_record_naming_a_candidate_reads_not_measured(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertIsNone(research_view.standings(tmp))
+            self.assertIn(research_view.NOT_MEASURED, research_view.standings_html(None))
+
+
 class Sources(unittest.TestCase):
     def copy_tree(self, tmp):
         out = Path(tmp)
@@ -322,6 +423,32 @@ class CriticalPath(unittest.TestCase):
         done = json.loads((ROOT / "docs/research/milestones.json").read_text(encoding="utf-8"))["milestones"]
         for link in self.chain():
             self.assertEqual(link["done"], link["milestone"] in done, link["id"])
+
+
+class DeclaredInputs(unittest.TestCase):
+    """#1059: the page's inputs are declared once, in `research_view.INPUTS`; `emit_visual.py` digests that list."""
+
+    def test_load_reads_only_declared_inputs(self):
+        read = []
+        original = research_view.read
+        research_view.read = lambda repo, rel: (read.append(rel), original(repo, rel))[1]
+        try:
+            research_view.load(ROOT)
+        finally:
+            research_view.read = original
+        self.assertTrue(read)
+        directories = tuple(p + "/" for p in research_view.INPUTS)
+        for rel in read:
+            self.assertTrue(rel in research_view.INPUTS or rel.startswith(directories), f"{rel} is read but not in INPUTS")
+
+    def test_every_declared_input_is_digested_by_the_page(self):
+        spec = importlib.util.spec_from_file_location("emit_visual", ROOT / "scripts" / "emit_visual.py")
+        emit_visual = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(emit_visual)
+        digested = set(emit_visual.research_inputs(ROOT))
+        for rel in research_view.INPUTS:
+            self.assertTrue(rel in digested or any(d.startswith(rel + "/") or d == rel + ".md" for d in digested), rel)
+        self.assertEqual(set(research_view.input_files(ROOT)) | {"docs/research/log.md"}, digested)
 
 
 if __name__ == "__main__":

@@ -50,6 +50,16 @@ from repo_model.data import audit_panel, load_daily_panel  # noqa: E402
 from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
 from repo_model.splits import LookAheadError  # noqa: E402
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_READS = {
+    "as_of_at_lead": (
+        "not_entry",
+        "reads each scored day's as-of inputs at a lead for the descriptive diagnostic of the "
+        "unwarned onsets (#560); compares nothing, and walks _as_of_folds, which refuses a locked "
+        "day (tests/test_unwarned_onsets.py)",
+    ),
+}
+
 DECLARATION = REPO / "metadata" / "unwarned_onsets.json"
 SPLITS = REPO / "metadata" / "evaluation_splits.json"
 CANDIDATES = REPO / "metadata" / "pressure_judge" / "candidates"

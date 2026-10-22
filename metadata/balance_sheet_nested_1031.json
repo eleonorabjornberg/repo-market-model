@@ -1,0 +1,135 @@
+{
+ "adoption": "the relabel is not adopted here: adopting the turn label is Eleonora's (a data meaning, #959 criterion 4). The page reads with it (arm bs_turn) and without it (arm bs_coded); the columns are off in every published declaration",
+ "arms": {
+  "gbm_funding_cal_direct_bs_coded": {
+   "columns": [
+    "bs_coded_foreign_bank_quarter_end",
+    "bs_coded_foreign_bank_month_end",
+    "bs_coded_gsib_year_end"
+   ],
+   "flags": "repo_model.balance_sheet_days.flags: foreign_bank_quarter_end = the last 3 business days of March, June, September, December; foreign_bank_month_end = the last business day of a month that is not a quarter's last; gsib_year_end = the last 5 business days of December"
+  },
+  "gbm_funding_cal_direct_bs_turn": {
+   "columns": [
+    "bs_turn_foreign_bank_quarter_end",
+    "bs_turn_foreign_bank_month_end",
+    "bs_turn_gsib_year_end"
+   ],
+   "flags": "repo_model.balance_sheet_days.relabelled_flags, on the turn days of #959 (repo_model.turn_days): foreign_bank_quarter_end = the quarter's last business day and the first business day after it, for March, June, September and December; foreign_bank_month_end = the last business day and the first business day after it, in a month that is not a quarter's last; gsib_year_end = the last business day of December and the first business day of January. No other change: the rules, their sources, their public_from gates and their names are the coded ones"
+  }
+ },
+ "base": {
+  "control": "gbm_funding, #634's walks, the H5 candidate in force (Eleonora, 21 October 2026, on #1027: keep it for now and adopt nothing yet)",
+  "model": "gbm_funding_cal_direct",
+  "walks": "#1027's, on Eleonora's Mac (not committed): WALKS/gbm_funding_cal_direct_h1..5.json, from the same published panel and scratch panel; score refuses walks from other panels",
+  "what": "#1027's direct-pairs candidate: gbm_funding's published inputs at the lead, the calendar columns at the target day at every lead, treasury_settlement and its parts at lead 1, net_settlement and net_settlement_due_5d as observed; leaf 5; direct pairs (training_pairs='direct'); passes the #947 guard, which checks one-step fits only"
+ },
+ "benchmarks": [
+  "gbm_funding",
+  "gbm_funding_cal_direct",
+  "B1",
+  "B2"
+ ],
+ "calendar_first": "each flag is a function of the row's own date and metadata/market_holidays.json (scheduled, known in advance), written about the target day: declared in repo_model.target_day_columns, served from the scored row by asof rule 2 at every lead h = 1 to 5, and trained from the pair's own target row by direct pairs; a one-step fit on any of them is refused by the #947 guard",
+ "caveat": "Lens C of #958: the lag-10 standard error behind the block length is itself noisy on this many days; every interval here is read with that in mind",
+ "cuts": {
+  "day_groups": {
+   "coded_days": "target days on which any as-coded flag fires",
+   "december_26": "26 December, reported alone",
+   "penultimate": "the month's second-last business day (turn_days.penultimate_day), reported alone",
+   "turn_days": "target days labelled turn, quarter_end_turn or year_end: exactly the days the relabelled flags fire on",
+   "unflagged": "target days on which neither set fires"
+  },
+  "minimum": "a group of fewer than 20 target days is listed and not tested; every group lists its day count",
+  "pooled": "all scored decision days",
+  "regimes": [
+   "2018-19",
+   "2020",
+   "2021-23",
+   "2024",
+   "2025-26"
+  ],
+  "target_day_types": "the turn labels of #959 on the target day: turn, quarter_end_turn, year_end, tax_date, ordinary"
+ },
+ "december": "December is its own type: the year-end turn carries gsib_year_end and, as the rule names December among the quarter-ends, foreign_bank_quarter_end too. 26 December is flagged by no relabelled rule (the coded gsib window held it) and is reported as its own row. Whether the December turn should carry the quarter flag as well is a marked question for Eleonora",
+ "hypothesis": "H5 step 2 and H6 step 1 (nest the balance-sheet days after the turn relabel; five-lens review, Lens A, #958, #950 row 5)",
+ "interval": "stationary bootstrap, seed 1031, the studentized interval of ruling 1 (#739); the lower end of the two-sided 90% interval is the one-sided 95% lower bound",
+ "issue": 1031,
+ "limits": [
+  "no day after 2025-12-31",
+  "no lockbox day",
+  "no published record, declaration or decided value is edited; adopting the relabel is Eleonora's",
+  "gbm_funding's declaration, scripts/final_test_preregistration.py and the aligned (one-step) variant of #1027 are not touched"
+ ],
+ "metrics": [
+  "grid_crps",
+  "upper_tail_twcrps"
+ ],
+ "pairs": [
+  [
+   "gbm_funding_cal_direct_bs_coded",
+   "gbm_funding_cal_direct"
+  ],
+  [
+   "gbm_funding_cal_direct_bs_coded",
+   "B2"
+  ],
+  [
+   "gbm_funding_cal_direct_bs_coded",
+   "B1"
+  ],
+  [
+   "gbm_funding_cal_direct_bs_coded",
+   "gbm_funding"
+  ],
+  [
+   "gbm_funding_cal_direct_bs_turn",
+   "gbm_funding_cal_direct"
+  ],
+  [
+   "gbm_funding_cal_direct_bs_turn",
+   "B2"
+  ],
+  [
+   "gbm_funding_cal_direct_bs_turn",
+   "B1"
+  ],
+  [
+   "gbm_funding_cal_direct_bs_turn",
+   "gbm_funding"
+  ],
+  [
+   "gbm_funding_cal_direct_bs_turn",
+   "gbm_funding_cal_direct_bs_coded"
+  ],
+  [
+   "gbm_funding_cal_direct",
+   "B2"
+  ]
+ ],
+ "questions_for_eleonora": [
+  "adopt the turn relabel for the balance-sheet flags (and so for any published declaration that carries them)? Default: no, leave it off",
+  "should the December turn carry foreign_bank_quarter_end as well as gsib_year_end (as here), or gsib_year_end alone? Default: both, as the rule names December among the quarter-ends"
+ ],
+ "reading_rules": {
+  "against_b2": "the same sentence is written for each arm against B2 on the same days",
+  "beats_its_base": "an arm beats gbm_funding_cal_direct on its flagged days when the lower end of its grid-CRPS skill interval over the base on its own cut (bs_coded: coded_days, bs_turn: turn_days) is above 0",
+  "does_not_lose_elsewhere": "and does not lose on days neither set flags when the upper end of its skill interval over the base there is 0 or more; 'loses' means an interval wholly below 0",
+  "no_verdict": "development data gives no verdict",
+  "relabel": "the turn arm over the coded arm on the turn days is the relabel's own effect; it is read the same way and never decides adoption"
+ },
+ "ruling": "Eleonora, 19 and 20 October 2026 (the queue's guide, #958); calendar first, 20 October 2026: the model it changes reads calendar days at the target day, on direct pairs",
+ "same_in_both": "the only difference between the arms is the dates of three columns; inputs, leaf, seed, fold grid, refit cadence (21 scored days, 61 minimum history) and quantile grid are the base's",
+ "status": "declared by the pull request that closes #1031 before any number was computed; a measurement, not a record. Nothing is published: neither arm joins any published declaration, no day after 2025-12-31 is scored (docs/decisions/lockbox.md), no rule changes, the live record and pin do not move. Development data gives no verdict (scoring protocol v1, #46).",
+ "variants": {
+  "gbm_funding_cal_direct_bs_coded": {
+   "label": "the base plus the three flags as coded",
+   "run": true
+  },
+  "gbm_funding_cal_direct_bs_turn": {
+   "label": "the base plus the three flags on the turn days",
+   "run": true
+  }
+ },
+ "walk_time": "the base's own direct walks took several hours on Eleonora's Mac (#1027); this is two arms of five leads: needs-mac, overnight (#46)"
+}
