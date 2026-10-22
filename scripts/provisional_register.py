@@ -293,6 +293,16 @@ def one_step_fitter_callers(repo):
     return found
 
 
+def walk_readers(repo):
+    """Scripts that read the walks of `gbm_funding` as data (a `--walks` directory): the class `series`, besides the fitters' callers."""
+    found = []
+    for path in sorted((Path(repo) / "scripts").glob("*.py")):
+        text = path.read_text(encoding="utf-8")
+        if "--walks" in text and "gbm_funding" in text and not FITTER.search(text) and re.search(r"_\d+\.py$", path.name):
+            found.append(f"scripts/{path.name}")
+    return found
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.split("\n", 1)[0])
     parser.add_argument("--check", action="store_true", help="exit 1 when the page is not what the entry files generate")

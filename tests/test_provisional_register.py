@@ -24,6 +24,9 @@ Recorded mutations (each applied to the tree, the named test run, and reverted):
 * `TestEveryDeclarationIsClassified.test_every_one_step_fitter_caller_has_a_producer_file`: delete
   `metadata/provisional/producers/h9_nested_842.json`; the test failed with AssertionError (`['scripts/h9_nested_842.py']` is a
   caller with no producer file).
+* `TestEveryDeclarationIsClassified.test_every_script_reading_a_gbm_funding_walk_is_registered`: delete
+  `metadata/provisional/results/pr_1108.json`; the test failed with AssertionError (`['scripts/block_length_1022.py']` reads the
+  walks and has no result row).
 * `TestThePageIsGenerated.test_the_page_is_current`: on the page change the class of the `scripts/h9_nested_842.py` row to
   `b`; the test failed with AssertionError (the producers table is stale).
 * `TestThePageMark.test_a_registered_log_entry_carries_the_mark`: in `scripts/research_view.py` change
@@ -220,6 +223,22 @@ class TestEveryDeclarationIsClassified(unittest.TestCase):
         for script in callers:
             with self.subTest(script=script):
                 self.assertTrue((ROOT / register.ENTRIES / "producers" / f"{Path(script).stem}.json").is_file())
+
+    #: Scripts that read a `gbm_funding` walk and have no result row yet: finding #1111's second half, not settled here.
+    UNREGISTERED_SERIES_READERS = ("scripts/b1_calendar_960.py", "scripts/per_leg_calibration_929.py")
+
+    def test_every_script_reading_a_gbm_funding_walk_is_registered(self):
+        """#1111: a script that reads the walks of `gbm_funding` as data (class `series`) needs a result row, as a caller of a
+        one-step fitter needs a producer file. A script is registered by a producer file, a cleared row, or a result row for
+        the directive its file name ends in."""
+        readers = register.walk_readers(ROOT)
+        self.assertIn("scripts/block_length_949.py", readers)
+        producers = {entry["script"] for entry in ENTRIES["producers"] + ENTRIES["cleared"]}
+        directives = {entry["directive"] for entry in ENTRIES["results"]}
+        missing = sorted(script for script in readers
+                         if script not in producers and int(re.search(r"_(\d+)\.py$", script).group(1)) not in directives)
+        self.assertEqual(missing, sorted(self.UNREGISTERED_SERIES_READERS),
+                         f"scripts that read a gbm_funding walk and have no result row: {missing}")
 
     def test_the_frozen_exemptions_of_the_one_step_guard_are_named_in_the_register(self):
         """#947's guard refuses a calendar or scheduled regressor in a one-step fit, except two frozen declarations: both are
