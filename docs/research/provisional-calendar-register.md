@@ -144,6 +144,7 @@ data, dating, holidays and panel declarations). None of their scripts calls a on
 | `metadata/all_inputs.json` | `scripts/all_inputs.py` | direct | `ml.pressure_all_inputs_exceedance`, direct pairs |
 | `metadata/announcement_dating.json` | `scripts/announcement_dating_rescore.py` | direct | a re-score of pressure models under announcement-dated settlements |
 | `metadata/backfill_spread_633.json` | `scripts/backfill_spread_633.py` | direct | its own quantile estimator on pairs read through `InformationRule.observation` at each target's decision instant |
+| `metadata/calendar_mr_1115.json` | `scripts/calendar_mr_1115.py` | direct | scaled mean reversion with additive calendar, scheduled and FOMC terms read from the target row on direct pairs (repo_model.spread_mr_calendar, guarded by one_step_guard with no allow-list entry); no gradient-boosted fit is called |
 | `metadata/combined_model_561.json` | `scripts/combined_model_561.py` | direct | `_combined_pairs`, direct pairs |
 | `metadata/derived_features_631.json` | `scripts/derived_features_631.py` | direct | pressure models on direct pairs |
 | `metadata/effr_pretrain.json` | `scripts/effr_pretrain.py` | direct | pressure models on direct pairs |
