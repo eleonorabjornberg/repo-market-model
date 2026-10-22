@@ -14,10 +14,14 @@ from __future__ import annotations
 
 from .contract import CALENDAR_FEATURES
 
-__all__ = ["FOMC_TARGET_DAY_COLUMNS", "TARGET_DAY_COLUMNS"]
+__all__ = ["DOM_TARGET_DAY_COLUMNS", "FOMC_TARGET_DAY_COLUMNS", "TARGET_DAY_COLUMNS"]
 
 #: The FOMC meeting columns of `fomc_calendar.add_columns` (#1038): read at the decision instant, written about the
 #: target day, and not in `CALENDAR_FEATURES` (no published panel or declaration reads them).
 FOMC_TARGET_DAY_COLUMNS = frozenset({"fomc_meeting_day", "fomc_days_to_next_meeting"})
 
-TARGET_DAY_COLUMNS = CALENDAR_FEATURES | FOMC_TARGET_DAY_COLUMNS
+#: The day-of-month bucket of `dom_calendar.add_columns` (#1032): a function of the date, read at the target day, and not in
+#: `CALENDAR_FEATURES` (no published panel or declaration reads it; `dom_calendar.switched_on` serves it for one run).
+DOM_TARGET_DAY_COLUMNS = frozenset({"dom_bucket"})
+
+TARGET_DAY_COLUMNS = CALENDAR_FEATURES | FOMC_TARGET_DAY_COLUMNS | DOM_TARGET_DAY_COLUMNS
