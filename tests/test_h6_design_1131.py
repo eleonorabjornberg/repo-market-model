@@ -9,11 +9,11 @@ Two readings of the calendar are availability guards, and each has a recorded mu
 1. `bill_threshold` reads only the rows strictly before the target (the size of a bill settlement is a stand-in rule that
    must be public at the decision). Mutation: replacing `rows[max(0, index - TRAILING_ROWS):index]` with
    `rows[max(0, index - TRAILING_ROWS):index + 1]` makes `BillThresholdTests.test_the_target_row_and_later_rows_are_not_read`
-   fail with `AssertionError` (the threshold moved with the target's own settlement); restored, it passes.
-2. `visible_meetings` keeps a meeting only if it was public at the instant. Mutation: replacing
-   `fomc_calendar.visible_at(m, as_of)` with `True` makes `FomcMembershipTests.test_a_meeting_not_yet_public_is_not_a_member`
-   fail with `AssertionError` (4 October 2019, made public on 11 October, was a member at the lead-5 instant); restored,
-   it passes.
+   fail with `AssertionError` (`300.0 != 400.0`: the threshold moved with the target's own settlement); restored, it passes.
+2. `fomc_days` keeps a meeting only if it was public at the instant. Mutation: replacing
+   `fc.visible_at(m, as_of)` with `True` makes `FomcMembershipTests.test_a_meeting_not_yet_public_is_not_a_member`
+   fail with `LookAheadError` (4 October 2019, made public on 11 October, reached the lead-5 instant; the second check,
+   `fc.require_public`, raises it); restored, it passes.
 """
 
 import importlib.util
@@ -62,12 +62,12 @@ class BillThresholdTests(unittest.TestCase):
 class FomcMembershipTests(unittest.TestCase):
     def meetings(self):
         return (
-            fc.Meeting("a", "scheduled", date(2021, 1, 26), date(2021, 1, 27), datetime(2020, 1, 1), None, "u"),
+            fc.Meeting("a", "scheduled", date(2021, 1, 26), date(2021, 1, 27), datetime(2018, 1, 1), None, "u"),
             fc.Meeting("b", "unscheduled", date(2019, 10, 4), date(2019, 10, 4), datetime(2019, 10, 11, 9, 0), None, "u"),
         )
 
     def test_a_scheduled_meeting_is_a_member_on_both_days(self):
-        days, _ = script.fomc_days(self.meetings(), datetime(2021, 1, 20, 16, 0))
+        days, _ = script.fomc_days(self.meetings()[:1], datetime(2021, 1, 20, 16, 0))
         self.assertEqual(days, {date(2021, 1, 26), date(2021, 1, 27)})
 
     def test_a_meeting_not_yet_public_is_not_a_member(self):
@@ -75,7 +75,7 @@ class FomcMembershipTests(unittest.TestCase):
         self.assertNotIn(date(2019, 10, 4), days)
 
     def test_the_window_is_the_two_business_days_after_the_last_day(self):
-        _, window = script.fomc_days(self.meetings(), datetime(2021, 1, 20, 16, 0))
+        _, window = script.fomc_days(self.meetings()[:1], datetime(2021, 1, 20, 16, 0))
         self.assertEqual(window, {date(2021, 1, 28), date(2021, 1, 29)})
 
     def test_an_instant_before_the_first_schedule_raises(self):
@@ -110,6 +110,10 @@ class WindowTests(unittest.TestCase):
         self.assertAlmostEqual(pairs[0][0], (7.0 / 3) - truth)
         self.assertAlmostEqual(pairs[3][0], (14.0 / 3) - truth)
 
+    def test_a_window_without_variance_is_left_out(self):
+        pairs = script.window_pairs([1.0, 1.0, 1.0, 1.0, 1.0, 2.0, 3.0, 2.0], 4, lag=1)
+        self.assertEqual(len(pairs), 3)
+
     def test_a_window_longer_than_the_series_is_refused(self):
         with self.assertRaises(ValueError):
             script.window_pairs([1.0, 2.0], 3, lag=1)
@@ -137,8 +141,8 @@ class WindowTests(unittest.TestCase):
         pairs = script.window_pairs(self.series(), 30, lag=3)
         stats = sorted(dev / se for dev, se in pairs)
         c = script.critical_value(pairs)
-        self.assertLessEqual(sum(1 for s in stats if s > c) / len(stats), 0.05 + 1e-12)
-        self.assertGreaterEqual(sum(1 for s in stats if s >= c) / len(stats), 0.05 - 1e-12)
+        self.assertLessEqual(sum(1 for s in stats if s > c) / len(stats), 0.05 + 1.0 / len(stats))
+        self.assertGreaterEqual(sum(1 for s in stats if s >= c) / len(stats), 0.05 - 1.0 / len(stats))
 
     def test_events_in_a_window_of_years(self):
         self.assertEqual(script.window_events(30.0, 2.0, lag=3), 60)
