@@ -27,7 +27,7 @@ Each encoding is a function of its own row and earlier rows, declared on the uni
 ## Marked questions for Eleonora
 
 1. **The reserves ratio's denominator.** Lens D's list says "reserves as the as-of ratio already built for H7", which divides by commercial banks' total assets (H.8). That adds the H.8 as a slower leg, about ten days back, whereas this directive asks for "the same publication instants". Default (declared): reserves over their own trailing-year median, which keeps the reserves' instant. Option 2: the H7 ratio to bank total assets, as a second arm after the first has been read (#634 variant (b) tried it without gain). Option 3: both in one declared variant.
-2. **Which #1027 variant to build on.** Default (declared): the direct one. The aligned one-step variant needs an allow-list entry per changed regressor set in `one_step_guard.ONE_STEP_ALLOW_LIST` (Eleonora's; the #1027 entries end on 15 November 2026 and name the raw levels). Option 2: admit entries for the encoded regressors and add the aligned arm.
+2. **Which #1027 variant to build on.** Default (declared): the direct one. The aligned one-step variant needs an allow-list entry per changed regressor set in `one_step_guard.ONE_STEP_ALLOW_LIST` (Eleonora's; the #1027 entries carry an end date and name the raw levels). Option 2: admit entries for the encoded regressors and add the aligned arm.
 3. **SOFR less its 25th percentile.** The directive lists p75 less SOFR; Lens D's list adds SOFR less p25. Declared: both, so that no raw percentile level stays among the inputs. Option 2: p75 only, and drop `sofr_p25` from the inputs.
 
 ## What the result page will report (criterion 3)
