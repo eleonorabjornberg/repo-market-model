@@ -994,7 +994,7 @@ Refits in which each term entered the fit (of 89 refits), by lead 1 to 5, arm (s
 | settlement_coupon | 89 | 0 | 0 | 0 | 0 |
 | tax_date | 89 | 89 | 89 | 89 | 89 |
 
-The scarcity state of the scored decisions: abundant 1041, ample 313, tight 41, scarce 460; unknown 0. The Huber fit of (s3) took 19.9 passes on average and reached its cap of 50 passes (without the coefficients settling to 1e-8) in 10 of 445 fits (refit by lead).
+The scarcity state of the scored decisions: abundant 1041, ample 313, tight 41, scarce 460; unknown 0. The Huber fit of (s3) took 19.9 iterations on average and reached its cap (`MAX_ITERATIONS` = 50) without the coefficients settling to 1e-8 in 10 of 445 fits (refit by lead).
 
 ## What this is not
 

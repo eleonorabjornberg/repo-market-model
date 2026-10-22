@@ -684,8 +684,8 @@ def render(r: dict) -> str:
         out.append(f"| {term} | " + " | ".join(str(x) for x in counts) + " |")
     mix = r["state_mix"]
     out += ["", f"The scarcity state of the scored decisions: abundant {mix['0']}, ample {mix['1']}, tight {mix['2']}, scarce {mix['3']}; "
-            f"unknown {r['notes']['decisions_with_unknown_state']}. The Huber fit of (s3) took {r['robust_fits']['mean_passes']:.1f} passes on average "
-            f"and reached its cap of {r['robust_fits']['cap']} passes (without the coefficients settling to 1e-8) in {r['robust_fits']['capped']} of "
+            f"unknown {r['notes']['decisions_with_unknown_state']}. The Huber fit of (s3) took {r['robust_fits']['mean_passes']:.1f} iterations on average "
+            f"and reached its cap (`MAX_ITERATIONS` = {r['robust_fits']['cap']}) without the coefficients settling to 1e-8 in {r['robust_fits']['capped']} of "
             f"{r['robust_fits']['fits']} fits (refit by lead).", ""]
     out += ["## What this is not", "",
             "Development data from 2018 to 2025, split by regime and target-day type, never a verdict. The arms read the calendar at the target "
