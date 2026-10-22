@@ -28,10 +28,12 @@ penultimate days with hot last days, and the same label feeds the mean-reversion
 3. **The definition is a function of the date and the holiday table alone.** No source, publication time or revision is
    read, so no leakage or staleness guard is involved.
 4. **It replaces `month_end` (two business days) as the type a result is reported by and B2 pools by.** One place in `src/`
-   holds it, `repo_model.turn_days.turn_day_type`. `SplitDeclaration.reporting_day_type` delegates to it, and so do all its
-   readers: `protocol_benchmarks.b2_forecast`, `spread_mean_reversion.ordinary_levels`, `b1_calendar`, `ranking_daytype`,
-   `anchor_day_type`, `risk_dates.is_risk_date(..., reporting_on=...)` (and so H6's `risk_date_spread` and
-   `spread_mr_variants.is_risk_day`), and the day-type splits of the scoring pages.
+   holds it, `repo_model.turn_days.reporting_day_type` (over `turn_day_type`). Every reader of `SplitDeclaration.reporting_day_type`
+   calls it instead: `protocol_benchmarks.b2_forecast`, `spread_mean_reversion.ordinary_levels`, `b1_calendar`,
+   `ranking`, `ranking_daytype`, `anchor_day_type`, `risk_dates.is_risk_date(..., reporting_on=...)` (and so H6's
+   `risk_date_spread` and `spread_mr_variants`), so the scoring pages' day-type splits follow. `SplitDeclaration` itself is
+   not edited: it is part of the live scorer's frozen declaration (`scripts/live_score.py`, `LIVE_SOURCE`), and its own
+   `reporting_day_type` keeps reading the two-day month-end.
 5. **Not changed.** The calendar columns (`days_to_month_end`, `quarter_end`, `tax_date`), `SplitDeclaration.day_type` (the
    frozen scorecaster's window counts calendar days), the panel, `metadata/evaluation_splits.json`, every published record in
    `docs/runs/` and every published figure. Published records are not re-scored. New pages use the definition once it is in

@@ -31,6 +31,7 @@ from dataclasses import dataclass
 from datetime import date, time
 from typing import Dict, List, Mapping, Optional, Sequence
 
+from . import turn_days
 from . import protocol_benchmarks as pb
 from . import risk_dates
 from . import spread_mr_variants as smv
@@ -68,7 +69,7 @@ def risk_day_type(
         values, risk_dates.NON_ORDINARY, splits=splits, coupon_clause=coupon_clause, reporting_on=when
     ):
         return None
-    kind = splits.reporting_day_type(when, values)
+    kind = turn_days.reporting_day_type(splits, when, values)
     return kind if kind in _CALENDAR_RISK_TYPES else "settlement"
 
 

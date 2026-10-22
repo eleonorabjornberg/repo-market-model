@@ -1,7 +1,7 @@
 """#1135: the month-end turn definition is one function, behind the decision record, inert until it is merged.
 
 `docs/decisions/drafts/month-end-turn.md` drafts the record; `turn_days.IN_FORCE` is the switch, and it is `False` until the
-record sits in `docs/decisions/`. While it is off, `SplitDeclaration.reporting_day_type` (B2's pools, the mean-reversion
+record sits in `docs/decisions/`. While it is off, `turn_days.reporting_day_type` (B2's pools, the mean-reversion
 level, the day-type splits) and `risk_dates.is_risk_date(..., reporting_on=...)` give exactly what they gave before, so no
 published record can move. With it on, both read the turn labels of `turn_days`. Nothing here reads a source, a publication
 time or a revision: every label is a function of the date and the holiday table, so no leakage guard is added and no
@@ -30,7 +30,7 @@ def values(day, *, quarter_end=0.0, tax=0.0, to_end=10.0, coupons=0.0):
 
 
 def reporting(day, **kw):
-    return SPLITS.reporting_day_type(day, values(day, **kw))
+    return td.reporting_day_type(SPLITS, day, values(day, **kw))
 
 
 def on(flag=True):
@@ -97,7 +97,7 @@ class TestTheDefinitionInForce(unittest.TestCase):
         row = values(date(2019, 5, 31))
         row["tax_date"] = None
         with on(), self.assertRaises(ValueError):
-            SPLITS.reporting_day_type(date(2019, 5, 31), row)
+            td.reporting_day_type(SPLITS, date(2019, 5, 31), row)
 
     def test_the_risk_date_set_follows_the_label(self):
         def risk(day, **kw):
@@ -127,6 +127,21 @@ class TestTheDefinitionInForce(unittest.TestCase):
         with on():
             kinds = {d: reporting(d, to_end=t) for d, t in ((date(2019, 5, 30), 1.0), (date(2019, 5, 31), 0.0))}
         self.assertEqual(kinds, {date(2019, 5, 30): "ordinary", date(2019, 5, 31): "turn"})
+
+
+class TestTheDeclaredSplitIsUntouched(unittest.TestCase):
+    def test_the_frozen_split_declaration_still_reads_the_legacy_month_end_even_when_the_record_is_on(self):
+        # evaluation_splits.SplitDeclaration is in the live scorer's frozen declaration; the new reading never edits it
+        with on():
+            self.assertEqual(SPLITS.reporting_day_type(date(2019, 5, 30), values(date(2019, 5, 30), to_end=1.0)), "month_end")
+
+    def test_a_substitute_split_object_keeps_its_own_reading_when_the_record_is_on(self):
+        class Own:
+            def reporting_day_type(self, when, row):
+                return "own"
+
+        with on():
+            self.assertEqual(td.reporting_day_type(Own(), date(2019, 5, 31), values(date(2019, 5, 31))), "own")
 
 
 class TestTheDaySetsThatMove(unittest.TestCase):

@@ -22,6 +22,7 @@ from datetime import date
 from typing import Mapping, Optional, Tuple
 
 from . import data
+from .evaluation_splits import SplitDeclaration
 
 #: Whether the month-end turn record (#1135) is in force. It is a draft, `docs/decisions/drafts/month-end-turn.md`, until
 #: Eleonora merges it into `docs/decisions/month-end-turn.md`; the PR that moves it there flips this to `True`
@@ -41,9 +42,28 @@ TURN_LABELS = frozenset({TURN, QUARTER_END_TURN, YEAR_END})
 
 
 def in_force() -> bool:
-    """Whether `SplitDeclaration.reporting_day_type` reads the turn labels (the record of #1135 is merged)."""
+    """Whether `reporting_day_type` reads the turn labels (the record of #1135 is merged)."""
 
     return IN_FORCE
+
+
+def reporting_day_type(splits, when: date, values: Mapping[str, Optional[float]]) -> str:
+    """The pressure-day type a result is reported by and B2 pools by: the one definition of #1135.
+
+    While `IN_FORCE` is `False` this is `splits.reporting_day_type(when, values)` exactly. Once the record is in force it is
+    `turn_day_type` on the day's date and its `tax_date` column, for a `SplitDeclaration` (which still checks the row's calendar
+    columns, so a hole is a `ValueError`). Any other object with a `reporting_day_type` (`TurnLabels`, `tax_date_october`'s
+    labels) keeps its own reading. `evaluation_splits.SplitDeclaration` is part of the frozen live declaration
+    (`scripts/live_score.py`, `LIVE_SOURCE`) and is not edited: every reader calls this function instead.
+
+    Raises:
+        ValueError: as `SplitDeclaration.reporting_day_type`, and if the market holiday table does not cover the day.
+    """
+
+    if IN_FORCE and isinstance(splits, SplitDeclaration):
+        splits.day_type(values)
+        return turn_day_type(when, tax_date=float(values["tax_date"]) == 1.0)
+    return splits.reporting_day_type(when, values)
 
 
 def turn_days_of_month(year: int, month: int) -> Tuple[date, date]:
@@ -132,7 +152,7 @@ class TurnLabels:
 def day_set_changes(first: date, last: date, *, splits) -> dict:
     """The business days from `first` to `last` whose reporting day type the turn record changes, from the calendar alone.
 
-    Reads no panel and no score: the legacy type is `splits.legacy_reporting_day_type` on the day's own calendar columns
+    Reads no panel and no score: the legacy type is `splits.reporting_day_type` (the declared `SplitDeclaration`, unedited) on the day's own calendar columns
     (`data.CALENDAR_COLUMN_RULES`), the new one `turn_day_type`. A business day is a weekday not in the holiday table.
 
     Returns `relabelled` ((legacy, new) -> days), `leave_month_end` (legacy `month_end`, now `ordinary` or `tax_date`) and
@@ -151,7 +171,7 @@ def day_set_changes(first: date, last: date, *, splits) -> dict:
     while day <= last:
         if day.weekday() < 5 and day not in holidays.closed:
             row = {name: float(rules[name](day)) for name in ("days_to_month_end", "quarter_end", "tax_date")}
-            old = splits.legacy_reporting_day_type(day, row)
+            old = splits.reporting_day_type(day, row)
             new = turn_day_type(day, tax_date=row["tax_date"] == 1.0)
             if old != new:
                 relabelled.setdefault((old, new), []).append(day)
