@@ -23,6 +23,12 @@ from typing import Mapping, Optional, Tuple
 
 from . import data
 
+#: Whether the month-end turn record (#1135) is in force. It is a draft, `docs/decisions/drafts/month-end-turn.md`, until
+#: Eleonora merges it into `docs/decisions/month-end-turn.md`; the PR that moves it there flips this to `True`
+#: (`tests/test_month_end_turn_1135.py` fails if the two disagree). While `False`, `SplitDeclaration.reporting_day_type`
+#: (B2's pools, the mean-reversion level, the day-type splits, `risk_dates`) is exactly what it was.
+IN_FORCE = False
+
 TURN = "turn"
 QUARTER_END_TURN = "quarter_end_turn"
 YEAR_END = "year_end"
@@ -32,6 +38,12 @@ ORDINARY = "ordinary"
 LABELS: Tuple[str, ...] = (YEAR_END, QUARTER_END_TURN, TURN, TAX_DATE, ORDINARY)
 #: The labels that are turn days.
 TURN_LABELS = frozenset({TURN, QUARTER_END_TURN, YEAR_END})
+
+
+def in_force() -> bool:
+    """Whether `SplitDeclaration.reporting_day_type` reads the turn labels (the record of #1135 is merged)."""
+
+    return IN_FORCE
 
 
 def turn_days_of_month(year: int, month: int) -> Tuple[date, date]:
@@ -112,3 +124,38 @@ class TurnLabels:
         if label == TAX_DATE and not self._keep_tax_date:
             return ORDINARY
         return label
+
+
+
+
+
+def day_set_changes(first: date, last: date, *, splits) -> dict:
+    """The business days from `first` to `last` whose reporting day type the turn record changes, from the calendar alone.
+
+    Reads no panel and no score: the legacy type is `splits.legacy_reporting_day_type` on the day's own calendar columns
+    (`data.CALENDAR_COLUMN_RULES`), the new one `turn_day_type`. A business day is a weekday not in the holiday table.
+
+    Returns `relabelled` ((legacy, new) -> days), `leave_month_end` (legacy `month_end`, now `ordinary` or `tax_date`) and
+    `join_turn` (legacy `ordinary` or `tax_date`, now a turn type), each day list ascending.
+
+    Raises:
+        ValueError: if the holiday table does not cover the range and the month before and after it.
+    """
+
+    from datetime import timedelta
+
+    holidays = data.market_holidays()
+    rules = data.CALENDAR_COLUMN_RULES
+    relabelled: dict = {}
+    day = first
+    while day <= last:
+        if day.weekday() < 5 and day not in holidays.closed:
+            row = {name: float(rules[name](day)) for name in ("days_to_month_end", "quarter_end", "tax_date")}
+            old = splits.legacy_reporting_day_type(day, row)
+            new = turn_day_type(day, tax_date=row["tax_date"] == 1.0)
+            if old != new:
+                relabelled.setdefault((old, new), []).append(day)
+        day += timedelta(days=1)
+    leave = sorted(d for (old, new), days in relabelled.items() if old == "month_end" and new in (ORDINARY, TAX_DATE) for d in days)
+    join = sorted(d for (old, new), days in relabelled.items() if old in (ORDINARY, TAX_DATE) and new in TURN_LABELS for d in days)
+    return {"relabelled": relabelled, "leave_month_end": leave, "join_turn": join}

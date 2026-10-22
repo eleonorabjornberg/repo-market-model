@@ -139,9 +139,26 @@ class SplitDeclaration:
         it are part of the frozen model, and that window counts calendar days.
         The mismatch is a v2 candidate.
 
+        Once the month-end turn record (#1135, `docs/decisions/month-end-turn.md`) is in force
+        (`turn_days.IN_FORCE`), the type is `turn_days.turn_day_type` instead: `turn`,
+        `quarter_end_turn`, `year_end`, `tax_date` or `ordinary`. Until then this is the reading above.
+
         Raises:
             ValueError: as `day_type`, and if the market holiday table does not
                 cover `when`'s month.
+        """
+
+        from . import turn_days
+
+        if turn_days.in_force():
+            self.day_type(values)
+            return turn_days.turn_day_type(when, tax_date=float(values["tax_date"]) == 1.0)
+        return self.legacy_reporting_day_type(when, values)
+
+    def legacy_reporting_day_type(self, when: date, values: Mapping[str, Optional[float]]) -> str:
+        """`reporting_day_type` as it read before the month-end turn record (#1135): month-end is the last two business days.
+
+        It is what `reporting_day_type` returns until `turn_days.IN_FORCE`; kept apart so the day sets that move can be shown.
         """
 
         from .data import in_last_business_days_of_month
