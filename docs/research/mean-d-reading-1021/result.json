@@ -1,0 +1,290 @@
+{
+ "issue": 1021,
+ "pages": {
+  "959": {
+   "changed": [
+    {
+     "group": "regime 2020",
+     "now": "candidate worse",
+     "pair": "B1 -> B2 as is",
+     "section": "a",
+     "was": "no difference"
+    },
+    {
+     "group": "regime 2020",
+     "now": "candidate worse",
+     "pair": "B1 -> B2 relabelled",
+     "section": "a",
+     "was": "no difference"
+    },
+    {
+     "group": "regime 2025-26",
+     "now": "candidate better",
+     "pair": "B2 as is -> B2 relabelled",
+     "section": "a",
+     "was": "no difference"
+    },
+    {
+     "group": "target: december_26",
+     "now": "candidate worse",
+     "pair": "B1 -> B2 as is",
+     "section": "a",
+     "was": "no difference"
+    },
+    {
+     "group": "target: december_26",
+     "now": "candidate worse",
+     "pair": "B1 -> B2 relabelled",
+     "section": "a",
+     "was": "no difference"
+    },
+    {
+     "group": "target: december_26",
+     "now": "no difference",
+     "pair": "B2 as is -> B2 relabelled",
+     "section": "a",
+     "was": "candidate worse"
+    },
+    {
+     "group": "target: tax_date",
+     "now": "candidate worse",
+     "pair": "B1 -> B2 as is",
+     "section": "a",
+     "was": "no difference"
+    },
+    {
+     "group": "target: tax_date",
+     "now": "candidate worse",
+     "pair": "B1 -> B2 relabelled",
+     "section": "a",
+     "was": "no difference"
+    },
+    {
+     "group": "target: year_end",
+     "now": "candidate worse",
+     "pair": "B1 -> B2 as is",
+     "section": "a",
+     "was": "no difference"
+    },
+    {
+     "group": "target: year_end",
+     "now": "candidate worse",
+     "pair": "B1 -> B2 relabelled",
+     "section": "a",
+     "was": "no difference"
+    },
+    {
+     "group": "target: tax_date",
+     "now": "no difference",
+     "pair": "as is -> turn days and tax dates excluded",
+     "section": "b",
+     "was": "candidate worse"
+    },
+    {
+     "group": "target: tax_date",
+     "now": "no difference",
+     "pair": "as is -> turn days only excluded",
+     "section": "b",
+     "was": "candidate worse"
+    },
+    {
+     "group": "target: year_end",
+     "now": "candidate better",
+     "pair": "as is -> turn days and tax dates excluded",
+     "section": "b",
+     "was": "no difference"
+    },
+    {
+     "group": "pooled",
+     "now": "candidate worse",
+     "pair": "B1 -> calendar",
+     "section": "c / sets / as is",
+     "was": "no difference"
+    },
+    {
+     "group": "type: settlement",
+     "now": "candidate worse",
+     "pair": "B1 -> calendar",
+     "section": "c / sets / as is",
+     "was": "no difference"
+    },
+    {
+     "group": "type: tax_date",
+     "now": "candidate worse",
+     "pair": "B1 -> calendar",
+     "section": "c / sets / as is",
+     "was": "no difference"
+    },
+    {
+     "group": "type: settlement",
+     "now": "candidate worse",
+     "pair": "B1 -> calendar",
+     "section": "c / sets / turn set",
+     "was": "no difference"
+    },
+    {
+     "group": "type: tax_date",
+     "now": "candidate worse",
+     "pair": "B1 -> calendar",
+     "section": "c / sets / turn set",
+     "was": "no difference"
+    }
+   ],
+   "page": "docs/research/turn-day-labels-959-mean-d-1021-result.md",
+   "rows_changed": 18,
+   "source": "docs/research/turn-day-labels-959/result.json",
+   "source_sha256": "f6708b80f4ab11790f3bb50c1a45b48b110e7c6e96b98bb260d82ce66ae6d8ea",
+   "tested_rows": 95
+  },
+  "965": {
+   "changed": [
+    {
+     "group": "regime 2020",
+     "now": "candidate worse",
+     "pair": "B1 -> B2 as is",
+     "section": "a / crps",
+     "was": "no difference"
+    },
+    {
+     "group": "regime 2020",
+     "now": "candidate worse",
+     "pair": "B1 -> B2 control",
+     "section": "a / crps",
+     "was": "no difference"
+    },
+    {
+     "group": "regime 2020",
+     "now": "candidate worse",
+     "pair": "B1 -> B2 october",
+     "section": "a / crps",
+     "was": "no difference"
+    },
+    {
+     "group": "target: october window",
+     "now": "no difference",
+     "pair": "B2 as is -> B2 october",
+     "section": "a / crps",
+     "was": "candidate better"
+    },
+    {
+     "group": "target: tax_date as is",
+     "now": "candidate worse",
+     "pair": "B1 -> B2 as is",
+     "section": "a / crps",
+     "was": "no difference"
+    },
+    {
+     "group": "target: tax_date as is",
+     "now": "candidate worse",
+     "pair": "B1 -> B2 control",
+     "section": "a / crps",
+     "was": "no difference"
+    },
+    {
+     "group": "target: tax_date as is",
+     "now": "candidate worse",
+     "pair": "B1 -> B2 october",
+     "section": "a / crps",
+     "was": "no difference"
+    },
+    {
+     "group": "target: tax_date as is",
+     "now": "candidate better",
+     "pair": "B2 as is -> B2 control",
+     "section": "a / crps",
+     "was": "no difference"
+    },
+    {
+     "group": "pooled",
+     "now": "no difference",
+     "pair": "B1 -> B2 as is",
+     "section": "a / twcrps",
+     "was": "candidate better"
+    },
+    {
+     "group": "pooled",
+     "now": "no difference",
+     "pair": "B1 -> B2 october",
+     "section": "a / twcrps",
+     "was": "candidate better"
+    },
+    {
+     "group": "regime 2024",
+     "now": "candidate better",
+     "pair": "B1 -> B2 control",
+     "section": "a / twcrps",
+     "was": "no difference"
+    },
+    {
+     "group": "target: control window",
+     "now": "candidate worse",
+     "pair": "B1 -> B2 as is",
+     "section": "a / twcrps",
+     "was": "no difference"
+    },
+    {
+     "group": "target: control window",
+     "now": "candidate worse",
+     "pair": "B1 -> B2 control",
+     "section": "a / twcrps",
+     "was": "no difference"
+    },
+    {
+     "group": "target: control window",
+     "now": "candidate worse",
+     "pair": "B1 -> B2 october",
+     "section": "a / twcrps",
+     "was": "no difference"
+    },
+    {
+     "group": "target: october window",
+     "now": "candidate worse",
+     "pair": "B1 -> B2 as is",
+     "section": "a / twcrps",
+     "was": "no difference"
+    },
+    {
+     "group": "target: october window",
+     "now": "candidate worse",
+     "pair": "B1 -> B2 control",
+     "section": "a / twcrps",
+     "was": "no difference"
+    },
+    {
+     "group": "target: tax_date as is",
+     "now": "candidate worse",
+     "pair": "B1 -> B2 as is",
+     "section": "a / twcrps",
+     "was": "no difference"
+    },
+    {
+     "group": "target: tax_date as is",
+     "now": "candidate worse",
+     "pair": "B1 -> B2 control",
+     "section": "a / twcrps",
+     "was": "no difference"
+    },
+    {
+     "group": "target: tax_date as is",
+     "now": "candidate worse",
+     "pair": "B1 -> B2 october",
+     "section": "a / twcrps",
+     "was": "no difference"
+    },
+    {
+     "group": "target: tax_date as is",
+     "now": "candidate better",
+     "pair": "B2 as is -> B2 control",
+     "section": "a / twcrps",
+     "was": "no difference"
+    }
+   ],
+   "page": "docs/research/tax-date-october-965-mean-d-1021-result.md",
+   "rows_changed": 20,
+   "source": "docs/research/tax-date-october-965/result.json",
+   "source_sha256": "fc6771c6010c0b2f536e2cdb27edf952873f2cee5e73546ae06ac1d97c5fd09b",
+   "tested_rows": 94
+  }
+ },
+ "ruling": "1009"
+}

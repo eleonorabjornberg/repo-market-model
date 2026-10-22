@@ -12,9 +12,15 @@ It lives outside `contract.py` because the final test's pre-registration freezes
 
 from __future__ import annotations
 
+from .balance_sheet_days import CODED_COLUMNS, TURN_COLUMNS
 from .contract import CALENDAR_FEATURES
 
-__all__ = ["DOM_TARGET_DAY_COLUMNS", "FOMC_TARGET_DAY_COLUMNS", "TARGET_DAY_COLUMNS"]
+__all__ = [
+    "BALANCE_SHEET_TARGET_DAY_COLUMNS",
+    "DOM_TARGET_DAY_COLUMNS",
+    "FOMC_TARGET_DAY_COLUMNS",
+    "TARGET_DAY_COLUMNS",
+]
 
 #: The FOMC meeting columns of `fomc_calendar.add_columns` (#1038): read at the decision instant, written about the
 #: target day, and not in `CALENDAR_FEATURES` (no published panel or declaration reads them).
@@ -24,4 +30,8 @@ FOMC_TARGET_DAY_COLUMNS = frozenset({"fomc_meeting_day", "fomc_days_to_next_meet
 #: `CALENDAR_FEATURES` (no published panel or declaration reads it; `dom_calendar.switched_on` serves it for one run).
 DOM_TARGET_DAY_COLUMNS = frozenset({"dom_bucket"})
 
-TARGET_DAY_COLUMNS = CALENDAR_FEATURES | FOMC_TARGET_DAY_COLUMNS | DOM_TARGET_DAY_COLUMNS
+#: The balance-sheet flag columns of `balance_sheet_days.add_columns` (#1031): the as-coded rules and the same rules on the turn days. Each is a
+#: function of the row's own date, so a forecast of that day reads it from its row; not in `CALENDAR_FEATURES` (no published panel reads them).
+BALANCE_SHEET_TARGET_DAY_COLUMNS = frozenset(CODED_COLUMNS) | frozenset(TURN_COLUMNS)
+
+TARGET_DAY_COLUMNS = CALENDAR_FEATURES | FOMC_TARGET_DAY_COLUMNS | BALANCE_SHEET_TARGET_DAY_COLUMNS | DOM_TARGET_DAY_COLUMNS
