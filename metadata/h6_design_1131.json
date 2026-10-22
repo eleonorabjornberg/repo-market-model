@@ -5,6 +5,7 @@
   "ruling": "Eleonora, 22 October 2026, relayed by the orchestrating session on #1131 (her option c of #1024's open question): register H6 ahead of H5, because post-2020 autocorrelation leaves H5's 250-day window with a handful of independent windows. The basis is Lens C (five-lens review #958, avenue B) and #963's evidence",
   "variants": {},
   "variants_note": "no model and no variant is added. The candidate scored is the existing spread_mr_ctx of #761 as a stand-in for the series' shape; gbm_funding's walks are not rerun (a long run, and its event-day d series is not needed for the page's design questions). The registered H6 candidate is not chosen here",
+  "amendment": "two additions were made after a first run of scripts/h6_design_1131.py had produced the nine strata, the union and the power tables, and before the final run that the page quotes: the union without the bill stratum (strata.union_without_bill) and the reference rows on all target days (power.reference_all_days). Both were added because the first page could not answer, without them, what the bill stratum's stand-in size rule adds, or how the union compares with H5's own unit. Nothing declared was removed or changed, and the first run's figures are reproduced in the final one",
   "strata": {
     "unit": "a stratum is a set of target days. Every stratum is read from the calendar at the target day (information-set rule 2). Membership is not exclusive: a day may be in several strata, and 'union' is the set of days in at least one",
     "coupon_settlement": "treasury_settlement_coupons > 0 on the target row (#963's, #693's reading)",
@@ -16,6 +17,7 @@
     "tax_date": "turn_days.turn_day_type(day, tax_date) == 'tax_date': the tax_date calendar column on a day that is none of the three turn labels",
     "fomc_meeting": "fomc_calendar.fomc_meeting_day == 1 (both days of a two-day meeting), read from the calendar as it stood at the decision instant of the longest lead (h = 5): a meeting not public then is not a member",
     "post_fomc_window": "the IORB-change window: the first and second business days after the last day of a meeting visible at the decision instant of the longest lead. A change in IORB takes effect on the first of them, and it is announced only at the meeting, so a realized change cannot define membership; the window is the scheduled calendar's. Whether the realized changes fall in it is reported, ex post",
+    "union_without_bill": "the union without bill_settlement_large: the days in at least one of the other strata",
     "minimum_events": 30,
     "thin": "a stratum with fewer than minimum_events target days in the history is counted and not powered on its own"
   },
@@ -40,7 +42,8 @@
     "window_events": "N = round(window_years * events per year of the stratum), events per year being n over the years from the first to the last event; at least the lag + 2",
     "effective_windows": "n / N, the windows the series holds without overlap; windows of a persistent series overlap in information, so it is an upper count of independent ones",
     "size": "the share of the null windows above the normal one-sided 95% value 1.6448536269514722",
-    "union_series": "the union's events in date order, one d per target day"
+    "union_series": "the union's events in date order, one d per target day",
+    "reference_all_days": "H5's own unit on the same history: every target day of the series in date order, d against B1, B1' and B2, windows of 1, 2 and 3 years of target days (N = round(years * target days per year)), the protocol's Newey-West lag 10 (scoring_protocol.HAC_LAG), the same c, size and power. It is a reference row, not a stratum"
   },
   "reading_rules": {
     "design_rule": "none is declared. The page reports c, size and power per stratum and window; which stratum is the unit of evidence, the window, the multiplicity treatment and the MME are the questions it lists with a default for her",
