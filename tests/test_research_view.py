@@ -236,7 +236,8 @@ class Standings(unittest.TestCase):
         self.assertIn(f"{pair['difference']:+.2f}", table)
         block = self.best()
         self.assertRegex(block, r"(?s)lag-10 HAC standard error.*understated.*2&times;.*after 2020")
-        self.assertIn("#958", block)
+        self.assertIn("issues/958", block)
+        self.assertNotRegex(block, r">[^<]*#\d+")
 
     def test_a_record_without_a_mean_d_bound_says_so(self):
         with tempfile.TemporaryDirectory() as tmp:
