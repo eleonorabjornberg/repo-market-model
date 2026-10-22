@@ -39,6 +39,7 @@ import hashlib
 import importlib.util
 import json
 import sys
+from concurrent.futures import ProcessPoolExecutor
 from datetime import date
 from pathlib import Path
 from typing import Dict, List, Mapping, Optional, Sequence
@@ -287,6 +288,33 @@ def benchmark_b1_prime(target: str, rows, registry, splits, days: Sequence[date]
     return built, unbuilt
 
 
+def score_one(target: str, args, declared, all_rows, splits, registry) -> dict:
+    """One target's 'with' and 'without' scores, the unchanged scorer's own run beside them, and the day's own scores."""
+
+    rows = s706.panel_rows(args.panel, target)
+    calendar = [row.date for row in rows]
+    laws = s706.load_laws(args.walks, target)
+    _by_decision, decision_days = s706.m634.lead_forecasts(laws, calendar)
+    require_dropped_day(decision_days, DROPPED_DAY)
+    with s639.switched(), richer_targets.swap_target_fields(target):
+        refuse_locked(decision_days)
+        extra, unbuilt = benchmark_b1_prime(target, rows, registry, splits, decision_days)
+    plain = s706.score_target(target, args, declared, all_rows, splits, registry)
+    with_day = s706.score_target(target, args, declared, all_rows, splits, registry, extras={EXTRA: extra})
+    without = s706.score_target(target, args, declared, all_rows, splits, registry, drop=DROPPED_DAY, extras={EXTRA: extra})
+    if with_day["decision_days"] == plain["decision_days"]:
+        for key in ("B1 -> model", "B2 -> model", "B2 -> B1"):
+            if with_day["pooled"].get(key) != plain["pooled"].get(key):
+                raise SystemExit(f"{target}: the 'with' column's {key} is not the unchanged scorer's; nothing written")
+    return {
+        "with": with_day,
+        "without": without,
+        "scorer_without_extra_benchmark": {"decision_days": plain["decision_days"], "pooled": plain["pooled"]},
+        "b1_prime_unbuilt_days": unbuilt,
+        "the_day": the_day(target, args, laws, calendar, extra),
+    }
+
+
 def score_command(args) -> int:
     declared = committed_declaration()
     refuse_locked([LAST_TARGET])
@@ -295,30 +323,9 @@ def score_command(args) -> int:
     all_rows = [row for row in load_daily_panel(args.panel) if row.date <= LAST_TARGET]
     splits = load_split_declaration(s706.SPLITS)
     registry = s639.measurement_fields.load_registry()
-    results = {}
-    for target in declared["targets"]:
-        rows = s706.panel_rows(args.panel, target)
-        calendar = [row.date for row in rows]
-        laws = s706.load_laws(args.walks, target)
-        _by_decision, decision_days = s706.m634.lead_forecasts(laws, calendar)
-        require_dropped_day(decision_days, DROPPED_DAY)
-        with s639.switched(), richer_targets.swap_target_fields(target):
-            refuse_locked(decision_days)
-            extra, unbuilt = benchmark_b1_prime(target, rows, registry, splits, decision_days)
-        plain = s706.score_target(target, args, declared, all_rows, splits, registry)
-        with_day = s706.score_target(target, args, declared, all_rows, splits, registry, extras={EXTRA: extra})
-        without = s706.score_target(target, args, declared, all_rows, splits, registry, drop=DROPPED_DAY, extras={EXTRA: extra})
-        if with_day["decision_days"] == plain["decision_days"]:
-            for key in ("B1 -> model", "B2 -> model", "B2 -> B1"):
-                if with_day["pooled"].get(key) != plain["pooled"].get(key):
-                    raise SystemExit(f"{target}: the 'with' column's {key} is not the unchanged scorer's; nothing written")
-        results[target] = {
-            "with": with_day,
-            "without": without,
-            "scorer_without_extra_benchmark": {"decision_days": plain["decision_days"], "pooled": plain["pooled"]},
-            "b1_prime_unbuilt_days": unbuilt,
-            "the_day": the_day(target, args, laws, calendar, extra),
-        }
+    with ProcessPoolExecutor(max_workers=max(1, min(args.workers, len(declared["targets"])))) as pool:
+        jobs = [pool.submit(score_one, target, args, declared, all_rows, splits, registry) for target in declared["targets"]]
+        results = {target: job.result() for target, job in zip(declared["targets"], jobs)}
     document = {
         "issue": 902,
         "label": "development data, not a verdict",
@@ -486,6 +493,7 @@ def main(argv=None) -> int:
     score.add_argument("--walks", type=Path, required=True)
     score.add_argument("--output", type=Path, required=True)
     score.add_argument("--draws", type=int, default=sp.DRAWS)
+    score.add_argument("--workers", type=int, default=3, help="targets scored in parallel (each is independent)")
     score.set_defaults(handler=score_command)
     page = commands.add_parser("page", help="the tables")
     page.add_argument("--score", type=Path, required=True)
