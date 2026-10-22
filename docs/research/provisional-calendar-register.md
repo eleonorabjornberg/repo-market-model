@@ -151,6 +151,7 @@ data, dating, holidays and panel declarations). None of their scripts calls a on
 | `metadata/announcement_dating.json` | `scripts/announcement_dating_rescore.py` | direct | a re-score of pressure models under announcement-dated settlements |
 | `metadata/backfill_spread_633.json` | `scripts/backfill_spread_633.py` | direct | its own quantile estimator on pairs read through `InformationRule.observation` at each target's decision instant |
 | `metadata/balance_sheet_nested_1031.json` | `scripts/balance_sheet_nested_1031.py` | direct | both arms fit #1027's gbm_funding_cal_direct on direct pairs (`training_pairs="direct"`) and read the calendar columns, treasury_settlement at lead 1 and their three balance-sheet flag columns from the target row |
+| `metadata/calendar_mr_1115.json` | `scripts/calendar_mr_1115.py` | direct | scaled mean reversion with additive calendar, scheduled and FOMC terms read from the target row on direct pairs (repo_model.spread_mr_calendar, guarded by one_step_guard with no allow-list entry); no gradient-boosted fit is called |
 | `metadata/combined_model_561.json` | `scripts/combined_model_561.py` | direct | `_combined_pairs`, direct pairs |
 | `metadata/derived_features_631.json` | `scripts/derived_features_631.py` | direct | pressure models on direct pairs |
 | `metadata/effr_pretrain.json` | `scripts/effr_pretrain.py` | direct | pressure models on direct pairs |
@@ -158,6 +159,7 @@ data, dating, holidays and panel declarations). None of their scripts calls a on
 | `metadata/every_day_steps_687.json` | `scripts/every_day_steps_687.py` | direct | the every-day part, direct pairs |
 | `metadata/fhs_scale_941.json` | `scripts/fhs_scale_941.py` | none | mean reversion with volatility-scaled residuals: no gradient-boosted fit and no calendar column trained or read as an input (the day types only split the report); a development study whose figures are provisional under the calendar-first rule as #686's are, and the classification is Eleonora's (the pull request asks) |
 | `metadata/funding_panel_manifest.json` | none | none | the panel manifest: data |
+| `metadata/h6_design_1131.json` | `scripts/h6_design_1131.py` | none | a design and power page: it fits no gradient-boosted model and trains no calendar column. It reads the strata from the calendar at the target day and scores the existing `spread_mr_ctx` (#761, cleared above) as a stand-in series for the shape of a candidate's d; the registered H6 candidate is not chosen here, and a candidate registered later reads the calendar columns on direct pairs |
 | `metadata/iorb_every_day_579.json` | `scripts/iorb_every_day_579.py` | direct | pressure models on direct pairs |
 | `metadata/market_holidays.json` | none | none | the holiday table: data |
 | `metadata/model_defects_540.json` | `scripts/model_defects_540.py` | direct | pressure models on direct pairs |
