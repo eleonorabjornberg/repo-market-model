@@ -475,8 +475,9 @@ def score(args) -> int:
         for arm in sc.ARMS
     }
     result["refit_total"] = len(mine.estimates)
-    result["robust_iterations_max"] = max(
-        est["sc_s3_robust"][h].iterations for est in mine.estimates.values() for h in sp.HORIZONS)
+    passes = [est["sc_s3_robust"][h].iterations for est in mine.estimates.values() for h in sp.HORIZONS]
+    result["robust_fits"] = {"fits": len(passes), "capped": sum(1 for x in passes if x >= sc.MAX_ITERATIONS),
+                             "cap": sc.MAX_ITERATIONS, "mean_passes": sum(passes) / len(passes)}
     states_scored = [mine.detail[d]["state"] for d in days]
     result["state_mix"] = {str(level): sum(1 for s in states_scored if s is not None and abs(s - level / 3.0) < 1e-9) for level in range(4)}
     Path(args.output).parent.mkdir(parents=True, exist_ok=True)
@@ -683,7 +684,9 @@ def render(r: dict) -> str:
         out.append(f"| {term} | " + " | ".join(str(x) for x in counts) + " |")
     mix = r["state_mix"]
     out += ["", f"The scarcity state of the scored decisions: abundant {mix['0']}, ample {mix['1']}, tight {mix['2']}, scarce {mix['3']}; "
-            f"unknown {r['notes']['decisions_with_unknown_state']}. The robust fit needed at most {r['robust_iterations_max']} passes.", ""]
+            f"unknown {r['notes']['decisions_with_unknown_state']}. The Huber fit of (s3) took {r['robust_fits']['mean_passes']:.1f} passes on average "
+            f"and reached its cap of {r['robust_fits']['cap']} passes (without the coefficients settling to 1e-8) in {r['robust_fits']['capped']} of "
+            f"{r['robust_fits']['fits']} fits (refit by lead).", ""]
     out += ["## What this is not", "",
             "Development data from 2018 to 2025, split by regime and target-day type, never a verdict. The arms read the calendar at the target "
             "day on direct pairs, so their class is not provisional (`docs/research/provisional-calendar-register.md`), but the estimation "
