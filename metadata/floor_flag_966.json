@@ -28,7 +28,7 @@
     "flag_gbm": {
       "label": "(iii) gbm_funding wrapped in the two-part rule (a reference arm since the amendment of 22 October 2026)",
       "structure": "flag on at the anchor: B1's law; flag off or undefined: gbm_funding's law. gbm_funding is the phase 2 gbm at 23 levels of #634 (the best pooled primary score there); its missing forecasts are filled by B1 as the protocol does (scoring_protocol.fill_missing)",
-      "walks": "arm (iii) needs gbm_funding's walks at the five leads, which take hours and are not run in the cloud (#46: a step over about two hours goes to Eleonora's Mac); the script reads them from a directory, and the (iii) section of the result arrives as a commit on the pull request's branch",
+      "walks": "arm (iii) needs gbm_funding's walks at the five leads, which take hours and are not run in the cloud (#46: a step over about two hours goes to Eleonora's Mac); the script reads them from a directory. Since the amendment of 22 October 2026 (second) arm (iii) is not run: Eleonora's ruling skips the Mac run",
       "module": "repo_model.floor_flag.two_part"
     },
     "flag_fhs": {
@@ -82,6 +82,13 @@
       "why": "Eleonora's ruling of 22 October 2026 on #966 (comment 6343691459): the floor flag and two-part rule go on the best model, #941's scaled mean reversion, as well as on B1",
       "before_any_score_of_the_new_arms": true,
       "note": "arms (i) and (ii) had been scored (draft record of this pull request) under the declaration as first committed; their definitions, minimums and kill rules are unchanged and they are re-scored identically. #1115's arm is not added: it has not reported, and adding it is a further amendment before it is scored"
+    },
+    {
+      "date": "2026-10-22",
+      "what": "arm (iii) flag_gbm and the gbm_funding reference rows are not run; kill rule (iii) is not evaluated",
+      "why": "Eleonora's ruling of 22 October 2026 on #966 (comment 6350221714, relayed by the orchestrating session): skip the Mac run of arm (iii), a reference arm; finish PR #981 on the arms already scored",
+      "before_any_score_of_the_new_arms": true,
+      "note": "no score changes: arms (i), (ii), (iv) and (v) are scored as before; the amendment only records that arm (iii) will not be scored under this declaration. Scoring it later would be a further declared amendment"
     }
   ]
 }
