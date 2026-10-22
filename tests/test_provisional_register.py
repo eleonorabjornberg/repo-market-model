@@ -229,11 +229,11 @@ class TestEveryDeclarationIsClassified(unittest.TestCase):
 
     def test_every_script_reading_a_gbm_funding_walk_is_registered(self):
         """#1111: a script that reads the walks of `gbm_funding` as data (class `series`) needs a result row, as a caller of a
-        one-step fitter needs a producer file. A script is registered by a producer file, or by a result row for the
-        directive its file name ends in."""
+        one-step fitter needs a producer file. A script is registered by a producer file, a cleared row, or a result row for
+        the directive its file name ends in."""
         readers = register.walk_readers(ROOT)
         self.assertIn("scripts/block_length_949.py", readers)
-        producers = {entry["script"] for entry in ENTRIES["producers"]}
+        producers = {entry["script"] for entry in ENTRIES["producers"] + ENTRIES["cleared"]}
         directives = {entry["directive"] for entry in ENTRIES["results"]}
         missing = sorted(script for script in readers
                          if script not in producers and int(re.search(r"_(\d+)\.py$", script).group(1)) not in directives)
