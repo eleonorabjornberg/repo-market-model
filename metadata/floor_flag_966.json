@@ -1,8 +1,8 @@
 {
-  "status": "declared by the pull request that closes #966 before any score was computed; a measurement, not a record. Nothing is published: no arm joins any published declaration, no day after 2025-12-31 is scored, no rule changes, and the live record and pin do not move. The flag and its quoted replication (+1.3% CRPS pooled, +2.6% in 2024-26 on B1's change pool) come from Lens B of the five-lens review (#958) after the author had seen 2018-2025, so a result here is exploration, never a verdict (scoring protocol v1, #640). Whether any arm joins #634's candidates is Eleonora's",
+  "status": "declared by the pull request that closes #966 before any score was computed; a measurement, not a record. Nothing is published: no arm joins any published declaration, no day after 2025-12-31 is scored, no rule changes, and the live record and pin do not move. The flag and its quoted replication (+1.3% CRPS pooled, +2.6% in 2024-26 on B1's change pool) come from Lens B of the five-lens review (#958) after the author had seen 2018-2025, so a result here is exploration, never a verdict (scoring protocol v1, #640). Whether any arm joins #634's candidates is Eleonora's. AMENDED 22 October 2026 (see `amendments`): two arms on the best model were added before any score of them was computed",
   "issue": 966,
   "hypothesis": "H5 (primary goal): the SOFR - IORB spread distribution in bp. Step 3 (2021-23 and the residual pools), development tier",
-  "ruling": "Eleonora, 19 October 2026 (relayed on #958), directive #966. Different from #948, which is the floor as a target transform. Abstaining on flagged days is not an arm: more than 5% missing forecasts voids a registration (docs/decisions/scoring-protocol.md:257)",
+  "ruling": "Eleonora, 19 October 2026 (relayed on #958), directive #966. Different from #948, which is the floor as a target transform. Abstaining on flagged days is not an arm: more than 5% missing forecasts voids a registration (docs/decisions/scoring-protocol.md:257). Amended on Eleonora's ruling of 22 October 2026 (#966, comment 6343691459): the floor flag and two-part rule run on the best model, #941's scaled mean reversion (and #1115's arm when it reports), as well as on B1; gbm_funding stays as a reference",
   "target": "spread_bps at the scored day, in basis points, as a 23-quantile distribution at each lead h = 1..5 (scoring_protocol.GRID)",
   "flag": {
     "name": "floor flag",
@@ -26,21 +26,33 @@
       "module": "repo_model.floor_flag.flag_fit, flag_forecast"
     },
     "flag_gbm": {
-      "label": "(iii) gbm_funding wrapped in the two-part rule",
+      "label": "(iii) gbm_funding wrapped in the two-part rule (a reference arm since the amendment of 22 October 2026)",
       "structure": "flag on at the anchor: B1's law; flag off or undefined: gbm_funding's law. gbm_funding is the phase 2 gbm at 23 levels of #634 (the best pooled primary score there); its missing forecasts are filled by B1 as the protocol does (scoring_protocol.fill_missing)",
       "walks": "arm (iii) needs gbm_funding's walks at the five leads, which take hours and are not run in the cloud (#46: a step over about two hours goes to Eleonora's Mac); the script reads them from a directory, and the (iii) section of the result arrives as a commit on the pull request's branch",
+      "module": "repo_model.floor_flag.two_part"
+    },
+    "flag_fhs": {
+      "label": "(iv) the scaled mean reversion's standardised pool restricted to the anchor's flag state",
+      "structure": "repo_model.spread_mr_fhs (#941), variant 'mad window 20 floor 0.5' (spread_mr_fhs_mad20_f0.5), unchanged except for the standardised residual pool: level + phi^k * (last - level) + scale(anchor) * z_h, with z_h the empirical quantiles of lead h's standardised training residuals whose origin row has the anchor's flag; phi, level, k, the scale, the training window, the 60-pair minimum and the refit every 21 decision days are #686's and #941's",
+      "minimum": "a lead whose restricted standardised pool holds fewer than 60 residuals, and an anchor with no flag, use the whole-lead standardised pool (spread_mr_fhs_mad20_f0.5's)",
+      "module": "repo_model.floor_flag.flag_scaled_fit, flag_scaled_forecast"
+    },
+    "two_part_fhs": {
+      "label": "(v) the scaled mean reversion in the two-part rule",
+      "structure": "flag on at the anchor: B1's law; flag off or undefined: spread_mr_fhs_mad20_f0.5's law. No walk beyond the cloud-sized mean-reversion walk is needed",
       "module": "repo_model.floor_flag.two_part"
     }
   },
   "references": {
     "spread_mr_level10": "the reference row of arm (ii): #686, unchanged. 'Its own pool' in the kill rule is this row",
-    "gbm_funding": "the reference row of arm (iii)",
-    "benchmarks": "B1 and B2 of scoring protocol v1 (repo_model.protocol_benchmarks)"
+    "gbm_funding": "the reference row of arm (iii), kept as a reference only: it is not the base of any arm that leads the result",
+    "benchmarks": "B1 and B2 of scoring protocol v1 (repo_model.protocol_benchmarks)",
+    "spread_mr_fhs_mad20_f0.5": "the reference row of arms (iv) and (v): #941's declared variant (mad window 20 floor 0.5), unchanged. 'Its own pool' in kill rule (iv) is this row, and the model the two-part rule (v) is compared with in kill rule (v)"
   },
   "scoring": {
     "scorer": "repo_model.scoring_protocol (#655), the development tier: no verdict, no registration",
     "days": "decision days with a forecast of every series, mean reversion and the arms included, whose five targets (h = 1..5 business days later on the panel's calendar) fall on or before 2025-12-31; no day after 2025-12-31 is read and the scored days pass lockbox.require_unlocked (docs/decisions/lockbox.md). Section (iii) is on the days gbm_funding's walks cover",
-    "primary": "grid CRPS (23 levels), the mean over leads 1..5 per decision day, paired against B1 and B2; arm (ii) also against spread_mr_level10 and arm (iii) also against gbm_funding: skill = mean(d) / mean(S(benchmark)) with d = S(benchmark) - S(candidate), positive favours the candidate",
+    "primary": "grid CRPS (23 levels), the mean over leads 1..5 per decision day, paired against B1 and B2; arm (ii) also against spread_mr_level10 and arm (iii) also against gbm_funding: skill = mean(d) / mean(S(benchmark)) with d = S(benchmark) - S(candidate), positive favours the candidate; arm (iv) also against spread_mr_fhs_mad20_f0.5 and arm (v) also against spread_mr_fhs_mad20_f0.5",
     "key_secondary": "upper-tail twCRPS with weight 1{z > 0 bp} (scoring_protocol.upper_tail_twcrps), the same pairs",
     "interval": "scoring_protocol.paired_tests: the studentized stationary bootstrap (ruling 1, #739): mean block 10 business days, 10,000 draws, seed 966. A two-sided 90% interval is skill less the 95th and 5th percentile of the skill's studentized draws times its HAC standard error. A comparison the studentization cannot resolve is reported as undefined, with the means",
     "outcomes": "the panel's spread_bps at the target day, not the first-published vintage of protocol section 11"
@@ -57,8 +69,19 @@
   "kill": {
     "rule_ii": "arm (ii) shows no gain over its own pool (spread_mr_level10): its grid CRPS skill against spread_mr_level10 on the target days of 2024-26 has an interval that covers 0 or lies below it",
     "rule_iii": "arm (iii) loses to gbm_funding pooled by more than its interval: its grid CRPS skill against gbm_funding on all walk days has an upper interval bound below 0",
-    "reading": "a kill is a statement about development days; it neither supports nor kills the hypothesis H5 and registers nothing"
+    "reading": "a kill is a statement about development days; it neither supports nor kills the hypothesis H5 and registers nothing",
+    "rule_iv": "arm (iv) shows no gain over its own pool (spread_mr_fhs_mad20_f0.5): its grid CRPS skill against spread_mr_fhs_mad20_f0.5 on the target days of 2024-26 has an interval that covers 0 or lies below it",
+    "rule_v": "arm (v) loses to the scaled mean reversion pooled by more than its interval: its grid CRPS skill against spread_mr_fhs_mad20_f0.5 on all scored decision days has an upper interval bound below 0"
   },
-  "variants": "three arms on one flag, no new fit beyond #686's own refits",
-  "limits": "no published declaration changes; nothing after 2025-12-31 and no lockbox day is scored; the flag and the pools read the panel and metadata/policy_events.json only"
+  "variants": "five arms on one flag (three declared first, two added on 22 October 2026), no new fit beyond #686's and #941's own refits",
+  "limits": "no published declaration changes; nothing after 2025-12-31 and no lockbox day is scored; the flag and the pools read the panel and metadata/policy_events.json only",
+  "amendments": [
+    {
+      "date": "2026-10-22",
+      "what": "arms (iv) flag_fhs and (v) two_part_fhs, kill rules (iv) and (v), the reference spread_mr_fhs_mad20_f0.5, and the reclassification of arm (iii) as a reference",
+      "why": "Eleonora's ruling of 22 October 2026 on #966 (comment 6343691459): the floor flag and two-part rule go on the best model, #941's scaled mean reversion, as well as on B1",
+      "before_any_score_of_the_new_arms": true,
+      "note": "arms (i) and (ii) had been scored (draft record of this pull request) under the declaration as first committed; their definitions, minimums and kill rules are unchanged and they are re-scored identically. #1115's arm is not added: it has not reported, and adding it is a further amendment before it is scored"
+    }
+  ]
 }
