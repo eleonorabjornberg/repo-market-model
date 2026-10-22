@@ -152,6 +152,7 @@ data, dating, holidays and panel declarations). None of their scripts calls a on
 | `metadata/funding_panel_manifest.json` | none | none | the panel manifest: data |
 | `metadata/iorb_every_day_579.json` | `scripts/iorb_every_day_579.py` | direct | pressure models on direct pairs |
 | `metadata/market_holidays.json` | none | none | the holiday table: data |
+| `metadata/mechanism_encodings_1029.json` | `scripts/mechanism_encodings_1029.py` | direct | #1027's direct variant with its raw levels re-encoded (#1029): direct pairs, the calendar and scheduled columns read from the target row |
 | `metadata/model_defects_540.json` | `scripts/model_defects_540.py` | direct | pressure models on direct pairs |
 | `metadata/near_threshold_688.json` | `scripts/near_threshold_688.py` | direct | pressure models on direct pairs |
 | `metadata/net_settlement.json` | `scripts/net_settlement.py` | direct | the net settlement columns, read in pressure models on direct pairs |
