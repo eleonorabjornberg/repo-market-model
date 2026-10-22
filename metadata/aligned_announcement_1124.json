@@ -1,0 +1,120 @@
+{
+ "arms": {
+  "gbm_funding_cal_direct_ann": {
+   "947_guard": "passes: a direct fit is not checked, and no allow-list entry is added",
+   "adds_at_leads_2_to_5": [
+    "treasury_settlement",
+    "treasury_settlement_coupons",
+    "treasury_settlement_bills"
+   ],
+   "base": "gbm_funding_cal_direct",
+   "min_samples_leaf": 5,
+   "training_pairs": "direct"
+  },
+  "gbm_funding_cal_direct_ann_coupons": {
+   "947_guard": "passes: a direct fit is not checked, and no allow-list entry is added",
+   "adds_at_leads_2_to_5": [
+    "treasury_settlement_coupons"
+   ],
+   "base": "gbm_funding_cal_direct",
+   "min_samples_leaf": 5,
+   "training_pairs": "direct",
+   "why": "the coupon leg read apart from the gross aggregate (Lens A of #958: through the coupon leg alone a bill-only settlement day looks like a day with no settlement)"
+  }
+ },
+ "caveat": "Lens C of #958: the lag-10 standard error behind the block length is itself noisy on this many days; every interval here is read with that in mind",
+ "comparisons": {
+  "against": [
+   "gbm_funding_cal_aligned",
+   "gbm_funding",
+   "B1",
+   "B1_prime",
+   "B2",
+   "gbm_funding_cal_direct"
+  ],
+  "between_arms": [
+   "gbm_funding_cal_direct_ann_coupons",
+   "gbm_funding_cal_direct_ann"
+  ],
+  "why_direct": "the matched control: the same pairing and inputs without the settlement columns at leads 2 to 5, so the difference is the dating alone"
+ },
+ "cuts": {
+  "calendar_days": "quarter_end, month_end, tax_date, settlement_coupon and settlement_bill",
+  "labels": "read from the published panel's target-day columns, after the fact, for scoring; never an input",
+  "pooled": "all scored decision days",
+  "regimes": [
+   "2018-19",
+   "2020",
+   "2021-23",
+   "2024",
+   "2025-26"
+  ],
+  "settlement_any": "the union of the two, #1027's settlement type",
+  "settlement_bill": "a target day whose reporting day type is ordinary, whose treasury_settlement_coupons is not above 0 and whose treasury_settlement_bills is above 0 (bill-only)",
+  "settlement_coupon": "a target day whose reporting day type is ordinary and whose treasury_settlement_coupons is above 0 (a bill may settle too)",
+  "target_day_types": [
+   "quarter_end",
+   "month_end",
+   "tax_date",
+   "settlement_coupon",
+   "settlement_bill",
+   "ordinary"
+  ]
+ },
+ "dating": {
+  "at_lead_1": "the dated column is the published panel's column on every panel day (the file's own rule), so an arm is gbm_funding_cal_direct at lead 1; score reports whether the lead-1 walks agree",
+  "file": "metadata/settlement_announcement_dating.json",
+  "status": "measured and not in force; read here through this study's own scratch-only path (scripts/aligned_announcement_1124.py arm_inputs), which dates the columns with settlement_dating.known_columns, checks them with check_known_columns and declares them in a copy of the registry with result_dated_registry",
+  "unchanged": [
+   "metadata/sources.json",
+   "docs/decisions/information-set.md",
+   "the published declaration",
+   "metadata/settlement_announcement_dating.json"
+  ]
+ },
+ "hypothesis": "H5 step 3 (avenue #1114): the #1027 aligned design with the Treasury settlement columns dated from the auction announcement at leads 2 to 5",
+ "inputs": {
+  "added": "ANN: treasury_settlement, treasury_settlement_coupons, treasury_settlement_bills; ANN_COUPONS: treasury_settlement_coupons; leads 2 to 5 only",
+  "base": "gbm_funding_cal_direct's inputs at the lead (scripts/aligned_calendar_1027.py variant_features): gbm_funding's published inputs, the calendar columns read from the target row, the observed net_settlement columns",
+  "panel": "#951's scratch panel AUG3, as #1027; the walks of gbm_funding and of the two #1027 variants are #1027's, reused",
+  "read": "the target row, as announced by 12:00 on the panel day h rows before it; a direct pair trains each column from its own target's as-of read"
+ },
+ "interval": "stationary bootstrap, seed 1124, the studentized interval of ruling 1 (#739); the lower end of the two-sided 90% interval is the one-sided 95% lower bound",
+ "issue": 1124,
+ "limits": [
+  "no day after 2025-12-31",
+  "no lockbox day",
+  "no published record is edited",
+  "no published declaration changes: metadata/sources.json and docs/decisions/information-set.md are unchanged",
+  "no allow-list entry is added to repo_model.one_step_guard",
+  "gbm_funding's declaration and scripts/final_test_preregistration.py are not changed"
+ ],
+ "metrics": [
+  "grid_crps",
+  "upper_tail_twcrps"
+ ],
+ "one_step_guard": "Direct pairs were used, as the ruling prefers. The aligned one-step design (gbm_funding_cal_aligned) with these columns at leads 2 to 5 would need allow-list entries in repo_model.one_step_guard, which are Eleonora's decision and which today's ruling did not admit (#1093, #1098, #1109); it is not run. gbm_funding_cal_aligned is a comparator only, from #1027's walks, which its existing allow-list entries admit until their end date.",
+ "reading_rules": {
+  "coupon_leg_against_the_aggregate": "the coupon leg alone is compared with the aggregate arm on the same cuts, by the same lower and upper ends",
+  "does_not_lose_on_ordinary_days": "and its skill over gbm_funding_cal_direct on ordinary target days, at leads 2 to 5, has an upper interval end of 0 or more; 'loses' means an interval wholly below 0",
+  "helps_on_settlement_days": "an arm helps over gbm_funding_cal_direct on coupon (bill-only) settlement days when the lower end of its grid-CRPS skill interval over gbm_funding_cal_direct on the settlement_coupon (settlement_bill) cut, at leads 2 to 5, is above 0",
+  "no_verdict": "development data gives no verdict",
+  "publish": "whether the announcement dating is put in force is Eleonora's decision (an amendment to rule 2 of docs/decisions/information-set.md); this page does not decide it"
+ },
+ "ruling": "Eleonora, 22 October 2026, relayed by the orchestrating session on #1124: 'queue them now' (avenue #1114)",
+ "settings": {
+  "as_variant": [
+   "seed",
+   "quantile grid",
+   "refit every 21 scored days",
+   "minimum history 61",
+   "min_samples_leaf 5",
+   "n_estimators and depth of ml.fit_gradient_boosted_quantiles"
+  ]
+ },
+ "status": "declared by the pull request that closes #1124 before any number was computed; a measurement, not a record. Nothing is published: neither arm joins any published declaration, the announcement dating stays measured and not in force (rule 2 of docs/decisions/information-set.md is not amended), no day after 2025-12-31 is scored (docs/decisions/lockbox.md), no rule changes, the live record and pin do not move. Development data gives no verdict (scoring protocol v1, #46).",
+ "windows": {
+  "h1_5": "the protocol's primary figure: the mean over leads 1 to 5 per decision day (and per target day)",
+  "h2_5": "the mean over leads 2 to 5, the leads the arms differ at"
+ }
+}
