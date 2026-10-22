@@ -227,7 +227,7 @@ def _rows(entries: Dict[str, Dict[str, object]], order: Sequence[str]):
         acf.append(f"| {name} | {e['n']} | {f(e['mean_d'], 3)} | " + " | ".join(f(e["acf"][str(k)]) for k in ACF_LAGS) + " |")
         r = e["lrv_ratio"]
         blk.append(f"| {name} | {e['n']} | {f(e['politis_white'], 1)} | {f(e['politis_white_wide'], 1)} | "
-                   f"{f(r['10'], 1)} | {f(r['40'], 1)} | {f(r['100'], 1)} | {f(e['se_understated_10_vs_100'], 1)}x |")
+                   f"{f(r['10'], 1)} | {f(r['40'], 1)} | {f(r['100'], 1)} | {'n/a' if e['se_understated_10_vs_100'] is None else f(e['se_understated_10_vs_100'], 1) + 'x'} |")
     return acf, blk
 
 
@@ -303,7 +303,44 @@ def lens_c_section(record) -> List[str]:
 
 
 def reading(record) -> List[str]:
-    return ["## Reading", "", "(to be written from the figures above)", ""]
+    s = {name: record["series"][name] for name in SERIES}
+    post = {name: s[name]["all"]["post-2020-04"] for name in SERIES}
+    full = {name: s[name]["all"]["full"] for name in SERIES}
+    wo = {name: s[name]["all"]["without 2019-09-18"] for name in SERIES}
+    rg = {name: s[name]["regime"] for name in SERIES}
+    return [
+        "## Reading", "",
+        "Development data; nothing here is a verdict and no constant moves.", "",
+        f"1. **Without 2019-09-18, the B1 leg's block moves from {f(full['B1']['politis_white'], 1)} to {f(wo['B1']['politis_white'], 1)} "
+        f"and the B2 leg's does not move ({f(full['B2']['politis_white'], 1)} to {f(wo['B2']['politis_white'], 1)}).** The day is one "
+        f"observation in {full['B1']['n']}, but it is B1's one large loss, and it hides B1's dependence; dropping the "
+        f"{len(record['window_days_dropped'])} decision days whose targets include it changes nothing further. Post-2020-04 holds none of them.",
+        f"2. **Post-2020-04, the B1 leg's block is {f(post['B1']['politis_white'], 1)}, close to the protocol's {PROTOCOL_BLOCK}; the B2 leg's is "
+        f"{f(post['B2']['politis_white'], 1)} ({f(post['B2']['politis_white_wide'], 1)} with the cap widened).** #980's pooled ~10 was an "
+        "average over the two legs of a number that was 4.8 against B1 and 73.2 against B2 on the full history; it does not "
+        "describe the B2 leg. The long-run ratio at lag 100 is "
+        f"{f(post['B2']['lrv_ratio']['100'], 1)} for the B2 leg and {f(post['B1']['lrv_ratio']['100'], 1)} for the B1 leg: the lag-10 standard "
+        f"error understates the lag-100 one by {f(post['B2']['se_understated_10_vs_100'], 1)}x for the B2 leg.",
+        f"3. **By regime** the B2 leg's block is {f(rg['B2']['2020']['politis_white'], 1)} in 2020, {f(rg['B2']['2021-23']['politis_white'], 1)} in 2021-23 "
+        f"({f(rg['B2']['2021-23']['politis_white_wide'], 1)} widened), {f(rg['B2']['2024']['politis_white'], 1)} in 2024 and "
+        f"{f(rg['B2']['2025-26']['politis_white'], 1)} in 2025-26; the B1 leg's is {f(rg['B1']['2020']['politis_white'], 1)}, "
+        f"{f(rg['B1']['2021-23']['politis_white'], 1)}, {f(rg['B1']['2024']['politis_white'], 1)} and {f(rg['B1']['2025-26']['politis_white'], 1)}. "
+        "The slow dependence is a 2020 to 2023 feature (the B2 leg's rho(21) is "
+        f"{f(rg['B2']['2021-23']['acf']['21'], 2)} in 2021-23 and {f(rg['B2']['2024']['acf']['21'], 2)} in 2024).",
+        "4. **Lens C's figures.** Its autocorrelations are reproduced by the proxy S(B1) - S(B2) post-2020-04 "
+        f"(rho(1) {f(post['proxy']['acf']['1'], 3)} against 0.726, rho(10) {f(post['proxy']['acf']['10'], 3)} against 0.278, "
+        f"rho(42) {f(post['proxy']['acf']['42'], 3)} against 0.162) and its long-run ratios nearly so "
+        f"({' / '.join(f(post['proxy']['lrv_ratio'][str(k)], 1) for k in LRV_LAGS)} against 4.9 / 11.9 / 19.3). Its Politis-White "
+        f"block of 108 is not reproduced exactly: the proxy gives {f(post['proxy']['politis_white'], 1)} with the published cap on the "
+        f"truncation lag and {f(post['proxy']['politis_white_wide'], 1)} with it widened to N / 4, so the figure of 108 lies in the same range and "
+        "depends on that cap (and on the unseen proxy file); the order of magnitude, tens of days, is confirmed. The refutation "
+        "is of #980's ~10 as a description of the series the protocol tests against B2, not of Lens C's number. Lens C's proxy is "
+        "S(B1) - S(B2), which is not either leg; for the legs, the B1 leg is near 10 and the B2 leg near 65 to 90.",
+        "5. **What stays open.** The Politis-White rule picks the block for the mean of a series; the protocol's interval is for "
+        "the mean of a lead-averaged d_t, studentized, so the right block for the test is a question of coverage, which this page does "
+        "not measure. #980 measured the interval at blocks 5, 10 and 20 and that is not repeated. The block choice is the marked "
+        "question above and stays Eleonora's.", "",
+    ]
 
 
 # -- the commands -----------------------------------------------------------------------------------------------------
