@@ -1,0 +1,50 @@
+{
+  "status": "declared by the pull request that closes #1131 before any score was computed; a measurement and a draft design, not a registration and not a record. Nothing is published, no critical value or decision rule in force moves, no day after 2025-12-31 and no lockbox day is scored, and nothing here is a verdict (scoring protocol v1, #640). The series are development data seen before this declaration (#693, #739, #963), so a result is exploration only. Registering H6 is Eleonora's own action; every choice marked 'question' below is hers",
+  "issue": 1131,
+  "hypothesis": "H6 step 2 (the registration design for the event-day strata, ahead of H5); also H1 step 3 (the confirmation design on the strata's unit of evidence)",
+  "ruling": "Eleonora, 22 October 2026, relayed by the orchestrating session on #1131 (her option c of #1024's open question): register H6 ahead of H5, because post-2020 autocorrelation leaves H5's 250-day window with a handful of independent windows. The basis is Lens C (five-lens review #958, avenue B) and #963's evidence",
+  "variants": {},
+  "variants_note": "no model and no variant is added. The candidate scored is the existing spread_mr_ctx of #761 as a stand-in for the series' shape; gbm_funding's walks are not rerun (a long run, and its event-day d series is not needed for the page's design questions). The registered H6 candidate is not chosen here",
+  "strata": {
+    "unit": "a stratum is a set of target days. Every stratum is read from the calendar at the target day (information-set rule 2). Membership is not exclusive: a day may be in several strata, and 'union' is the set of days in at least one",
+    "coupon_settlement": "treasury_settlement_coupons > 0 on the target row (#963's, #693's reading)",
+    "bill_settlement_large": "treasury_settlement_bills > 0 and at least the 75th percentile of the positive bill settlements of the 252 panel rows strictly before the target; the size rule is a stand-in, the threshold is a question for her",
+    "month_end_turn": "turn_days.turn_label == 'turn': the last business day of a month that is not a quarter's last month and the first business day of the next (#959; the shared definition is #1135's draft and is inert until she merges it)",
+    "quarter_end_turn": "turn_days.turn_label == 'quarter_end_turn': the last business day of March, June or September and the first business day after it",
+    "year_end": "turn_days.turn_label == 'year_end': the last business day of December and the first business day of January",
+    "quarter_and_year_end": "the union of quarter_end_turn and year_end; the testable form of the quarter-end stratum, since each alone is thin",
+    "tax_date": "turn_days.turn_day_type(day, tax_date) == 'tax_date': the tax_date calendar column on a day that is none of the three turn labels",
+    "fomc_meeting": "fomc_calendar.fomc_meeting_day == 1 (both days of a two-day meeting), read from the calendar as it stood at the decision instant of the longest lead (h = 5): a meeting not public then is not a member",
+    "post_fomc_window": "the IORB-change window: the first and second business days after the last day of a meeting visible at the decision instant of the longest lead. A change in IORB takes effect on the first of them, and it is announced only at the meeting, so a realized change cannot define membership; the window is the scheduled calendar's. Whether the realized changes fall in it is reported, ex post",
+    "minimum_events": 30,
+    "thin": "a stratum with fewer than minimum_events target days in the history is counted and not powered on its own"
+  },
+  "series": {
+    "days": "decision days from 2020-04-03 whose fifth target is on or before 2025-12-31, on the days B1, B2, B1', the calendar benchmark and spread_mr_ctx all have a forecast, built by scripts/b1_calendar_960.py's build_frame unchanged; lockbox.require_unlocked on every decision and target day",
+    "target_score": "the mean over leads 1-5 of the cell scores that target the day, kept only where all five cells exist (scripts/contiguous_calibration_963.py's target_scores)",
+    "metrics": "grid CRPS (the primary score) and upper-tail twCRPS (the key secondary)",
+    "d": "d_e = S(benchmark) - S(candidate) on the target day e of a stratum, in date order, positive favours the candidate",
+    "benchmarks": {
+      "B1": "repo_model.protocol_benchmarks.b1_forecast, the protocol's",
+      "B1_prime": "repo_model.b1_calendar.b1_calendar_forecast (#960), reported beside B1",
+      "B2": "repo_model.protocol_benchmarks.b2_forecast",
+      "calendar": "repo_model.risk_date_spread.calendar_forecast (#693): the trailing year's spreads of the target's risk type. It is defined at a lead only where the target is a quarter-end, month-end (last two business days), tax date or announced coupon settlement; a target day with a calendar forecast at fewer than five leads is left out of its leg, and the stratum's covered count is reported"
+    },
+    "candidate": "spread_mr_ctx (#761), repo_model.spread_mr_variants.walk, unchanged"
+  },
+  "power": {
+    "method": "#963's contiguous windows, in events: for a stratum's d series of n events, every window of N consecutive events (none wrapping); a window's statistic is its mean over its Newey-West standard error at lag 3 (scoring_protocol._standard_error, hac_lag 3, the lag #963 uses between events), relative to the series' mean. c is the 0.95 quantile of those statistics on the centred series: the value at which the bound covers 95% of windows",
+    "alternative": "power at skill s is the share of contiguous windows whose statistic plus s * mean(S(benchmark) on the stratum) over the window's standard error exceeds c: the windows' own dependence and variance, a mean shifted to skill s",
+    "skills": [0.03, 0.05, 0.10, 0.15, 0.20],
+    "window_years": [1.0, 2.0, 3.0],
+    "window_events": "N = round(window_years * events per year of the stratum), events per year being n over the years from the first to the last event; at least the lag + 2",
+    "effective_windows": "n / N, the windows the series holds without overlap; windows of a persistent series overlap in information, so it is an upper count of independent ones",
+    "size": "the share of the null windows above the normal one-sided 95% value 1.6448536269514722",
+    "union_series": "the union's events in date order, one d per target day"
+  },
+  "reading_rules": {
+    "design_rule": "none is declared. The page reports c, size and power per stratum and window; which stratum is the unit of evidence, the window, the multiplicity treatment and the MME are the questions it lists with a default for her",
+    "thin": "a stratum below minimum_events is counted and not powered; the union and the quarter_and_year_end form stand in for it"
+  },
+  "limits": "no published record, declaration or critical value changes; the protocol's constants are only read. The series are one candidate's proxy against four benchmarks on one history; a quantile of contiguous windows rests on a handful of independent stretches, which the effective-window count states. The settlement flags and IORB window are read as the panel and the FOMC calendar hold them, not re-dated per lead beyond what is stated above"
+}
