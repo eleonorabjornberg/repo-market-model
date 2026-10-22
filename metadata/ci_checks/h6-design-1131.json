@@ -1,0 +1,8 @@
+{
+  "command": [
+    "scripts/h6_design_1131.py",
+    "check"
+  ],
+  "where": "suite",
+  "pre_review": false
+}
