@@ -1,0 +1,8 @@
+{
+  "command": [
+    "scripts/episode_replay_1030.py",
+    "check"
+  ],
+  "where": "suite",
+  "pre_review": false
+}
