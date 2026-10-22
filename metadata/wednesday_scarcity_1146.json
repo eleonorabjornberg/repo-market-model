@@ -52,7 +52,7 @@
   "check": "scripts/alfred_wednesday_1146.py, a short pasted run on Eleonora's Mac (needs-mac: comment on the pull request); WRBWFRBL is not claimed never-revised until it passes"
  },
  "registration": {
-  "prepared": "docs/research/wednesday-scarcity-1146-registration-draft.md",
+  "prepared": "docs/decisions/drafts/wednesday-scarcity-registration-1146.md",
   "status": "text only; registering is Eleonora's own action and nothing is registered here"
  },
  "variants": {
