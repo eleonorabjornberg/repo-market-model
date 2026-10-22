@@ -25,7 +25,6 @@ import io
 import json
 import math
 import multiprocessing
-import random
 import sys
 import tempfile
 from dataclasses import dataclass
@@ -39,9 +38,12 @@ sys.path.insert(0, str(REPO / "src"))
 from repo_model import protocol_benchmarks as pb  # noqa: E402
 from repo_model import scoring_protocol as sp  # noqa: E402
 from repo_model.cli import main as cli_main  # noqa: E402
+from repo_model.confirmation_workers import (  # noqa: E402,F401  (the pooled workers live in src: a spawn pool imports them)
+    CALIBRATION_SEED, LOOK_FRACTIONS, POST_2020_FIRST, Design, RuleError, Series, calibrate_design, candidate, checkpoints,
+    history_slice, init_worker, pair_series, run_path, window_statistics,
+)
 from repo_model.data import load_daily_panel  # noqa: E402
 from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
-from repo_model.metrics import stationary_bootstrap_indices  # noqa: E402
 from repo_model.splits import LookAheadError  # noqa: E402
 
 RULE = REPO / "docs" / "research" / "confirmation-design-733.md"
@@ -56,13 +58,10 @@ DECISION = time(16, 0)
 # The rule's constants (§2 to §6).
 STUDY_END = date(2025, 12, 31)
 FIRST_DECISION = date(2018, 6, 29)
-POST_2020_FIRST = date(2020, 4, 3)
-LOOK_FRACTIONS = (0.24, 0.5, 1.0)
 SCALE_WINDOW = 60
 SCALE_LAG = 6
 WARMUP = SCALE_WINDOW + SCALE_LAG - 1
 WINDOWS = 20_000
-CALIBRATION_SEED = 1
 PATHS = 2_000
 SEED = 733
 SCENARIO_STRIDE = 1_000_003
@@ -70,22 +69,6 @@ DELTA = 0.03
 TARGET_POWER = 0.80
 MDE_GRID = (0.03, 0.05, 0.075, 0.10, 0.15, 0.20, 0.30)
 SIZE_LIMIT = 0.05
-
-
-class RuleError(ValueError):
-    """The study was asked for something its rule does not say."""
-
-
-@dataclass(frozen=True)
-class Design:
-    id: str
-    days: int
-    leads: Tuple[int, ...]
-    standardized: bool
-
-    @property
-    def checkpoints(self) -> Tuple[int, int, int]:
-        return checkpoints(self.days)
 
 
 DESIGNS = (
@@ -96,13 +79,6 @@ DESIGNS = (
     Design("D4", 250, sp.HORIZONS, True),
     Design("D5", 375, sp.HORIZONS, True),
 )
-
-
-def checkpoints(days: int) -> Tuple[int, int, int]:
-    """§4: the looks at 24%, 50% and 100% of `days`, rounded half up."""
-
-    first, second = (int(fraction * days + 0.5) for fraction in LOOK_FRACTIONS[:2])
-    return first, second, days
 
 
 #: §6: scenario name, true skill, noise, history. The order fixes each scenario's seed.
@@ -246,17 +222,6 @@ def mean_over(values: Dict[int, List[float]], leads: Sequence[int]) -> List[floa
     return [sum(values[h][i] for h in leads) / len(leads) for i in range(len(values[leads[0]]))]
 
 
-@dataclass
-class Series:
-    """A design's series on its score scale: `dates`, `b` (B1's score), `e` (B1 minus B2), and B3's pair `dates3`, `e3`."""
-
-    dates: List[date]
-    b: List[float]
-    e: List[float]
-    dates3: List[date]
-    e3: List[float]
-
-
 def design_series(pool: Pool, design: Design) -> Series:
     b = mean_over(pool.s1, design.leads)
     e = [x - y for x, y in zip(b, mean_over(pool.s2, design.leads))]
@@ -275,121 +240,10 @@ def design_series(pool: Pool, design: Design) -> Series:
     return Series(dates, b, e, dates3, e3)
 
 
-def candidate(b: Sequence[float], e: Sequence[float], delta: float, noise: float) -> List[float]:
-    """§3: `x_t = delta * b_t + noise * (e_t - mean(e))`. Its mean skill against B1 is `delta`."""
-
-    centre = sum(e) / len(e)
-    return [delta * x + noise * (y - centre) for x, y in zip(b, e)]
+# -- the calibration (§5): `window_statistics`, `pair_series`, `calibrate_design` are in `repo_model.confirmation_workers` --
 
 
-# -- the calibration (§5) --------------------------------------------------------------------------------------------
-
-
-def window_statistics(series: Sequence[float], *, days: int, lengths: Sequence[int], windows: int, seed: int,
-                      block: int = sp.WINDOW_BLOCK) -> Dict[int, List[float]]:
-    """Sorted studentized means of `windows` windows of `days` days, read at each prefix length in `lengths`.
-
-    The windows are those of `scoring_protocol.window_t_statistics` (same draws for the same seed), whose statistic is
-    `(mean_w - mean(series)) / se_w`; a look reads the window's first `lengths[k]` days.
-    """
-
-    values = [float(v) for v in series]
-    truth = sum(values) / len(values)
-    rng = random.Random(seed)
-    size = len(values)
-    out = {n: [] for n in lengths}
-    for _ in range(windows):
-        window: List[float] = []
-        while len(window) < days:
-            start = rng.randrange(size)
-            window.extend(values[(start + k) % size] for k in range(block))
-        window = window[:days]
-        for n in lengths:
-            part = window[:n]
-            out[n].append((sum(part) / n - truth) / sp._standard_error(part, sp.HAC_LAG, "a window"))
-    return {n: sorted(v) for n, v in out.items()}
-
-
-def pair_series(series: Series) -> Dict[str, List[float]]:
-    """The four calibration series. `e` is S(B1) - S(B2), so "B2-B1" here is the candidate-side orientation (a B2-like
-    candidate against B1) and "B1-B2" is `S(B2) - S(B1)`, the orientation PR #695 calls B2 - B1."""
-
-    return {
-        "B2-B1": list(series.e), "B1-B2": [-v for v in series.e],
-        "B3-B1 (five levels)": list(series.e3), "B1-B3 (five levels)": [-v for v in series.e3],
-    }
-
-
-def calibrate_design(args) -> Tuple[str, Dict[str, object]]:
-    """The design's critical values at looks 2 and 3: per pair, and the largest across the four."""
-
-    design, series, windows = args
-    looks = design.checkpoints
-    levels = sp.nominal_levels(looks)
-    per_pair = {}
-    for name, values in pair_series(series).items():
-        ordered = window_statistics(values, days=design.days, lengths=looks[1:], windows=windows, seed=CALIBRATION_SEED)
-        per_pair[name] = {
-            str(n): sp._bound(ordered[n], 1.0 - levels[k + 1], windows) for k, n in enumerate(looks[1:])
-        }
-    protocol = {str(n): max(per_pair[name][str(n)] for name in per_pair) for n in looks[1:]}
-    return design.id, {
-        "checkpoints": list(looks), "nominal_levels": list(levels), "per_pair": per_pair,
-        "critical_values": protocol, "series_days": len(series.b), "series_days_b3": len(series.e3),
-    }
-
-
-# -- the paths (§5, §6) ----------------------------------------------------------------------------------------------
-
-_DATA: Dict[str, object] = {}
-
-
-def init_worker(histories, critical):
-    _DATA["histories"] = histories
-    _DATA["critical"] = critical
-
-
-def history_slice(series: Series, history: str) -> Tuple[List[float], List[float]]:
-    if history == "full":
-        return series.b, series.e
-    if history == "post-2020":
-        keep = [i for i, day in enumerate(series.dates) if day >= POST_2020_FIRST]
-        return [series.b[i] for i in keep], [series.e[i] for i in keep]
-    raise RuleError(f"unknown history {history!r}")
-
-
-def run_path(job) -> Optional[int]:
-    """One path: the look at which the candidate is detected (gated), and the first look its bound is above zero."""
-
-    design, history, delta, noise, seed, *rest = job
-    generator = rest[0] if rest else "stationary"
-    b, e = _DATA["histories"][(design.id, history)]
-    critical = _DATA["critical"][design.id]
-    x = candidate(b, e, delta, noise)
-    rng = random.Random(seed)
-    if generator == "stationary":
-        index = stationary_bootstrap_indices(len(b), sp.BLOCK_LENGTH, rng)[: design.days]
-    elif generator == "circular":
-        index = []
-        while len(index) < design.days:
-            start = rng.randrange(len(b))
-            index.extend((start + k) % len(b) for k in range(sp.WINDOW_BLOCK))
-        index = index[: design.days]
-    else:
-        raise RuleError(f"unknown generator {generator!r}")
-    xs = [x[i] for i in index]
-    bs = [b[i] for i in index]
-    ungated = gated = None
-    for n in design.checkpoints[1:]:
-        part = xs[:n]
-        mean = sum(part) / n
-        if mean - critical[str(n)] * sp._standard_error(part, sp.HAC_LAG, "a path") > 0.0:
-            if ungated is None:
-                ungated = n
-            if gated is None and mean / (sum(bs[:n]) / n) >= sp.MME:
-                gated = n
-    return ungated, gated
-
+# -- the paths (§5, §6): `init_worker`, `history_slice`, `run_path` are there too ----------------------------------------
 
 def simulate(pool_args, critical, *, paths, workers, generator="stationary", scenarios=None):
     histories, designs = pool_args
