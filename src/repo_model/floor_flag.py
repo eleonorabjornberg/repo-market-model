@@ -18,6 +18,10 @@ Two arms use it as a pool selector, a third wraps a model:
 - (ii) `flag_fit` and `flag_forecast`: the mean-reversion candidate's `eps_h` pool (`spread_mean_reversion`) restricted to
   the training pairs whose origin flag is the anchor's. `phi` is the base fit's.
 - (iii) `two_part`: a model's law off the flag, B1's law on it.
+- (iv) `flag_scaled_fit` and `flag_scaled_forecast`: the volatility-scaled mean reversion of #941
+  (`spread_mr_fhs`, variant `FHS_NAME`) with its standardised residual pool restricted to the training pairs whose origin
+  flag is the anchor's; (v) `two_part` on that model (B1's law on the flag, the scaled model's off it). Added on Eleonora's
+  ruling of 22 October 2026: the flag and the two-part rule go on the best model as well as on B1.
 
 A restricted pool of fewer than `MIN_POOL` changes (or residuals) at a lead, or an anchor with no flag, gives the full
 pool. Stdlib only.
@@ -25,12 +29,13 @@ pool. Stdlib only.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, datetime, time
 from typing import Dict, List, Mapping, Optional, Sequence, Tuple
 
 from . import protocol_benchmarks as pb
 from . import spread_mean_reversion as smr
+from . import spread_mr_fhs as fhs
 from .data import DailyObservation
 from .evaluation_splits import SplitDeclaration
 from .policy_events import PolicyEntry, known_entries
@@ -279,6 +284,105 @@ def flag_forecast(
     return out
 
 
+#: The #941 variant ("mad window 20 floor 0.5") the scaled arms are built on, and the arms' names in a walk.
+FHS_NAME = "spread_mr_fhs_mad20_f0.5"
+ARM_FHS = "flag_fhs"
+ARM_TWO_FHS = "two_part_fhs"
+
+
+@dataclass(frozen=True)
+class FlagScaledFit:
+    """The base fit, the scaled fit's whole-lead pools and, per lead and flag state, the standardised residual quantiles."""
+
+    base: smr.Fit
+    scaled: fhs.ScaledFit
+    #: lead -> state (True, False) -> 23 standardised quantiles (the whole-lead pool where the state's pool is short).
+    standardised: Mapping[int, Mapping[bool, Sequence[float]]]
+    sizes: Mapping[int, Mapping[bool, int]]
+    #: Per lead, the states whose own pool was used (not the fallback).
+    own_pool: Mapping[int, Tuple[bool, ...]]
+
+
+def flag_scaled_fit(
+    panel: Sequence[DailyObservation],
+    decision_index: int,
+    row_flags: Sequence[Optional[bool]],
+    variant: fhs.Variant,
+    *,
+    registry: Mapping[str, Mapping[str, object]],
+    decision_time: time,
+    splits: SplitDeclaration,
+    levels: Optional[Sequence[Optional[float]]] = None,
+    base: Optional[smr.Fit] = None,
+    scaled: Optional[fhs.ScaledFit] = None,
+) -> FlagScaledFit:
+    """Arm (iv): the standardised residual pools of `variant` split by the flag at the training pair's origin.
+
+    `phi`, the training pairs, the scale and the whole-lead pools are `spread_mr_fhs.fit`'s (it runs the information-set
+    guards, requires every row the scale reads to be public, and refuses a training row after the anchor); a pair whose
+    origin has no flag or no scale joins neither pool. A state's pool of fewer than `MIN_POOL` pairs falls back to the
+    whole-lead pool.
+
+    Mutation record: see `tests/test_floor_flag.py` (`flag_scaled_fit`).
+    """
+
+    levels = smr.ordinary_levels(panel, splits) if levels is None else levels
+    settings = dict(registry=registry, decision_time=decision_time, splits=splits, levels=levels)
+    base = smr.fit(panel, decision_index, **settings) if base is None else base
+    scaled = fhs.fit(panel, decision_index, [variant], base=base, **settings)[variant.name] if scaled is None else scaled
+    anchor = pb._anchor(panel, decision_index, registry, decision_time)
+    lag = decision_index - anchor
+    rows = smr.training_rows(panel, decision_index, anchor, lag=lag, levels=levels)
+    reader = fhs.ScaleReader([row.spread_bps for row in panel[: anchor + 1]], variant)
+    standardised: Dict[int, Dict[bool, Sequence[float]]] = {}
+    sizes: Dict[int, Dict[bool, int]] = {}
+    own: Dict[int, Tuple[bool, ...]] = {}
+    for h in HORIZONS:
+        k = h + lag
+        pools: Dict[bool, List[float]] = {True: [], False: []}
+        for origin, target in rows[h]:
+            state = row_flags[origin]
+            scale = reader.at(origin)
+            if state is None or scale is None:
+                continue
+            raw = (panel[target].spread_bps - levels[origin]) - base.phi**k * (panel[origin].spread_bps - levels[origin])
+            pools[state].append(raw / scale)
+        sizes[h] = {state: len(pool) for state, pool in pools.items()}
+        standardised[h] = {
+            state: (pb.empirical_quantiles(sorted(pool)) if len(pool) >= MIN_POOL else list(scaled.standardised[h]))
+            for state, pool in pools.items()
+        }
+        own[h] = tuple(state for state in (True, False) if len(pools[state]) >= MIN_POOL)
+    return FlagScaledFit(base, scaled, standardised, sizes, own)
+
+
+def flag_scaled_forecast(
+    panel: Sequence[DailyObservation],
+    decision_index: int,
+    fit_: FlagScaledFit,
+    row_flags: Sequence[Optional[bool]],
+    variant: fhs.Variant,
+    *,
+    registry: Mapping[str, Mapping[str, object]],
+    decision_time: time,
+    splits: SplitDeclaration,
+    levels: Optional[Sequence[Optional[float]]] = None,
+) -> Dict[int, List[float]]:
+    """Arm (iv)'s forecast from `fit_` (possibly an older fit): the scaled model's forecast with the anchor's state's pool.
+
+    The anchor's flag is read afresh; with no flag the whole-lead pool is used, which is the scaled model itself.
+    """
+
+    anchor = pb._anchor(panel, decision_index, registry, decision_time)
+    state = row_flags[anchor]
+    chosen = fit_.scaled.standardised if state is None else {h: fit_.standardised[h][state] for h in HORIZONS}
+    pool = fhs.ScaledFit(chosen, fit_.scaled.pairs, fit_.scaled.left_out)
+    return fhs.forecast(
+        panel, decision_index, pool, fit_.base, variant,
+        registry=registry, decision_time=decision_time, splits=splits, levels=levels,
+    )
+
+
 def two_part(
     law: Mapping[int, Sequence[float]], b1: Mapping[int, Sequence[float]], flag: Optional[bool]
 ) -> Dict[int, List[float]]:
@@ -297,6 +401,8 @@ class FlagWalk:
     skipped: Tuple[date, ...]
     #: Decision day -> the flag at its anchor.
     anchor_flag: Dict[date, Optional[bool]]
+    #: Refit day -> the scaled arm's fit (empty when the walk was run without a variant).
+    scaled_fits: Dict[date, FlagScaledFit] = field(default_factory=dict)
 
 
 ARM_B1 = "flag_b1"
@@ -313,8 +419,12 @@ def walk(
     decision_time: time,
     splits: SplitDeclaration,
     refit_every: int = smr.REFIT_EVERY,
+    variant: Optional[fhs.Variant] = None,
 ) -> FlagWalk:
     """The base mean reversion and arms (i) and (ii) on `decision_days`, refitting as `spread_mean_reversion.walk` does.
+
+    With a `variant` (#941's, `FHS_NAME`), the series `variant.name`, `ARM_FHS` (iv) and `ARM_TWO_FHS` (v) are added, on
+    the same refits and the same days; a day on which any of them has no forecast is skipped for all.
 
     Arm (i) has no fit and is forecast on every day it can be; the days without a mean-reversion forecast (too little
     history) are skipped for every series, so all series cover the same days.
@@ -325,9 +435,12 @@ def walk(
     position = {row.date: index for index, row in enumerate(panel)}
     levels = smr.ordinary_levels(panel, splits)
     settings = dict(registry=registry, decision_time=decision_time, splits=splits, levels=levels)
-    forecasts: Dict[str, Dict[date, Dict[int, List[float]]]] = {BASE_MR: {}, ARM_B1: {}, ARM_MR: {}}
+    names = [BASE_MR, ARM_B1, ARM_MR] + ([variant.name, ARM_FHS, ARM_TWO_FHS] if variant is not None else [])
+    forecasts: Dict[str, Dict[date, Dict[int, List[float]]]] = {name: {} for name in names}
     fit_used: Dict[date, date] = {}
     fits: Dict[date, FlagFit] = {}
+    scaled_fits: Dict[date, FlagScaledFit] = {}
+    current_scaled: Optional[FlagScaledFit] = None
     anchor_flag: Dict[date, Optional[bool]] = {}
     skipped: List[date] = []
     current: Optional[FlagFit] = None
@@ -338,12 +451,23 @@ def walk(
         index = position[day]
         try:
             if current is None or since >= refit_every:
-                current = flag_fit(panel, index, row_flags, base=smr.fit(panel, index, **settings), **settings)
+                refit = smr.fit(panel, index, **settings)
+                refit_flag = flag_fit(panel, index, row_flags, base=refit, **settings)
+                if variant is not None:
+                    current_scaled = flag_scaled_fit(panel, index, row_flags, variant, base=refit, **settings)
+                    scaled_fits[day] = current_scaled
+                current = refit_flag
                 fits[day] = current
                 since = 0
             reference = smr.forecast(panel, index, current.base, **settings)
             arm_mr = flag_forecast(panel, index, current, row_flags, **settings)
             arm_b1 = flag_b1_forecast(panel, index, row_flags, registry=registry, decision_time=decision_time)
+            if variant is not None:
+                scaled = fhs.forecast(
+                    panel, index, current_scaled.scaled, current.base, variant, **settings
+                )
+                arm_fhs = flag_scaled_forecast(panel, index, current_scaled, row_flags, variant, **settings)
+                full_b1 = pb.b1_forecast(panel, index, registry=registry, decision_time=decision_time)
         except smr.InsufficientHistory:
             skipped.append(day)
             continue
@@ -356,4 +480,7 @@ def walk(
         since += 1
         forecasts[BASE_MR][day], forecasts[ARM_MR][day], forecasts[ARM_B1][day] = reference, arm_mr, arm_b1
         anchor_flag[day] = row_flags[pb._anchor(panel, index, registry, decision_time)]
-    return FlagWalk(forecasts, fit_used, fits, tuple(skipped), anchor_flag)
+        if variant is not None:
+            forecasts[variant.name][day], forecasts[ARM_FHS][day] = scaled, arm_fhs
+            forecasts[ARM_TWO_FHS][day] = two_part(scaled, full_b1, anchor_flag[day])
+    return FlagWalk(forecasts, fit_used, fits, tuple(skipped), anchor_flag, scaled_fits)

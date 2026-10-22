@@ -6,11 +6,15 @@ moves a declaration (scoring protocol v1, #640; #46 top block). `metadata/floor_
 script refuses to read it unless it is committed and unchanged. The arms are `repo_model.floor_flag` on the base model
 `repo_model.spread_mean_reversion` (#686) and B1 (`repo_model.protocol_benchmarks`). They are scored with the scorer of
 scoring protocol v1 (`repo_model.scoring_protocol`) against B1 and B2, arm (ii) also against its own pool
-(`spread_mr_level10`) and arm (iii) also against `gbm_funding`. Scored decision days have their five targets on or before
+(`spread_mr_level10`), arms (iv) and (v) also against the scaled model (`spread_mr_fhs_mad20_f0.5`) and arm (iii) also
+against `gbm_funding`. Scored decision days have their five targets on or before
 2025-12-31; no later day is read (`docs/decisions/lockbox.md`).
 
-Arms (i) and (ii) run in the cloud in minutes. Arm (iii) needs `gbm_funding`'s walks, which take hours (#46: not run in the
-cloud). Build the published panel and the walks as the docstring of `scripts/spread_distribution_634.py` says, then:
+Arms (i), (ii), (iv) and (v) run in the cloud in minutes: (iv) and (v) put the flag and the two-part rule on the best model,
+#941's scaled mean reversion (`repo_model.spread_mr_fhs`, variant "mad window 20 floor 0.5"), as well as on B1 (Eleonora's
+ruling of 22 October 2026). Arm (iii) and the reference rows of `gbm_funding` need `gbm_funding`'s walks, which take hours
+(#46: not run in the cloud). Build the published panel and the walks as the docstring of `scripts/spread_distribution_634.py`
+says, then:
 
     PYTHONPATH=src python3 scripts/floor_flag_966.py score --panel PUB.csv --output OUT/floor_flag.json
     PYTHONPATH=src python3 scripts/floor_flag_966.py score --panel PUB.csv --walks OUT --output OUT/floor_flag.json
@@ -47,6 +51,7 @@ def _load(name: str):
 
 from repo_model import floor_flag as ff  # noqa: E402
 from repo_model import protocol_benchmarks as pb, scoring_protocol as sp  # noqa: E402
+from repo_model import spread_mr_fhs as fhs  # noqa: E402
 from repo_model.baseline import panel_sha256  # noqa: E402
 from repo_model.data import load_daily_panel  # noqa: E402
 from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
@@ -68,11 +73,18 @@ WINDOW_2024 = date(2024, 1, 1)
 WINDOW_2021 = date(2021, 1, 1)
 BASE = ff.BASE_MR
 GBM, FLAG_GBM = "gbm_funding", "flag_gbm"
+#: #941's variant "mad window 20 floor 0.5": the best model, the base of arms (iv) and (v) (the amendment of 22 October 2026).
+FHS_VARIANT = fhs.VARIANTS[0]
+FHS = ff.FHS_NAME
+assert FHS_VARIANT.name == FHS
 METRICS = (("grid_crps", sp.grid_crps), ("upper_tail_twcrps", sp.upper_tail_twcrps))
 LABELS = {"B1": "B1", "B2": "B2", BASE: "mean reversion (#686; arm (ii)'s own pool)", ff.ARM_B1: "(i) flag-restricted B1",
-          ff.ARM_MR: "(ii) flag-restricted mean reversion", GBM: "gbm_funding (#634)", FLAG_GBM: "(iii) gbm_funding, two-part"}
-#: Candidate -> the extra reference it is also paired against.
-EXTRA_REFERENCE = {ff.ARM_MR: BASE, FLAG_GBM: GBM}
+          ff.ARM_MR: "(ii) flag-restricted mean reversion", GBM: "gbm_funding (#634; a reference)",
+          FLAG_GBM: "(iii) gbm_funding, two-part (a reference arm)",
+          FHS: "scaled mean reversion (#941, mad window 20 floor 0.5; arms (iv) and (v)'s own pool)",
+          ff.ARM_FHS: "(iv) flag-restricted scaled mean reversion", ff.ARM_TWO_FHS: "(v) scaled mean reversion, two-part"}
+#: Candidate -> the extra references it is also paired against, where the section holds them.
+EXTRA_REFERENCE = {ff.ARM_MR: (BASE,), FLAG_GBM: (GBM,), FHS: (GBM,), ff.ARM_FHS: (FHS, GBM), ff.ARM_TWO_FHS: (FHS, GBM)}
 FLAG_LABEL = {True: "on", False: "off", None: "undefined"}
 paired_row, run_pairs, skill_text, diff_text, pct, excludes_zero = (
     s761.paired_row, s761.run_pairs, s761.skill_text, s761.diff_text, s761.pct, s761.excludes_zero)
@@ -117,7 +129,8 @@ def build_base(panel, splits, registry, declaration, row_flags):
     # the flag is as-of at every row the pools and the anchors read, before any forecast is used
     last_anchor = pb._anchor(panel, frame.position[candidate_days[-1]], registry, DECISION_TIME)
     ff.check_no_future(panel, row_flags, load_register(), DECISION_TIME, indices=range(last_anchor + 1))
-    walk = ff.walk(panel, candidate_days, row_flags, registry=registry, decision_time=DECISION_TIME, splits=splits)
+    walk = ff.walk(panel, candidate_days, row_flags, registry=registry, decision_time=DECISION_TIME, splits=splits,
+                   variant=FHS_VARIANT)
     b1, b2, dropped = {}, {}, []
     for day in walk.forecasts[BASE]:
         index = frame.position[day]
@@ -127,7 +140,8 @@ def build_base(panel, splits, registry, declaration, row_flags):
         except (sp.ProtocolError, SplitError):
             dropped.append(day)
     days = [day for day in walk.forecasts[BASE] if day in b1]
-    forecasts = {"B1": b1, "B2": b2, **{name: {d: walk.forecasts[name][d] for d in days} for name in (BASE, ff.ARM_B1, ff.ARM_MR)}}
+    forecasts = {"B1": b1, "B2": b2, **{name: {d: walk.forecasts[name][d] for d in days}
+                                         for name in (BASE, ff.ARM_B1, ff.ARM_MR, FHS, ff.ARM_FHS, ff.ARM_TWO_FHS)}}
     flag_of = {d: FLAG_LABEL[walk.anchor_flag[d]] for d in days}
     notes = {
         "decision_days_offered": len(candidate_days), "candidate_skipped_for_history": len(walk.skipped),
@@ -138,6 +152,9 @@ def build_base(panel, splits, registry, declaration, row_flags):
             f"{FLAG_LABEL[state]}": [sum(1 for fit in walk.fits.values() if state in fit.own_pool[h]) for h in sp.HORIZONS]
             for state in (True, False)},
         "refit_count": len(walk.fits),
+        "scaled_own_pool_share": {
+            f"{FLAG_LABEL[state]}": [sum(1 for fit in walk.scaled_fits.values() if state in fit.own_pool[h]) for h in sp.HORIZONS]
+            for state in (True, False)},
     }
     return make_frame(panel, splits, registry, declaration, days, forecasts), notes, flag_of, b1
 
@@ -153,7 +170,8 @@ def build_walks(frame, base_frame, flag_of, b1, walks_dir: Path, row_flags, pane
     gbm = {d: filled.forecasts[d] for d in days}
     anchors = {d: row_flags[pb._anchor(panel, frame.position[d], frame.registry, DECISION_TIME)] for d in days}
     flagged = {d: ff.two_part(gbm[d], b1[d], anchors[d]) for d in days}
-    forecasts = {"B1": {d: b1[d] for d in days}, "B2": {d: base_frame.forecasts["B2"][d] for d in days}, GBM: gbm, FLAG_GBM: flagged}
+    forecasts = {"B1": {d: b1[d] for d in days}, "B2": {d: base_frame.forecasts["B2"][d] for d in days}, GBM: gbm, FLAG_GBM: flagged,
+                 **{name: {d: base_frame.forecasts[name][d] for d in days} for name in (FHS, ff.ARM_FHS, ff.ARM_TWO_FHS)}}
     notes = {"walk_days": len(days), "first": days[0].isoformat(), "last": days[-1].isoformat(),
              "missing_days": len(filled.missing_days), "missing_share": filled.missing_share,
              "flag_on_days": sum(1 for d in days if anchors[d]), "flag_state_days": {FLAG_LABEL[s]: sum(1 for d in days if anchors[d] == s) for s in (True, False, None)}}
@@ -168,7 +186,7 @@ _SERIES: Dict = {}
 def _task(job):
     key, metric, candidate, members = job
     series = _SERIES[(key[0], metric)]
-    names = ["B1", "B2"] + ([EXTRA_REFERENCE[candidate]] if candidate in EXTRA_REFERENCE and EXTRA_REFERENCE[candidate] in series else [])
+    names = ["B1", "B2"] + [r for r in EXTRA_REFERENCE.get(candidate, ()) if r in series]
     return job[:3], run_pairs({n: series[n] for n in names}, series[candidate], list(members), seed=SEED, draws=_SERIES["draws"])
 
 
@@ -252,12 +270,13 @@ def score(args) -> int:
                  "rows_on": sum(1 for s in row_flags if s), "rows_off": sum(1 for s in row_flags if s is False),
                  "rows_undefined": sum(1 for s in row_flags if s is None)},
     }
-    models = ("B1", "B2", BASE, ff.ARM_B1, ff.ARM_MR)
-    result["main"] = section(frame, flag_of, models, (BASE, ff.ARM_B1, ff.ARM_MR), args.draws, args.workers)
+    scaled = (FHS, ff.ARM_FHS, ff.ARM_TWO_FHS)
+    models = ("B1", "B2", BASE, ff.ARM_B1, ff.ARM_MR) + scaled
+    result["main"] = section(frame, flag_of, models, (BASE, ff.ARM_B1, ff.ARM_MR) + scaled, args.draws, args.workers)
     if args.walks:
         wframe, wnotes, wflag = build_walks(frame, frame, flag_of, b1, Path(args.walks), row_flags, panel)
         result["walks_notes"] = wnotes
-        result["walks"] = section(wframe, wflag, ("B1", "B2", GBM, FLAG_GBM), (GBM, FLAG_GBM), args.draws, args.workers)
+        result["walks"] = section(wframe, wflag, ("B1", "B2", GBM, FLAG_GBM) + scaled, (GBM, FLAG_GBM) + scaled, args.draws, args.workers)
     Path(args.output).parent.mkdir(parents=True, exist_ok=True)
     Path(args.output).write_text(json.dumps(result, indent=1, sort_keys=True) + "\n", encoding="utf-8")
     return 0
@@ -277,6 +296,24 @@ def kill_ii(record) -> Optional[dict]:
     return {"row": row, "killed": lo <= 0.0}
 
 
+def kill_iv(record) -> Optional[dict]:
+    group = record["main"]["groups"].get("window", {}).get("2024-26")
+    if group is None:
+        return None
+    row = group["grid_crps"]["vs"][ff.ARM_FHS][FHS]
+    if "undefined" in row:
+        return {"row": row, "killed": None}
+    lo, hi = row["skill_interval"]
+    return {"row": row, "killed": lo <= 0.0}
+
+
+def kill_v(record) -> Optional[dict]:
+    row = record["main"]["groups"]["pooled"]["all decision days"]["grid_crps"]["vs"][ff.ARM_TWO_FHS][FHS]
+    if "undefined" in row:
+        return {"row": row, "killed": None}
+    return {"row": row, "killed": row["skill_interval"][1] < 0.0}
+
+
 def kill_iii(record) -> Optional[dict]:
     if "walks" not in record:
         return None
@@ -287,6 +324,8 @@ def kill_iii(record) -> Optional[dict]:
 
 
 def _table(cell: dict, order: Sequence[str], benchmarks: Sequence[str]) -> List[str]:
+    order = [m for m in order if m in cell["means"]]
+    benchmarks = [b for b in benchmarks if b in cell["means"]]
     heads = " | ".join(f"vs {LABELS[b]}" for b in benchmarks)
     out = [f"| | mean bp | {heads} |", "|---|---|" + "---|" * len(benchmarks)]
     for m in order:
@@ -317,7 +356,7 @@ def _sections(title, sec, order, benchmarks, splits):
 
 def render(record: dict) -> str:
     n, flag = record["notes"], record["flag"]
-    k2, k3 = kill_ii(record), kill_iii(record)
+    k2, k3, k4, k5 = kill_ii(record), kill_iii(record), kill_iv(record), kill_v(record)
     SPLITS = (("lead", "lead"), ("regime", "regime (target day)"), ("window", "window (target day)"),
               ("pressure_day_type", "pressure-day type (target day)"), ("flag_state", "flag state at the anchor"))
     out = [
@@ -352,13 +391,33 @@ def render(record: dict) -> str:
     else:
         out.append(f"- (iii) against `gbm_funding` pooled: grid CRPS skill {skill_text(k3['row'])}. "
                    + ("**Kill rule met**: the upper bound is below 0." if k3["killed"] else "Kill rule not met."))
+    if k4 is None:
+        out.append("- (iv): not evaluated (no 2024-26 group).")
+    elif k4["killed"] is None:
+        out.append("- (iv) against its own pool (the scaled mean reversion) on the 2024-26 days: undefined (%s)." % k4["row"]["undefined"])
+    else:
+        out.append(f"- (iv) against its own pool (the scaled mean reversion, #941) on the 2024-26 days: grid CRPS skill {skill_text(k4['row'])}. "
+                   + ("**Kill rule (iv) met**: the interval covers 0 or lies below it." if k4["killed"] else "Kill rule (iv) not met: the interval lies above 0."))
+    if k5["killed"] is None:
+        out.append("- (v) against the scaled mean reversion pooled: undefined (%s)." % k5["row"]["undefined"])
+    else:
+        out.append(f"- (v) the two-part rule on the scaled mean reversion, against the scaled mean reversion pooled: grid CRPS skill {skill_text(k5['row'])}. "
+                   + ("**Kill rule (v) met**: the upper bound is below 0." if k5["killed"] else "Kill rule (v) not met."))
     out += ["", "A kill is a statement about development days; it neither supports nor kills H5 (the declaration's `kill.reading`).", "",
-            "## Arms (i) and (ii)", "",
+            "## Arms (iv) and (v): the flag on the best model (#941's scaled mean reversion)", "",
+            "Added on Eleonora's ruling of 22 October 2026 (declaration amended before any score of these arms). (iv) restricts the "
+            "scaled model's standardised residual pool to the training pairs whose origin has the anchor's flag; (v) is B1 while the flag is on "
+            "and the scaled model otherwise. Their own pool and the model they are compared with is the scaled model, `spread_mr_fhs_mad20_f0.5`.", "",
+            f"{n['scored_decision_days']:,} decision days, {n['first']} to {n['last']} (the last target is {n['last_target']}). Refits whose own flag "
+            f"pool was used for the scaled arm (not the whole-lead fallback), by lead 1 to 5: flag on {n['scaled_own_pool_share']['on']}, "
+            f"flag off {n['scaled_own_pool_share']['off']}.", ""]
+    out += _sections("Arms (iv) and (v)", record["main"], (FHS, ff.ARM_FHS, ff.ARM_TWO_FHS, "B1", "B2"), ("B1", "B2", FHS), SPLITS)
+    out += ["## Arms (i) and (ii)", "",
             f"{n['scored_decision_days']:,} decision days, {n['first']} to {n['last']} (the last target is {n['last_target']}). Mean reversion has no "
             f"forecast on {n['candidate_skipped_for_history']} early days (history), a benchmark is missing on {len(n['benchmark_missing'])}. "
             f"The fit is renewed {n['refits']} times (every 21 decision days). Refits whose own flag pool was used (not the whole-lead fallback), "
             f"by lead 1 to 5: flag on {n['own_pool_share']['on']}, flag off {n['own_pool_share']['off']}.", ""]
-    out += _sections("Arms (i) and (ii)", record["main"], (BASE, ff.ARM_B1, ff.ARM_MR), ("B1", "B2", BASE), SPLITS)
+    out += _sections("Arms (i) and (ii)", record["main"], (BASE, ff.ARM_B1, ff.ARM_MR, "B1", "B2"), ("B1", "B2", BASE), SPLITS)
     out += ["## Arm (iii)", ""]
     if "walks" not in record:
         out += ["Not run in this record (`gbm_funding`'s walks are a long run; they go to Eleonora's Mac and the result returns as a commit "
@@ -368,8 +427,9 @@ def render(record: dict) -> str:
         out += [f"{w['walk_days']:,} decision days covered by `gbm_funding`'s walks ({w['first']} to {w['last']}); its missing forecasts "
                 f"({w['missing_days']} decision days, share {w['missing_share']:.3f}) are filled by B1 as the protocol does. Flag on at "
                 f"the anchor on {w['flag_on_days']} of them.", ""]
-        out += _sections("Arm (iii)", record["walks"], (GBM, FLAG_GBM), ("B1", "B2", GBM), SPLITS)
-    out += ["## Variant count", "", "Three arms on one flag; no new fit beyond #686's own refits.", "",
+        out += _sections("Arm (iii) and the reference", record["walks"], (GBM, FLAG_GBM, FHS, ff.ARM_FHS, ff.ARM_TWO_FHS, "B1", "B2"),
+                         ("B1", "B2", GBM, FHS), SPLITS)
+    out += ["## Variant count", "", "Five arms on one flag (three declared first, (iv) and (v) added on 22 October 2026); no new fit beyond #686's and #941's own refits.", "",
             "## Not checked, or for Eleonora", "",
             "- The flag and its three arms were chosen after the author saw 2018-2025 (Lens B's replication is on the same days), so every figure is "
             "exploration. Whether any arm joins #634's candidates, and the flag's threshold (1 bp) and windows (60 and 40 rows), are hers.",
