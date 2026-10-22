@@ -316,9 +316,9 @@ def reading(record) -> List[str]:
         f"observation in {full['B1']['n']}, but it is B1's one large loss, and it hides B1's dependence; dropping the "
         f"{len(record['window_days_dropped'])} decision days whose targets include it changes nothing further. Post-2020-04 holds none of them.",
         f"2. **Post-2020-04, the B1 leg's block is {f(post['B1']['politis_white'], 1)}, close to the protocol's {PROTOCOL_BLOCK}; the B2 leg's is "
-        f"{f(post['B2']['politis_white'], 1)} ({f(post['B2']['politis_white_wide'], 1)} with the cap widened).** #980's pooled ~10 was an "
-        "average over the two legs of a number that was 4.8 against B1 and 73.2 against B2 on the full history; it does not "
-        "describe the B2 leg. The long-run ratio at lag 100 is "
+        f"{f(post['B2']['politis_white'], 1)} ({f(post['B2']['politis_white_wide'], 1)} with the cap widened).** #980 recorded 4.8 against "
+        "B1 and 73.2 against B2 on the full history (reproduced here to 1e-9); the ~10 is the protocol's block that #980 kept, "
+        "right in size for the B1 leg and not for the B2 leg. The long-run ratio at lag 100 is "
         f"{f(post['B2']['lrv_ratio']['100'], 1)} for the B2 leg and {f(post['B1']['lrv_ratio']['100'], 1)} for the B1 leg: the lag-10 standard "
         f"error understates the lag-100 one by {f(post['B2']['se_understated_10_vs_100'], 1)}x for the B2 leg.",
         f"3. **By regime** the B2 leg's block is {f(rg['B2']['2020']['politis_white'], 1)} in 2020, {f(rg['B2']['2021-23']['politis_white'], 1)} in 2021-23 "

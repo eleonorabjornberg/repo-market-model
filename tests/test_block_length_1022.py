@@ -140,8 +140,8 @@ class PageTests(unittest.TestCase):
             "first_post_2020_day": "2020-04-03",
             "window_days_dropped": ["2019-09-11"],
             "gbm_funding_missing": {"days": 0, "share": 0.0},
-            "regimes": ["2020", "2021-23"],
-            "series": {name: {"all": rows, "regime": {"2021-23": entry}} for name in script.SERIES},
+            "regimes": ["2020", "2021-23", "2024", "2025-26"],
+            "series": {name: {"all": rows, "regime": {r: entry for r in ("2020", "2021-23", "2024", "2025-26")}} for name in script.SERIES},
         }
 
     def test_page_is_a_function_of_the_record(self):
