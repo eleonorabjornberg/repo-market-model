@@ -131,5 +131,23 @@ class PageTests(unittest.TestCase):
         self.assertIn(script.base.fmt(cell, signed=True), self.text)
 
 
+class CommittedPageTests(unittest.TestCase):
+
+    def test_the_committed_page_is_what_render_writes_from_the_committed_result(self):
+        result = json.loads((ROOT / "docs" / "research" / "ordinary-day-p5-1023" / "result.json").read_text(encoding="utf-8"))
+        three = json.loads(SCORE_934.read_text(encoding="utf-8"))
+        page = (ROOT / "docs" / "research" / "ordinary-day-p5-1023-result.md").read_text(encoding="utf-8")
+        self.assertEqual(page, script.render(result, three))
+
+    def test_the_committed_two_edge_regimes_equal_the_committed_three_regime_figures(self):
+        result = json.loads((ROOT / "docs" / "research" / "ordinary-day-p5-1023" / "result.json").read_text(encoding="utf-8"))
+        three = json.loads(SCORE_934.read_text(encoding="utf-8"))
+        for lead, cells in result["definitions"]["non_ordinary"].items():
+            for regime in ("2018-19", "2025-26"):
+                for name, row in cells[regime]["rows"].items():
+                    kept = three["definitions"]["non_ordinary"][lead][regime]["rows"][name]
+                    self.assertEqual(row.get("auroc_minus_reference", {}).get("value"), kept.get("auroc_minus_reference", {}).get("value"), (lead, regime, name))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -8,7 +8,7 @@ Nothing new is modelled: the rows, the reference, the outcome and the ordinary-d
 
 ## Five declared regimes
 
-Regimes: 2018-19 (2018-01-01 to 2019-12-31), 2020 (2020-01-01 to 2020-12-31), 2021-23 (2021-01-01 to 2023-12-31), 2024 (2024-01-01 to 2024-12-31), 2025-26 (2025-01-01 to 2026-12-31).
+Regimes: 2018-19 (2018-01-01 to 2019-12-31), 2020 (2020-01-01 to 2020-12-31), 2021-23 (2021-01-01 to 2023-12-31), 2024 (2024-01-01 to 2024-12-31), 2025-26 (2025-01-01 onward, read to 2025-12-31).
 
 ### mean reversion (#686)
 

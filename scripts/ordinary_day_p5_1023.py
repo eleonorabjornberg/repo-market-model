@@ -162,7 +162,8 @@ def render(result: dict, three: dict) -> str:
         "over decision days; this AUROC difference keeps #934's percentile interval so the restatement is comparable. Whether it "
         "should also be read on the studentized bound is hers.", "",
         "## Five declared regimes", "",
-        "Regimes: " + ", ".join(f"{label} ({first} to {last})" for label, first, last in result["regimes"]) + ".", "",
+        "Regimes: " + ", ".join(f"{label} ({first} to {last})" if last <= "2025-12-31" else f"{label} ({first} onward, read to 2025-12-31)"
+                                        for label, first, last in result["regimes"]) + ".", "",
     ]
     for name in base.MODEL_ROWS:
         out += [f"### {base.LABELS[name]}", "", *_table(result, name, LABELS, five_headers)]
