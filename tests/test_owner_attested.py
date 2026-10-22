@@ -506,6 +506,87 @@ class GitPathTests(unittest.TestCase):
         self.assertEqual(list(oa.git_changed(sha, sha)()), [])
 
 
+class PushRangeTests(unittest.TestCase):
+    """#1122 (ruling on finding #1110, 22 October 2026): the check runs on a push to `main`, over `before..after`.
+
+    #1078 changed `docs/decisions/scoring-protocol.md` and merged on CI that ran before #1080 bound `docs/decisions/`.
+    A fixture history reproduces it: a commit changes a binding file with no registry entry.
+
+    Tests written first and watched failing: `test_a_push_that_changes_a_binding_file_fails`,
+    `test_the_failure_names_the_commit_and_the_file` and `test_a_new_branch_push_is_read_against_the_parent`
+    raised `AttributeError` (no `push_range_report` / `resolve_push_base`) and the wiring tests `AssertionError`
+    (`'push' not found`) before the change.
+
+    Recorded mutation (22 October 2026), on the range check: in `main`, `return 1` after `NotOwnerAttested` ->
+    `return 0`. Run alone with
+    `PYTHONPATH=src:tests python3 -B -m unittest test_owner_attested.PushRangeTests`,
+    `test_a_push_that_changes_a_binding_file_fails` failed with `AssertionError` (`0 != 1`).
+    Restored, all pass.
+    """
+
+    def setUp(self):
+        import tempfile
+
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+        self.repo = Path(self._tmp.name)
+        self._git("init", "-q")
+        self._git("config", "user.email", "t@example.invalid")
+        self._git("config", "user.name", "t")
+        self.first = self._commit({REGISTRY: _registry(), "README.md": "a\n"}, "start")
+        self.old, oa.REPO = oa.REPO, self.repo
+        self.addCleanup(setattr, oa, "REPO", self.old)
+
+    def _git(self, *args):
+        return subprocess.run(["git", *args], cwd=self.repo, capture_output=True, text=True, check=True).stdout.strip()
+
+    def _commit(self, files, message):
+        for path, text in files.items():
+            target = self.repo / path
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(text, encoding="utf-8")
+        self._git("add", "-A")
+        self._git("commit", "-q", "-m", message)
+        return self._git("rev-parse", "HEAD")
+
+    def _run(self, *args):
+        out, err = io.StringIO(), io.StringIO()
+        with redirect_stdout(out), redirect_stderr(err):
+            code = oa.main(["check", *args])
+        return code, out.getvalue(), err.getvalue()
+
+    def test_a_push_that_changes_nothing_binding_passes(self):
+        after = self._commit({"README.md": "b\n"}, "docs")
+        self.assertEqual(self._run("--base", self.first, "--head", after)[0], 0)
+
+    def test_a_push_that_changes_a_binding_file_fails(self):
+        after = self._commit({"docs/decisions/scoring-protocol.md": "changed\n"}, "binding change")
+        code, _, err = self._run("--base", self.first, "--head", after)
+        self.assertEqual(code, 1)
+        self.assertIn("decisions", err)
+
+    def test_the_failure_names_the_commit_and_the_file(self):
+        self._commit({"README.md": "b\n"}, "ordinary")
+        after = self._commit({"docs/decisions/scoring-protocol.md": "changed\n"}, "binding change")
+        _, _, err = self._run("--base", self.first, "--head", after)
+        self.assertIn(after[:8], err)
+        self.assertIn("docs/decisions/scoring-protocol.md", err)
+        self.assertIn("binding change", err)
+
+    def test_a_multi_commit_push_is_read_as_one_range(self):
+        # The change and its entry may land in one push; the aggregate range is what the pull request check reads.
+        self._commit({"docs/decisions/x.md": "changed\n"}, "binding change")
+        after = self._commit({REGISTRY: _registry(_entry(kind="decisions"))}, "entry")
+        out = oa.push_range_report(self.first, after)
+        self.assertIn("docs/decisions/x.md", out)
+
+    def test_a_new_branch_push_is_read_against_the_parent(self):
+        after = self._commit({"README.md": "b\n"}, "docs")
+        self.assertEqual(oa.resolve_push_base("0" * 40, after), after + "^")
+        self.assertEqual(oa.resolve_push_base("f" * 40, after), after + "^")
+        self.assertEqual(oa.resolve_push_base(self.first, after), self.first)
+
+
 class WiringTests(unittest.TestCase):
     workflow = TESTS_WORKFLOW.read_text(encoding="utf-8")
 
@@ -516,10 +597,18 @@ class WiringTests(unittest.TestCase):
 
     def test_ci_runs_the_check_on_every_pull_request(self):
         job = self._job()
-        self.assertIn("if: github.event_name == 'pull_request'", job)
+        self.assertIn("github.event_name == 'pull_request'", job)
         self.assertIn("scripts/owner_attested.py check", job)
         self.assertIn("github.event.pull_request.base.sha", job)
         self.assertIn("fetch-depth: 0", job)
+
+    def test_ci_also_runs_the_check_on_every_push_to_main(self):
+        job = self._job()
+        self.assertIn("github.event_name == 'push'", job)
+        self.assertIn("github.event.before", job)
+        self.assertIn("--head \"$GITHUB_SHA\"", job)
+        self.assertNotIn("schedule", job)
+        self.assertRegex(self.workflow, r"(?s)\n  push:\n    branches: \[main\]")
 
     def test_the_job_can_read_issue_comments_and_nothing_more(self):
         job = self._job()

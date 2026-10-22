@@ -7,7 +7,7 @@ h = 1 to 5 (a calendar column, served by `asof` rule 2 from the scored row), a d
 
 Recorded mutations (each applied in the working tree, confirmed by `git diff`, restored from the index before the next; Python 3.11.17, numpy 2.4.6, scikit-learn 1.9.1):
 
-* `target_day_columns`, the line `TARGET_DAY_COLUMNS = ... | BALANCE_SHEET_TARGET_DAY_COLUMNS | OCTOBER_TAX_TARGET_DAY_COLUMNS` changed to drop the last term (the
+* `target_day_columns`, the line `    | OCTOBER_TAX_TARGET_DAY_COLUMNS` removed from the union that builds `TARGET_DAY_COLUMNS` (the
   one-step guard no longer knows the column is written about the target day): `TargetDayColumnTests.test_a_one_step_fit_on_the_column_is_refused` fails with
   `AssertionError` (`{} != {'tax_date_october': "calendar column 'tax_date_october'"}`), `test_the_column_is_declared_as_written_about_the_target_day` and
   `test_every_column_the_module_writes_is_declared` with `AssertionError` (`'tax_date_october' not found in frozenset(...)`), and
