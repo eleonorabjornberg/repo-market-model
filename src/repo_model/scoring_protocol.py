@@ -56,7 +56,7 @@ from datetime import date
 from statistics import NormalDist
 from typing import Callable, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
-from . import lockbox
+from . import coverage_tests, lockbox
 from .data import PointInTimeObservation
 from .metrics import _quantile, crps_from_quantiles, stationary_bootstrap_indices
 
@@ -1075,3 +1075,186 @@ def report(
             lower_bound=None if critical is None else against_b3.lower_bound(critical),
         ),
     )
+
+
+# --------------------------------------------------------------------------
+# Draft amendment 4 (#1130): the coverage requirement. Inert until Eleonora merges the record.
+# --------------------------------------------------------------------------
+
+#: False until she merges "Draft amendment 4" of `docs/decisions/scoring-protocol.md`; a follow-up directive then
+#: sets it. `tests/test_scoring_protocol_coverage_requirement.py` fails if it is True while the record is a draft.
+COVERAGE_REQUIREMENT_IN_FORCE = False
+#: The lower and upper level of each pair the amendment names: q05/q95 and q01/q99. A level's nominal hit
+#: probability is `min(level, 1 - level)`.
+COVERAGE_LEVELS: Tuple[float, ...] = (0.05, 0.95, 0.01, 0.99)
+#: "strict" is a hit beyond the quantile (y < q below, y > q above); "tie_counts" counts y == q too. Both are
+#: reported (Eleonora, 22 October 2026, #998); which one the requirement reads is a marked question of the record.
+COVERAGE_RULES: Tuple[str, ...] = ("strict", "tie_counts")
+#: How Kupiec is applied at leads above 1 (a marked question of the record): on every h-th decision day, or on every
+#: day with a Newey-West variance at lag h - 1.
+COVERAGE_METHODS: Tuple[str, ...] = ("thinned", "hac")
+COVERAGE_FAMILIES: Tuple[str, ...] = ("per_cell", "holm")
+
+
+class CoverageRequirementFailed(ProtocolError):
+    """The coverage requirement is in force and at least one cell fails it."""
+
+
+@dataclass(frozen=True)
+class CoverageCell:
+    """Kupiec and Christoffersen for one level, lead, regime and hit rule. Reporting; no threshold lives here."""
+
+    level: float
+    lead: int
+    regime: str
+    rule: str
+    method: str
+    n: int
+    hits: int
+    kupiec_p: float
+    independence_p: Optional[float]
+
+    def label(self) -> str:
+        return f"q{self.level:g}, lead {self.lead}, regime {self.regime}, rule {self.rule}"
+
+
+def _hac_kupiec_p(hits: Sequence[int], p: float, lag: int) -> float:
+    """Score test of hit rate `p` with a Bartlett long-run variance of (hit - p) at `lag`, chi-square 1 df."""
+
+    n = len(hits)
+    centred = [h - p for h in hits]
+    variance = sum(map(mul, centred, centred))
+    for k in range(1, min(lag, n - 1) + 1):
+        variance += 2.0 * (1.0 - k / (lag + 1.0)) * sum(map(mul, islice(centred, k, None), centred))
+    variance /= n
+    if variance <= 0.0:
+        return 1.0
+    return coverage_tests.chi2_sf(n * (sum(hits) / n - p) ** 2 / variance, 1)
+
+
+def coverage_cells(
+    forecasts: Mapping[date, Forecast],
+    outcomes: Mapping[date, Optional[float]],
+    calendar: Sequence[date],
+    regimes: Mapping[date, str],
+    *,
+    method: str,
+) -> List[CoverageCell]:
+    """Kupiec and Christoffersen at q05/q95 and q01/q99, by lead and regime, under both hit rules.
+
+    Reporting only; it is not gated by `COVERAGE_REQUIREMENT_IN_FORCE`. Decision days are read in order; a lead's
+    target is the h-th day after on `calendar`, and a target with no published outcome drops that day from that lead.
+
+    Args:
+        forecasts, outcomes, calendar: as `day_scores`.
+        regimes: decision day -> regime label; every forecast day needs one.
+        method: required, no default. "thinned" reads every h-th decision day of the ordered list at lead h, for
+            both tests; "hac" reads Kupiec on every day with a Newey-West variance at lag h - 1, and
+            independence still on every h-th day.
+
+    Raises:
+        LookAheadError: a decision or target day is in a locked lockbox tier.
+        ProtocolError: an unknown method, a missing regime label, or a malformed forecast as in `day_scores`.
+    """
+
+    if method not in COVERAGE_METHODS:
+        raise ProtocolError(f"method must be one of {COVERAGE_METHODS}, got {method!r}")
+    days = _calendar(calendar)
+    position = {day: index for index, day in enumerate(days)}
+    decisions = sorted(forecasts)
+    rows: Dict[int, List[Tuple[int, date, str, Sequence[float], float]]] = {h: [] for h in HORIZONS}
+    touched = set()
+    for order, decision in enumerate(decisions):
+        if decision not in position:
+            raise ProtocolError(f"decision day {decision} is not on the scoring calendar")
+        if decision not in regimes:
+            raise ProtocolError(f"decision day {decision} has no regime label")
+        leads = forecasts[decision]
+        if set(leads) != set(HORIZONS):
+            raise ProtocolError(f"the forecast for {decision} carries leads {sorted(leads)}, not {list(HORIZONS)}")
+        for h in HORIZONS:
+            if position[decision] + h >= len(days):
+                raise ProtocolError(f"lead {h} from {decision} runs past the end of the scoring calendar")
+            target = days[position[decision] + h]
+            if outcomes.get(target) is not None:
+                rows[h].append((order, decision, regimes[decision], leads[h], outcomes[target]))
+                touched.update((decision, target))
+    lockbox.require_unlocked(touched, where="scoring_protocol.coverage_cells")
+    cells: List[CoverageCell] = []
+    for h in HORIZONS:
+        for regime in sorted({row[2] for row in rows[h]}):
+            in_regime = [row for row in rows[h] if row[2] == regime]
+            kept = [row for row in in_regime if row[0] % h == 0]
+            for level in COVERAGE_LEVELS:
+                p = min(level, 1.0 - level)
+                index = GRID.index(level)
+                for rule in COVERAGE_RULES:
+                    def hits_of(selection):
+                        ys = [row[4] for row in selection]
+                        qs = [row[3][index] for row in selection]
+                        if level > 0.5:
+                            return coverage_tests.hit_sequence(
+                                ys, qs, rule="above" if rule == "strict" else "at_or_above"
+                            )
+                        return coverage_tests.hit_sequence(
+                            [-y for y in ys], [-q for q in qs], rule="above" if rule == "strict" else "at_or_above"
+                        )
+
+                    thinned = hits_of(kept) if kept else []
+                    if method == "thinned":
+                        sample = thinned
+                        kupiec_p = coverage_tests.kupiec(sample, p).p_value if sample else 1.0
+                    else:
+                        sample = hits_of(in_regime) if in_regime else []
+                        kupiec_p = _hac_kupiec_p(sample, p, h - 1) if sample else 1.0
+                    independence = (
+                        coverage_tests.christoffersen_independence(thinned).p_value if len(thinned) >= 2 else None
+                    )
+                    cells.append(
+                        CoverageCell(level, h, regime, rule, method, len(sample), sum(sample), kupiec_p, independence)
+                    )
+    return cells
+
+
+def enforce_coverage_requirement(
+    cells: Sequence[CoverageCell], *, alpha: float, family: str, rule: str = "strict"
+) -> List[CoverageCell]:
+    """The registration requirement of draft amendment 4: no cell of `rule` fails either test.
+
+    Inert while `COVERAGE_REQUIREMENT_IN_FORCE` is False: returns an empty list whatever the cells say. Once on,
+    raises `CoverageRequirementFailed` naming the failing cells, and returns an empty list when none fails.
+
+    Args:
+        alpha: the level of a cell's test (family "per_cell") or the family-wise level (family "holm"); required,
+            the record's marked question sets it.
+        family: "per_cell" (each p-value against `alpha`) or "holm" (`holm` over all of the rule's p-values).
+        rule: which hit rule the requirement reads; "strict" until the record says otherwise.
+    """
+
+    if family not in COVERAGE_FAMILIES:
+        raise ProtocolError(f"family must be one of {COVERAGE_FAMILIES}, got {family!r}")
+    if rule not in COVERAGE_RULES:
+        raise ProtocolError(f"rule must be one of {COVERAGE_RULES}, got {rule!r}")
+    if not (0.0 < alpha < 1.0):
+        raise ProtocolError(f"alpha must lie strictly between 0 and 1, got {alpha!r}")
+    if not COVERAGE_REQUIREMENT_IN_FORCE:
+        return []
+    tests: Dict[str, float] = {}
+    owner: Dict[str, CoverageCell] = {}
+    for c in cells:
+        if c.rule != rule:
+            continue
+        tests[c.label() + " / kupiec"] = c.kupiec_p
+        owner[c.label() + " / kupiec"] = c
+        if c.independence_p is not None:
+            tests[c.label() + " / independence"] = c.independence_p
+            owner[c.label() + " / independence"] = c
+    if family == "per_cell":
+        failing = [name for name, p in tests.items() if p < alpha]
+    else:
+        failing = [name for name, rejected in holm(tests, alpha).items() if rejected]
+    if failing:
+        raise CoverageRequirementFailed(
+            f"{len(failing)} coverage test(s) fail at {alpha:g} ({family}): " + "; ".join(sorted(failing)[:20])
+        )
+    return []

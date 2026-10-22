@@ -232,6 +232,72 @@ circular blocks of the history (`window_t_statistics`) as her ruling says; draft
 windows, and the two do not give the same values. Draft amendments 1 and 2 are not additive to this one: if she adopts this
 draft, their efficacy values are superseded.
 
+
+## Draft amendment 4: passing the coverage tests is a registration requirement (#1130)
+
+**Status: a fourth draft, by the pull request that closes #1130, for Eleonora to review and merge. Nothing here is in force
+until she merges it** (§13: this record is merged by her, not under delegated review; the change is of kind (a), a
+demonstration). It follows her ruling of 22 October 2026 on PR #998, option a, relayed by the orchestrating session: passing
+the coverage tests becomes a registration requirement. Merging it is her own GitHub action, and a relayed ruling does not
+authorise it; the owner attestation cites her own `GO` when she gives it. Until she merges it, §2 stands as written,
+`scoring_protocol.COVERAGE_REQUIREMENT_IN_FORCE` is False, and `enforce_coverage_requirement` returns without checking
+anything. It does not touch §3 to §6, the critical values or any verdict.
+
+**The demonstration (kind (a)).** The synthetic world of #961 (PR #998, development data, no verdict): a forecaster whose
+bands are too narrow beats calibrated forecasters on grid CRPS and is ranked first by the rule without the ideal forecaster
+in the field, and fails coverage in every lead and regime cell; a forecaster calibrated over the whole path (pooled,
+persistence) passes the pooled cells and fails by regime. CRPS rewards sharpness the coverage tests catch. The page is
+`docs/research/coverage-gate-961-result.md` on that pull request, and it is the only evidence here.
+
+**The amendment.** §2 gains one item. Before its first confirmation day a candidate (primary and secondary) registers with
+its coverage report, read on its development walk-forward forecasts only (§1: never a verdict, never a locked day):
+
+- Kupiec (unconditional coverage) and Christoffersen (independence) at q05/q95 and q01/q99, for each lead h = 1 to 5 and each
+  regime, from `repo_model.coverage_tests`;
+- both hit rules reported, per her ruling of 22 October 2026 on #998: a hit is `y` beyond the quantile (`strict`: `y < q`
+  below, `y > q` above) or `y` at or beyond it (`tie_counts`);
+- the candidate passes when no cell fails either test, at the level and family the answers below set.
+
+The check is `repo_model.scoring_protocol.coverage_cells` (reporting) and `enforce_coverage_requirement` (the requirement,
+inert until the flag is set by a follow-up directive after she merges this record). Registration stays her attested action;
+the code does not register anything.
+
+### Marked questions for Eleonora (numbered options, each with the default the code and the follow-up use if she says nothing)
+
+The reported size of the unmodified gate is the reason the first three are open: on 2,000-day paths of a calibrated forecaster,
+the gate as #961 declared it (Kupiec per cell at 1%, no thinning) failed it on 54% of paths, almost all of it Kupiec at the
+longer leads, because the errors of an h-step forecast made on consecutive days overlap and the hits are dependent. Thinning
+Kupiec to every h-th day brought that to 20% (post hoc, not declared), still far above 1%.
+
+1. **Leads above 1: how Kupiec is applied.**
+   - (a) **Thinned days (default).** Every h-th decision day at lead h, for Kupiec and for independence. Measured: the
+     20% above. Simple, stdlib, the same days independence already reads.
+   - (b) HAC adjustment. Every day, a Newey-West (Bartlett) long-run variance of the hit indicator at lag h - 1 in a score
+     test. Implemented as `method="hac"`; its size has not been measured.
+   - (c) Read lead 1 only. The leads above 1 are reported and not required.
+2. **The family-wise level.** The requirement is a family of tests (4 levels, 5 leads, the regimes, both tests, per hit rule).
+   - (a) Each test at 1% (as #961 declared it). Its size is the 54% (20% thinned) above.
+   - (b) **Holm over the family at 5% (default).** `family="holm"`, `alpha=0.05`, using the protocol's `holm`. Its size has
+     not been measured here.
+   - (c) Each test at 1% divided by the number of tests (Bonferroni). Conservative; power against the too-narrow forecaster
+     not measured.
+3. **The test's measured size (54%).**
+   - (a) **Do not put the requirement in force until a follow-up simulation shows the chosen design (answers 1 and 2) fails a
+     calibrated forecaster on no more than its family-wise level (default).** The flag stays False meanwhile, and the follow-up
+     is a directive for her to queue.
+   - (b) Put it in force as drafted and accept that a calibrated candidate may be refused. A refusal costs a re-registration;
+     it does not change a verdict.
+   - (c) Withdraw the requirement and keep the reports as information only.
+4. **Which hit rule the requirement reads.** Both are reported whatever she answers.
+   - (a) **`strict` (`y` beyond `q`) (default).** (b) `tie_counts`. (c) Pass only if both rules pass.
+5. **The regime split.** The caller supplies the regime labels. Default: the regime split the protocol already requires of a
+   development figure (CLAUDE.md, scoring protocol rules), with no new definition of a regime in this record. If she wants a
+   different split, it is her ruling and a change to the labels the registration supplies, not to the code.
+
+What was not checked: the candidate (`gbm_funding`, B3, the direct-pairs twin) has not been run through the check; that
+needs walks and runs on her Mac under the long-run rule if she wants it. The size of option 1(b) and of option 2(b) and (c)
+is unmeasured.
+
 ---
 
 **Draft scoring protocol, v1 (orchestrating session, 12 Oct 2026, for Eleonora's decision). Designed from first principles; current rules are kept only where they survive scrutiny.**
