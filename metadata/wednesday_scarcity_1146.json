@@ -1,0 +1,65 @@
+{
+ "status": "declared by the pull request that closes #1146 before any number was computed; a development comparison, not a record. Nothing is published or registered, the published declaration and metadata/sources.json are unchanged, no day after 2025-12-31 is read (docs/decisions/lockbox.md). Development data gives a diagnosis, never a verdict (scoring protocol v1, #640; #46 top block).",
+ "issue": 1146,
+ "hypothesis": "H5 (primary goal), development step 3 (docs/research/hypotheses/H5.md): the scarcity input, the Wednesday reserve level beside the week average",
+ "ruling": "Eleonora, 22 October 2026, option 2 on #1143 (comment 6350220986 on #1146 relays it): build the scarcity state from the Wednesday level (WRBWFRBL, same release and instant as WRESBAL) as a separate candidate input beside the week average; the published declaration does not move; prospective scoring needs a registration, which is her own action, and this directive only prepares its text.",
+ "question": "Run the H5 candidate with each reading of the scarcity state (week average WRESBAL as now; Wednesday level WRBWFRBL) and score it as protocol v1 by regime and day type and on the days where the two states differ.",
+ "readings": {
+  "week_average": "reserve_balances = WRESBAL, the panel as published (digest 4ddc3882...)",
+  "wednesday_level": "reserve_balances = WRBWFRBL, substituted value for value into the measurement panel by scripts/h41_wednesday_levels_970.py (same release, same declared instant, same vintage id as the average it sits beside); the TGA stays the average in the scarcity state because the state does not read it"
+ },
+ "snapshot": {
+  "declaration": "metadata/h41_wednesday_levels_970.json",
+  "directory": "tests/fixtures/snapshots/h41_wednesday_levels"
+ },
+ "arms": {
+  "listed_in_full": [
+   {
+    "name": "spread_mr_fhs_mad20_f0.5",
+    "role": "the H5 candidate (#941, relayed 22 October 2026); run once per reading",
+    "reads_scarcity_state": false
+   }
+  ],
+  "not_run": "#1145's state-scaled arms (s1, s2, s3) are not merged; the ruling asks for them 'if merged by then'. Its arm (s2) is the first that reads the scarcity state. The script takes the arms as data so that a later directive adds them without a new method."
+ },
+ "finding": "The candidate reads only the spread series (src/repo_model/spread_mr_fhs.py: 'No regime label and no other column is an input'). Its forecasts are therefore the same under both readings. The study shows this by running the candidate's walk on the published panel and on the same panel with reserve_balances replaced by the Wednesday level, and comparing every quantile of every cell. The comparison that can move is the state itself, so the study also scores the candidate split by the state under each reading and on the days where the readings differ.",
+ "measures": [
+  "per reading, the own-leg scarcity state (scarcity.own_leg_states, each leg at its own latest public row, #586; cut-points, H.8 leg and ON RRP leg unchanged) of every scored decision day at each lead; the days where the readings differ, up and down, by regime of the decision day and by the pressure-day type of the lead-1 target day; the pressure onsets (> 5 bp, descriptive) whose state changes",
+  "the candidate run on both panels: the number of (decision day, lead) cells whose 23 quantiles are identical, and the largest absolute difference",
+  "the candidate's grid CRPS and upper-tail twCRPS (mean over leads 1 to 5, per decision day), B1, B1' (#960) and B2 beside it, pooled, by lead, by state under each reading, on the days where the readings differ and on the days where they agree; the 90% interval coverage and the 95th-percentile exceedance rate of the candidate in the same groups",
+  "the paired skill of the candidate over B1 and over B1' with the studentized stationary bootstrap of ruling 1 (block 10, 10,000 draws, seed 1146) in every group of at least 20 decision days; a smaller group is reported as counts and means only"
+ ],
+ "scoring": {
+  "protocol": "docs/decisions/scoring-protocol.md (v1); grid CRPS over h = 1-5 is the primary score and upper-tail twCRPS (weight 1{z > 0 bp}) the key secondary",
+  "bootstrap": {
+   "kind": "studentized stationary",
+   "mean_block": 10,
+   "draws": 10000,
+   "seed": 1146,
+   "interval": "two-sided 90%"
+  },
+  "group_minimum_days": 20
+ },
+ "limits": {
+  "last_day": "2025-12-31",
+  "locked_days_scored": 0,
+  "published_declaration_changed": false,
+  "sources_registry_changed": false
+ },
+ "reading_rule": "Counts, means and intervals only. No reading of the state is called better here; whether to adopt either is Eleonora's decision on a prospective record. Development data, not a verdict.",
+ "never_revised": {
+  "claim": "not re-verified in the cloud",
+  "check": "scripts/alfred_wednesday_1146.py, a short pasted run on Eleonora's Mac (needs-mac: comment on the pull request); WRBWFRBL is not claimed never-revised until it passes"
+ },
+ "registration": {
+  "prepared": "docs/research/wednesday-scarcity-1146-registration-draft.md",
+  "status": "text only; registering is Eleonora's own action and nothing is registered here"
+ },
+ "variants": {
+  "count": 2,
+  "listed_in_full": [
+   "week_average_reserves",
+   "wednesday_level_reserves"
+  ]
+ }
+}
