@@ -70,11 +70,10 @@ class DeclarationTests(unittest.TestCase):
         arms = self.declaration["calibration"]["arms"]
         self.assertEqual(set(arms), set(wc.ARMS))
         self.assertEqual(wc.WINDOW_DAYS, 504)
-        self.assertEqual((wc.MIN_CELLS, wc.MIN_STATE_CELLS, wc.REFIT_EVERY), (250, 100, 21))
-        self.assertEqual((wc.WIDTH_FLOOR, wc.TAIL_DENOMINATOR_FLOOR, wc.TAIL_FROM), (1.0, 0.25, 0.90))
-        self.assertEqual((wc.FLAG_WINDOW, wc.FLAG_MIN_ROWS, wc.FLAG_MAX_BP), (60, 40, 1.0))
+        self.assertEqual(set(self.declaration["variants"]), set(wc.ARMS))
+        self.assertEqual((wc.MIN_CELLS, wc.REFIT_EVERY, wc.WIDTH_FLOOR), (250, 21, 1.0))
         self.assertTrue(self.declaration["base"]["name"].startswith(script.BASE))
-        self.assertEqual(self.declaration["amendments"], [])
+        self.assertEqual([a["date"] for a in self.declaration["amendments"]], ["2026-10-22"])  # the ruling on #1142
         self.assertEqual(self.declaration["scoring"]["paired"].count("seed 1133"), 1)
         self.assertEqual(script.SEED, 1133)
 

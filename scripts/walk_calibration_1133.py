@@ -2,8 +2,8 @@
 
 A development study, never a verdict. It writes JSON and Markdown to the paths it is given and nothing into `docs/runs/`.
 Every choice is in `metadata/walk_calibration_1133.json`, which this script refuses to read unless it is committed and
-unchanged. The base is #941's `spread_mr_fhs_mad20_f0.5` (`repo_model.spread_mr_fhs`); the three arms are
-`repo_model.walk_calibration` (pooled, by the as-of floor flag, and with the upper tail widened separately). They are scored
+unchanged. The base is #941's `spread_mr_fhs_mad20_f0.5` (`repo_model.spread_mr_fhs`); the one arm is
+`repo_model.walk_calibration` (the pooled recalibration; the arms by the floor flag and with the tail widened, were dropped by Eleonora's ruling on #1142). It is scored
 with the scorer of scoring protocol v1 (`repo_model.scoring_protocol`) against the uncalibrated base, B1 with B1' beside it,
 and B2 (`repo_model.protocol_benchmarks`, `repo_model.b1_calendar`), on the studentized stationary bootstrap of ruling 1
 (#739), and with the scaled score of #967 beside the raw one. Scored decision days are those whose five targets are on or
@@ -65,13 +65,12 @@ s967 = _load("scaled_score_967")
 f941 = _load("fhs_scale_941")
 
 DECLARATION = REPO / "metadata" / "walk_calibration_1133.json"
-POLICY_EVENTS = REPO / "metadata" / "policy_events.json"
 SEED = 1133
 LAST_DAY = s686.LAST_DAY
 DECISION_TIME = s686.DECISION_TIME
 MIN_GROUP_DAYS = s686.MIN_GROUP_DAYS
 BASE = "spread_mr_fhs_mad20_f0.5"
-ARM_NAMES: Dict[str, str] = {"pooled": "calibrated (a) pooled", "state": "calibrated (b) by flag", "state_tail": "calibrated (c) by flag + tail"}
+ARM_NAMES: Dict[str, str] = {"pooled": "calibrated (a) pooled"}
 ARM_KEYS: Dict[str, str] = {arm: f"{BASE}+{arm}" for arm in wc.ARMS}
 CANDIDATES: Tuple[str, ...] = (BASE,) + tuple(ARM_KEYS.values())
 BENCHMARKS: Tuple[str, ...] = ("B1", "B1p", "B2")
@@ -100,7 +99,7 @@ def committed_declaration(path: Path = DECLARATION) -> dict:
 
 
 def build_frame(panel, splits, registry, declaration, first: Optional[date] = None):
-    """The base's walk, the benchmarks, the flag and the three arms, on the decision days whose targets are scored days.
+    """The base's walk, the benchmarks and the pooled arm, on the decision days whose targets are scored days.
 
     `first` starts the walk later than the declared study does; it exists for the test of this script and the declared run
     never passes it.
@@ -126,20 +125,16 @@ def build_frame(panel, splits, registry, declaration, first: Optional[date] = No
             dropped.append(day)
     days = [day for day in walk.forecasts[BASE] if day in b1 and day in b1p and day in b2]
     base = {day: walk.forecasts[BASE][day] for day in days}
-    entries = json.loads(POLICY_EVENTS.read_text(encoding="utf-8"))["entries"]
-    flags = wc.floor_flag(panel, entries)
     anchors = {day: pb._anchor(panel, frame.position[day], registry, DECISION_TIME) for day in days}
     spreads = [row.spread_bps for row in panel]
-    laws, refits, uncalibrated = wc.walk(days, base, anchors, frame.position, spreads, flags, frame.dates)
-    for day in refits:
-        wc.check_flag_as_of(panel, entries, flags, anchors[day])
-    scored = [day for day in days if day in laws["pooled"]]
+    laws, refits, uncalibrated = wc.walk(days, base, anchors, frame.position, spreads, frame.dates)
+    scored = [day for day in days if day in laws]
     frame.forecasts = {"B1": b1, "B1p": b1p, "B2": b2, BASE: base}
     for arm in wc.ARMS:
-        frame.forecasts[ARM_KEYS[arm]] = laws[arm]
+        frame.forecasts[ARM_KEYS[arm]] = laws
     frame.all_days = days
     frame.days = scored
-    frame.flags, frame.anchors = flags, anchors
+    frame.anchors = anchors
     notes = {
         "decision_days_offered": len(candidate_days),
         "candidate_skipped_for_history": len(walk.skipped),
@@ -154,35 +149,16 @@ def build_frame(panel, splits, registry, declaration, first: Optional[date] = No
     return frame, notes, refits
 
 
-def flag_runs(frame) -> List[List[str]]:
-    """The spans of consecutive panel rows on which the flag is on."""
-
-    out, start = [], None
-    for i, flag in enumerate(frame.flags):
-        if flag and start is None:
-            start = i
-        if not flag and start is not None:
-            out.append([frame.dates[start].isoformat(), frame.dates[i - 1].isoformat()])
-            start = None
-    if start is not None:
-        out.append([frame.dates[start].isoformat(), frame.dates[-1].isoformat()])
-    return out
-
-
 def refit_summary(frame, refits) -> List[dict]:
-    """What each refit kept, for the page: cells by state, the level-0.5 and 0.95 offsets and the tail multipliers."""
+    """What each refit kept, for the page: the cells and the level-0.5 and 0.95 offsets of each lead."""
 
     i50, i95 = wc.MEDIAN, wc.HIGH
     out = []
     for day, r in sorted(refits.items()):
         out.append({
             "day": day.isoformat(), "anchor": frame.dates[frame.anchors[day]].isoformat(),
-            "state_at_anchor": frame.flags[frame.anchors[day]],
             "by_lead": {str(h): {
-                "cells": r.state_cells[h], "offset_q50": r.pooled[h].offsets[i50], "offset_q95": r.pooled[h].offsets[i95],
-                "lambda_q95": r.pooled[h].multipliers[i95], "lambda_q99": r.pooled[h].multipliers[wc.TAIL_INDICES[-1]],
-                "state_has": sorted(str(k).lower() for k in r.by_state[h]),
-                "state_lambda_q95": {str(k).lower(): c.multipliers[i95] for k, c in r.by_state[h].items()},
+                "cells": r.pooled[h].cells, "offset_q50": r.pooled[h].offsets[i50], "offset_q95": r.pooled[h].offsets[i95],
             } for h in sp.HORIZONS},
         })
     return out
@@ -399,8 +375,6 @@ def score(args) -> int:
         "subset_from": None if args.first is None else args.first.isoformat(),
         "label": "development, not a verdict", "seed": SEED, "draws": args.draws, "reps": args.reps,
         "notes": notes, "models": list(MODELS), "base": BASE, "arms": list(ARM_KEYS.values()),
-        "flag_runs": flag_runs(frame),
-        "scored_days_by_flag": {str(k): sum(1 for d in frame.days if frame.flags[frame.anchors[d]] is k) for k in (True, False, None)},
         "refits": refit_summary(frame, refits), "groups": {}, "skipped_groups": skipped,
     }
     for kind, (ident, payload) in done:
@@ -477,10 +451,10 @@ def render(r: dict) -> str:
         "from cells whose target is at or before the refit's anchor.", "",
         "**What this is not.** The base reads no calendar column, so every figure here is provisional under the calendar-first rule "
         "(`docs/research/provisional-calendar-register.md`) and closes no question in either direction. The calendar-aware arm of #1115 is "
-        "not on main, so it is not the base. The base is #941's best variant, chosen after seeing 2018-2025. The floor flag of (b) and (c) is a "
-        "local replica of the flag #966 specifies, which is not on main (the pull request puts the question to Eleonora).", "",
-        "Rows: the uncalibrated base; (a) pooled split-conformal recalibration of each level; (b) the same by the as-of floor flag; "
-        "(c) (b) with the levels from 0.90 up scaled about the median by a factor that can exceed 1.", ""]
+        "not on main, so it is not the base. The base is #941's best variant, chosen after seeing 2018-2025. Arms (b), by the floor flag, and (c), "
+        "with the upper tail widened, were dropped by Eleonora's ruling on #1142 (option 3): #966 showed the floor flag adds nothing on the "
+        "scaled mean reversion. This page is the pooled arm only.", "",
+        "Rows: the uncalibrated base; (a) pooled split-conformal recalibration of each level.", ""]
     for metric in METRICS:
         out += [f"## {METRIC_TITLES[metric]}, mean over leads 1 to 5, pooled", ""] + HEADER + _score_rows(pooled[metric]) + [""]
     out += ["## Skill of each row over the uncalibrated base, by lead [90%]", ""]
@@ -578,20 +552,15 @@ def hit_section(hits: dict) -> List[str]:
 def diagnostics_section(r: dict) -> List[str]:
     refits = r["refits"]
     out = ["## What the calibration did", "",
-           f"Floor flag on the panel rows: {', '.join(f'{a} to {b}' for a, b in r['flag_runs'])}. Scored decision days by the flag at their anchor: "
-           + ", ".join(f"{k}: {v}" for k, v in r["scored_days_by_flag"].items()) + " (None: the flag is undefined at the anchor).", "",
-           "The tail multiplier lambda at level 0.95 (pooled), over the refits, by lead: below 1 narrows the tail, above 1 widens it. "
-           "Offsets are in units of the day's 90% width.", "",
-           "| lead | cells at the last refit | lambda_q95 min / median / max | offset_q50 median | offset_q95 median |", "|---|---|---|---|---|"]
+           "The additive offsets of the pooled arm at level 0.50 and 0.95, over the refits, by lead, in units of the day's 90% width "
+           "(positive moves the level up).", "",
+           "| lead | cells at the last refit | offset_q50 median | offset_q95 median |", "|---|---|---|---|"]
     for h in sp.HORIZONS:
-        lam = sorted(x["by_lead"][str(h)]["lambda_q95"] for x in refits)
         q50 = sorted(x["by_lead"][str(h)]["offset_q50"] for x in refits)
         q95 = sorted(x["by_lead"][str(h)]["offset_q95"] for x in refits)
         mid = lambda v: v[len(v) // 2]  # noqa: E731
-        out.append(f"| {h} | {refits[-1]['by_lead'][str(h)]['cells']['pooled']} | {lam[0]:.2f} / {mid(lam):.2f} / {lam[-1]:.2f} | {mid(q50):+.3f} | {mid(q95):+.3f} |")
-    fallbacks = {state: sum(1 for x in refits for h in sp.HORIZONS if state not in x["by_lead"][str(h)]["state_has"]) for state in ("true", "false")}
-    out += ["", f"Refits times leads ({len(refits) * len(sp.HORIZONS)}) at which a state had fewer than {wc.MIN_STATE_CELLS} cells and took the pooled "
-            f"correction: flag on {fallbacks['true']}, flag off {fallbacks['false']}.", ""]
+        out.append(f"| {h} | {refits[-1]['by_lead'][str(h)]['cells']} | {mid(q50):+.3f} | {mid(q95):+.3f} |")
+    out.append("")
     return out
 
 
