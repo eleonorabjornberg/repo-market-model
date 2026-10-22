@@ -110,6 +110,15 @@ def declaration_document(panel: Path) -> dict:
         "hypothesis": "H9 (secondary goal), step 2 of docs/research/hypotheses/H9.md",
         "rulings": list(RULINGS),
         "panel": {"sha256": digest, "built_by": "the commands of scripts/richer_targets_902.py's docstring, the panel #706 declared"},
+        "variants": [
+            {
+                "name": VARIANT.name,
+                "estimator": "mad",
+                "window_rows": 20,
+                "floor": 0.5,
+                "role": "the single candidate: #941's declared variant, unchanged (structural block for the variant count; moves no figure)",
+            }
+        ],
         "targets": older["choice"]["chosen"],
         "targets_from": {"path": str(OLDER.relative_to(REPO)), "sha256": sha256_of(OLDER), "rule": "#706's four-part rule, unchanged"},
         "model": {

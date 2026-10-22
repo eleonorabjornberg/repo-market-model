@@ -31,6 +31,10 @@ spec.loader.exec_module(script)
 
 from repo_model.splits import LookAheadError  # noqa: E402
 
+_progress_spec = importlib.util.spec_from_file_location("emit_progress_for_902", REPO / "scripts" / "emit_progress.py")
+emit_progress = importlib.util.module_from_spec(_progress_spec)
+_progress_spec.loader.exec_module(emit_progress)
+
 START = date(2024, 1, 2)
 CALENDAR = [START + timedelta(days=i) for i in range(12)]
 
@@ -152,6 +156,17 @@ class DeclarationTests(unittest.TestCase):
         older = json.loads((REPO / "metadata" / "richer_targets_706.json").read_text(encoding="utf-8"))
         self.assertEqual(declared["targets"], older["choice"]["chosen"])
         self.assertEqual(declared["panel"]["sha256"], older["panel"]["sha256"])
+
+    def test_the_declaration_has_the_variants_block_the_progress_count_reads(self):
+        """The model is one candidate, #941's spread_mr_fhs_mad20_f0.5 (structural only: no figure depends on this block).
+
+        Recorded mutation: `declaration_document` without the `variants` key made this test fail with AssertionError
+        (and test_model_declarations with 'lacking [variants]').
+        """
+        declared = json.loads(script.DECLARATION.read_text(encoding="utf-8"))
+        block = emit_progress.declared_variants(declared)
+        self.assertIsNotNone(block)
+        self.assertEqual([v["name"] for v in block], ["spread_mr_fhs_mad20_f0.5"])
 
 
 if __name__ == "__main__":

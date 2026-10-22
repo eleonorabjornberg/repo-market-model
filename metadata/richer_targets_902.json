@@ -12,6 +12,15 @@
     "sha256": "26c51093de80bc1c5f6cc4e9e3742fd6606160e4c6ba0db2fa19d6fcbf3e1313",
     "built_by": "the commands of scripts/richer_targets_902.py's docstring, the panel #706 declared"
   },
+  "variants": [
+    {
+      "name": "spread_mr_fhs_mad20_f0.5",
+      "estimator": "mad",
+      "window_rows": 20,
+      "floor": 0.5,
+      "role": "the single candidate: #941's declared variant, unchanged (structural block for the variant count; moves no figure)"
+    }
+  ],
   "targets": [
     "bgcr_dispersion_bps",
     "on_rrp_change_bn",
