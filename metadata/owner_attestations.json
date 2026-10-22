@@ -62,6 +62,13 @@
       "comment_id": 6326602842,
       "phrase": "GO #1077",
       "what": "approve the Forensic auditor's original instructions and her 12 and 13 October changes, quoted in .claude/agents/forensic-auditor.md with her 21 October rulings (labels, scope, reading list); finding-triager's needs-eleonora step; the auditor's routine file pointing at the agent file; the routines README row (PR #1077)"
+    },
+    {
+      "kind": "decisions",
+      "issue": 1073,
+      "comment_id": 6343363613,
+      "phrase": "GO #1073",
+      "what": "approve the \"Critical values in force\" section that PR #1078 added to docs/decisions/scoring-protocol.md (merged 21 October 2026 before #1080's rule reached its CI; finding #1110), and this PR's change to its status line"
     }
   ],
   "rule": "docs/decisions/drafts/owner-attestation.md",
