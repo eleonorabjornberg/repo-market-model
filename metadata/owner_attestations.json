@@ -69,6 +69,13 @@
       "comment_id": 6343363613,
       "phrase": "GO #1073",
       "what": "approve the \"Critical values in force\" section that PR #1078 added to docs/decisions/scoring-protocol.md (merged 21 October 2026 before #1080's rule reached its CI; finding #1110), and this PR's change to its status line"
+    },
+    {
+      "kind": "decisions",
+      "issue": 1134,
+      "comment_id": 6354003011,
+      "phrase": "GO #1134",
+      "what": "approve the draft decision docs/decisions/retire-idle-freezes.md (retire the freezes that protect no live registration), with her answers 1(a), 2(a), 3(a) (PR #1136)"
     }
   ],
   "rule": "docs/decisions/drafts/owner-attestation.md",
