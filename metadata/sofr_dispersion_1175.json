@@ -1,0 +1,88 @@
+{
+  "status": "declared by the pull request that closes #1175 before any score was computed; a development study, never a verdict. Nothing is published: no published declaration, record or registration changes, no day after 2025-12-31 is scored, no lockbox day is scored, and no record in docs/runs/ is edited. Any change to the candidate is Eleonora's decision.",
+  "issue": 1175,
+  "ruling": "Eleonora, 23 October 2026, relayed by the orchestrating session: 'I want it tried', on avenue #1166, as the in-panel version (option 1). The 11 September data decision stands: SOFR's tail percentiles (p1, p99) stay out of the panel; this uses only dispersion the panel already holds (sofr_p25, sofr_p75 and sofr). Kill rule and adoption rule are the issue's, restated below.",
+  "hypothesis": "H5 (primary goal): the SOFR - IORB spread distribution in bp. Step 3 (fix), the failure after #1145 and #1153: the misses of the scaled mean reversion's bands come in runs (Christoffersen's independence test, p = 0.000 at every lead) although coverage is right on average, and a faster scale built from the spread's own moves does not fix them (#1153).",
+  "target": "spread_bps at the scored day, in basis points, as a 23-quantile distribution at each lead h = 1..5 (scoring_protocol.GRID)",
+  "base": {
+    "name": "(s3) of #1145, sc_s3_robust (on main since PR #1151): #941's spread_mr_fhs_mad20_f0.5 with state-scaled calendar terms in standardised units, a Huber fit (threshold 1.345 robust sd) and ridge 5, the terms quarter-end, tax date and the other calendar terms of spread_mr_calendar.NO_FOMC_IORB read at the target day on direct pairs",
+    "module": "repo_model.spread_mr_state_calendar, unchanged; the arms here call its fit_state_terms and standardised_shift. tests/test_spread_mr_dispersion.py pins that the (s3) and (a) walks this study produces equal repo_model.spread_mr_state_calendar.walk's and repo_model.spread_mr_fhs's exactly, and that an arm whose ratio is 1 everywhere equals (s3)",
+    "comparators": "(s3) the base and (a) #941's variant (spread_mr_fhs_mad20_f0.5), both walked and scored on the same days as the arms",
+    "calendar": "(s3) and every arm read the calendar terms at the target day on direct pairs (training_pairs='direct'; spread_mr_state_calendar.fit_state_terms is one_step_guard-guarded), so the results are not provisional on the calendar-first rule. (a) reads no calendar column and is a comparator only"
+  },
+  "input": {
+    "columns": "sofr_p25, sofr_p75 and sofr of the published panel (nyfed_sofr SOFR_p25, SOFR_p75, SOFR: one source, one release, available 15:00 ET on the next business day, metadata/sources.json). SOFR's p1 and p99 are not read and are not in the panel (the 11 September data decision)",
+    "availability": "each of the three is read at the anchor row and the rows before it. repo_model.spread_mr_dispersion.require_available runs the information-set rule (asof.InformationRule, both guards) for sofr_p25 and sofr_p75 at every lead and raises LookAheadError when the latest row whose percentiles are public is before the anchor, the last row whose spread is public. protocol_benchmarks._require_public refuses any row of a window after the anchor",
+    "missing": "two panel rows (2019-05-31 and 2021-08-05) have no percentiles: such a row is left out of every window and its own ratio is neutral (1)"
+  },
+  "arms": {
+    "principle": "Filtered historical simulation stays and the base is (s3): forecast = centre + scale(anchor) * (shift + z_h), with shift the fitted calendar terms in standardised units and z_h the quantiles of the pool of the standardised residuals after the terms. An arm multiplies the scale of each pair, and of the anchor, by a factor read from SOFR's dispersion as of that row's own decision; nothing else changes (the same training pairs, phi, level, 21-day refit cadence, terms and ridge).",
+    "ratio": "x(r) = numerator(r) / max(0.5 bp, median of the numerators of the 60 rows ending at r, rows with a missing percentile left out), capped at 4. Neutral (x = 1) when the row's numerator is missing or fewer than 20 rows of the window have one. Numerators: iqr = 100 * (sofr_p75 - sofr_p25) in bp; upper = 100 * (sofr_p75 - sofr) in bp",
+    "factor": "f(x) = min(2, max(0.5, 1 + gamma * (x - 1))). Cap and floor of the factor 2 and 0.5, declared once, not searched",
+    "gamma": "fitted walk-forward at every refit, per lead, on that refit's training pairs only: with e the pair's standardised residual after the terms fitted as (s3) fits them, gamma = slope / intercept of the least-squares line |e| = intercept + slope * (x - 1) over the pairs, kept between 0 and 2, and 0 when fewer than 60 pairs (for the upper-tail arm, positive e only), when x has no spread, or when the intercept is not positive. A negative slope reads as 0: the arms test whether wider dispersion means a wider miss, not the reverse",
+    "listed_in_full": {
+      "d1_iqr": "(d1) numerator iqr. The terms and the pool are refitted on the residuals standardised by scale(origin) * f(x(origin)) of each pair's own origin; the forecast is centre + scale(anchor) * f(x(anchor)) * (shift + z)",
+      "d2_upper_half": "(d2) as (d1) with the numerator upper = sofr_p75 - SOFR, in bp, the upper half (Lens D)",
+      "d3_iqr_upper_tail": "(d3) (d1)'s ratio and gamma, the factor on the upper half of the law only: (s3)'s terms are kept; the pool divides each positive residual by its pair's factor and leaves the others; the forecast multiplies only the positive pool values by f(x(anchor)), so the lower half is (s3)'s. Gamma is fitted on the positive residuals"
+    },
+    "constants": {
+      "window_rows": 60,
+      "min_rows": 20,
+      "median_floor_bp": 0.5,
+      "ratio_cap": 4.0,
+      "factor_min": 0.5,
+      "factor_max": 2.0,
+      "gamma_max": 2.0,
+      "min_pairs": 60,
+      "ridge": 5.0,
+      "huber_k": 1.345
+    },
+    "no_others": "five models are scored besides the benchmarks: (a), (s3), (d1), (d2), (d3). No arm is added after a number is computed, and constants are declared once, not searched. A debug subset run may print a number; none of the arms or constants above is changed after one, and an amendment is recorded below if a numerical degeneracy forces one"
+  },
+  "references": {
+    "base_arm": "(s3) and (a), on the same days",
+    "benchmarks": "B1 and B2 of scoring protocol v1 (repo_model.protocol_benchmarks), and B1' of #960 beside B1 (repo_model.b1_calendar): a reference row, not a benchmark of the protocol; B1 stays as ruled",
+    "gbm_funding": "not compared: its walks are a long run for Eleonora's Mac and the directive does not ask for it. The page says so"
+  },
+  "scoring": {
+    "scorer": "repo_model.scoring_protocol (#655), the development tier: no verdict, no registration",
+    "days": "decision days on which every model has a forecast and whose five targets (h = 1..5 business days on the panel's calendar) fall on or before 2025-12-31; no day after 2025-12-31 is read; the scored days pass lockbox.require_unlocked",
+    "outcomes": "the panel's spread_bps at the target day",
+    "paired": "each model against B1, B1', B2, (a) and (s3) (an arm against both; (s3) against (a); (a) against (s3)): skill = mean(d) / mean(S(benchmark)) with d = S(benchmark) - S(candidate), positive favours the candidate; scoring_protocol.paired_tests, the studentized stationary bootstrap (ruling 1), mean block 10 business days, 10,000 draws, seed 1175; two-sided 90% interval. Each row shows the skill interval and the studentized interval of mean(d) beside it, and the reading is the mean-d bound (#1009; the lower bound above zero is a gain, the upper bound below zero a loss). The page states Lens C's caveat that the lag-10 HAC standard error is understated by about 2x after 2020. Politis-White block length beside the block of 10 (scripts/block_length_949.py's estimate on the difference series, for each arm against (s3), pooled and by regime, on grid CRPS and upper-tail twCRPS, with the pooled skill at that block; never substituted for 10)",
+    "measures": [
+      "grid CRPS (23 levels), pooled and by lead",
+      "upper-tail twCRPS, weight 1{z > 0 bp}, pooled and by lead",
+      "the scaled score of #967 beside the raw one (each cell's grid CRPS over the trailing-year median of B2's grid CRPS for cells of the same pressure-day type of the target; scaled_score_967.trailing_scales)",
+      "all of these by regime and by pressure-day type (target day)",
+      "coverage of the 50%, 80%, 90% and 98% bands with a 90% stationary-bootstrap percentile interval (2,000 resamples), pooled, by lead, by regime and by pressure-day type",
+      "the exceedance rates of q05, q95, q01 and q99, with Kupiec's test",
+      "Christoffersen independence and conditional coverage per lead, for the bands and the four tails, pooled and within a regime, under the two hit rules; the randomised tie rule of #1156 is not on main (PR #1160 is open) and is not implemented here, the page says so",
+      "the miss runs: for the 90% band and for q95, per lead and pooled over leads, the number of runs, their mean length and the longest, under both hit rules, for every model, against (s3)",
+      "the fitted slopes: the median gamma over the refits per arm and lead, and the share of refits at 0 and at the cap"
+    ],
+    "hit_rules": "OPEN QUESTION, Eleonora's (#993; coverage_tests.hit_sequence takes the rule as a required argument): whole-bp outcomes tie with a quantile. Both rules are reported side by side, and the randomised tie rule of #1156 is not on main (PR #1160 is open), so it is reported as not available and nothing is implemented in its place; none is chosen. Upper exceedance: y > q ('above') or y >= q ('at_or_above'). Lower exceedance: y < q or y <= q, the mirror. A band is missed when the outcome is outside it, so under 'above' the band is closed and under 'at_or_above' it is open",
+    "runs": "a run is a maximal block of consecutive hits in the per-lead sequence of consecutive decision days. Mean run length = hits / runs; longest = the longest block. Under independence at a 10% miss rate the mean run is about 1.11",
+    "splits": {
+      "pooled": "one number per decision day (protocol section 3); the coverage measures are read on the cells (decision day, lead)",
+      "by_lead": "h = 1..5",
+      "regime": "SplitDeclaration.regime of the target day (metadata/evaluation_splits.json): 2018-19, 2020, 2021-23, 2024, 2025-26. The labels are only the report's split, never an input of an arm",
+      "pressure_day_type": "SplitDeclaration.reporting_day_type of the target day: quarter_end, month_end, tax_date, ordinary",
+      "min_days": "a group of fewer than 20 days is listed and not tested"
+    }
+  },
+  "kill_rule": {
+    "text": "The issue's: if no arm moves independence off p = 0.000 at any lead and no arm shortens the runs, say so and stop.",
+    "reading": "'off 0.000' is a p-value of at least 0.0005 for the Christoffersen independence test of the 90% band's misses, pooled, at any of the five leads, under either hit rule. 'Shortens the runs' is a mean run length of the 90% band (closed rule, pooled over leads) below (s3)'s. The page lists, for every arm, the leads off 0.000 under each rule and the mean and longest run against (s3)'s, and says whether the kill rule is met"
+  },
+  "adoption": "The issue's: an arm replaces (s3) only if it shortens the miss runs or passes independence, without losing CRPS beyond the interval; her decision. Read on the mean-d bound (#1009) of the grid CRPS against (s3), pooled, with the regime and day-type splits beside it. Nothing in this study is a verdict.",
+  "reading": {
+    "rules": [
+      "An arm's gain over (s3) is read as present on a split when the studentized one-sided bound on mean(d) of its grid CRPS excludes zero on the positive side (the two-sided 90% interval of mean(d) is above zero), and as a loss when that interval is below zero; otherwise undecided. The skill interval is shown beside and not read.",
+      "A pooled figure is never read without the regime and pressure-day-type splits beside it; a gain pooled and a loss in 2018-19, 2021-23 or on quarter-end days is reported as mixed.",
+      "A calibration measure moving toward its nominal value is reported with its interval; a hit-sequence p-value is reported as a p-value and is no gate. Run lengths are reported as counts with no interval.",
+      "Nothing in this study is a verdict, and the page says so."
+    ]
+  },
+  "long_run": "the walk (five models, each refitted about 90 times) and the scoring are arithmetic on the panel; if the run exceeds about two hours the pull request says so and gives the paste for her Mac (.claude/skills/long-run)",
+  "amendments": []
+}
