@@ -244,12 +244,13 @@ class Standings(unittest.TestCase):
 
 
 class CandidateStandings(unittest.TestCase):
-    """#1152: the page names the H5 candidate from `docs/research/h5-candidate.json`, not from the step 4 record.
+    """#1152, #1173: the page names the H5 candidate from `docs/research/h5-candidate.json`, not from the step 4 record.
 
-    Eleonora ruled on #1115 (22 October 2026) that #941's scaled mean reversion, `spread_mr_fhs_mad20_f0.5`, replaces
-    `gbm_funding`. The standings read the candidate from that small committed record, score it from #1115's
-    `result.json` (arm (a) beside B1, B1', B2, gbm_funding and spread_mr_ctx), show the mean-d interval and read it as
-    the protocol does (#1009), carry Lens C's caveat, and fall back to the step 4 record only when the file is absent.
+    Eleonora ruled (22 October 2026, #1115) that #941's scaled mean reversion, `spread_mr_fhs_mad20_f0.5`, replaces
+    `gbm_funding`, and (23 October 2026, #1151, option 2) that (s3) of #1145, `sc_s3_robust`, replaces that. The
+    standings read the candidate from that small committed record, score it from #1145's `result.json` (beside B1,
+    B1', B2, the replaced (a) and spread_mr_ctx), show the mean-d interval and read it as the protocol does (#1009),
+    carry Lens C's caveat, and fall back to the step 4 record only when the file is absent.
 
     Recorded mutation: in `scripts/research_view.py`, `standings`, replace `if (root / CANDIDATE).exists():` with
     `if False:` (the step 4 record names the candidate whatever the file holds) and run
@@ -286,11 +287,13 @@ class CandidateStandings(unittest.TestCase):
 
     def test_the_record_names_the_ruled_candidate_and_its_evidence(self):
         rec = self.record()
-        self.assertEqual(rec["candidate"], "spread_mr_fhs_mad20_f0.5")
-        self.assertEqual(rec["replaces"], "gbm_funding")
-        self.assertEqual(rec["date"], "2026-10-22")
-        self.assertTrue(rec["ruling"].startswith("https://github.com/eleonorabjornberg/repo-market-model/issues/1115#issuecomment-"))
-        self.assertEqual({e["issue"] for e in rec["evidence"]}, {1115, 1141})
+        self.assertEqual(rec["scores"]["model"], "sc_s3_robust")
+        self.assertEqual(rec["candidate"], "sc_s3_robust")
+        self.assertEqual(rec["replaces"], "spread_mr_fhs_mad20_f0.5")
+        self.assertEqual(rec["date"], "2026-10-23")
+        self.assertEqual(rec["scores"]["record"], "docs/research/state-calendar-1145/result.json")
+        self.assertTrue(rec["ruling"].startswith("https://github.com/eleonorabjornberg/repo-market-model/issues/1151#issuecomment-"))
+        self.assertEqual({e["issue"] for e in rec["evidence"]}, {1145, 1115, 1141})
         for e in rec["evidence"]:
             self.assertTrue((ROOT / e["page"]).is_file(), e["page"])
             self.assertTrue((ROOT / e["record"]).is_file(), e["record"])
@@ -306,19 +309,21 @@ class CandidateStandings(unittest.TestCase):
             self.assertIn(e["page"], block)
         self.assertNotRegex(block, r"(?<![&\w])#\d+")
         self.assertIn(self.record()["ruling"], block)
-        self.assertIn("2026-10-22", block)
+        self.assertIn("2026-10-23", block)
 
     def test_it_is_scored_beside_all_five_and_labelled(self):
         block = self.block()
-        for model in ("B1", "B1&prime;", "B2", "gbm_funding", "spread_mr_ctx"):
-            self.assertIn(model, block)
+        for model in ("B1", "B1&prime;", "B2", "spread_mr_fhs_mad20_f0.5", "spread_mr_ctx"):
+            self.assertIn(f'<th scope="row">{model}</th>', block)
+        self.assertNotIn('<th scope="row">gbm_funding</th>', block)
+        self.assertIn("gbm_funding", block)  # said once: its walks were not supplied
         self.assertIn(research_view.DEV_LABEL, block)
-        self.assertIn(research_view.PROVISIONAL_LABEL, block)
+        self.assertNotIn(research_view.PROVISIONAL_LABEL, block)  # it reads the calendar at the target day
         self.assertNotRegex(block, r"(?i)\bleads\b|\bbeats B1\b|\bregistered candidate\b")
 
     def test_it_shows_the_mean_d_interval_and_reads_its_bound(self):
         grid = self.scores()["groups"]["pooled"]["all decision days"]["grid_crps"]
-        pair = grid["vs"]["mr_cal_a_base"]["B1_prime"]
+        pair = grid["vs"]["sc_s3_robust"]["B1_prime"]
         lo, hi = pair["difference_interval"]
         self.assertGreater(lo, 0)
         block = self.block()
@@ -327,6 +332,23 @@ class CandidateStandings(unittest.TestCase):
         self.assertIn(f"{hi:+.2f}", block)
         self.assertIn("better", block)
         self.assertIn("ruling on which interval is read", block)
+
+    def test_it_shows_the_skill_over_the_replaced_candidate_with_its_interval(self):
+        pair = self.scores()["groups"]["pooled"]["all decision days"]["grid_crps"]["vs"]["sc_s3_robust"]["mr_cal_a_base"]
+        lo, hi = pair["skill_interval"]
+        self.assertEqual((f"{100 * pair['skill']:+.1f}%", f"{100 * lo:+.1f}%", f"{100 * hi:+.1f}%"),
+                         ("+4.3%", "+1.8%", "+6.4%"))
+        self.assertIn("+4.3% [+1.8%, +6.4%]", self.block())
+
+    def test_the_provisional_mark_follows_the_record(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.copy_tree(tmp)
+            path = Path(tmp) / self.CANDIDATE
+            doc = json.loads(path.read_text(encoding="utf-8"))
+            self.assertFalse(doc["provisional"])
+            doc["provisional"] = True
+            path.write_text(json.dumps(doc), encoding="utf-8")
+            self.assertIn(research_view.PROVISIONAL_LABEL, research_view.standings_html(research_view.standings(tmp)))
 
     def test_a_reading_follows_the_bound_on_mean_d(self):
         read = research_view.read_mean_d
@@ -413,7 +435,7 @@ class CandidateStandings(unittest.TestCase):
 
     def test_the_candidate_file_is_a_page_input(self):
         self.assertIn(self.CANDIDATE, research_view.INPUTS)
-        self.assertIn("docs/research/calendar-mr-1115/result.json", research_view.INPUTS)
+        self.assertIn("docs/research/state-calendar-1145/result.json", research_view.INPUTS)
 
 
 class Sources(unittest.TestCase):
