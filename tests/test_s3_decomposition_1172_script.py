@@ -105,11 +105,11 @@ class DeclarationTests(unittest.TestCase):
             self.assertEqual(entry["location_terms"], list(arm.location), arm.name)
             self.assertEqual((entry["ridge"], entry["robust"], entry["sized"]), (sc.ridge_of(arm), arm.robust, arm.sized), arm.name)
         self.assertEqual(declaration["arms"][-1]["location_terms"], list(sc.ARMS[2].location))
-        self.assertEqual(declaration["limits"]["arms"], len(declaration["arms"]))
+        self.assertEqual(declaration["limits"]["arms"], len(declaration["arms"]) - 1)  # (a) is the comparator
         self.assertEqual(declaration["limits"]["last_day"], script.LAST_DAY.isoformat())
         self.assertEqual(declaration["scoring"]["paired"].count("seed 1172"), 1)
         self.assertEqual(script.SEED, 1172)
-        self.assertEqual(declaration["kill_rule"]["reading"].count("0.5"), 3)
+        self.assertEqual(declaration["kill_rule"]["reading"].count("< 0.5"), 2)
         self.assertEqual(script.KILL_SHARE, 0.5)
 
     def test_no_arm_has_the_fomc_or_iorb_terms(self):

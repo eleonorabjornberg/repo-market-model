@@ -421,7 +421,7 @@ def score(args) -> int:
         "v4": {"name": V4, "on": S3, "role": LABELS[V4]},
         "refits": [{"fitted_on": day.isoformat(), "phi": fit.phi} for day, fit in sorted(mine.fits.items())],
         "groups": {}, "skipped_groups": skipped, "politis_white": {}, "q95": {},
-        "reading_rules": declaration["reading"]["rules"],
+        "reading_rules": declaration["reading_rules"],
         "scaled": {"first_day": scaled_days[0].isoformat(), "days": len(scaled_days)},
     }
     for kind, (ident, payload) in done:
