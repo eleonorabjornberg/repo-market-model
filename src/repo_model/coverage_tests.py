@@ -15,6 +15,12 @@ forecast is calibrated the hits are independent Bernoulli(`p`) draws. Three like
 `y > q` or `y >= q`, and the two give different hit rates. `hit_sequence` takes the rule as a required argument with
 no default; this module does not choose. The tests themselves take a 0/1 sequence and do not care how it was made.
 
+**Randomised tie rule (#1130, reporting option, inert).** A deterministic rule is mis-sized for a perfect forecaster
+when outcomes tie the quantile. `randomised_hit_sequence` counts a tie as a hit with a probability the caller supplies
+per observation, the one the forecast's own distribution assigns (for a level with exceedance probability `p`:
+`(p - P(Y > q)) / P(Y = q)`, as in the randomised PIT of Czado, Gneiting and Held 2009), against uniform draws the
+caller also supplies, so the module draws nothing and a result reproduces. It is not one of `HIT_RULES`.
+
 **Degenerate sequences.** The likelihoods use the convention 0 * ln 0 = 0, so no sequence needs a special case in
 the statistic:
 
@@ -150,4 +156,31 @@ def hit_sequence(outcomes: Sequence[float], quantiles: Sequence[float], *, rule:
         if not (math.isfinite(y) and math.isfinite(q)):
             raise ValueError("an outcome or quantile is not finite: %r, %r" % (y, q))
         out.append(int(y > q) if rule == "above" else int(y >= q))
+    return out
+
+
+def randomised_hit_sequence(
+    outcomes: Sequence[float], quantiles: Sequence[float], tie_probabilities: Sequence[float], draws: Sequence[float]
+) -> list:
+    """0/1 hits: 1 where `y > q`, and where `y == q` and the draw is below the tie's hit probability; else 0.
+
+    `tie_probabilities` (each in [0, 1]) and `draws` (each in [0, 1)) are required and one per observation; with
+    probabilities of 0 it is the "above" rule and with 1 the "at_or_above" rule.
+    """
+
+    n = len(outcomes)
+    if not (len(quantiles) == len(tie_probabilities) == len(draws) == n):
+        raise ValueError(
+            "outcomes, quantiles, tie probabilities and draws differ in length: %d, %d, %d, %d"
+            % (n, len(quantiles), len(tie_probabilities), len(draws))
+        )
+    out = []
+    for y, q, tie, u in zip(outcomes, quantiles, tie_probabilities, draws):
+        if not (math.isfinite(y) and math.isfinite(q)):
+            raise ValueError("an outcome or quantile is not finite: %r, %r" % (y, q))
+        if not (0.0 <= tie <= 1.0):
+            raise ValueError("a tie hit probability lies in [0, 1], got %r" % (tie,))
+        if not (0.0 <= u < 1.0):
+            raise ValueError("a draw lies in [0, 1), got %r" % (u,))
+        out.append(int(y > q or (y == q and u < tie)))
     return out

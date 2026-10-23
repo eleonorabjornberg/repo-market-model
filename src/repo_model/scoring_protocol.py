@@ -1217,7 +1217,7 @@ def coverage_cells(
 
 
 def enforce_coverage_requirement(
-    cells: Sequence[CoverageCell], *, alpha: float, family: str, rule: str = "strict"
+    cells: Sequence[CoverageCell], *, alpha: float, family: str, rule: str
 ) -> List[CoverageCell]:
     """The registration requirement of draft amendment 4: no cell of `rule` fails either test.
 
@@ -1228,7 +1228,7 @@ def enforce_coverage_requirement(
         alpha: the level of a cell's test (family "per_cell") or the family-wise level (family "holm"); required,
             the record's marked question sets it.
         family: "per_cell" (each p-value against `alpha`) or "holm" (`holm` over all of the rule's p-values).
-        rule: which hit rule the requirement reads; "strict" until the record says otherwise.
+        rule: which hit rule the requirement reads; required, no default: the record leaves it to the size simulation.
     """
 
     if family not in COVERAGE_FAMILIES:

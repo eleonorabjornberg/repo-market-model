@@ -198,32 +198,36 @@ class InertUntilMergedTests(unittest.TestCase):
 
     def test_enforcement_returns_nothing_while_off(self):
         cells = self.failing_cells()
-        self.assertEqual(sp.enforce_coverage_requirement(cells, alpha=0.01, family="per_cell"), [])
+        self.assertEqual(sp.enforce_coverage_requirement(cells, alpha=0.01, family="per_cell", rule="strict"), [])
 
     def test_enforcement_names_the_failing_cells_once_on(self):
         cells = self.failing_cells()
         with mock.patch.object(sp, "COVERAGE_REQUIREMENT_IN_FORCE", True):
             with self.assertRaises(sp.CoverageRequirementFailed) as raised:
-                sp.enforce_coverage_requirement(cells, alpha=0.01, family="per_cell")
+                sp.enforce_coverage_requirement(cells, alpha=0.01, family="per_cell", rule="strict")
         self.assertIn("0.05", str(raised.exception))
 
     def test_a_calibrated_forecast_passes_once_on(self):
         forecasts, outcomes, calendar, labels = world(n=2000, seed=5)
         cells = sp.coverage_cells(forecasts, outcomes, calendar, labels, method="thinned")
         with mock.patch.object(sp, "COVERAGE_REQUIREMENT_IN_FORCE", True):
-            self.assertEqual(sp.enforce_coverage_requirement(cells, alpha=0.001, family="per_cell"), [])
+            self.assertEqual(sp.enforce_coverage_requirement(cells, alpha=0.001, family="per_cell", rule="strict"), [])
 
     def test_family_and_alpha_have_no_default(self):
         with self.assertRaises(TypeError):
             sp.enforce_coverage_requirement([])
         with self.assertRaises(sp.ProtocolError):
-            sp.enforce_coverage_requirement([], alpha=0.01, family="other")
+            sp.enforce_coverage_requirement([], alpha=0.01, family="other", rule="strict")
+
+    def test_the_hit_rule_has_no_default_while_the_record_leaves_it_open(self):
+        with self.assertRaises(TypeError):
+            sp.enforce_coverage_requirement([], alpha=0.05, family="holm")
 
     def test_holm_is_a_family_option(self):
         cells = self.failing_cells()
         with mock.patch.object(sp, "COVERAGE_REQUIREMENT_IN_FORCE", True):
             with self.assertRaises(sp.CoverageRequirementFailed):
-                sp.enforce_coverage_requirement(cells, alpha=0.05, family="holm")
+                sp.enforce_coverage_requirement(cells, alpha=0.05, family="holm", rule="strict")
 
 
 if __name__ == "__main__":
