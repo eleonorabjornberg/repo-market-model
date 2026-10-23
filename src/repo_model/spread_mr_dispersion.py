@@ -85,6 +85,16 @@ ARMS: Tuple[DispArm, ...] = (
 MODEL_NAMES: Tuple[str, ...] = (ARM_A, BASE_ARM.name) + tuple(a.name for a in ARMS)
 
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_READS = {
+    "require_available": (
+        "not_entry",
+        "checks that the anchor row's percentiles were public at the decision instant (the as-of rule); "
+        "scores nothing; the days `scripts/sofr_dispersion_1175.py` scores end on 2025-12-31 and go "
+        "through the scorer of scoring protocol v1, which refuses a locked day",
+    ),
+}
+
 # -- the ratio ----------------------------------------------------------------------------------------------------------------
 
 
