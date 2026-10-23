@@ -311,9 +311,24 @@ def auc_cell(groups: Sequence[Sequence[float]], other: Sequence[float]) -> Optio
     return richer_targets.pre_onset_interval(list(groups), list(other), seed=SEED, draws=ONSET_DRAWS)
 
 
-def score_target(target: str, args, declared: dict, all_rows, splits, registry) -> dict:
-    """One target's decision-day scores against its own B1 and B2, in all its splits, and its lead on the onsets."""
+def score_target(
+    target: str,
+    args,
+    declared: dict,
+    all_rows,
+    splits,
+    registry,
+    drop: Optional[date] = None,
+    extras: Optional[Mapping[str, Mapping[date, Mapping[int, List[float]]]]] = None,
+) -> dict:
+    """One target's decision-day scores against its own B1 and B2, in all its splits, and its lead on the onsets.
 
+    Both arguments are for #902 and change nothing when left out. `drop` is a decision day left out of every cut after the
+    benchmarks are built. `extras` are further benchmarks (name -> decision day -> lead -> 23 quantiles), each paired with the
+    model; a decision day one of them lacks is left out of every column (`decision_days_without_a_benchmark`).
+    """
+
+    extras = dict(extras or {})
     rows = panel_rows(args.panel, target)
     dates = [row.date for row in rows]
     calendar = dates
@@ -342,21 +357,21 @@ def score_target(target: str, args, declared: dict, all_rows, splits, registry) 
             first2 = richer_targets.window_first(dates, i, 1)
             built1[h] = richer_targets.b1_quantiles(values, dates, anchor[d], h, first=first1)
             built2[h] = richer_targets.b2_quantiles(values, kinds, dates, anchor[d], kinds[i + h], first=first2)
-        if any(q is None for q in built1.values()) or any(q is None for q in built2.values()):
+        if any(q is None for q in built1.values()) or any(q is None for q in built2.values()) or any(d not in e for e in extras.values()):
             unbuilt.append(d.isoformat())
             continue
         b1[d], b2[d] = built1, built2
-    days = [d for d in decision_days if d in b1]
+    days = [d for d in decision_days if d in b1 and d != drop]
     if not days:
         raise SystemExit(f"{target}: no decision day has both benchmarks")
     filled = sp.fill_missing({d: by_decision[d] for d in days}, b1, days)
-    forecasts = {"B1": b1, "B2": b2, "model": filled.forecasts}
+    forecasts = {"B1": b1, "B2": b2, "model": filled.forecasts, **{n: {d: e[d] for d in days} for n, e in extras.items()}}
     primary = {n: sp.day_scores({d: forecasts[n][d] for d in days}, outcomes, calendar) for n in forecasts}
     scored = sorted(primary["B1"])
     for n, scores in primary.items():
         if sorted(scores) != scored:
             raise SystemExit(f"{n} does not score the same decision days as B1")
-    pairs = [("B1", "model"), ("B2", "model"), ("B2", "B1")]
+    pairs = [("B1", "model"), ("B2", "model"), ("B2", "B1")] + [(n, "model") for n in extras]
     cells = {n: m634.cell_scores({d: forecasts[n][d] for d in scored}, outcomes, calendar, sp.grid_crps) for n in forecasts}
     out: dict = {
         "target": target,
@@ -397,11 +412,13 @@ def score_target(target: str, args, declared: dict, all_rows, splits, registry) 
                 "tests": m634.pair_table(means, pairs, group, args.draws),
             }
     out["by_day_type"] = by_type
-    out["lead_on_onsets"] = lead_on_onsets(target, args, all_rows, laws[1], values, position, rows)
+    out["lead_on_onsets"] = lead_on_onsets(target, args, all_rows, laws[1], values, position, rows, drop)
+    if drop is not None:
+        out["dropped_day"] = drop.isoformat()
     return out
 
 
-def lead_on_onsets(target, args, all_rows, laws1, values, position, rows) -> dict:
+def lead_on_onsets(target, args, all_rows, laws1, values, position, rows, drop: Optional[date] = None) -> dict:
     """The pre-onset AUC of the model's lead-1 median and of the as-of value, within each as-of state (step 1's contrast)."""
 
     registry = s639.measurement_fields.load_registry()
@@ -437,7 +454,7 @@ def lead_on_onsets(target, args, all_rows, laws1, values, position, rows) -> dic
     for name, series in (("model_median", median), ("as_of_value", asof_value)):
         cell = {}
         for band in BANDS:
-            usable = lambda k, band=band: series[k] is not None and state[k] == band
+            usable = lambda k, band=band: series[k] is not None and state[k] == band and dates[scored_idx[k] - 1] != drop
             groups = [[series[k] for k in g if usable(k)] for g in groups_idx]
             groups = [g for g in groups if g]
             other = [series[k] for k in range(len(scored_days)) if k not in pre and usable(k)]

@@ -1,0 +1,18 @@
+{
+ "hypothesis": "H5",
+ "candidate": "spread_mr_fhs_mad20_f0.5",
+ "label": "development, not a verdict",
+ "date": "2026-10-22",
+ "replaces": "gbm_funding",
+ "ruling": "https://github.com/eleonorabjornberg/repo-market-model/issues/1115#issuecomment-6350220630",
+ "note": "Eleonora's ruling on #1115: #941's scaled mean reversion, arm (a) of #1115, is the H5 candidate and replaces gbm_funding. A state-scaled calendar version (#1145) replaces it only if it beats it. Nothing is registered; registration remains her own action. The page reads the candidate from this file; the step 4 record is the fallback when it is absent.",
+ "scores": {
+  "record": "docs/research/calendar-mr-1115/result.json",
+  "model": "mr_cal_a_base",
+  "benchmarks": ["B1", "B1_prime", "B2", "gbm_funding", "spread_mr_ctx"]
+ },
+ "evidence": [
+  {"issue": 1115, "page": "docs/research/calendar-mr-1115-result.md", "record": "docs/research/calendar-mr-1115/result.json"},
+  {"issue": 1141, "page": "docs/research/walk-calibration-1133-result.md", "record": "docs/research/walk-calibration-1133/result.json"}
+ ]
+}
