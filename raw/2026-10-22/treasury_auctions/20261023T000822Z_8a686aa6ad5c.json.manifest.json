@@ -1,0 +1,8 @@
+{
+  "byte_count": 13123174,
+  "path": "treasury_auctions/20261023T000822Z_8a686aa6ad5c.json",
+  "retrieved_at": "2026-10-23T00:08:22.795261+00:00",
+  "sha256": "8a686aa6ad5cc8a2f8dbd809a3c5d874dd3e5d30cc06b6cc00b7841567379e96",
+  "source_id": "treasury_auctions",
+  "url": "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/od/auctions_query?filter=issue_date%3Agte%3A2017-01-03%2Cissue_date%3Alte%3A2026-12-21&page%5Bsize%5D=10000&sort=record_date%2Cissue_date%2Ccusip"
+}
