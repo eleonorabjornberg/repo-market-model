@@ -182,6 +182,7 @@ data, dating, holidays and panel declarations). None of their scripts calls a on
 | `metadata/recency_adaptive_training.json` | `scripts/recency_adaptive_training.py` | direct | pressure models on direct pairs |
 | `metadata/risk_date_severity.json` | `scripts/risk_date_severity.py` | direct | pressure models on direct pairs |
 | `metadata/risk_date_spread_693.json` | `scripts/risk_date_spread_693.py` | as_of_read | the risk-date laws read the target row's calendar columns (#951 §1: no) |
+| `metadata/s3_decomposition_1172.json` | `scripts/s3_decomposition_1172.py` | direct | why (s3) of #1145 wins: (s3) and its arms r1, r2 and r3 (and v4 of #1153 on (s3)) read the calendar columns, and for r3 the announced settlement size, at the target day on direct pairs (training_pairs = direct; the estimation routine is guarded by one_step_guard with no allow-list entry); no gradient-boosted fit is called, and the gbm_funding walks are read as a comparison only when supplied (a Mac run), so the arms are not provisional; the arm (a) and the benchmarks read no calendar column and carry the register's mark as before |
 | `metadata/settlement_announcement_dating.json` | none | none | when each settlement is public: dating |
 | `metadata/settlement_result_dating.json` | `scripts/settlement_result_dating.py` | direct | a re-score of pressure models under result-dated settlements |
 | `metadata/setup_diagnostic.json` | `scripts/setup_diagnostic.py` | direct | pressure models on direct pairs |
