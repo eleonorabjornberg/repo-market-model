@@ -2,8 +2,8 @@
 
 Her ruling on #1009 (comment 6291059408, 20 October 2026): development pages report both the skill interval and the studentized
 mean-d bound, and read the mean-d bound; each page states Lens C's caveat. This module pins four things: the readings in
-`scripts/walk_calibration_1133.py` and `scripts/faster_scale_1153.py` and the rule in `metadata/walk_calibration_1133.json` and
-`metadata/faster_scale_1153.json` follow the mean-d bound; the original committed pages are still what the scripts give under
+`scripts/walk_calibration_1133.py` and `scripts/faster_scale_1153.py` follow the mean-d bound, while `metadata/walk_calibration_1133.json`
+and `metadata/faster_scale_1153.json` stay as declared before scoring; the original committed pages are still what the scripts give under
 `reading="skill"`; `scripts/mean_d_reading_1167.py` reads every paired row of the four committed records without a re-run; and the
 tracked new pages and record are what that script writes.
 
@@ -75,16 +75,12 @@ class ReadingTests(unittest.TestCase):
     def test_the_originals_of_941_and_1115_stand(self):
         self.assertEqual(s941.verdict(DISAGREE), "undecided")  # #941's page is not regenerated: its reading is the one it was written with
 
-    def test_the_declared_rules_name_the_mean_d_bound(self):
+    def test_the_declarations_stay_as_declared_before_scoring(self):
+        # Eleonora's ruling on the PR (comment 6370129841, option 1): only the scripts and the new pages carry the #1009 rule.
         for name in ("walk_calibration_1133", "faster_scale_1153"):
             declaration = json.loads((ROOT / "metadata" / f"{name}.json").read_text(encoding="utf-8"))
-            rule = declaration["reading"]["rules"][0]
-            self.assertIn("mean d", rule, name)
-            self.assertIn("studentized", rule, name)
-            self.assertNotIn("90% interval of its grid-CRPS skill", rule, name)
-            last = declaration["amendments"][-1]
-            self.assertEqual(last["date"], "2026-10-23", name)
-            self.assertIn("#1009", last["by"], name)
+            self.assertNotIn("2026-10-23", [a["date"] for a in declaration["amendments"]], name)
+            self.assertNotIn("studentized one-sided bound on mean d", declaration["reading"]["rules"][0], name)
 
 
 class OriginalPageTests(unittest.TestCase):

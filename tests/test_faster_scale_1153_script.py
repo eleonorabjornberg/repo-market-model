@@ -174,7 +174,7 @@ class DeclarationTests(unittest.TestCase):
     def test_the_seed_and_the_amendment(self):
         self.assertEqual(script.SEED, 1153)
         self.assertEqual(self.declaration["scoring"]["paired"].count("seed 1153"), 1)
-        self.assertEqual([a["date"] for a in self.declaration["amendments"]], ["2026-10-22", "2026-10-23"])  # the 23rd: the reading rule, #1167
+        self.assertEqual(len(self.declaration["amendments"]), 1)
 
     def test_every_band_is_on_the_grid(self):
         for lo, hi in script.BANDS.values():

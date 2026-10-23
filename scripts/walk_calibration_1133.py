@@ -415,7 +415,7 @@ def skill_verdict(row: dict) -> str:
 
 
 def verdict(row: dict) -> str:
-    """The declared reading of one row: the studentized one-sided bound on mean d (her ruling on #1009; #1167), not the skill interval."""
+    """The reading of one row under her ruling on #1009 (the declaration, written before scoring, is unchanged): the studentized one-sided bound on mean d (her ruling on #1009; #1167), not the skill interval."""
 
     if "undefined" in row:
         return "undecided"
@@ -502,7 +502,7 @@ def render(r: dict, reading: str = "mean_d") -> str:
     if r["skipped_groups"]:
         out += ["Groups with fewer than %d days are listed and not tested: %s." % (
             MIN_GROUP_DAYS, ", ".join(f"{k} ({v})" for k, v in sorted(r["skipped_groups"].items()))), ""]
-    out += ["## Reading under the declared rule", "",
+    out += ["## Reading under the declared rule" if reading == "skill" else "## Reading under the ruling on #1009", "",
             *READING_RULE[reading], ""]
     for arm in wc.ARMS:
         parts = []

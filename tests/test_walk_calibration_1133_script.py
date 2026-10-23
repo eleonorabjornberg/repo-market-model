@@ -85,7 +85,7 @@ class DeclarationTests(unittest.TestCase):
         self.assertEqual(set(self.declaration["variants"]), set(wc.ARMS))
         self.assertEqual((wc.MIN_CELLS, wc.REFIT_EVERY, wc.WIDTH_FLOOR), (250, 21, 1.0))
         self.assertTrue(self.declaration["base"]["name"].startswith(script.BASE))
-        self.assertEqual([a["date"] for a in self.declaration["amendments"]], ["2026-10-22", "2026-10-23"])  # the ruling on #1142; the reading rule, #1167
+        self.assertEqual([a["date"] for a in self.declaration["amendments"]], ["2026-10-22"])  # the ruling on #1142
         self.assertEqual(self.declaration["scoring"]["paired"].count("seed 1133"), 1)
         self.assertEqual(script.SEED, 1133)
 
