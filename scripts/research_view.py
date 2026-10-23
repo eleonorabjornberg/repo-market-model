@@ -42,9 +42,9 @@ STEP4 = "docs/pivot/evidence/h5-step4/score.json"
 STANDINGS = "docs/pivot/evidence/b1-calendar-960/score.json"
 STANDINGS_DECLARATION = "metadata/b1_calendar_960.json"
 #: The current H5 candidate (#1152): a small committed record of Eleonora's ruling. The standings read the candidate
-#: from it and fall back to the step 4 record only when it is absent. Its scores are #1115's `result.json`.
+#: from it and fall back to the step 4 record only when it is absent. Its scores are #1145's `result.json` (#1173).
 CANDIDATE = "docs/research/h5-candidate.json"
-CANDIDATE_SCORES = "docs/research/calendar-mr-1115/result.json"
+CANDIDATE_SCORES = "docs/research/state-calendar-1145/result.json"
 #: Every source the page is built from: the one list a new input is added to (#1059). `LOG` and `HYPOTHESES` are
 #: directories; `input_files` expands them, and `emit_visual.py` stamps the page with the digest of each.
 INPUTS = (PLAN, LOG, PROGRESS, HYPOTHESES, TAGLINES, REGISTER, STEP4, STANDINGS, STANDINGS_DECLARATION,
@@ -375,7 +375,8 @@ CANDIDATE_GROUPS = (("pooled", "all decision days", "all decision days"), ("targ
 #: The splits of the second table: by regime and by target-day type (the protocol's split of a development figure).
 CANDIDATE_SPLITS = (("regime", "by regime"), ("target_day_type", "by target-day type"))
 #: What the page calls each evidence page of the candidate record: the page is for a lay reader, so no issue number.
-EVIDENCE_NAMES = {1115: "calendar-terms study", 1141: "walk-forward calibration study"}
+EVIDENCE_NAMES = {1145: "state-scaled calendar study", 1115: "calendar-terms study",
+                  1141: "walk-forward calibration study"}
 SPLIT_BENCHMARKS = (("B1", "B1"), ("B1_prime", "B1&prime;"))
 
 
@@ -416,7 +417,9 @@ def candidate_standings(root):
         return None
     if model not in score.get("models", ()):
         return None
-    benches = [(b, shown) for b, shown in CANDIDATE_BENCHMARKS if b in score["models"]]
+    declared = rec["scores"].get("benchmarks")
+    pairs = [(x["key"], x["label"]) for x in declared] if declared else CANDIDATE_BENCHMARKS
+    benches = [(b, shown) for b, shown in pairs if b in score["models"]]
     groups = []
     for key, label, caption in CANDIDATE_GROUPS:
         group = (score.get("groups") or {}).get(key, {}).get(label)
@@ -440,6 +443,8 @@ def candidate_standings(root):
     return {"kind": "candidate", "candidate": name, "benchmarks": benches, "groups": groups, "splits": splits,
             "first": score["notes"]["first"], "last": score["notes"]["last"], "date": rec["date"],
             "ruling": rec["ruling"], "replaces": rec.get("replaces"), "note": rec.get("note"),
+            "description": rec.get("description"), "provisional": rec.get("provisional", True),
+            "missing": list(rec["scores"].get("not_supplied") or ()),
             "evidence": list(rec.get("evidence") or []), "record": scores_path, "file": CANDIDATE}
 
 
@@ -521,14 +526,26 @@ def candidate_standings_html(st):
             split_body.append(
                 f'<tr><th scope="row">{esc(row["label"])}</th><td>{row["days"]}</td><td>{mean(row["own"])}</td>'
                 + "".join(f'<td>{mean_d(row["pairs"][b])}</td>' for b, _ in SPLIT_BENCHMARKS) + '</tr>')
+    beside = ", ".join(shown for _, shown in st["benchmarks"][:-1]) + " and " + st["benchmarks"][-1][1]
+    missing = ("".join(f"No row compares it with {esc(b)}: its walks were not supplied to the study that scored it. "
+                       for b in st.get("missing") or ()))
+    if st.get("provisional", True):
+        mark = " " + provisional_mark()
+        caveat = ('The candidate reads no calendar column, so every figure here is provisional until it is re-run with '
+                  'calendar terms read at the target day; it is the best variant of its study, chosen after seeing the '
+                  'development days, so the figures are optimistic for it. ')
+    else:
+        mark = ""
+        caveat = ('The candidate reads the calendar at the target day on direct pairs, so its figures are not provisional '
+                  'on that account; it was chosen after seeing the development days, so they are optimistic for it. ')
     links = ", ".join(f'<a href="{BLOB}{esc(e["page"])}">{esc(EVIDENCE_NAMES.get(e["issue"], "the study"))}</a>' for e in st["evidence"])
     return (
         '<p><span class="runin">The development standings.</span> '
-        f'The H5 candidate is <b>{name}</b>, the scaled mean reversion of the volatility-scaling study (arm (a) of the calendar-terms study). '
+        f'The H5 candidate is <b>{name}</b>, {esc(st["description"] or "the scaled mean reversion of the volatility-scaling study")}. '
         f'<a href="{esc(st["ruling"])}">Eleonora ruled on {esc(st["date"])}</a> that it replaces '
         f'{esc(st["replaces"] or "the previous candidate")}; the committed record is <code>{esc(st["file"])}</code> '
         f'and the evidence pages are {links}. Nothing is registered: registration remains her own action. '
-        f'The tables set it beside B1, B1&prime;, B2, gbm_funding and spread_mr_ctx on the decision days '
+        f'The tables set it beside {beside} on the decision days '
         f'{esc(st["first"])} to {esc(st["last"])}, from the record <code>{esc(st["record"])}</code>; '
         'every figure is copied from it. Mean grid CRPS in bp over horizons one to five, lower is better. '
         'd is the benchmark&rsquo;s score minus the candidate&rsquo;s, positive favouring the candidate; the '
@@ -536,16 +553,13 @@ def candidate_standings_html(st):
         '95% bounds, and the reading follows the bound on mean d as the protocol does: better when the lower end is '
         'above zero, worse when the upper end is below, no difference otherwise. The skill interval is drawn '
         'separately and can fall on the other side of zero (Eleonora&rsquo;s ruling on which interval is read), so it is shown for reference and not read. '
-        f'<span class="rs-tag">{esc(DEV_LABEL)}</span> {provisional_mark()}</p>'
+        f'{missing}<span class="rs-tag">{esc(DEV_LABEL)}</span>{mark}</p>'
         f'<table class="rs-standings"><thead><tr><th scope="col">Model</th>{head}</tr></thead>'
         f'<tbody>{"".join(body)}</tbody></table>'
         '<p class="rs-note"><b>Lens C&rsquo;s caveat.</b> B1&prime; is Lens C&rsquo;s calendar-aware persistence: '
         'B1 with its changes pooled by the target day&rsquo;s type. B1 stays the protocol&rsquo;s benchmark, '
         'but B1 alone is not the honest baseline, so the candidate&rsquo;s gain over B1&prime; is the one to weigh. '
-        'The candidate reads no calendar column, so every figure here is provisional until it is re-run with calendar '
-        'terms read at the target day; it is the volatility-scaling study&rsquo;s best variant, chosen after seeing the development days, '
-        'so the figures are optimistic for it. The split below is the protocol&rsquo;s: a pooled figure alone is '
-        'not a result.</p>'
+        f'{caveat}The split below is the protocol&rsquo;s: a pooled figure alone is not a result.</p>'
         f'<table class="rs-standings"><thead><tr><th scope="col">Split</th><th scope="col">Days</th>'
         f'<th scope="col">{name}&rsquo;s grid CRPS</th>{split_head}</tr></thead>'
         f'<tbody>{"".join(split_body)}</tbody></table>')

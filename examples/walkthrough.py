@@ -34,11 +34,29 @@ executed. Edit this file; never the notebook.
 
 # %%
 import json
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent if "__file__" in dir() else Path.cwd()
+REPO_URL = "https://github.com/eleonorabjornberg/repo-market-model.git"
+
+
+def find_root():
+    """The repository: this file's parent when run as a script; else the clone the notebook sits in, or a fresh one."""
+    if "__file__" in dir():
+        return Path(__file__).resolve().parent.parent
+    here = Path.cwd().resolve()
+    for candidate in [here, *here.parents]:
+        if (candidate / "src" / "repo_model").is_dir() and (candidate / "metadata").is_dir():
+            return candidate
+    clone = here / "repo-market-model"  # the Colab case: a notebook opened outside any clone
+    if not clone.exists():
+        subprocess.run(["git", "clone", "--quiet", "--depth", "1", REPO_URL, str(clone)], check=True)
+    return clone
+
+
+ROOT = find_root()
 sys.path.insert(0, str(ROOT / "src"))
 
 from repo_model.cli import main as cli  # noqa: E402
@@ -169,6 +187,17 @@ for key in sorted(exceedance["metrics"]["by_tau"], key=float):
 # synthetic rows cannot, and the reports above say so in their own provenance.
 # For measured numbers on the real panel see `docs/runs/` and the README's
 # Key-findings section, which is generated from those records rather than typed.
+#
+# **Note, 23 October 2026: what has changed since this walkthrough was written.**
+# Its figures are the machinery's on a synthetic sample and none of them is a
+# result, so none is restated. The framing around them has moved. The project's
+# primary question is now the whole distribution of SOFR - IORB in basis points
+# for the next five business days, scored by grid CRPS (the exceedance run in
+# section 4 is one reading of it, and new variants of that classification are
+# paused). A model has to read calendar days at the target day, and the month-end
+# turn is the last business day plus the first of the next month. The overview
+# notebook (`notebooks/00_overview.ipynb`) carries that framing and scores the
+# two persistence benchmarks, B1 and B1-prime, on the real panel in seconds.
 
 # %%
 print("\nreports written to %s" % OUT)
