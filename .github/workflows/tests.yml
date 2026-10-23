@@ -14,11 +14,14 @@ on:
 permissions:
   contents: read
 
-# A superseded push (force-push, rapid follow-up commit) makes the in-progress
-# run worthless; stop it instead of stacking up jobs.
+# A superseded pull-request run (force-push, rapid follow-up commit) is worthless; stop it
+# instead of stacking up jobs. A push to main is never cancelled (#1168): its run is the only
+# check of the range `event.before..sha` (the owner-attestation step below), and a cancelled
+# run left such ranges unchecked. Each push gets a group of its own commit, since a shared
+# group keeps one pending run and cancels the older pending ones.
 concurrency:
-  group: tests-${{ github.ref }}
-  cancel-in-progress: true
+  group: tests-${{ github.event_name == 'push' && github.sha || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 # On a pull request the classes declared in tests/nightly.py (the slowest ones,
 # #858) skip with their reason printed. A push to main and the nightly schedule
