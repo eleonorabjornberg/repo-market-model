@@ -259,6 +259,14 @@ def _studentized_tally(result: dict, cells: Sequence[str]) -> list:
     return lines
 
 
+PROVISIONAL_NOTE = (
+    "**provisional: calendar not read at the target day.** The rows that carry the figures here are the models of #934, whose "
+    "result is row 10 of the provisional register (`docs/research/provisional-calendar-register.md`, class b for `gbm_funding`): "
+    "the figures below restate #934's cells on the five regimes and stay provisional until #934 is re-run on direct pairs. "
+    "The register marks this; no figure here is edited (#1169)."
+)
+
+
 def render(result: dict, three: dict) -> str:
     level = round(result["level"] * 100)
     five_headers = list(LABELS)
@@ -270,6 +278,7 @@ def render(result: dict, three: dict) -> str:
         "**Development data only: this is not a verdict** (scoring protocol v1, #640). On Eleonora's ruling on #1011 (20 October 2026): "
         "#934 restated on the five regimes of `metadata/evaluation_splits.json`, with the three-regime table kept beside it. "
         "**No pooled gain is claimed.**", "",
+        PROVISIONAL_NOTE, "",
         "Nothing new is modelled: the rows, the reference, the outcome and the ordinary-day definition (`risk_dates.NON_ORDINARY`, read at "
         f"the target day) are #844's. Each cell is the paired AUROC difference from persistence-logistic on ordinary target days with its "
         f"{level}% stationary-bootstrap percentile interval (block {result['block_length']}, {result['replications']} replications; the "
