@@ -261,7 +261,7 @@ def _studentized_tally(result: dict, cells: Sequence[str]) -> list:
 
 PROVISIONAL_NOTE = (
     "**provisional: calendar not read at the target day.** The rows that carry the figures here are the models of #934, whose "
-    "result is row 10 of the provisional register (`docs/research/provisional-calendar-register.md`, class b for `gbm_funding`): "
+    "result is row 10 of the provisional register (`docs/research/provisional-calendar-register.md`, class b): "
     "the figures below restate #934's cells on the five regimes and stay provisional until #934 is re-run on direct pairs. "
     "The register marks this; no figure here is edited (#1169)."
 )
