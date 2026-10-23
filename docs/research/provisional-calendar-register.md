@@ -186,6 +186,7 @@ data, dating, holidays and panel declarations). None of their scripts calls a on
 | `metadata/settlement_announcement_dating.json` | none | none | when each settlement is public: dating |
 | `metadata/settlement_result_dating.json` | `scripts/settlement_result_dating.py` | direct | a re-score of pressure models under result-dated settlements |
 | `metadata/setup_diagnostic.json` | `scripts/setup_diagnostic.py` | direct | pressure models on direct pairs |
+| `metadata/sofr_dispersion_1175.json` | `scripts/sofr_dispersion_1175.py` | direct | (s3) of #1145 with its scale multiplied by a factor read from SOFR's as-of dispersion (repo_model.spread_mr_dispersion): the calendar terms are read from the target row on direct pairs (spread_mr_state_calendar.fit_state_terms, guarded by one_step_guard with no allow-list entry), the dispersion is read at the anchor row and the rows before it; (a), the comparator, reads no calendar column and is not a result of this study; no gradient-boosted fit is called |
 | `metadata/source_matrix_629.json` | `scripts/source_matrix_629.py` | direct | the source screen: pressure models on direct pairs |
 | `metadata/sources.json` | none | none | the availability registry: data |
 | `metadata/sources_measurement.json` | none | none | the measurement sources registry, which declares the `fomc_calendar` columns: data. A fit on them is refused on one-step pairs by `repo_model.one_step_guard` (#1070) |
