@@ -101,6 +101,14 @@ class ChoosePoolTests(unittest.TestCase):
         self.assertEqual(b2_pool.choose_pool("year_end", {**counts, "year_end": 10}, 10), "year_end")
         self.assertEqual(b2_pool.choose_pool("year_end", {**counts, "turn": 9}, 10), b2_pool.ALL_DAYS)
 
+    def test_a_minimum_of_four_sends_only_year_end_to_the_quarter_end_turn(self):
+        thin = {"year_end": 2, "quarter_end_turn": 4, "turn": 12, "tax_date": 10}
+        self.assertEqual(b2_pool.choose_pool("year_end", thin, 4), "quarter_end_turn")
+        self.assertEqual(b2_pool.choose_pool("quarter_end_turn", thin, 4), "quarter_end_turn")
+        self.assertEqual(b2_pool.choose_pool("turn", thin, 4), "turn")
+        self.assertEqual(b2_pool.choose_pool("tax_date", thin, 4), "tax_date")
+        self.assertEqual(b2_pool.choose_pool("quarter_end_turn", thin, 10), "turn")
+
     def test_a_missing_type_counts_as_empty(self):
         self.assertEqual(b2_pool.choose_pool("year_end", {}, 1), b2_pool.ALL_DAYS)
 

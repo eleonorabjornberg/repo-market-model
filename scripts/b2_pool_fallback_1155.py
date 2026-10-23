@@ -4,7 +4,7 @@ A development study, never a verdict. It writes JSON and Markdown to the paths i
 Every choice is in `metadata/b2_pool_fallback_1155.json`, which this script refuses to read unless it is committed and
 unchanged. The arms are B1, B1' (`repo_model.b1_calendar`), B2 as the protocol scores it on the legacy month-end type and on
 the turn labels of the draft of #1135 (`repo_model.turn_days.TurnLabels`; that record is not in force), and B2 with the
-fallback of the draft of #1155 (`repo_model.b2_pool`) at three pool minimums. Scored decision days are those whose five
+fallback of the draft of #1155 (`repo_model.b2_pool`) at four pool minimums (4 added by the ruling of 23 October 2026). Scored decision days are those whose five
 targets are on or before 2025-12-31; no later day is read and no locked day is scored (`docs/decisions/lockbox.md`).
 
 Measures: the pool each target type reads; the coverage of the 50% and 90% bands and the exceedance of q95, under both hit
@@ -65,7 +65,7 @@ SEED = 1155
 LAST_DAY = s686.LAST_DAY
 DECISION_TIME = s686.DECISION_TIME
 MIN_GROUP_DAYS = s686.MIN_GROUP_DAYS
-POOL_MINS = (10, 20, 30)
+POOL_MINS = (4, 10, 20, 30)
 #: The first scored decision day is the 251st panel row, so B2's trailing year is a whole year of rows.
 WARM_UP_ROWS = 250
 B1, B1P, B2_LEGACY, B2_TURN = "B1", "B1_prime", "B2_legacy", "B2_turn"
@@ -289,7 +289,7 @@ def score(args) -> int:
 # -- the page ------------------------------------------------------------------------------------------------------
 
 NAMES = {B1: "B1", B1P: "B1'", B2_LEGACY: "B2 legacy month-end", B2_TURN: "B2 turn labels, no minimum",
-         "B2_pool10": "B2 + fallback, min 10", "B2_pool20": "B2 + fallback, min 20", "B2_pool30": "B2 + fallback, min 30"}
+         "B2_pool4": "B2 + fallback, min 4", "B2_pool10": "B2 + fallback, min 10", "B2_pool20": "B2 + fallback, min 20", "B2_pool30": "B2 + fallback, min 30"}
 RULE_TEXT = {"above": "`y > q`", "at_or_above": "`y >= q`"}
 KIND_TEXT = {"q95": "q95 exceedance (nominal 0.050)", "band90": "90% band miss (nominal 0.100)",
              "band50": "50% band miss (nominal 0.500)"}
@@ -380,11 +380,35 @@ def render_page(r: dict) -> str:
         for kind in ("q95", "band90"):
             cells = []
             for group in ("year_end", "quarter_end_turn"):
-                row = [r["hits"]["rows"][m][rule][kind][f"pressure_day_type/{group}"]["rate"] for m in (B2_TURN, "B2_pool10", "B2_pool20")]
-                cells.append(f"{group} {row[0]:.3f} / {row[1]:.3f} / {row[2]:.3f}")
-            out.append(f"- {KIND_TEXT[kind]}, hit rule {RULE_TEXT[rule]}, B2 without a minimum / min 10 / min 20: " + "; ".join(cells) + ".")
-    out += ["- Every arm is far from nominal on the thin types and on the 90% band of ordinary days: the fallback does not bring "
-            "them near it, and at a minimum of 10 it helps the year-end and hurts the quarter-end turn. Development data on 2019-2025, never a verdict; B2 is a benchmark.", ""]
+                row = [r["hits"]["rows"][m][rule][kind][f"pressure_day_type/{group}"]["rate"] for m in (B2_TURN, "B2_pool4", "B2_pool10", "B2_pool20")]
+                cells.append(f"{group} {row[0]:.3f} / {row[1]:.3f} / {row[2]:.3f} / {row[3]:.3f}")
+            out.append(f"- {KIND_TEXT[kind]}, hit rule {RULE_TEXT[rule]}, B2 without a minimum / min 4 / min 10 / min 20: " + "; ".join(cells) + ".")
+    def rate(model, kind, group, rule="above"):
+        return r["hits"]["rows"][model][rule][kind][f"pressure_day_type/{group}"]["rate"]
+
+    pool4, pool10 = r["pools"]["B2_pool4"], r["pools"]["B2_pool10"]
+    moved = sorted(k for k, c in pool4.items() if set(c["pools"]) != {k})
+    mean = r["means"]["grid_crps"]
+    out += [
+        "- A minimum of 4 (added by the ruling of 23 October 2026) is at or below the smallest quarter_end_turn pool of the "
+        "scored days (%d rows), so on these days the target types that change pool are: %s; %s." % (
+            pool4["quarter_end_turn"]["rows_min"], ", ".join(moved) or "none",
+            "; ".join(f"{k} reads {', '.join(sorted(pool4[k]['pools']))}" for k in moved)),
+        "- Against a minimum of 10 (hit rule `y > q`): the quarter-end turn keeps B2's own rates at 4 (90%% band miss %.3f, q95 "
+        "exceedance %.3f) where 10 raises them (%.3f, %.3f); the year-end is a little worse at 4 (%.3f, %.3f) than at 10 "
+        "(%.3f, %.3f), and both are far better than without a minimum (%.3f, %.3f)." % (
+            rate("B2_pool4", "band90", "quarter_end_turn"), rate("B2_pool4", "q95", "quarter_end_turn"),
+            rate("B2_pool10", "band90", "quarter_end_turn"), rate("B2_pool10", "q95", "quarter_end_turn"),
+            rate("B2_pool4", "band90", "year_end"), rate("B2_pool4", "q95", "year_end"),
+            rate("B2_pool10", "band90", "year_end"), rate("B2_pool10", "q95", "year_end"),
+            rate(B2_TURN, "band90", "year_end"), rate(B2_TURN, "q95", "year_end")),
+        "- Mean grid CRPS, pooled: B2 without a minimum %.4f, min 4 %.4f, min 10 %.4f, min 20 and 30 %.4f, B1' %.4f. The paired "
+        "test of min 4 against B2 without a minimum is `undefined` whenever the two differ on year-end targets only: a resample of "
+        "blocks can hold none of those days, and its difference then has no long-run variance. The means above are the point "
+        "reading; the year_end group (13 target days) is below the floor and is not tested." % (
+            mean[B2_TURN], mean["B2_pool4"], mean["B2_pool10"], mean["B2_pool20"], mean[B1P]),
+        "- Every arm is far from nominal on the thin types and on the 90% band of ordinary days: the fallback does not bring "
+        "them near it. Development data on 2019-2025, never a verdict; B2 is a benchmark.", ""]
     if r["skipped_groups"]:
         out += ["Groups of fewer than %d target days, listed and not tested: " % MIN_GROUP_DAYS + ", ".join(
             f"{k} ({v})" for k, v in sorted(r["skipped_groups"].items())) + ".", ""]

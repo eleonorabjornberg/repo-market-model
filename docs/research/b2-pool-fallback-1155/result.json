@@ -14,6 +14,7 @@
        "B2_pool10": 2.452371596014491,
        "B2_pool20": 2.4175600949792937,
        "B2_pool30": 2.4175600949792937,
+       "B2_pool4": 2.45217498421325,
        "B2_turn": 2.5311029961180136
       },
       "pairs": {
@@ -102,6 +103,12 @@
          0.17516493379067014
         ]
        },
+       "B2_pool4 vs B2_turn": {
+        "benchmark_mean": 2.5311029961180136,
+        "candidate_mean": 2.45217498421325,
+        "days": 1680,
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+       },
        "B2_turn vs B2_legacy": {
         "benchmark_mean": 2.4517213266045523,
         "candidate_mean": 2.5311029961180096,
@@ -129,6 +136,7 @@
        "B2_pool10": 1.0265875163043445,
        "B2_pool20": 0.9882328599896416,
        "B2_pool30": 0.9882328599896416,
+       "B2_pool4": 1.0299560786749453,
        "B2_turn": 1.098280425983434
       },
       "pairs": {
@@ -217,6 +225,12 @@
          0.48242250936706554
         ]
        },
+       "B2_pool4 vs B2_turn": {
+        "benchmark_mean": 1.098280425983434,
+        "candidate_mean": 1.0299560786749453,
+        "days": 1680,
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+       },
        "B2_turn vs B2_legacy": {
         "benchmark_mean": 1.0231074347826037,
         "candidate_mean": 1.0982804259834325,
@@ -251,6 +265,7 @@
        "B2_pool10": 2.0095602748590986,
        "B2_pool20": 2.0095602748590986,
        "B2_pool30": 2.0095602748590986,
+       "B2_pool4": 2.0095602748590986,
        "B2_turn": 2.0095602748590986
       },
       "pairs": {
@@ -306,6 +321,12 @@
         "days": 1440,
         "undefined": "the daily difference has no long-run variance; it cannot be studentized"
        },
+       "B2_pool4 vs B2_turn": {
+        "benchmark_mean": 2.0095602748590986,
+        "candidate_mean": 2.0095602748590986,
+        "days": 1440,
+        "undefined": "the daily difference has no long-run variance; it cannot be studentized"
+       },
        "B2_turn vs B2_legacy": {
         "benchmark_mean": 1.999530588164251,
         "candidate_mean": 2.009560274859098,
@@ -333,6 +354,7 @@
        "B2_pool10": 0.6543030110708531,
        "B2_pool20": 0.6543030110708531,
        "B2_pool30": 0.6543030110708531,
+       "B2_pool4": 0.6543030110708531,
        "B2_turn": 0.6543030110708531
       },
       "pairs": {
@@ -388,6 +410,12 @@
         "days": 1440,
         "undefined": "the daily difference has no long-run variance; it cannot be studentized"
        },
+       "B2_pool4 vs B2_turn": {
+        "benchmark_mean": 0.6543030110708531,
+        "candidate_mean": 0.6543030110708531,
+        "days": 1440,
+        "undefined": "the daily difference has no long-run variance; it cannot be studentized"
+       },
        "B2_turn vs B2_legacy": {
         "benchmark_mean": 0.6600980233494375,
         "candidate_mean": 0.6543030110708545,
@@ -420,6 +448,7 @@
        "B2_pool10": 5.089113043478263,
        "B2_pool20": 5.469330554347827,
        "B2_pool30": 5.469330554347827,
+       "B2_pool4": 5.071759913043474,
        "B2_turn": 5.071759913043474
       },
       "pairs": {
@@ -508,6 +537,12 @@
          0.2715239035736953
         ]
        },
+       "B2_pool4 vs B2_turn": {
+        "benchmark_mean": 5.071759913043474,
+        "candidate_mean": 5.071759913043474,
+        "days": 40,
+        "undefined": "the daily difference has no long-run variance; it cannot be studentized"
+       },
        "B2_turn vs B2_legacy": {
         "benchmark_mean": 4.8768241521739135,
         "candidate_mean": 5.071759913043475,
@@ -535,6 +570,7 @@
        "B2_pool10": 2.590310326086953,
        "B2_pool20": 2.605943195652171,
        "B2_pool30": 2.605943195652171,
+       "B2_pool4": 2.6494390217391275,
        "B2_turn": 2.6494390217391275
       },
       "pairs": {
@@ -568,6 +604,12 @@
         "days": 40,
         "undefined": "a resampled benchmark scores zero; skill is undefined"
        },
+       "B2_pool4 vs B2_turn": {
+        "benchmark_mean": 2.6494390217391275,
+        "candidate_mean": 2.6494390217391275,
+        "days": 40,
+        "undefined": "the daily difference has no long-run variance; it cannot be studentized"
+       },
        "B2_turn vs B2_legacy": {
         "benchmark_mean": 2.1303641630434758,
         "candidate_mean": 2.6494390217391275,
@@ -589,6 +631,7 @@
        "B2_pool10": 7.820229004714507,
        "B2_pool20": 6.822137867993717,
        "B2_pool30": 6.822137867993717,
+       "B2_pool4": 7.820229004714507,
        "B2_turn": 7.820229004714507
       },
       "pairs": {
@@ -666,6 +709,12 @@
          0.2928736207375977
         ]
        },
+       "B2_pool4 vs B2_turn": {
+        "benchmark_mean": 7.820229004714507,
+        "candidate_mean": 7.820229004714507,
+        "days": 83,
+        "undefined": "the daily difference has no long-run variance; it cannot be studentized"
+       },
        "B2_turn vs B2_legacy": {
         "benchmark_mean": 7.820229004714507,
         "candidate_mean": 7.820229004714507,
@@ -682,6 +731,7 @@
        "B2_pool10": 5.664726018858041,
        "B2_pool20": 5.0863699161864835,
        "B2_pool30": 5.0863699161864835,
+       "B2_pool4": 5.664726018858041,
        "B2_turn": 5.664726018858041
       },
       "pairs": {
@@ -715,6 +765,12 @@
         "days": 83,
         "undefined": "a resampled benchmark scores zero; skill is undefined"
        },
+       "B2_pool4 vs B2_turn": {
+        "benchmark_mean": 5.664726018858041,
+        "candidate_mean": 5.664726018858041,
+        "days": 83,
+        "undefined": "the daily difference has no long-run variance; it cannot be studentized"
+       },
        "B2_turn vs B2_legacy": {
         "benchmark_mean": 5.664726018858041,
         "candidate_mean": 5.664726018858041,
@@ -736,6 +792,7 @@
        "B2_pool10": 3.18974694847021,
        "B2_pool20": 3.2926704589371956,
        "B2_pool30": 3.2926704589371956,
+       "B2_pool4": 3.18974694847021,
        "B2_turn": 3.18974694847021
       },
       "pairs": {
@@ -813,6 +870,12 @@
          0.30657450412593473
         ]
        },
+       "B2_pool4 vs B2_turn": {
+        "benchmark_mean": 3.18974694847021,
+        "candidate_mean": 3.18974694847021,
+        "days": 108,
+        "undefined": "the daily difference has no long-run variance; it cannot be studentized"
+       },
        "B2_turn vs B2_legacy": {
         "benchmark_mean": 3.219688747987116,
         "candidate_mean": 3.1897469484702086,
@@ -840,6 +903,7 @@
        "B2_pool10": 1.8396362801932369,
        "B2_pool20": 1.7607493558776173,
        "B2_pool30": 1.7607493558776173,
+       "B2_pool4": 1.8396362801932369,
        "B2_turn": 1.8396362801932369
       },
       "pairs": {
@@ -873,6 +937,12 @@
         "days": 108,
         "undefined": "a resampled benchmark scores zero; skill is undefined"
        },
+       "B2_pool4 vs B2_turn": {
+        "benchmark_mean": 1.8396362801932369,
+        "candidate_mean": 1.8396362801932369,
+        "days": 108,
+        "undefined": "the daily difference has no long-run variance; it cannot be studentized"
+       },
        "B2_turn vs B2_legacy": {
         "benchmark_mean": 1.7348491103059578,
         "candidate_mean": 1.8396362801932369,
@@ -896,6 +966,7 @@
        "B2_pool10": 5.65982915303101,
        "B2_pool20": 5.7266961352656995,
        "B2_pool30": 5.7266961352656995,
+       "B2_pool4": 5.6756204947794915,
        "B2_turn": 5.968467911796789
       },
       "pairs": {
@@ -973,6 +1044,12 @@
          0.404643170140193
         ]
        },
+       "B2_pool4 vs B2_turn": {
+        "benchmark_mean": 5.968467911796789,
+        "candidate_mean": 5.6756204947794915,
+        "days": 186,
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+       },
        "B2_turn vs B2_legacy": {
         "benchmark_mean": 5.705508221131374,
         "candidate_mean": 5.968467911796793,
@@ -1000,6 +1077,7 @@
        "B2_pool10": 5.340483987065605,
        "B2_pool20": 5.39780171030076,
        "B2_pool30": 5.39780171030076,
+       "B2_pool4": 5.357034971170327,
        "B2_turn": 5.649882388187624
       },
       "pairs": {
@@ -1077,6 +1155,12 @@
          0.4509173374361594
         ]
        },
+       "B2_pool4 vs B2_turn": {
+        "benchmark_mean": 5.649882388187624,
+        "candidate_mean": 5.357034971170327,
+        "days": 186,
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+       },
        "B2_turn vs B2_legacy": {
         "benchmark_mean": 5.397042312607138,
         "candidate_mean": 5.649882388187628,
@@ -1109,6 +1193,7 @@
        "B2_pool10": 2.8228470795080556,
        "B2_pool20": 2.4922872354062022,
        "B2_pool30": 2.4922872354062022,
+       "B2_pool4": 2.9106748363069466,
        "B2_turn": 3.1413407465789027
       },
       "pairs": {
@@ -1186,6 +1271,12 @@
          0.465494679611723
         ]
        },
+       "B2_pool4 vs B2_turn": {
+        "benchmark_mean": 3.1413407465789027,
+        "candidate_mean": 2.9106748363069466,
+        "days": 251,
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+       },
        "B2_turn vs B2_legacy": {
         "benchmark_mean": 2.796917069114848,
         "candidate_mean": 3.141340746578905,
@@ -1213,6 +1304,7 @@
        "B2_pool10": 1.241551125931057,
        "B2_pool20": 0.9590055984756638,
        "B2_pool30": 0.9590055984756638,
+       "B2_pool4": 1.3213583561406532,
        "B2_turn": 1.5467398215832302
       },
       "pairs": {
@@ -1290,6 +1382,12 @@
          0.7351855747534297
         ]
        },
+       "B2_pool4 vs B2_turn": {
+        "benchmark_mean": 1.5467398215832302,
+        "candidate_mean": 1.3213583561406532,
+        "days": 251,
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+       },
        "B2_turn vs B2_legacy": {
         "benchmark_mean": 1.2190859501125924,
         "candidate_mean": 1.5467398215832313,
@@ -1322,6 +1420,7 @@
        "B2_pool10": 1.4565732120437056,
        "B2_pool20": 1.421460976517084,
        "B2_pool30": 1.421460976517084,
+       "B2_pool4": 1.470950695768421,
        "B2_turn": 1.4903037311090395
       },
       "pairs": {
@@ -1410,6 +1509,12 @@
          0.09040780784552832
         ]
        },
+       "B2_pool4 vs B2_turn": {
+        "benchmark_mean": 1.4903037311090395,
+        "candidate_mean": 1.470950695768421,
+        "days": 748,
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+       },
        "B2_turn vs B2_legacy": {
         "benchmark_mean": 1.4652657149500106,
         "candidate_mean": 1.4903037311090432,
@@ -1437,6 +1542,7 @@
        "B2_pool10": 0.0028842728435247533,
        "B2_pool20": 0.00302745931178795,
        "B2_pool30": 0.00302745931178795,
+       "B2_pool4": 0.00294999941873982,
        "B2_turn": 0.0029318205068588617
       },
       "pairs": {
@@ -1514,6 +1620,12 @@
          -0.0015261224264137563
         ]
        },
+       "B2_pool4 vs B2_turn": {
+        "benchmark_mean": 0.0029318205068588617,
+        "candidate_mean": 0.00294999941873982,
+        "days": 748,
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+       },
        "B2_turn vs B2_legacy": {
         "benchmark_mean": 0.0030598918856079944,
         "candidate_mean": 0.002931820506858873,
@@ -1546,6 +1658,7 @@
        "B2_pool10": 1.3942299965217433,
        "B2_pool20": 1.454675038260874,
        "B2_pool30": 1.454675038260874,
+       "B2_pool4": 1.352640255652178,
        "B2_turn": 1.3821760313043518
       },
       "pairs": {
@@ -1623,6 +1736,12 @@
          -0.02185135365568443
         ]
        },
+       "B2_pool4 vs B2_turn": {
+        "benchmark_mean": 1.3821760313043518,
+        "candidate_mean": 1.352640255652178,
+        "days": 250,
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+       },
        "B2_turn vs B2_legacy": {
         "benchmark_mean": 1.39437394086957,
         "candidate_mean": 1.3821760313043523,
@@ -1650,6 +1769,7 @@
        "B2_pool10": 0.2039999999999992,
        "B2_pool20": 0.2031147408695644,
        "B2_pool30": 0.2031147408695644,
+       "B2_pool4": 0.18588430434782535,
        "B2_turn": 0.2039999999999992
       },
       "pairs": {
@@ -1683,6 +1803,12 @@
         "days": 250,
         "undefined": "a resampled benchmark scores zero; skill is undefined"
        },
+       "B2_pool4 vs B2_turn": {
+        "benchmark_mean": 0.2039999999999992,
+        "candidate_mean": 0.18588430434782535,
+        "days": 250,
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+       },
        "B2_turn vs B2_legacy": {
         "benchmark_mean": 0.1964287304347819,
         "candidate_mean": 0.2039999999999992,
@@ -1704,6 +1830,7 @@
        "B2_pool10": 3.814233117979172,
        "B2_pool20": 3.9296003294336823,
        "B2_pool30": 3.9296003294336823,
+       "B2_pool4": 3.724867638670632,
        "B2_turn": 3.7159457633432353
       },
       "pairs": {
@@ -1781,6 +1908,12 @@
          -0.02240348306061305
         ]
        },
+       "B2_pool4 vs B2_turn": {
+        "benchmark_mean": 3.7159457633432353,
+        "candidate_mean": 3.724867638670632,
+        "days": 249,
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+       },
        "B2_turn vs B2_legacy": {
         "benchmark_mean": 3.7757804260520405,
         "candidate_mean": 3.7159457633432345,
@@ -1808,6 +1941,7 @@
        "B2_pool10": 1.568301342762353,
        "B2_pool20": 1.570441843897327,
        "B2_pool30": 1.570441843897327,
+       "B2_pool4": 1.532965021826435,
        "B2_turn": 1.5274993591758328
       },
       "pairs": {
@@ -1884,6 +2018,12 @@
          -0.10988643064302095,
          0.02184849592023153
         ]
+       },
+       "B2_pool4 vs B2_turn": {
+        "benchmark_mean": 1.5274993591758328,
+        "candidate_mean": 1.532965021826435,
+        "days": 249,
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
        },
        "B2_turn vs B2_legacy": {
         "benchmark_mean": 1.5392793731447518,
@@ -4399,6 +4539,420 @@
      }
     }
    },
+   "B2_pool4": {
+    "above": {
+     "band50": {
+      "pooled": {
+       "hits": 4555,
+       "kupiec_p": 9.091424255498322e-15,
+       "n": 8400,
+       "rate": 0.5422619047619047
+      },
+      "pressure_day_type/ordinary": {
+       "hits": 3778,
+       "kupiec_p": 1.1339080970100839e-05,
+       "n": 7184,
+       "rate": 0.5258908685968819
+      },
+      "pressure_day_type/quarter_end_turn": {
+       "hits": 119,
+       "kupiec_p": 0.007034729425656939,
+       "n": 200,
+       "rate": 0.595
+      },
+      "pressure_day_type/tax_date": {
+       "hits": 278,
+       "kupiec_p": 2.7307017293186634e-12,
+       "n": 415,
+       "rate": 0.6698795180722892
+      },
+      "pressure_day_type/turn": {
+       "hits": 339,
+       "kupiec_p": 2.348266280629344e-09,
+       "n": 540,
+       "rate": 0.6277777777777778
+      },
+      "pressure_day_type/year_end": {
+       "hits": 41,
+       "kupiec_p": 0.0065969857741731384,
+       "n": 61,
+       "rate": 0.6721311475409836
+      },
+      "regime/2018-19": {
+       "hits": 515,
+       "kupiec_p": 0.0002823959417946274,
+       "n": 920,
+       "rate": 0.5597826086956522
+      },
+      "regime/2020": {
+       "hits": 510,
+       "kupiec_p": 2.8682597755511353e-11,
+       "n": 1255,
+       "rate": 0.4063745019920319
+      },
+      "regime/2021-23": {
+       "hits": 2069,
+       "kupiec_p": 7.309624537662889e-11,
+       "n": 3740,
+       "rate": 0.5532085561497326
+      },
+      "regime/2024": {
+       "hits": 581,
+       "kupiec_p": 0.012772667174375762,
+       "n": 1250,
+       "rate": 0.4648
+      },
+      "regime/2025-26": {
+       "hits": 880,
+       "kupiec_p": 4.782210795789259e-52,
+       "n": 1235,
+       "rate": 0.7125506072874493
+      }
+     },
+     "band90": {
+      "pooled": {
+       "hits": 1623,
+       "kupiec_p": 1.1280605823692437e-144,
+       "n": 8400,
+       "rate": 0.19321428571428573
+      },
+      "pressure_day_type/ordinary": {
+       "hits": 1216,
+       "kupiec_p": 1.8821976140529995e-72,
+       "n": 7184,
+       "rate": 0.16926503340757237
+      },
+      "pressure_day_type/quarter_end_turn": {
+       "hits": 81,
+       "kupiec_p": 1.0673875466863735e-29,
+       "n": 200,
+       "rate": 0.405
+      },
+      "pressure_day_type/tax_date": {
+       "hits": 160,
+       "kupiec_p": 1.6122657835862223e-53,
+       "n": 415,
+       "rate": 0.3855421686746988
+      },
+      "pressure_day_type/turn": {
+       "hits": 135,
+       "kupiec_p": 1.7571368938638215e-23,
+       "n": 540,
+       "rate": 0.25
+      },
+      "pressure_day_type/year_end": {
+       "hits": 31,
+       "kupiec_p": 9.486428187208219e-16,
+       "n": 61,
+       "rate": 0.5081967213114754
+      },
+      "regime/2018-19": {
+       "hits": 190,
+       "kupiec_p": 1.0213163452185636e-21,
+       "n": 920,
+       "rate": 0.20652173913043478
+      },
+      "regime/2020": {
+       "hits": 164,
+       "kupiec_p": 0.0005076437737345424,
+       "n": 1255,
+       "rate": 0.1306772908366534
+      },
+      "regime/2021-23": {
+       "hits": 700,
+       "kupiec_p": 4.236381955191063e-58,
+       "n": 3740,
+       "rate": 0.18716577540106952
+      },
+      "regime/2024": {
+       "hits": 226,
+       "kupiec_p": 4.622557145303375e-18,
+       "n": 1250,
+       "rate": 0.1808
+      },
+      "regime/2025-26": {
+       "hits": 343,
+       "kupiec_p": 5.221075583218355e-69,
+       "n": 1235,
+       "rate": 0.2777327935222672
+      }
+     },
+     "q95": {
+      "pooled": {
+       "hits": 832,
+       "kupiec_p": 7.372169185872386e-75,
+       "n": 8400,
+       "rate": 0.09904761904761905
+      },
+      "pressure_day_type/ordinary": {
+       "hits": 660,
+       "kupiec_p": 1.1762008675317845e-48,
+       "n": 7184,
+       "rate": 0.09187082405345212
+      },
+      "pressure_day_type/quarter_end_turn": {
+       "hits": 30,
+       "kupiec_p": 1.1520458666826556e-07,
+       "n": 200,
+       "rate": 0.15
+      },
+      "pressure_day_type/tax_date": {
+       "hits": 61,
+       "kupiec_p": 1.0280516807500067e-13,
+       "n": 415,
+       "rate": 0.14698795180722893
+      },
+      "pressure_day_type/turn": {
+       "hits": 60,
+       "kupiec_p": 1.549067005751635e-08,
+       "n": 540,
+       "rate": 0.1111111111111111
+      },
+      "pressure_day_type/year_end": {
+       "hits": 21,
+       "kupiec_p": 7.619120026861494e-13,
+       "n": 61,
+       "rate": 0.3442622950819672
+      },
+      "regime/2018-19": {
+       "hits": 160,
+       "kupiec_p": 1.8913503093327968e-42,
+       "n": 920,
+       "rate": 0.17391304347826086
+      },
+      "regime/2020": {
+       "hits": 10,
+       "kupiec_p": 3.4499536174722865e-17,
+       "n": 1255,
+       "rate": 0.00796812749003984
+      },
+      "regime/2021-23": {
+       "hits": 226,
+       "kupiec_p": 0.004549389045997253,
+       "n": 3740,
+       "rate": 0.06042780748663101
+      },
+      "regime/2024": {
+       "hits": 216,
+       "kupiec_p": 3.3627287448472553e-56,
+       "n": 1250,
+       "rate": 0.1728
+      },
+      "regime/2025-26": {
+       "hits": 220,
+       "kupiec_p": 1.459812180398903e-59,
+       "n": 1235,
+       "rate": 0.17813765182186234
+      }
+     }
+    },
+    "at_or_above": {
+     "band50": {
+      "pooled": {
+       "hits": 6381,
+       "kupiec_p": 0.0,
+       "n": 8400,
+       "rate": 0.7596428571428572
+      },
+      "pressure_day_type/ordinary": {
+       "hits": 5485,
+       "kupiec_p": 0.0,
+       "n": 7184,
+       "rate": 0.7635022271714922
+      },
+      "pressure_day_type/quarter_end_turn": {
+       "hits": 126,
+       "kupiec_p": 0.0002171434095309163,
+       "n": 200,
+       "rate": 0.63
+      },
+      "pressure_day_type/tax_date": {
+       "hits": 325,
+       "kupiec_p": 1.388200573904548e-32,
+       "n": 415,
+       "rate": 0.7831325301204819
+      },
+      "pressure_day_type/turn": {
+       "hits": 394,
+       "kupiec_p": 1.504139149092681e-27,
+       "n": 540,
+       "rate": 0.7296296296296296
+      },
+      "pressure_day_type/year_end": {
+       "hits": 51,
+       "kupiec_p": 4.029378888708103e-08,
+       "n": 61,
+       "rate": 0.8360655737704918
+      },
+      "regime/2018-19": {
+       "hits": 549,
+       "kupiec_p": 3.9316578159271106e-09,
+       "n": 920,
+       "rate": 0.5967391304347827
+      },
+      "regime/2020": {
+       "hits": 683,
+       "kupiec_p": 0.0017165380785158254,
+       "n": 1255,
+       "rate": 0.5442231075697211
+      },
+      "regime/2021-23": {
+       "hits": 3015,
+       "kupiec_p": 0.0,
+       "n": 3740,
+       "rate": 0.8061497326203209
+      },
+      "regime/2024": {
+       "hits": 1136,
+       "kupiec_p": 7.265745859715173e-213,
+       "n": 1250,
+       "rate": 0.9088
+      },
+      "regime/2025-26": {
+       "hits": 998,
+       "kupiec_p": 1.0933047030976705e-111,
+       "n": 1235,
+       "rate": 0.8080971659919028
+      }
+     },
+     "band90": {
+      "pooled": {
+       "hits": 3387,
+       "kupiec_p": 0.0,
+       "n": 8400,
+       "rate": 0.4032142857142857
+      },
+      "pressure_day_type/ordinary": {
+       "hits": 2833,
+       "kupiec_p": 0.0,
+       "n": 7184,
+       "rate": 0.39434855233853006
+      },
+      "pressure_day_type/quarter_end_turn": {
+       "hits": 100,
+       "kupiec_p": 2.3709573960710266e-46,
+       "n": 200,
+       "rate": 0.5
+      },
+      "pressure_day_type/tax_date": {
+       "hits": 218,
+       "kupiec_p": 1.7652144200838025e-104,
+       "n": 415,
+       "rate": 0.5253012048192771
+      },
+      "pressure_day_type/turn": {
+       "hits": 195,
+       "kupiec_p": 1.9552395409397174e-59,
+       "n": 540,
+       "rate": 0.3611111111111111
+      },
+      "pressure_day_type/year_end": {
+       "hits": 41,
+       "kupiec_p": 5.1471613524642016e-27,
+       "n": 61,
+       "rate": 0.6721311475409836
+      },
+      "regime/2018-19": {
+       "hits": 238,
+       "kupiec_p": 9.434130057488463e-43,
+       "n": 920,
+       "rate": 0.25869565217391305
+      },
+      "regime/2020": {
+       "hits": 249,
+       "kupiec_p": 2.3959678087577457e-25,
+       "n": 1255,
+       "rate": 0.19840637450199203
+      },
+      "regime/2021-23": {
+       "hits": 2033,
+       "kupiec_p": 0.0,
+       "n": 3740,
+       "rate": 0.5435828877005348
+      },
+      "regime/2024": {
+       "hits": 415,
+       "kupiec_p": 2.422392274565718e-110,
+       "n": 1250,
+       "rate": 0.332
+      },
+      "regime/2025-26": {
+       "hits": 452,
+       "kupiec_p": 8.83299301746609e-138,
+       "n": 1235,
+       "rate": 0.3659919028340081
+      }
+     },
+     "q95": {
+      "pooled": {
+       "hits": 1210,
+       "kupiec_p": 7.412528149760791e-233,
+       "n": 8400,
+       "rate": 0.14404761904761904
+      },
+      "pressure_day_type/ordinary": {
+       "hits": 1016,
+       "kupiec_p": 5.093240195556528e-190,
+       "n": 7184,
+       "rate": 0.14142538975501115
+      },
+      "pressure_day_type/quarter_end_turn": {
+       "hits": 30,
+       "kupiec_p": 1.1520458666826556e-07,
+       "n": 200,
+       "rate": 0.15
+      },
+      "pressure_day_type/tax_date": {
+       "hits": 83,
+       "kupiec_p": 4.714076239959691e-27,
+       "n": 415,
+       "rate": 0.2
+      },
+      "pressure_day_type/turn": {
+       "hits": 60,
+       "kupiec_p": 1.549067005751635e-08,
+       "n": 540,
+       "rate": 0.1111111111111111
+      },
+      "pressure_day_type/year_end": {
+       "hits": 21,
+       "kupiec_p": 7.619120026861494e-13,
+       "n": 61,
+       "rate": 0.3442622950819672
+      },
+      "regime/2018-19": {
+       "hits": 188,
+       "kupiec_p": 1.2761603625722192e-60,
+       "n": 920,
+       "rate": 0.20434782608695654
+      },
+      "regime/2020": {
+       "hits": 15,
+       "kupiec_p": 1.5911972837730794e-13,
+       "n": 1255,
+       "rate": 0.01195219123505976
+      },
+      "regime/2021-23": {
+       "hits": 400,
+       "kupiec_p": 2.196919550490978e-44,
+       "n": 3740,
+       "rate": 0.10695187165775401
+      },
+      "regime/2024": {
+       "hits": 355,
+       "kupiec_p": 3.911771256757131e-160,
+       "n": 1250,
+       "rate": 0.284
+      },
+      "regime/2025-26": {
+       "hits": 252,
+       "kupiec_p": 1.7394366384615266e-80,
+       "n": 1235,
+       "rate": 0.2040485829959514
+      }
+     }
+    }
+   },
    "B2_turn": {
     "above": {
      "band50": {
@@ -4829,6 +5383,7 @@
    "B2_pool10": 2.452371596014491,
    "B2_pool20": 2.4175600949792937,
    "B2_pool30": 2.4175600949792937,
+   "B2_pool4": 2.45217498421325,
    "B2_turn": 2.5311029961180136
   },
   "upper_tail_twcrps": {
@@ -4838,6 +5393,7 @@
    "B2_pool10": 1.0265875163043445,
    "B2_pool20": 0.9882328599896416,
    "B2_pool30": 0.9882328599896416,
+   "B2_pool4": 1.0299560786749453,
    "B2_turn": 1.098280425983434
   }
  },
@@ -4846,6 +5402,7 @@
   "B1_prime",
   "B2_legacy",
   "B2_turn",
+  "B2_pool4",
   "B2_pool10",
   "B2_pool20",
   "B2_pool30"
@@ -4862,6 +5419,10 @@
   "scored_decision_days": 1680
  },
  "pairs": [
+  [
+   "B2_pool4",
+   "B2_turn"
+  ],
   [
    "B2_pool10",
    "B2_turn"
@@ -4890,6 +5451,7 @@
  "panel_sha256": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
  "pool_min_drafted": 10,
  "pool_mins": [
+  4,
   10,
   20,
   30
@@ -5019,6 +5581,48 @@
     },
     "rows_max": 250,
     "rows_min": 248
+   }
+  },
+  "B2_pool4": {
+   "ordinary": {
+    "cells": 7184,
+    "pools": {
+     "ordinary": 7184
+    },
+    "rows_max": 215,
+    "rows_min": 211
+   },
+   "quarter_end_turn": {
+    "cells": 200,
+    "pools": {
+     "quarter_end_turn": 200
+    },
+    "rows_max": 6,
+    "rows_min": 5
+   },
+   "tax_date": {
+    "cells": 415,
+    "pools": {
+     "tax_date": 415
+    },
+    "rows_max": 13,
+    "rows_min": 10
+   },
+   "turn": {
+    "cells": 540,
+    "pools": {
+     "turn": 540
+    },
+    "rows_max": 16,
+    "rows_min": 15
+   },
+   "year_end": {
+    "cells": 61,
+    "pools": {
+     "quarter_end_turn": 61
+    },
+    "rows_max": 6,
+    "rows_min": 6
    }
   }
  },
