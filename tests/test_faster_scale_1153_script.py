@@ -190,7 +190,7 @@ class PageTests(unittest.TestCase):
     def test_the_committed_page_is_what_the_committed_record_gives(self):
         if not self.record.exists():
             self.skipTest("the record is not committed yet")
-        self.assertEqual(script.render(json.loads(self.record.read_text(encoding="utf-8"))), self.page.read_text(encoding="utf-8"))
+        self.assertEqual(script.render(json.loads(self.record.read_text(encoding="utf-8")), reading="skill"), self.page.read_text(encoding="utf-8"))  # the page as first written (#1167)
 
     def test_the_record_is_labelled_development_and_stops_at_the_last_day(self):
         if not self.record.exists():

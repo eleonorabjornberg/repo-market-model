@@ -102,7 +102,7 @@ class PageTests(unittest.TestCase):
         page = ROOT / "docs" / "research" / "walk-calibration-1133-result.md"
         if not record.exists():
             self.skipTest("the record is not committed yet")
-        self.assertEqual(script.render(json.loads(record.read_text(encoding="utf-8"))), page.read_text(encoding="utf-8"))
+        self.assertEqual(script.render(json.loads(record.read_text(encoding="utf-8")), reading="skill"), page.read_text(encoding="utf-8"))
 
     def test_the_record_is_labelled_development(self):
         record = ROOT / "docs" / "research" / "walk-calibration-1133" / "result.json"
