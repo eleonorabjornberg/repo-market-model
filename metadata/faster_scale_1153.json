@@ -1,0 +1,97 @@
+{
+  "status": "declared by the pull request that closes #1153 before any score was computed; a development study, never a verdict. Nothing is published: no published declaration, record or registration changes, no day after 2025-12-31 is scored, no lockbox day is scored, and no record in docs/runs/ is edited. Any change to the candidate is Eleonora's decision.",
+  "issue": 1153,
+  "ruling": "Eleonora, 22 October 2026, relayed by the orchestrating session: 'queue the clustered misses fix.' Kill rule and adoption rule are the issue's, restated below.",
+  "hypothesis": "H5 (primary goal): the SOFR - IORB spread distribution in bp. Step 3 (fix; refocus), the failure after #1145: the misses of the scaled mean reversion's bands come in runs (Christoffersen's independence test, p = 0.000 at every lead in #1141) although coverage is right on average.",
+  "target": "spread_bps at the scored day, in basis points, as a 23-quantile distribution at each lead h = 1..5 (scoring_protocol.GRID)",
+  "base": {
+    "name": "spread_mr_fhs_mad20_f0.5 (#941), arm (a) of #1115, the H5 candidate",
+    "module": "repo_model.spread_mr_fhs on repo_model.spread_mean_reversion (#686), unchanged; the arm 'a' of this study is walked by repo_model.spread_mr_scale with the MAD-over-20-days scale, and tests/test_spread_mr_scale.py pins that its forecasts equal repo_model.spread_mr_fhs's exactly",
+    "not_the_base": "#1145's arms (PR #1151) are not on main and none has replaced the candidate: no winning arm exists yet, so this study runs on (a) alone. If #1145 replaces the candidate before this is reviewed, its winning arm is a second base and the arms here are re-run on it by a follow-up, not by adding arms to this declaration",
+    "calendar": "arm (a) and arms v1 to v3 read no calendar column, so their figures are provisional under the calendar-first rule (docs/research/provisional-calendar-register.md) and close no question in either direction. Arm v4 reads the target day's calendar type on direct pairs (spread_mr_calendar.TermTable, asof rule 2; a coupon settlement only at lead 1, where the as-of rule admits it)"
+  },
+  "arms": {
+    "principle": "Filtered historical simulation stays: forecast = level + phi^k (last - level) + s * z_h, with z_h the quantiles of the raw residuals divided by the scale at each pair's own origin, and phi, the level, the training pairs and the refit cadence (every 21 decision days) the base model's. Only the scale s changes, or what multiplies it. Every scale reads rows at or before the anchor (repo_model.spread_mr_scale.scale_rows, protocol_benchmarks._require_public). Every scale has the floor of 0.5 bp.",
+    "listed_in_full": {
+      "a": "the base: 1.4826 * median |daily change| over the 20 days ending at the row (#941 mad20)",
+      "v1_mad5": "(v1) the same, over 5 days",
+      "v1_mad10": "(v1) the same, over 10 days",
+      "v1_blend5_20": "(v1) the mean of the 5-day and the 20-day unfloored MAD scales, then the floor",
+      "v2_ewma_hl3": "(v2) sqrt(pi/2) * the exponentially weighted mean of |daily change| over the 60 changes ending at the row, weights 0.5^(k / half-life) for the change k rows back, half-life 3 rows. The constant sqrt(pi/2) makes the mean absolute change a standard deviation for normal changes. This is the EWMA of absolute changes, a GARCH-like volatility clustering term; the issue's 'absolute standardised residuals' is read as the daily spread changes (the random-walk residuals) rescaled to a standard deviation, since the changes are the model's innovations before it has a scale",
+      "v2_ewma_hl5": "(v2) the same, half-life 5 rows",
+      "v2_ewma_hl10": "(v2) the same, half-life 10 rows",
+      "v2_ewma_hl5_asym": "(v2) the half-life 5 version in which an upward change weighs 1.5 and a downward change 0.5 (ASYM = 0.5, declared once, no grid), so upward residuals raise the scale more",
+      "v3_miss": "(v3) the base scale (mad20) multiplied, when the anchor row was outside the 90% band the model gave it (the closed band q05 to q95 of the one-lead forecast centred 1 + lag rows before the anchor; the outcome is known at the decision instant), by a factor fitted at each refit: the ratio of the mean absolute standardised residual of training pairs whose origin followed such a miss to that of pairs whose origin did not, kept between 1 and 4, fitted per lead, and 1 when either side has fewer than 20 pairs. The pool is then the residuals of pairs that did not follow a miss. The miss rule here is the arm's own input (the closed band) and is not the report's hit rule",
+      "v4": "(v4) the best of v1 to v3 by the rule below, with a factor on the scale read at the target day's calendar type, fitted per lead on direct pairs: the types are quarter-end, tax date, month-end turn (the last two business days of the month, #959), coupon settlement (lead 1 only), in that priority order, a row being the first it carries; a type's factor is the ratio of the mean absolute standardised residual of its pairs to that of the pairs of no type, shrunk toward 1 by n / (n + 10), a type entering with 3 pairs, kept between 0.25 and 4; the pool is divided by the factor of each pair's own target row. Named v4_<winner>_cal"
+    },
+    "v4_selection_rule": "Declared now so that the choice is not made on a score read afterwards. Among v1 to v3, the arms eligible are those whose pooled mean grid CRPS (all scored days, mean over leads 1 to 5) is at most 1% above (a)'s. The winner is the eligible arm with the shortest mean run of misses of the 90% band (closed rule, runs of the five leads' sequences pooled). If none is eligible, the winner is the arm with the lowest pooled mean grid CRPS. The script computes the rule from the walks of (a) and v1 to v3 and records the choice in result.json.",
+    "constants": {
+      "floor_bp": 0.5,
+      "ewma_rows": 60,
+      "asym": 0.5,
+      "miss_min_pairs": 20,
+      "miss_band": [
+        0.05,
+        0.95
+      ],
+      "calendar_shrinkage_k": 10,
+      "calendar_min_flagged": 3,
+      "calendar_floor": 0.25,
+      "factor_cap": 4
+    },
+    "no_others": "ten models are scored: (a), v1 (3), v2 (4), v3 (1) and v4 (1). No arm is added after a number is computed, and constants are declared once, not searched. Any arm dropped is stated on the page with the reason."
+  },
+  "references": {
+    "base_arm": "(a), on the same days",
+    "benchmarks": "B1 and B2 of scoring protocol v1 (repo_model.protocol_benchmarks), and B1' of #960 beside B1 (repo_model.b1_calendar): a reference row, not a benchmark of the protocol; B1 stays as ruled",
+    "gbm_funding": "scored against each arm only when its five walks are supplied (--walks, as scripts/calendar_mr_1115.py); they are a long run for Eleonora's Mac (.claude/skills/long-run). Without them the page says so"
+  },
+  "scoring": {
+    "scorer": "repo_model.scoring_protocol (#655), the development tier: no verdict, no registration",
+    "days": "decision days on which (a) and every arm have a forecast and whose five targets (h = 1..5 business days on the panel's calendar) fall on or before 2025-12-31; no day after 2025-12-31 is read; the scored days pass lockbox.require_unlocked. The slowest scale (60 rows) fixes the first day, so (a) is scored on the days of the arms",
+    "outcomes": "the panel's spread_bps at the target day",
+    "paired": "each model against B1, B1', B2 and (for an arm) (a): skill = mean(d) / mean(S(benchmark)) with d = S(benchmark) - S(candidate), positive favours the candidate; scoring_protocol.paired_tests, the studentized stationary bootstrap (ruling 1), mean block 10 business days, 10,000 draws, seed 1153; two-sided 90% interval. Politis-White block length beside it (scripts/block_length_949.py's estimate on the difference series, reported as a sensitivity row for each arm against (a), pooled and by regime, on grid CRPS and upper-tail twCRPS, with the pooled skill at that block; never substituted for 10). A comparison the studentization cannot resolve is reported as undefined, with the means",
+    "measures": [
+      "grid CRPS (23 levels), pooled and by lead",
+      "upper-tail twCRPS, weight 1{z > 0 bp}, pooled and by lead",
+      "the scaled score of #967 beside the raw one (each cell's grid CRPS over the trailing-year median of B2's grid CRPS for cells of the same pressure-day type of the target; scaled_score_967.trailing_scales)",
+      "all of these by regime and by pressure-day type (target day)",
+      "coverage of the 50%, 80%, 90% and 98% bands with a 90% stationary-bootstrap percentile interval (2,000 resamples), pooled, by lead, by regime and by pressure-day type",
+      "the exceedance rates of q05, q95, q01 and q99, with Kupiec's test",
+      "Christoffersen independence and conditional coverage per lead, for the bands and the four tails, pooled and within a regime, under both hit rules",
+      "the miss runs: for the 90% band and for q95, per lead and pooled over leads, the number of runs, their mean length and the longest, under both hit rules, for every model and (a)"
+    ],
+    "hit_rules": "OPEN QUESTION, Eleonora's (#993; coverage_tests.hit_sequence takes the rule as a required argument): whole-bp outcomes tie with a quantile. Both rules are reported, side by side, and neither is chosen. Upper exceedance: y > q ('above') or y >= q ('at_or_above'). Lower exceedance: y < q or y <= q, the mirror. A band is missed when the outcome is outside it, so under 'above' the band is closed and under 'at_or_above' it is open",
+    "runs": "a run is a maximal block of consecutive hits in the per-lead sequence of consecutive decision days. Mean run length = hits / runs; longest = the longest block. Under independence at a 10% miss rate the mean run is about 1.11",
+    "splits": {
+      "pooled": "one number per decision day (protocol section 3); the coverage measures are read on the cells (decision day, lead)",
+      "by_lead": "h = 1..5",
+      "regime": "SplitDeclaration.regime of the target day (metadata/evaluation_splits.json): 2018-19, 2020, 2021-23, 2024, 2025-26. The labels are only the report's split, never an input of an arm",
+      "pressure_day_type": "SplitDeclaration.reporting_day_type of the target day: quarter_end, month_end, tax_date, ordinary",
+      "min_days": "a group of fewer than 20 days is listed and not tested"
+    }
+  },
+  "kill_rule": {
+    "text": "The issue's: if no arm moves the independence p-value off 0.000 at any lead and no arm shortens the miss runs, stop and say so. Do not add arms after seeing scores.",
+    "reading": "'off 0.000' is a p-value of at least 0.0005 (it prints as 0.001 or more at three places), for the Christoffersen independence test of the 90% band's misses, pooled, at any of the five leads, under either hit rule. 'Shortens the miss runs' is a mean run length of the 90% band (closed rule, pooled over leads) below (a)'s. The kill applies to a result that is not provisional (new-study skill): these arms are provisional (the calendar-blind ones), so a kill would be reported but would close no question",
+    "reported": "the page lists, for every arm, the leads off 0.000 under each rule and the mean and longest run against (a)'s, and says whether the kill rule is met"
+  },
+  "adoption": "Same rule as #1145 and the issue: an arm replaces the candidate only if it fixes the clustering (independence no longer rejected at the leads, or the miss runs clearly shorter) without losing CRPS against (a) beyond the interval. That is Eleonora's decision on this page's evidence; nothing in this study is a verdict.",
+  "reading": {
+    "rules": [
+      "An arm's gain over (a) is read as present on a split when the 90% interval of its grid-CRPS skill over (a) excludes zero on the positive side, and as a loss when it excludes zero on the negative side; otherwise undecided. A point estimate alone is not read.",
+      "A pooled figure is never read without the regime and pressure-day-type splits beside it; a gain pooled and a loss in 2018-19, 2021-23 or on quarter-end days is reported as mixed.",
+      "A calibration measure moving toward its nominal value is reported with its interval; a hit-sequence p-value is reported as a p-value and is no gate. Run lengths are reported as counts with no interval; 'clearly shorter' is a reading the page does not make and leaves to her.",
+      "Nothing in this study is a verdict, and the page says so."
+    ]
+  },
+  "long_run": "the walk of (a) and nine arms (each refitted 89 times) and the scoring are arithmetic on the panel; if the run exceeds about two hours the pull request says so and gives the paste for her Mac (.claude/skills/long-run)",
+  "amendments": [
+    {
+      "date": "2026-10-22",
+      "by": "this pull request, before the declared run: no score of the declared run existed",
+      "what": "A debug run of the script on a subset (decision days from 2023-01-02, 300 draws, 100 coverage resamples; not the declared run, its output discarded) showed arm v3's factor reaching about 5e14 in two refits of 2023: in a flat floor period the ordinary standardised residuals are float noise, so a ratio of medians divides by about zero. The factor of v3 and the type factors of v4 are therefore the ratio of MEAN absolute standardised residuals (which does not vanish where the median does) and are kept between 1 and 4 (v3) and between 0.25 and 4 (v4), a cap declared once (FACTOR_CAP = 4, no grid). The same debug run printed the other arms' pooled grid CRPS and miss-run means; no arm of v1 or v2 was changed, added or removed after it, and no constant of them was.",
+      "why_it_is_not_tuning": "the change repairs a numerical degeneracy (a factor of 5e14 gives a grid CRPS of 4e10), it was found by reading a diverging number, not by comparing arms, and it touches only the two factors named."
+    }
+  ]
+}
