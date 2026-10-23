@@ -189,6 +189,7 @@ data, dating, holidays and panel declarations). None of their scripts calls a on
 | `metadata/sources.json` | none | none | the availability registry: data |
 | `metadata/sources_measurement.json` | none | none | the measurement sources registry, which declares the `fomc_calendar` columns: data. A fit on them is refused on one-step pairs by `repo_model.one_step_guard` (#1070) |
 | `metadata/spread_distribution_761.json` | none | as_of_read | mean reversion with residuals pooled by the target day's context |
+| `metadata/state_calendar_1145.json` | `scripts/state_calendar_1145.py` | direct | scaled mean reversion with calendar and scheduled terms read from the target row on direct pairs, in standardised units, alone or interacted with the as-of scarcity state of the decision (repo_model.spread_mr_state_calendar, guarded by one_step_guard with no allow-list entry); no gradient-boosted fit is called |
 | `metadata/structural_liquidity.json` | `scripts/structural_liquidity.py` | direct | the structural model, pressure models on direct pairs |
 | `metadata/tax_date_market_days.json` | `scripts/tax_date_market_days.py` | direct | the tax-date window on market days, in pressure models on direct pairs |
 | `metadata/tax_date_october_965.json` | `scripts/tax_date_october_965.py` | as_of_read | B2 and the calendar ranker with an alternative label read at the target day |
