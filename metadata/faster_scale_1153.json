@@ -79,7 +79,7 @@
   "adoption": "Same rule as #1145 and the issue: an arm replaces the candidate only if it fixes the clustering (independence no longer rejected at the leads, or the miss runs clearly shorter) without losing CRPS against (a) beyond the interval. That is Eleonora's decision on this page's evidence; nothing in this study is a verdict.",
   "reading": {
     "rules": [
-      "An arm's gain over (a) is read as present on a split when the 90% interval of its grid-CRPS skill over (a) excludes zero on the positive side, and as a loss when it excludes zero on the negative side; otherwise undecided. A point estimate alone is not read.",
+      "A gain or a loss against (a) is read from the studentized one-sided bound on mean d (d = S(a) - S(candidate), positive favouring the candidate): a gain on a split when the lower end of the 90% two-sided studentized interval on mean d, the lower one-sided 95% bound, is above zero, a loss when its upper end is below zero, otherwise undecided. The skill interval is reported beside it and is not the reading. A point estimate alone is not read. The page states Lens C's caveat: the lag-10 HAC standard error is understated about 2x after 2020.",
       "A pooled figure is never read without the regime and pressure-day-type splits beside it; a gain pooled and a loss in 2018-19, 2021-23 or on quarter-end days is reported as mixed.",
       "A calibration measure moving toward its nominal value is reported with its interval; a hit-sequence p-value is reported as a p-value and is no gate. Run lengths are reported as counts with no interval; 'clearly shorter' is a reading the page does not make and leaves to her.",
       "Nothing in this study is a verdict, and the page says so."
@@ -92,6 +92,11 @@
       "by": "this pull request, before the declared run: no score of the declared run existed",
       "what": "A debug run of the script on a subset (decision days from 2023-01-02, 300 draws, 100 coverage resamples; not the declared run, its output discarded) showed arm v3's factor reaching about 5e14 in two refits of 2023: in a flat floor period the ordinary standardised residuals are float noise, so a ratio of medians divides by about zero. The factor of v3 and the type factors of v4 are therefore the ratio of MEAN absolute standardised residuals (which does not vanish where the median does) and are kept between 1 and 4 (v3) and between 0.25 and 4 (v4), a cap declared once (FACTOR_CAP = 4, no grid). The same debug run printed the other arms' pooled grid CRPS and miss-run means; no arm of v1 or v2 was changed, added or removed after it, and no constant of them was.",
       "why_it_is_not_tuning": "the change repairs a numerical degeneracy (a factor of 5e14 gives a grid CRPS of 4e10), it was found by reading a diverging number, not by comparing arms, and it touches only the two factors named."
+    },
+    {
+      "date": "2026-10-23",
+      "by": "Eleonora's ruling on #1009 (comment 6291059408): development pages report the skill interval and the studentized mean-d bound, and read the mean-d bound; directive #1167",
+      "what": "The first reading rule (the 90% interval of the grid-CRPS skill) is replaced by the studentized one-sided bound on mean d, and the page states Lens C's caveat. Reporting only: no arm, constant, seed, draw count or score changes, the committed result.json is not re-run, and the page written under the first rule stays as it is (the script regenerates it with reading=\"skill\"). New pages built from the record show both intervals."
     }
   ]
 }

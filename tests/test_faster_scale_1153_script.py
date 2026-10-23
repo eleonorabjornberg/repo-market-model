@@ -174,7 +174,7 @@ class DeclarationTests(unittest.TestCase):
     def test_the_seed_and_the_amendment(self):
         self.assertEqual(script.SEED, 1153)
         self.assertEqual(self.declaration["scoring"]["paired"].count("seed 1153"), 1)
-        self.assertEqual(len(self.declaration["amendments"]), 1)
+        self.assertEqual([a["date"] for a in self.declaration["amendments"]], ["2026-10-22", "2026-10-23"])  # the 23rd: the reading rule, #1167
 
     def test_every_band_is_on_the_grid(self):
         for lo, hi in script.BANDS.values():
@@ -190,7 +190,7 @@ class PageTests(unittest.TestCase):
     def test_the_committed_page_is_what_the_committed_record_gives(self):
         if not self.record.exists():
             self.skipTest("the record is not committed yet")
-        self.assertEqual(script.render(json.loads(self.record.read_text(encoding="utf-8"))), self.page.read_text(encoding="utf-8"))
+        self.assertEqual(script.render(json.loads(self.record.read_text(encoding="utf-8")), reading="skill"), self.page.read_text(encoding="utf-8"))  # the page as first written (#1167)
 
     def test_the_record_is_labelled_development_and_stops_at_the_last_day(self):
         if not self.record.exists():

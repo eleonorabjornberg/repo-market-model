@@ -85,7 +85,7 @@ class DeclarationTests(unittest.TestCase):
         self.assertEqual(set(self.declaration["variants"]), set(wc.ARMS))
         self.assertEqual((wc.MIN_CELLS, wc.REFIT_EVERY, wc.WIDTH_FLOOR), (250, 21, 1.0))
         self.assertTrue(self.declaration["base"]["name"].startswith(script.BASE))
-        self.assertEqual([a["date"] for a in self.declaration["amendments"]], ["2026-10-22"])  # the ruling on #1142
+        self.assertEqual([a["date"] for a in self.declaration["amendments"]], ["2026-10-22", "2026-10-23"])  # the ruling on #1142; the reading rule, #1167
         self.assertEqual(self.declaration["scoring"]["paired"].count("seed 1133"), 1)
         self.assertEqual(script.SEED, 1133)
 
@@ -102,7 +102,7 @@ class PageTests(unittest.TestCase):
         page = ROOT / "docs" / "research" / "walk-calibration-1133-result.md"
         if not record.exists():
             self.skipTest("the record is not committed yet")
-        self.assertEqual(script.render(json.loads(record.read_text(encoding="utf-8"))), page.read_text(encoding="utf-8"))
+        self.assertEqual(script.render(json.loads(record.read_text(encoding="utf-8")), reading="skill"), page.read_text(encoding="utf-8"))
 
     def test_the_record_is_labelled_development(self):
         record = ROOT / "docs" / "research" / "walk-calibration-1133" / "result.json"

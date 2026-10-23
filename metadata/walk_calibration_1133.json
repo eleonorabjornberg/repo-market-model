@@ -51,7 +51,7 @@
   },
   "reading": {
     "rules": [
-      "The arm's gain over the uncalibrated base is read as present on a split when the 90% interval of its grid-CRPS skill over the base excludes zero on the positive side, and as a loss when it excludes zero on the negative side; otherwise undecided. A point estimate alone is not read.",
+      "A gain or a loss against the uncalibrated base is read from the studentized one-sided bound on mean d (d = S(the uncalibrated base) - S(candidate), positive favouring the candidate): a gain on a split when the lower end of the 90% two-sided studentized interval on mean d, the lower one-sided 95% bound, is above zero, a loss when its upper end is below zero, otherwise undecided. The skill interval is reported beside it and is not the reading. A point estimate alone is not read. The page states Lens C's caveat: the lag-10 HAC standard error is understated about 2x after 2020.",
       "A pooled figure is never read without the regime and pressure-day-type splits beside it; a gain pooled and a loss in 2018-19, 2021-23 or on quarter-end days is reported as mixed.",
       "A calibration measure moving toward its nominal value (coverage toward the band's level, an exceedance rate toward 1 - level) is reported with its interval; a hit-sequence p-value is reported as a p-value and is no gate.",
       "Nothing in this study is a verdict, and the page says so. Whether the arm joins a candidate is Eleonora's decision."
@@ -64,6 +64,11 @@
       "by": "Eleonora's ruling on #1142, option 3 (comment 6350221377), made after the first scoring of the three arms",
       "what": "Arm (a), the pooled recalibration, is kept as the evidence. Arms (b) (by the as-of floor flag) and (c) (b with the upper tail widened separately) are dropped, with the local replica of the floor flag and the constants only they used (MIN_STATE_CELLS 100, the 0.90 tail cut, the 0.25 bp tail denominator floor): #966 showed the floor flag adds nothing on the scaled mean reversion. The `variants` block lists the pooled arm only. The page, the record and the log entry are regenerated from arm (a); the numbers of (a) are unchanged by the amendment, since (b) and (c) did not enter them. The reading rule on (b) and (c) against (a) goes with them.",
       "criteria": "The directive's criterion 4 is dropped by the same ruling."
+    },
+    {
+      "date": "2026-10-23",
+      "by": "Eleonora's ruling on #1009 (comment 6291059408): development pages report the skill interval and the studentized mean-d bound, and read the mean-d bound; directive #1167",
+      "what": "The first reading rule (the 90% interval of the grid-CRPS skill) is replaced by the studentized one-sided bound on mean d, and the page states Lens C's caveat. Reporting only: no arm, constant, seed, draw count or score changes, the committed result.json is not re-run, and the page written under the first rule stays as it is (the script regenerates it with reading=\"skill\"). New pages built from the record show both intervals."
     }
   ],
   "variants": {
