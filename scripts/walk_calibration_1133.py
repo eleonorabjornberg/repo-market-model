@@ -43,6 +43,9 @@ sys.path.insert(0, str(REPO / "src"))
 
 
 def _load(name: str):
+    registered = sys.modules.get(name)  # reuse a module a test already registered: its worker pool pickles by module name
+    if registered is not None and getattr(registered, "__file__", None) == str(REPO / "scripts" / f"{name}.py"):
+        return registered
     spec = importlib.util.spec_from_file_location(name, REPO / "scripts" / f"{name}.py")
     module = importlib.util.module_from_spec(spec)
     sys.modules[name] = module
