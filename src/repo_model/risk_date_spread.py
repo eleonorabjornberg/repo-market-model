@@ -31,6 +31,7 @@ from dataclasses import dataclass
 from datetime import date, time
 from typing import Dict, List, Mapping, Optional, Sequence
 
+from . import turn_days
 from . import protocol_benchmarks as pb
 from . import risk_dates
 from . import spread_mr_variants as smv
@@ -41,6 +42,10 @@ from .splits import LookAheadError
 
 #: The risk types, in the order of their precedence after the three of `reporting_day_type`.
 RISK_TYPES = ("quarter_end", "month_end", "tax_date", "settlement")
+#: The reporting day types that are risk types of their own. Once the turn record (#1135, `turn_days.IN_FORCE`) is in force the
+#: reporting type is `turn`, `quarter_end_turn`, `year_end` or `tax_date`, and the first three are named here, not `settlement`.
+#: `RISK_TYPES` is the legacy list the declared study scripts count by; a study run under the new definition lists these.
+_CALENDAR_RISK_TYPES = ("quarter_end", "month_end", "tax_date", "turn", "quarter_end_turn", "year_end")
 #: The calendar benchmark's window, in years: B2's.
 CALENDAR_YEARS = pb.B2_YEARS
 #: The type x state model's window, in years: B1's.
@@ -64,8 +69,8 @@ def risk_day_type(
         values, risk_dates.NON_ORDINARY, splits=splits, coupon_clause=coupon_clause, reporting_on=when
     ):
         return None
-    kind = splits.reporting_day_type(when, values)
-    return kind if kind in ("quarter_end", "month_end", "tax_date") else "settlement"
+    kind = turn_days.reporting_day_type(splits, when, values)
+    return kind if kind in _CALENDAR_RISK_TYPES else "settlement"
 
 
 def require_settlement_public(

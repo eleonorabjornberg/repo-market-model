@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/state_calendar_1145.json",
+  "script": "scripts/state_calendar_1145.py",
+  "pairing": "direct",
+  "why": "scaled mean reversion with calendar and scheduled terms read from the target row on direct pairs, in standardised units, alone or interacted with the as-of scarcity state of the decision (repo_model.spread_mr_state_calendar, guarded by one_step_guard with no allow-list entry); no gradient-boosted fit is called"
+}
