@@ -192,5 +192,59 @@ class HitSequence(unittest.TestCase):
             ct.hit_sequence([1.0, float("nan")], [1, 1], rule="above")
 
 
+class RandomisedHitSequence(unittest.TestCase):
+    """The randomised tie rule (#1130): a tie is a hit with the probability the forecast's own distribution assigns."""
+
+    def test_the_draws_and_tie_probabilities_are_required(self):
+        with self.assertRaises(TypeError):
+            ct.randomised_hit_sequence([1, 2], [1, 1])
+
+    def test_beyond_is_a_hit_below_is_not_and_a_tie_follows_the_draw(self):
+        y, q = [3, 4, 4, 4, 5], [4, 4, 4, 4, 4]
+        tie_p = [0.5] * 5
+        draws = [0.0, 0.49, 0.5, 0.99, 0.0]
+        self.assertEqual(ct.randomised_hit_sequence(y, q, tie_p, draws), [0, 1, 0, 0, 1])
+
+    def test_the_two_deterministic_rules_bracket_it(self):
+        rng = random.Random(3)
+        y = [rng.randint(0, 4) for _ in range(400)]
+        q = [2] * 400
+        draws = [rng.random() for _ in y]
+        strict = ct.hit_sequence(y, q, rule="above")
+        weak = ct.hit_sequence(y, q, rule="at_or_above")
+        mixed = ct.randomised_hit_sequence(y, q, [0.3] * 400, draws)
+        for s, m, w in zip(strict, mixed, weak):
+            self.assertLessEqual(s, m)
+            self.assertLessEqual(m, w)
+        self.assertEqual(ct.randomised_hit_sequence(y, q, [0.0] * 400, draws), strict)
+        self.assertEqual(ct.randomised_hit_sequence(y, q, [1.0] * 400, draws), weak)
+
+    def test_a_perfect_forecast_with_a_mass_point_has_the_nominal_hit_rate(self):
+        # Y uniform on 0..9, q = 8: P(Y > 8) = 0.1 and P(Y = 8) = 0.1. A tie hit probability of 0.5 makes the rate 0.15.
+        rng = random.Random(11)
+        n = 40000
+        y = [rng.randint(0, 9) for _ in range(n)]
+        draws = [rng.random() for _ in range(n)]
+        hits = ct.randomised_hit_sequence(y, [8] * n, [0.5] * n, draws)
+        self.assertAlmostEqual(sum(hits) / n, 0.15, delta=0.01)
+        strict = ct.hit_sequence(y, [8] * n, rule="above")
+        self.assertAlmostEqual(sum(strict) / n, 0.10, delta=0.01)
+
+    def test_malformed_input_raises(self):
+        with self.assertRaises(ValueError):
+            ct.randomised_hit_sequence([1], [1], [1.5], [0.1])
+        with self.assertRaises(ValueError):
+            ct.randomised_hit_sequence([1], [1], [0.5], [1.0])
+        with self.assertRaises(ValueError):
+            ct.randomised_hit_sequence([1, 2], [1, 1], [0.5], [0.1, 0.2])
+        with self.assertRaises(ValueError):
+            ct.randomised_hit_sequence([1.0, float("nan")], [1, 1], [0.5, 0.5], [0.1, 0.2])
+
+    def test_it_is_not_one_of_the_deterministic_rules(self):
+        self.assertEqual(ct.HIT_RULES, ("above", "at_or_above"))
+        with self.assertRaises(ValueError):
+            ct.hit_sequence([1], [1], rule="randomised")
+
+
 if __name__ == "__main__":
     unittest.main()

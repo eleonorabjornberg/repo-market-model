@@ -79,6 +79,13 @@
     },
     {
       "kind": "decisions",
+      "issue": 1130,
+      "comment_id": 6354004915,
+      "phrase": "GO #1130",
+      "what": "approve draft amendment 4 to docs/decisions/scoring-protocol.md (passing the coverage tests is a registration requirement; COVERAGE_REQUIREMENT_IN_FORCE stays False until the size simulation #1156 reports), with her answers 1(a), 2(b), 3(a), 5 default and 4 left to that simulation (PR #1137)"
+    },
+    {
+      "kind": "decisions",
       "issue": 1134,
       "comment_id": 6354003011,
       "phrase": "GO #1134",
