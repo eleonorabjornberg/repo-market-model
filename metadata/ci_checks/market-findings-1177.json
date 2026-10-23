@@ -1,0 +1,8 @@
+{
+  "command": [
+    "scripts/market_findings_1177.py",
+    "check"
+  ],
+  "where": "suite",
+  "pre_review": false
+}
