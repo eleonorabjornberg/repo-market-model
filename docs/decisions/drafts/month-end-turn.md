@@ -1,6 +1,6 @@
 # Draft: the month-end turn is the one month-end definition (#1135)
 
-**Status: a draft for Eleonora, not in force.** Drafted by the pull request that closes #1135, from her ruling of 22 October
+**Status: a draft for Eleonora, not in force; her answers of 22 October 2026 are recorded below.** Drafted by the pull request that closes #1135, from her ruling of 22 October
 2026 (relayed by the orchestrating session; five-lens review item 1, Lens A, #958; the label is the one #959 and PR #975
 measured). It binds nothing until she merges it into `docs/decisions/month-end-turn.md` with her own `GO #1135`. Until then
 the implementation below is inert: `repo_model.turn_days.IN_FORCE` is `False`, and every reader gives what it gave before.
@@ -59,21 +59,32 @@ By regime, 95 days leave the month-end pool and 95 join a turn type: 23 in 2018-
 and 12 in 2025-26. The risk-date set (`NON_ORDINARY`) loses the 95 penultimate days and gains the 95 first days after the
 turn, so its size is unchanged and its membership is not. Coupon settlements keep their own clause.
 
-## What this means for B2, which needs her call
+## What this means for B2
 
 B2 pools the trailing year by day type, with no minimum sample (`scoring-protocol.md`, implementation rulings). Under this
 record `year_end` has about two days a year and `quarter_end_turn` about eight, and the first `year_end` target of a panel has
-no earlier year-end to pool from, so `b2_forecast` raises `ProtocolError`, as it does for any empty pool today. A minimum
-sample or a fallback to a wider pool would be a rule, which is hers; this draft adds none.
+no earlier year-end to pool from, so `b2_forecast` raises `ProtocolError`, as it does for any empty pool today. Lens C found
+that B2's quarter-end pool already holds four values a year (90% coverage 0.50, #762), and a year-end type holds about two.
+A minimum sample or a fallback to a wider pool would be a rule, which is hers; this record adds none. It is a separate
+directive, #1155 (B2's thin-pool fallback), queued after this record.
 
-## Marked questions for Eleonora
+## Her answers (22 October 2026)
 
-1. **Adopt as drafted, with a minimum-sample rule for B2's thin pools?** Default: adopt the definition as drafted and ask
-   for a separate directive that drafts the pool fallback (for example `year_end` falls back to `quarter_end_turn`).
-2. **The year-end as its own type in B2 (about two days a year), or pooled with `quarter_end_turn`?** Default: its own type,
-   as ruled.
-3. **Which §13 kind does this change carry?** It is a definition, not a demonstration (a) or a reproduced error (b); the
-   ruling of 22 October 2026 is the authority. Default: record it as her decision, applying only to days logged after it.
+Ruling of 22 October 2026, relayed by the orchestrating session (comment 6354014209 on the pull request): the defaults on all
+three questions. Checked against the five-lens review (#958): the definition is Lens A's A1 (turn = last business day plus
+first business day of the next month; the penultimate day ordinary) and A4 (year-end its own type).
+
+1. **Adopted as drafted.** B2's thin-pool fallback is a separate directive, #1155; this record adds no minimum-sample rule.
+2. **Year-end is its own type**, in B2 and everywhere this definition is read.
+3. **Recorded as her decision of 22 October 2026, applying only to days logged after it.** It is a definition, not a
+   demonstration (a) or a reproduced error (b).
+
+Two notes for the record. Neither changes the definition.
+
+- Lens A found the second business day of the next month still hot in 2018-19 (+5.3 bp, 48% above 5 bp): in the scarce
+  regime only. That is the same state dependence #1145 is testing.
+- Lens C showed B2's quarter-end pool holds four values a year (90% coverage 0.50, #762), and a year-end type holds about
+  two, so the fallback directive (#1155) matters.
 
 ## Putting it in force
 
