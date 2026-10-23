@@ -372,7 +372,7 @@ def score_command(args) -> int:
     refuse_locked([LAST_TARGET])
     sd = _load("spread_distribution_634")
     sd.SEED = SEED  # pair_table seeds the bootstrap from the module constant; this measurement declares its own seed
-    pj = _load("pressure_judge")
+    scarcity = _load("scarcity_states")
     draws = args.draws
     if sd.panel_sha256(args.published) != declared["input"]["published_panel_sha256"]:
         raise SystemExit("the published panel is not the declared one")
@@ -405,7 +405,7 @@ def score_command(args) -> int:
     forecasts: Dict[str, Dict[date, Dict[int, Sequence[float]]]] = {"B1": b1, "B2": b2}
     for name in CANDIDATES:
         forecasts[name] = sp.fill_missing({day: decisions[name][day] for day in common}, b1, common).forecasts
-    states_by_target = pj._scarcity_states(1, LAST_TARGET)
+    states_by_target = scarcity.scarcity_states(1, LAST_TARGET)
 
     def state_of(day: date) -> str:
         value = states_by_target.get(calendar[position[day] + 1])
