@@ -5,7 +5,7 @@
 `docs/decisions/b2-thin-pool.md` with her own `GO #1155`. Until then the implementation is inert: `repo_model.b2_pool.IN_FORCE`
 is `False`, and `protocol_benchmarks.b2_forecast`, the B2 the protocol scores, is unchanged. This is a §13 change to
 `scoring-protocol.md` (§4 and the implementation ruling that B2's day type has no minimum sample), and the rule is hers. It
-also depends on `docs/decisions/drafts/month-end-turn.md` (#1135): its types are that record's.
+also depends on `docs/decisions/month-end-turn.md` (#1135, in force): its types are that record's.
 
 ## The problem
 

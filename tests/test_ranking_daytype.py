@@ -37,6 +37,11 @@ from repo_model.splits import LookAheadError
 
 import test_ranking as tr
 
+import legacy_day_types
+
+# this module reproduces legacy figures: the pre-#1135 day types (see tests/legacy_day_types.py)
+setUpModule, tearDownModule = legacy_day_types.setUpModule, legacy_day_types.tearDownModule
+
 ROOT = Path(__file__).resolve().parent.parent
 
 

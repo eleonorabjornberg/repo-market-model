@@ -19,6 +19,11 @@ from pathlib import Path
 
 from panel_cache import published_build
 
+import legacy_day_types
+
+# this module reproduces legacy figures: the pre-#1135 day types (see tests/legacy_day_types.py)
+setUpModule, tearDownModule = legacy_day_types.setUpModule, legacy_day_types.tearDownModule
+
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location("episode_replay_1030_script", ROOT / "scripts" / "episode_replay_1030.py")
 er = importlib.util.module_from_spec(spec)

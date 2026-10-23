@@ -320,6 +320,7 @@ only when she makes them herself on GitHub (`docs/decisions/drafts/owner-attesta
 | `docs/decisions/live-pin-v3-bump.md` | Version bump: the protocol block joins the live record (#656) | Status: approved by Eleonora's own `GO #656` (comment 6172786156, 14 October 2026); the pin moves when #736's pull request merges. |
 | `docs/decisions/live-pin.md` | The live record's code pin | Status: a draft for Eleonora, not in force. |
 | `docs/decisions/materiality.md` | Decision: a bounded, listed defect is handled, not a reason to refuse a series | Status: decided by Eleonora, 30 September 2026. |
+| `docs/decisions/month-end-turn.md` | The month-end turn is the one month-end definition (#1135) | Status: in force. |
 | `docs/decisions/policy-point-in-time.md` | Decision: policy and legislation are read from their announcement | Status: drafted for Eleonora's review (#376, track P of #374). |
 | `docs/decisions/quarter-end-window.md` | Decision: a quarter-end window and per-quarter peak pressure | Status: decided by Eleonora, 2 October 2026 (#140; ruling on PR #186). |
 | `docs/decisions/retire-idle-freezes.md` | Decision (draft): retire the freezes that protect no live registration | Status: a draft for Eleonora, not in force. |

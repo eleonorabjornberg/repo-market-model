@@ -75,6 +75,13 @@
       "issue": 1135,
       "comment_id": 6354007213,
       "phrase": "GO #1135",
+      "what": "put the approved record in force (#1161): move docs/decisions/drafts/month-end-turn.md to docs/decisions/month-end-turn.md with its status line in force, and set turn_days.IN_FORCE True, as the record's 'Putting it in force' section says"
+    },
+    {
+      "kind": "decisions",
+      "issue": 1135,
+      "comment_id": 6354007213,
+      "phrase": "GO #1135",
       "what": "approve the draft record docs/decisions/drafts/month-end-turn.md (the month-end turn is the one month-end definition; year-end its own type), with her answers 1-3 (defaults) (PR #1139). The record stays inert (turn_days.IN_FORCE False) until the follow-up PR that moves it to docs/decisions/month-end-turn.md and switches it on"
     },
     {
