@@ -21,7 +21,7 @@ count. The words are otherwise unchanged.
 
 ## Critical values in force
 
-**Status (draft for Eleonora's review, #1073; in force only once she merges it).** Eleonora ruled on 21 October 2026,
+**Status: in force since 21 October 2026 (PR #1078; Eleonora's `GO #1073`, 22 October 2026, finding #1110).** Eleonora ruled on 21 October 2026,
 relayed by the orchestrating session on #1064, that the critical values in force are the ones before #878, with no
 per-leg value, and that draft amendments 1 to 3 below (#878, #886, #953) are set aside until H1 is recalibrated on
 the #1027 candidate (the #1050 conditions); all three were calibrated on series from models that do not read calendar

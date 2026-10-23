@@ -1,0 +1,72 @@
+{
+  "status": "declared by the pull request that closes #1133 before any calibrated score was computed, and amended once by Eleonora's ruling of 22 October 2026 on #1142 (option 3), which is listed in `amendments`; a development study, never a verdict. Nothing is published: no published declaration, record or registration changes, no day after 2025-12-31 is scored, no lockbox day is scored, and no record in docs/runs/ is edited. Any change to the candidate is Eleonora's decision.",
+  "issue": 1133,
+  "avenue": "#809 (a walk-forward recalibration that can widen the upper tail, not only narrow it), unparked by the ruling of 22 October 2026 on #1133",
+  "hypothesis": "H5 (primary goal): the SOFR - IORB spread distribution in bp. Step 3, calibration of the predictive law. Development tier. Fix 3 of the three fixes ruled on 22 October 2026 (fix 1 is #1115, fix 2 is #966)",
+  "target": "spread_bps at the scored day, in basis points, as a 23-quantile distribution at each lead h = 1..5 (scoring_protocol.GRID)",
+  "base": {
+    "name": "spread_mr_fhs_mad20_f0.5 (#941), the declared variant of #836 and the best of #941's six on grid CRPS",
+    "module": "repo_model.spread_mr_fhs on repo_model.spread_mean_reversion (#686), unchanged, walked as scripts/fhs_scale_941.py walks it",
+    "calendar_arm": "the calendar-aware arm of #1115 (PR #1125) is not on main, so it is not the base. The base reads no calendar column and every figure here is provisional under the calendar-first rule (docs/research/provisional-calendar-register.md); it closes no question in either direction. The recalibrations are functions of the base's laws and outcomes, so they can be re-run unchanged on #1115's arm once it is on main",
+    "no_other_base": "no other model, and no variant of the base, is calibrated"
+  },
+  "calibration": {
+    "principle": "at a refit, from cells (a past decision day, a lead) whose target row is at or before the anchor of the refit's decision day, the last row public at the decision instant (protocol_benchmarks._anchor); no later row enters. A past cell is the base's own law for that day and the panel's spread_bps at its target row",
+    "window": "the 504 decision days before the refit day (two years of business days, the base model's training window), restricted as above",
+    "units": "the score of a cell at level p is (y - q_p) / w with w = max(q_95 - q_05, 1.0 bp), the cell's own 90% width of the base law, so a correction travels with the width of the day it is applied to",
+    "conformal_rank": "the ceil(p * (n + 1))-th smallest score, clamped to 1..n (split conformal)",
+    "lead": "each lead h = 1..5 is calibrated on its own cells",
+    "refit": "every 21 decision days, from the first decision day on which every lead has at least 250 past cells; the correction is kept between refits. Decision days before that have no calibrated law and are not scored by the arm, so the arm and the base are compared on the same days",
+    "non_crossing": "a corrected law is sorted",
+    "arms": {
+      "pooled": "(a) at each of the 23 levels, q_p + w * (the conformal quantile at level p of the normalised scores), over all cells of the lead, pooled over regimes. It can move a level up or down"
+    },
+    "no_others": "one arm, no grid over its constants (504, 250, 21 and 1.0 are declared once here); no arm is added after a number is computed"
+  },
+  "references": {
+    "uncalibrated_base": "the base above, on the same days",
+    "benchmarks": "B1 and B2 of scoring protocol v1 (repo_model.protocol_benchmarks), and B1' of #960 beside B1 (repo_model.b1_calendar): a reference row, not a benchmark of the protocol; B1 stays as ruled"
+  },
+  "scoring": {
+    "scorer": "repo_model.scoring_protocol (#655), the development tier: no verdict, no registration",
+    "days": "decision days with a calibrated law, whose five targets (h = 1..5 business days on the panel's calendar) fall on or before 2025-12-31; no day after 2025-12-31 is read; the scored days pass lockbox.require_unlocked",
+    "outcomes": "the panel's spread_bps at the target day",
+    "paired": "the pooled arm and the base against B1, B1', B2 and (for the arm) the base: skill = mean(d) / mean(S(benchmark)) with d = S(benchmark) - S(candidate), positive favours the candidate; scoring_protocol.paired_tests, the studentized stationary bootstrap (ruling 1), mean block 10 business days, 10,000 draws, seed 1133; two-sided 90% interval. A comparison the studentization cannot resolve is reported as undefined, with the means",
+    "measures": [
+      "grid CRPS (23 levels), pooled and by lead",
+      "upper-tail twCRPS, weight 1{z > 0 bp}, pooled and by lead",
+      "the scaled score of #967 beside the raw one: each cell's grid CRPS over the trailing-year median of B2's grid CRPS for cells of the same pressure-day type of the target (252 positions, the last 6 left out, 20 cells of a type at least), the mean over the five leads per decision day; decision days with no such scale are left out of that row only",
+      "coverage of the 50%, 80%, 90% and 98% bands (q25-q75, q10-q90, q05-q95, q01-q99) with a 90% stationary-bootstrap percentile interval (2,000 resamples), pooled, by lead, by regime and by pressure-day type",
+      "the exceedance rates of q05 and q95 and of q01 and q99, by lead and regime"
+    ],
+    "hit_rules": "OPEN QUESTION, Eleonora's (#993; coverage_tests.hit_sequence takes the rule as a required argument): whole-bp outcomes tie with a quantile. Both rules are reported, side by side, and neither is chosen. Upper exceedance: y > q ('above') or y >= q ('at_or_above'). Lower exceedance: y < q or y <= q, the mirror. A band is missed when the outcome is outside it, so under 'above' the band is closed ([q_lo, q_hi]) and under 'at_or_above' it is open",
+    "tests": "repo_model.coverage_tests: kupiec (unconditional coverage), christoffersen_independence and christoffersen_conditional_coverage (#993), on the by-lead sequences of consecutive decision days, pooled and within a regime (a regime is a run of consecutive days, so all three); within a pressure-day type the Kupiec test only. Reporting only: no p-value is a gate",
+    "splits": {
+      "pooled": "one number per decision day (protocol section 3); the coverage measures are read on the cells (decision day, lead)",
+      "by_lead": "h = 1..5",
+      "regime": "SplitDeclaration.regime of the target day (metadata/evaluation_splits.json): 2018-19, 2020, 2021-23, 2024, 2025-26; 2021-23 is called out. The regime labels are only the report's split, never an input of the calibration",
+      "pressure_day_type": "SplitDeclaration.reporting_day_type of the target day: quarter_end, month_end, tax_date, ordinary",
+      "min_days": "a group of fewer than 20 days is listed and not tested"
+    }
+  },
+  "reading": {
+    "rules": [
+      "The arm's gain over the uncalibrated base is read as present on a split when the 90% interval of its grid-CRPS skill over the base excludes zero on the positive side, and as a loss when it excludes zero on the negative side; otherwise undecided. A point estimate alone is not read.",
+      "A pooled figure is never read without the regime and pressure-day-type splits beside it; a gain pooled and a loss in 2018-19, 2021-23 or on quarter-end days is reported as mixed.",
+      "A calibration measure moving toward its nominal value (coverage toward the band's level, an exceedance rate toward 1 - level) is reported with its interval; a hit-sequence p-value is reported as a p-value and is no gate.",
+      "Nothing in this study is a verdict, and the page says so. Whether the arm joins a candidate is Eleonora's decision."
+    ]
+  },
+  "long_run": "the base walk (89 refits) and the calibration are arithmetic on the panel and are expected to finish well inside two hours; if the scoring step exceeds about two hours the pull request says so and gives the paste for her Mac (.claude/skills/long-run)",
+  "amendments": [
+    {
+      "date": "2026-10-22",
+      "by": "Eleonora's ruling on #1142, option 3 (comment 6350221377), made after the first scoring of the three arms",
+      "what": "Arm (a), the pooled recalibration, is kept as the evidence. Arms (b) (by the as-of floor flag) and (c) (b with the upper tail widened separately) are dropped, with the local replica of the floor flag and the constants only they used (MIN_STATE_CELLS 100, the 0.90 tail cut, the 0.25 bp tail denominator floor): #966 showed the floor flag adds nothing on the scaled mean reversion. The `variants` block lists the pooled arm only. The page, the record and the log entry are regenerated from arm (a); the numbers of (a) are unchanged by the amendment, since (b) and (c) did not enter them. The reading rule on (b) and (c) against (a) goes with them.",
+      "criteria": "The directive's criterion 4 is dropped by the same ruling."
+    }
+  ],
+  "variants": {
+    "pooled": "(a) at each of the 23 levels, q_p + w * (the conformal quantile at level p of the normalised scores), over all cells of the lead, pooled over regimes. It can move a level up or down"
+  }
+}
