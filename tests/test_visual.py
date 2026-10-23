@@ -679,6 +679,33 @@ class NewcomerPageTests(unittest.TestCase):
         self.assertLess(readme.index(link), readme.index("<!-- generated:"))
         self.assertIn('<div id="start">', newcomer_block(self.page))
 
+    def test_readme_overview_figure_and_lead_state_the_distribution_goal(self):
+        """#1174 (H5): the overview figure and the lead ask for the distribution of SOFR - IORB in bp, read with
+        calendar days at the target day, and show the 5 bp line as one reading of it, in both themes.
+
+        Recorded mutation: restoring the old figure and README (the output box "The chance tomorrow's rate is > 5 bp
+        above") made this test fail with AssertionError: 'distribution' not found in the old alt text and figure.
+        """
+        figures = ROOT / "docs/figures"
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        for name in ("overview-light.svg", "overview-dark.svg"):
+            with self.subTest(figure=name):
+                svg = (figures / name).read_text(encoding="utf-8")
+                label = re.search(r'aria-label="([^"]+)"', svg).group(1)
+                for text in (svg, label):
+                    self.assertIn("distribution", text)
+                    self.assertIn("5 bp", text)
+                self.assertIn("calendar", label)
+                self.assertIn("calendar", svg.lower())
+                self.assertNotIn("The chance tomorrow", svg)
+        alt = re.search(r'<img alt="([^"]+)" src="docs/figures/overview-light.svg"', readme).group(1)
+        for word in ("distribution", "calendar", "5 bp"):
+            self.assertIn(word, alt)
+        lead = readme.split("**Live site:**")[0]
+        question = lead.index("**what")
+        self.assertIn("distribution", lead[question:lead.index("**", question + 2) + 2])
+        self.assertLess(lead.index("distribution", question), lead.index("5 bp", question))
+
     def test_every_static_button_has_an_accessible_name(self):
         for attrs, body in re.findall(r"<button([^>]*)>(.*?)</button>", self.page, re.S):
             with self.subTest(button=attrs):

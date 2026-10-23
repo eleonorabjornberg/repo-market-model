@@ -38,6 +38,7 @@ from datetime import date, time
 from pathlib import Path
 from typing import Dict, Iterable, List, Mapping, Sequence, Tuple
 
+from . import turn_days
 from .asof import InformationRule
 from .data import DailyObservation
 from .evaluation_splits import SplitDeclaration
@@ -201,12 +202,12 @@ def b2_forecast(
     dates = [row.date for row in panel]
     first = _window_start(panel, decision_index, B2_YEARS)
     kinds = {
-        s: splits.reporting_day_type(panel[s].date, panel[s].values) for s in range(first, anchor + 1)
+        s: turn_days.reporting_day_type(splits, panel[s].date, panel[s].values) for s in range(first, anchor + 1)
     }
     out = {}
     for h in HORIZONS:
         target = panel[decision_index + h]
-        kind = splits.reporting_day_type(target.date, target.values)
+        kind = turn_days.reporting_day_type(splits, target.date, target.values)
         rows = [s for s, value in kinds.items() if value == kind]
         if not rows:
             raise ProtocolError(

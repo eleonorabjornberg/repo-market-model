@@ -408,8 +408,33 @@ def _ordered(split: str, labels) -> List[str]:
     return f941._ordered(split, labels)
 
 
-def verdict(row: dict) -> str:
+def skill_verdict(row: dict) -> str:
+    """The reading the first page was written with (before #1167): the skill interval. Kept so that page can be regenerated."""
+
     return f941.verdict(row)
+
+
+def verdict(row: dict) -> str:
+    """The reading of one row under her ruling on #1009 (the declaration, written before scoring, is unchanged): the studentized one-sided bound on mean d (her ruling on #1009; #1167), not the skill interval."""
+
+    if "undefined" in row:
+        return "undecided"
+    lo, hi = row["difference_interval"]
+    return "gain" if lo > 0.0 else "loss" if hi < 0.0 else "undecided"
+
+
+READING_RULE = {
+    "mean_d": [
+        "A gain (loss) is read when the lower (upper) end of the 90% studentized interval on the mean difference d is above (below) zero; "
+        "otherwise undecided. The interval is the pair of one-sided 95% bounds, with d = S(the uncalibrated base) - S(candidate), positive favouring "
+        "the candidate. This is the studentized bound on mean d that the protocol's verdict reads (her ruling on #1009, directive #1167); "
+        "the skill interval in the tables is shown beside it and is not the reading. The mean-d bound is in `docs/research/walk-calibration-1133/result.json` and on "
+        "`docs/research/walk-calibration-1133-mean-d-1167-result.md`.", "",
+        "**Caveat (Lens C of the five-lens review, #958).** The lag-10 HAC standard error that studentizes the mean-d bound is "
+        "understated about 2× after 2020, so the bound is optimistic there: an interval that excludes zero is narrower than it should be."],
+    "skill": ["A gain (loss) is a grid-CRPS skill over the uncalibrated base whose 90% interval is above (below) zero; otherwise undecided."],
+}
+READERS = {"mean_d": verdict, "skill": skill_verdict}
 
 
 def skill(row: Optional[dict]) -> str:
@@ -436,7 +461,7 @@ HEADER = ["| | mean | skill vs B1 [90%] | skill vs B1' [90%] | skill vs B2 [90%]
           "|---|---|---|---|---|---|"]
 
 
-def render(r: dict) -> str:
+def render(r: dict, reading: str = "mean_d") -> str:
     n = r["notes"]
     pooled = r["groups"]["pooled"]["all decision days"]
     out = [
@@ -477,13 +502,13 @@ def render(r: dict) -> str:
     if r["skipped_groups"]:
         out += ["Groups with fewer than %d days are listed and not tested: %s." % (
             MIN_GROUP_DAYS, ", ".join(f"{k} ({v})" for k, v in sorted(r["skipped_groups"].items()))), ""]
-    out += ["## Reading under the declared rule", "",
-            "A gain (loss) is a grid-CRPS skill over the uncalibrated base whose 90% interval is above (below) zero; otherwise undecided.", ""]
+    out += ["## Reading under the declared rule" if reading == "skill" else "## Reading under the ruling on #1009", "",
+            *READING_RULE[reading], ""]
     for arm in wc.ARMS:
         parts = []
         for split in ("pooled", "regime", "pressure_day_type"):
             for label in _ordered(split, r["groups"].get(split, {})):
-                parts.append(f"{label}: {verdict(r['groups'][split][label]['grid_crps']['vs'][ARM_KEYS[arm]][BASE])}")
+                parts.append(f"{label}: {READERS[reading](r['groups'][split][label]['grid_crps']['vs'][ARM_KEYS[arm]][BASE])}")
         out.append(f"- **{LABELS[ARM_KEYS[arm]]}**: " + "; ".join(parts) + ".")
     out.append("")
     out += coverage_section(r)

@@ -23,6 +23,7 @@ from __future__ import annotations
 from datetime import time
 from typing import Dict, List, Mapping, Optional, Sequence
 
+from . import turn_days
 from . import protocol_benchmarks as pb
 from .data import DailyObservation
 from .evaluation_splits import SplitDeclaration
@@ -36,7 +37,7 @@ def last_ordinary_rows(panel: Sequence[DailyObservation], splits: SplitDeclarati
     out: List[Optional[int]] = []
     latest: Optional[int] = None
     for s in range(upto + 1):
-        if splits.reporting_day_type(panel[s].date, panel[s].values) == "ordinary":
+        if turn_days.reporting_day_type(splits, panel[s].date, panel[s].values) == "ordinary":
             latest = s
         out.append(latest)
     return out
@@ -66,7 +67,7 @@ def b1_calendar_forecast(
     first = pb._window_start(panel, decision_index, pb.B1_YEARS)
 
     def kind_of(s: int) -> str:
-        return splits.reporting_day_type(panel[s].date, panel[s].values)
+        return turn_days.reporting_day_type(splits, panel[s].date, panel[s].values)
 
     out = {}
     for h in HORIZONS:
