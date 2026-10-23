@@ -1,0 +1,215 @@
+{
+ "status": "declared by the pull request that closes #1145 before any score was computed; a development study, never a verdict. Nothing is published: no arm or term joins any published declaration, `gbm_funding`'s declaration and `scripts/final_test_preregistration.py` do not change, no day after 2025-12-31 is scored, no lockbox day is scored, and no record in docs/runs/ is edited. Whether an arm replaces (a) as the H5 candidate is Eleonora's decision on the page's evidence. Amendments made after a number was computed would be listed in `amendments`; there are none.",
+ "issue": 1145,
+ "ruling": "Eleonora, 22 October 2026, relayed by the orchestrating session: 'Queue it.' The fix #1115's result points to: calendar effects are not fixed basis points; they are large when reserves are scarce and volatility is high and near zero on the floor. #1115 estimated one bp effect per term and applied it everywhere, so it lost in 2020 and 2021-23 and won in 2024 and 2025-26. Adoption (her ruling of the same day): an arm replaces (a) as the H5 candidate only if it beats (a); that is her decision on this page's evidence",
+ "hypothesis": "H5 (primary goal): the SOFR - IORB spread distribution in bp. Step 3 (calendar first; refocus). Development tier",
+ "target": "spread_bps at the scored day, in basis points, as a 23-quantile distribution at each lead h = 1..5 (scoring_protocol.GRID)",
+ "base": {
+  "name": "spread_mr_fhs_mad20_f0.5 (#941), arm (a), the H5 candidate",
+  "module": "repo_model.spread_mr_fhs and repo_model.spread_mean_reversion, unchanged; the same arm (a) as #1115's",
+  "formula": "q_p(t+h) = level + phi^k * (last - level) + scale(anchor) * z_h,p, with z_h,p the 23 empirical quantiles of the raw residuals (spread[s] - level[o]) - phi^k * (spread[o] - level[o]) divided by scale(o) at each pair's own origin o; scale(r) = max(0.5, 1.4826 * median of the 20 absolute daily changes ending at r). phi, level, the two-year training window, the minimum of 60 pairs and the refit every 21 decision days are the base model's. Arm (a)'s forecasts are fhs.walk's, not a re-implementation"
+ },
+ "terms": {
+  "definition": "#1115's, unchanged: a term is a 0/1 flag of the TARGET row of a pair, read at the target day on direct pairs (spread_mr_calendar.TermTable), a calendar column, a declared scheduled field, or a function of the target row's own date; a scheduled field is read only where asof rule 2 admits it (settlements at lead 1 only, the IORB window at leads 1 to 3)",
+  "listed_in_full": [
+   {
+    "name": "month_end",
+    "reads": "days_to_month_end",
+    "kind": "calendar column (TARGET_DAY_COLUMNS)",
+    "leads": "1 to 5"
+   },
+   {
+    "name": "quarter_end",
+    "reads": "quarter_end",
+    "kind": "calendar column (TARGET_DAY_COLUMNS)",
+    "leads": "1 to 5"
+   },
+   {
+    "name": "tax_date",
+    "reads": "tax_date",
+    "kind": "calendar column (TARGET_DAY_COLUMNS)",
+    "leads": "1 to 5"
+   },
+   {
+    "name": "settlement_coupon",
+    "reads": "treasury_settlement_coupons",
+    "kind": "scheduled field, public at 15:00 on the panel day before the target (metadata/sources.json treasury_auctions): a decision at lead 2 or more cannot read it, and the as-of rule refuses it (asof.InformationRule raises LookAheadError), as #1027 found",
+    "leads": "1 only"
+   },
+   {
+    "name": "settlement_bill",
+    "reads": "treasury_settlement_bills",
+    "kind": "scheduled field, as settlement_coupon",
+    "leads": "1 only"
+   },
+   {
+    "name": "dom_19_23",
+    "reads": "the target row's own date",
+    "kind": "date",
+    "leads": "1 to 5"
+   },
+   {
+    "name": "iorb_window",
+    "reads": "iorb_announced_change_bps (scheduled field, `scheduled_availability`: public at 16:00 on the panel day before the row)",
+    "kind": "scheduled field of the overlay announced_iorb (OVERLAY_FEATURES), added to the panel in memory by announced_iorb.with_announced_iorb",
+    "leads": "the row T - j is readable at lead h iff the as-of rule admits the column at row T - j for a decision h - j rows before it, or that row is the decision day or earlier: j in {0,1,2} at lead 1, {1,2} at lead 2, {2} at lead 3, none at leads 4 and 5 (the term is absent there)"
+   },
+   {
+    "name": "fomc_day",
+    "reads": "fomc_meeting_day (fomc_calendar.add_columns with horizon = h, the calendar as it stood at the decision instant, #1038)",
+    "kind": "calendar column (TARGET_DAY_COLUMNS, FOMC_TARGET_DAY_COLUMNS)",
+    "leads": "1 to 5"
+   },
+   {
+    "name": "post_month_end_window",
+    "reads": "the target row's own date and the market holiday table (derived_features.bday_of_month)",
+    "kind": "date",
+    "leads": "1 to 5"
+   }
+  ],
+  "dropped": "none. #1115 ran no per-term ablation, so it showed no single term to hurt on every reading; the only ablation it has, arm (d) against arm (c), removed the FOMC and IORB terms together and improved every reading (pooled grid CRPS 1.804 against 1.860, and h = 1 to 5, grid CRPS and twCRPS). Under the ruling those two terms (fomc_day, iorb_window) are kept only in a separate arm (s4) and are absent from (s1), (s2) and (s3). No other term is dropped, and no term is added",
+  "coupon_and_bills": "treasury_settlement_coupons (settlement_coupon) and treasury_settlement_bills (settlement_bill) stay two terms with two effects and, in (s2), two state slopes. Lens A's reading (#958) is that the size of the coupon settlement scaled by the scarcity state matters; this study uses the 0/1 flag of #1115 for the coupon leg and scales it by the state, and does not add the size of the settlement as a regressor (a question below)",
+  "min_flagged": "a term enters a lead's fit only if at least 3 of that lead's training pairs carry its flag; otherwise its effect is 0 at that refit and lead (the same rule as #1115)"
+ },
+ "state": {
+  "definition": "the reserve-scarcity state of #115 as the own-leg read of #586 (repo_model.scarcity.own_leg_states, run under scarcity.measurement_declaration on the measurement panel built from tracked fixtures only: the published panel's inputs, the Desk's operation results and the H.8 first prints): 0 abundant to 3 scarce, each of its three legs read at its latest row public at the decision instant. It is a slow variable of the decision, not of the target day, and the same state is used at every lead of a decision",
+  "keyed_by": "the DECISION day: states[d] is what a decision on day d could read. The grid of own_leg_states at horizon 1 is keyed by the scored day, which is the next panel day, so states[panel[i].date] = grid[panel[i + 1].date]. A training pair with origin o and lag L (the anchor lag) is trained on states[date[o + L]], the state of the decision it stands for; a forecast reads states[date[D]] of its own decision day D. spread_mr_state_calendar.read_state raises LookAheadError for any later day",
+  "grid": "minimum_history 20 (the earliest the legs allow, 2018-05-04), horizon 1, end 2025-12-31; the lockbox is checked by the fold grid before anything is read",
+  "interaction_variable": "s = state / 3, so 0 on the floor and 1 when scarce; the four-level form of #128, used as is, with no cut-point of this study's own",
+  "unknown": "a pair or a decision whose state is unknown has s = 0 for the interaction columns (the term's main effect still applies); the count of such pairs is kept in each estimate"
+ },
+ "estimation": {
+  "units": "for lead h, with raw residual r_i of pair i (as arm (a) defines it) and scale(o_i) its origin's scale, the target of every arm is y_i = r_i / scale(o_i), the standardised residual; an effect is a number of scale units and the effect in bp on a forecast is that number times scale(anchor) of the decision, read afresh each day",
+  "s1": "ridge least squares (an L2 penalty of 1.0 on every term coefficient and none on the intercept, #1115's) of y on [1, x_1 .. x_p] over the lead's training pairs, the terms of (s1); the intercept is dropped; the pool is the 23 empirical quantiles of z_i = y_i - sum_j beta_j x_ij; forecast q = level + phi^k (last - level) + scale(anchor) * (sum_j beta_j x_j(T) + Q_z)",
+  "s2": "(s1) with, for every term, a second column x_j * s_i (s_i the state level of the pair's decision day); same ridge; the pool is z_i = y_i - sum_j (beta_j + gamma_j s_i) x_ij; forecast shift sum_j (beta_j + gamma_j s) x_j(T) with s the state of the forecast's decision day, the same at every lead",
+  "s3": "(s1) fitted by Huber iteratively re-weighted least squares: start from the (s1) fit; each pass computes the residuals, sigma = max(1.4826 * median |r - median(r)|, 1e-6), the threshold c = 1.345 sigma, weights 1 where |r| <= c and c / |r| beyond, and a weighted ridge fit; stop when no coefficient moves by 1e-8 or after 50 passes. The ridge is 5.0 pseudo-days (heavier than (s1)'s 1.0), the shrinkage toward 0 of a term with few past flagged days: a term with four flagged days keeps under half its effect. The pool is the unweighted z_i, so an outlier day stays in the quantiles of the pool",
+  "s4": "(s1) with fomc_day and iorb_window added to the terms: the separate arm of the ruling",
+  "scale_terms": "no arm has a scale term; #1115's scale terms are not carried (arm (c) lost to (a) pooled)",
+  "refit": "every 21 decision days with the base fit, as the base model and #1115 do; between refits the effects and the pool are kept and last, level, k, the anchor, scale(anchor), the flags of T and the state of the decision day are read afresh",
+  "pairs": "direct (training_pairs = 'direct'), as #1115. The estimation routine is decorated with repo_model.one_step_guard.guard_one_step_fit: on direct pairs it needs no allow-list entry; with 'one_step' it raises ValueError naming the column. No entry is added to one_step_guard.ONE_STEP_ALLOW_LIST"
+ },
+ "arms": [
+  {
+   "name": "mr_cal_a_base",
+   "role": "(a) base: spread_mr_fhs_mad20_f0.5 of #941, no term",
+   "location_terms": [],
+   "interact": false,
+   "robust": false
+  },
+  {
+   "name": "sc_s1_standardised",
+   "role": "(s1) terms in standardised units",
+   "location_terms": [
+    "month_end",
+    "quarter_end",
+    "tax_date",
+    "settlement_coupon",
+    "settlement_bill",
+    "dom_19_23",
+    "post_month_end_window"
+   ],
+   "interact": false,
+   "robust": false
+  },
+  {
+   "name": "sc_s2_scarcity",
+   "role": "(s2) (s1) and each term times the scarcity state",
+   "location_terms": [
+    "month_end",
+    "quarter_end",
+    "tax_date",
+    "settlement_coupon",
+    "settlement_bill",
+    "dom_19_23",
+    "post_month_end_window"
+   ],
+   "interact": true,
+   "robust": false
+  },
+  {
+   "name": "sc_s3_robust",
+   "role": "(s3) (s1) with a Huber fit and a heavier ridge",
+   "location_terms": [
+    "month_end",
+    "quarter_end",
+    "tax_date",
+    "settlement_coupon",
+    "settlement_bill",
+    "dom_19_23",
+    "post_month_end_window"
+   ],
+   "interact": false,
+   "robust": true
+  },
+  {
+   "name": "sc_s4_fomc_iorb",
+   "role": "(s4) (s1) with the FOMC and IORB terms",
+   "location_terms": [
+    "month_end",
+    "quarter_end",
+    "tax_date",
+    "settlement_coupon",
+    "settlement_bill",
+    "dom_19_23",
+    "iorb_window",
+    "fomc_day",
+    "post_month_end_window"
+   ],
+   "interact": false,
+   "robust": false
+  }
+ ],
+ "references": {
+  "benchmarks": "B1, B1' (repo_model.b1_calendar, #960; reported beside B1 in every table, B1 stays the protocol's benchmark) and B2 of scoring protocol v1, and spread_mr_ctx (#761) as a reference",
+  "gbm": "gbm_funding (#634), read from its walks when supplied (`--walks`: gbm_funding_h<lead>.json, all five leads, walked from the same published panel). The walks are long runs that exist on Eleonora's Mac; without them those rows are absent and the page says so, and the comparison is a `needs-mac` re-score of the same command with `--walks`. An arm is never compared with a walk made from another panel; a comparison is on the decision days both cover, a missing lead standing in as B1 as #634 fills it",
+  "pairs": "each of (s1) to (s4) against (a), B1, B1', B2, spread_mr_ctx and gbm_funding; (s3) and (s2) against (s1), which isolates the estimator and the state; (s4) against (s1), which isolates the FOMC and IORB terms"
+ },
+ "scoring": {
+  "scorer": "repo_model.scoring_protocol (#655), the development tier: no verdict, no registration",
+  "days": "decision days with a forecast of every arm and the benchmarks, whose five targets fall on or before 2025-12-31; no day after 2025-12-31 is read; the scored days pass lockbox.require_unlocked",
+  "outcomes": "the panel's spread_bps at the target day",
+  "measures": [
+   "grid CRPS (23 levels), by lead and the mean over leads 1..5",
+   "upper-tail twCRPS, weight 1{z > 0 bp}, by lead and the mean over leads"
+  ],
+  "paired": "skill = mean(d) / mean(S(benchmark)) with d = S(benchmark) - S(candidate), positive favours the candidate; scoring_protocol.paired_tests, the studentized stationary bootstrap (ruling 1), mean block 10 business days, 10,000 draws, seed 1145; two-sided 90% interval, so the lower end is the one-sided 95% bound",
+  "politis_white": "beside the block of 10, the Politis-White automatic block length (scripts/block_length_949.py politis_white, with the Patton-Politis-White correction) of the paired loss differential of each arm against (a), pooled and within each regime, and the pooled interval of each arm over (a) at that block length (rounded to a whole number of days). Reported, never substituted for the protocol's 10",
+  "scaled_score": "beside the raw grid CRPS, the scaled score of #967 (scripts/scaled_score_967.py): each cell of a decision day divided by the scale of its target's reporting day type (month_end, quarter_end, tax_date, ordinary), the scale being the median of B2's grid CRPS over the trailing 252 pool positions, the last 6 left out, 20 cells of a type at least, else the median of the whole window; a decision day's scaled score is the mean over its leads. Pooled and by regime of the decision day, paired as above. The first scaled day is later than the first scored day, because the trailing year must fit",
+  "min_days": "a group of fewer than 20 days is listed and not tested",
+  "calibration": {
+   "measure": "the share of (decision day, lead) cells whose outcome is above the model's q95 (y > q) and, beside it, at or above it (y >= q), the two hit rules of Eleonora's open question #993, with the 90% stationary-bootstrap percentile interval over cells (mean block 50 cells, 2,000 resamples, seed 1145), for each arm, arm (a), B1, B1', B2, spread_mr_ctx and, when walks are supplied, gbm_funding; pooled, by regime and by target day type. The nominal rate is 0.05. The band coverage of the arms' 23-level quantiles is read the same way: the share of cells whose outcome falls in the central 50% band (q25 to q75) and the central 90% band (q05 to q95), with the same interval, under both hit rules (inside the closed band, and inside the open band)"
+  }
+ },
+ "splits": {
+  "regime": "SplitDeclaration.regime of the target day (metadata/evaluation_splits.json): 2018-19, 2020, 2021-23, 2024, 2025-26 (the scaled score by the regime of the decision day)",
+  "target_day_type": "by the target day: month_end, quarter_end, tax_date, settlement (coupon or bill settling), fomc_day, iorb_window, dom_19_23, post_month_end_window, ordinary. The groups overlap; ordinary is a day with none of the flags. The flags of the day type are the ex-post readings at lead 1",
+  "lead": "h = 1..5",
+  "unit": "every split is on the target day: a target day's score is the mean over the leads that forecast it and it belongs to the group of its own date; a group's days are tested as a subsequence, as in #761"
+ },
+ "term_effects": {
+  "table": "per term and arm, by regime: the effect in bp in force on the flagged target days, the mean over the leads that forecast the day of scale(anchor) * (beta_j + gamma_j s) at the refit the forecast used (0 where the term was absent), then the mean over the regime's flagged days, with the 90% stationary-bootstrap percentile interval over those days in date order (mean block 10 flagged days, 2,000 resamples, seed 1145; no interval under 5 days). The same in scale units (beta_j + gamma_j s). The interval measures the spread of the estimates across refits and days, not a standard error of the effect",
+  "realised": "beside them, the mean over the same flagged target days of the outcome less arm (a)'s median forecast: what arm (a) missed on those days"
+ },
+ "reading": {
+  "rules": [
+   "An arm's gain over (a) is read as present on a split when the 90% interval of its grid-CRPS skill over (a) excludes zero on the positive side, and as a loss when it excludes zero on the negative side; otherwise as undecided. A point estimate alone is not read.",
+   "A pooled figure is never read without the regime and target-day-type splits beside it; a gain pooled and a loss in 2018-19, 2021-23 or on ordinary days is reported as mixed.",
+   "'Beats (a)' is Eleonora's word and her decision. The page tabulates, for each arm, the pooled skill over (a) with its interval for the grid CRPS and the upper-tail twCRPS and the number of regimes read as gain, loss and undecided, and does not name a threshold of its own.",
+   "(s2) against (s1) isolates the state; (s3) against (s1) isolates the robust estimator; (s4) against (s1) isolates the FOMC and IORB terms.",
+   "Nothing in this study is a verdict, and the page says so. A kill applies only to a result that is not provisional; these arms read the calendar at the target day on direct pairs, so their class is not provisional.",
+   "The page ends with a marked question for Eleonora with numbered options and a default: nothing is adopted and no claim changes."
+  ]
+ },
+ "questions": [
+  "Whether an arm replaces (a) as the H5 candidate is Eleonora's.",
+  "The choices that are this study's own and are open to her review: the state mapping state / 3, the heavier ridge of 5.0 and Huber's 1.345 of the robust arm, the 0/1 coupon flag in place of the coupon settlement size in (s2) (Lens A's reading would use the size), the single scarcity state shared by all leads, and the drop of #1115's scale terms. No other value was tried."
+ ],
+ "limits": {
+  "last_day": "2025-12-31",
+  "arms": 4,
+  "gbm_funding_declaration": "unchanged",
+  "preregistration": "scripts/final_test_preregistration.py is not touched",
+  "allow_list": "repo_model.one_step_guard.ONE_STEP_ALLOW_LIST is not changed"
+ },
+ "amendments": []
+}
