@@ -133,6 +133,11 @@ ATTRIBUTION = {
     ("docs/decisions/pressure-probability.md", 130): _DECISION,
     ("docs/decisions/pressure-probability.md", 152): _DECISION,
     ("site/index.html", 127): "work-tracking issue on a source card; no figure rests on it",
+    ("site/index.html", 1115): (
+        "names the comment where Eleonora ruled the H5 candidate; every figure in the standings "
+        "is copied from the evidence pages docs/research/calendar-mr-1115-result.md and "
+        "docs/research/walk-calibration-1133-result.md, both linked beside it; no figure rests on it"
+    ),
 }
 
 #: (page, number): the figure or claim the link is the source of, and why no
