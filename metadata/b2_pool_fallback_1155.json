@@ -9,19 +9,37 @@
   "B1": "protocol_benchmarks.b1_forecast",
   "B1_prime": "b1_calendar.b1_calendar_forecast on the turn labels (its own pool floor of 30, #960)",
   "B2_legacy": "protocol_benchmarks.b2_forecast on SplitDeclaration.reporting_day_type (month_end, two business days), read as a reference; reported by the turn type of the target",
-  "B2_turn": "protocol_benchmarks.b2_forecast on the turn labels, no minimum pool; a decision day on which it raises ProtocolError (an empty pool: the first year-end of the panel) is not scored in any arm and is listed",
+  "B2_turn": "protocol_benchmarks.b2_forecast on the turn labels, no minimum pool; a decision day on which it raises ProtocolError (an empty pool) is not scored in any arm and is listed (none is expected after the warm-up)",
   "B2_pool10": "b2_pool.b2_fallback_forecast on the turn labels, pool_min 10 (the drafted default)",
   "B2_pool20": "the same, pool_min 20",
   "B2_pool30": "the same, pool_min 30 (B1' pool floor)"
  },
  "chains": {
-  "year_end": ["year_end", "quarter_end_turn", "turn", "all_days"],
-  "quarter_end_turn": ["quarter_end_turn", "turn", "all_days"],
-  "turn": ["turn", "all_days"],
-  "tax_date": ["tax_date", "all_days"],
-  "ordinary": ["ordinary", "all_days"]
+  "year_end": [
+   "year_end",
+   "quarter_end_turn",
+   "turn",
+   "all_days"
+  ],
+  "quarter_end_turn": [
+   "quarter_end_turn",
+   "turn",
+   "all_days"
+  ],
+  "turn": [
+   "turn",
+   "all_days"
+  ],
+  "tax_date": [
+   "tax_date",
+   "all_days"
+  ],
+  "ordinary": [
+   "ordinary",
+   "all_days"
+  ]
  },
- "scored_days": "decision days whose five targets are on or before 2025-12-31 and not locked; the same days for every arm",
+ "scored_days": "decision days from the 251st panel row (a full trailing year of rows before the decision day; B2's year window is not clipped by the panel start; the first year-end target of the panel, 2018-12-31, falls in the warm-up, where B2 without a minimum refuses it) whose five targets are on or before 2025-12-31 and not locked; the same days for every arm",
  "measures": [
   "the pool each type reads (rows) by arm: the range and the share of cells on a fallback pool",
   "empirical coverage of the 50% and 90% bands and the exceedance rate of q95, under both hit rules (coverage_tests.HIT_RULES), pooled over the five leads, pooled, by regime and by pressure-day type, with Kupiec's p-value where a split has 20 or more cells",
@@ -29,5 +47,6 @@
  ],
  "variants": 3,
  "reading_rules": "none: this is a reading, not a test of a hypothesis. No kill applies. The hit rule is Eleonora's open question (#993): both are reported",
- "seed": 1155
+ "seed": 1155,
+ "warm_up_rows": 250
 }
