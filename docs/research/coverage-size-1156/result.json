@@ -1,0 +1,452 @@
+{
+  "declaration": {
+    "declared_before_any_figure": true,
+    "design": {
+      "alpha": 0.05,
+      "family": "holm",
+      "flag": "scoring_protocol.COVERAGE_REQUIREMENT_IN_FORCE is patched True inside the script only; it is never set in the tree",
+      "leads": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "levels": [
+        0.05,
+        0.95,
+        0.01,
+        0.99
+      ],
+      "method": "thinned",
+      "randomised_tie_probability": "coverage_tests.tie_hit_probability from the forecast's own discrete distribution",
+      "rules": [
+        "strict",
+        "tie_counts",
+        "randomised"
+      ]
+    },
+    "directive": 1156,
+    "hypothesis": "H1 (scoring protocol synthetic suite) and H5 step 5 (candidate choice)",
+    "interval": "Wilson 95% interval on the share of paths that fail",
+    "pass_rule": "a rule is named when the calibrated forecaster fails the family-wise requirement on no more than 0.05 of the paths (point estimate); if none does, none is named; if several do, all are named and none is chosen",
+    "power": {
+      "factors": [
+        0.9,
+        0.8,
+        0.7
+      ],
+      "forecaster": "too narrow: the same law with its standard deviation multiplied by the factor, quantiles and tie probabilities from the narrowed law, outcomes from the true law",
+      "note": "the factors are this declaration's choice; #961's narrow forecaster is not on main, so its width is not reproduced",
+      "only_for": "each rule whose family-wise size is at most 0.05",
+      "paths": 1000
+    },
+    "ruling": "Eleonora, 22 October 2026, PR #1137 (comment 6354246426): answers 1, 2, 3 and 5 at their defaults; answer 4 decided by this simulation",
+    "size": {
+      "base_seed": 1156,
+      "path_seed": "base_seed * 100000 + path index; the world, then the randomised draws, from random.Random(path_seed) and random.Random(path_seed + 50000)",
+      "paths": 2000
+    },
+    "tier": "development",
+    "world": {
+      "a": 0.8,
+      "calendar_start": "2005-01-03 (business days; no locked day)",
+      "days": 2000,
+      "forecast_quantiles": "the integer quantile of the forecast's own discretised normal: the smallest integer k with P(Y <= k) >= level, so outcomes tie it",
+      "regimes": [
+        {
+          "days": 800,
+          "label": "calm",
+          "mu": 0.0,
+          "s": 0.6
+        },
+        {
+          "days": 400,
+          "label": "stress",
+          "mu": 2.0,
+          "s": 1.5
+        },
+        {
+          "days": 800,
+          "label": "ordinary",
+          "mu": 0.5,
+          "s": 1.0
+        }
+      ],
+      "target": "round(x_t) in whole bp, x_t = mu_r + a (x_{t-1} - mu_r) + e_t, e_t ~ N(0, s_r^2); the forecaster knows x_t, the regime schedule and the law, so it is calibrated by construction"
+    }
+  },
+  "declaration_sha256": "3c632c77f62f7c77e3bb4f709ea6bec8196dd7f47570585e0f482ccfffc06c47",
+  "directive": 1156,
+  "environment": {
+    "python": "3.11.17",
+    "workers": 4
+  },
+  "flag_in_tree": false,
+  "hit_rates_lead1": {
+    "randomised": {
+      "0.01": {
+        "hits": 39848,
+        "n": 4000000,
+        "nominal": 0.01,
+        "rate": 0.009962
+      },
+      "0.05": {
+        "hits": 200647,
+        "n": 4000000,
+        "nominal": 0.05,
+        "rate": 0.05016175
+      },
+      "0.95": {
+        "hits": 199046,
+        "n": 4000000,
+        "nominal": 0.050000000000000044,
+        "rate": 0.0497615
+      },
+      "0.99": {
+        "hits": 39634,
+        "n": 4000000,
+        "nominal": 0.010000000000000009,
+        "rate": 0.0099085
+      }
+    },
+    "strict": {
+      "0.01": {
+        "hits": 12074,
+        "n": 4000000,
+        "nominal": 0.01,
+        "rate": 0.0030185
+      },
+      "0.05": {
+        "hits": 72506,
+        "n": 4000000,
+        "nominal": 0.05,
+        "rate": 0.0181265
+      },
+      "0.95": {
+        "hits": 71914,
+        "n": 4000000,
+        "nominal": 0.050000000000000044,
+        "rate": 0.0179785
+      },
+      "0.99": {
+        "hits": 11987,
+        "n": 4000000,
+        "nominal": 0.010000000000000009,
+        "rate": 0.00299675
+      }
+    },
+    "tie_counts": {
+      "0.01": {
+        "hits": 227452,
+        "n": 4000000,
+        "nominal": 0.01,
+        "rate": 0.056863
+      },
+      "0.05": {
+        "hits": 670361,
+        "n": 4000000,
+        "nominal": 0.05,
+        "rate": 0.16759025
+      },
+      "0.95": {
+        "hits": 668640,
+        "n": 4000000,
+        "nominal": 0.050000000000000044,
+        "rate": 0.16716
+      },
+      "0.99": {
+        "hits": 226211,
+        "n": 4000000,
+        "nominal": 0.010000000000000009,
+        "rate": 0.05655275
+      }
+    }
+  },
+  "paths": {
+    "power": 1000,
+    "size": 2000
+  },
+  "power": {
+    "0.7": {
+      "randomised": {
+        "1": {
+          "fails": 1000,
+          "hi": 1.0,
+          "lo": 0.9961732414543059,
+          "paths": 1000,
+          "share": 1.0
+        },
+        "2": {
+          "fails": 1000,
+          "hi": 1.0,
+          "lo": 0.9961732414543059,
+          "paths": 1000,
+          "share": 1.0
+        },
+        "3": {
+          "fails": 1000,
+          "hi": 1.0,
+          "lo": 0.9961732414543059,
+          "paths": 1000,
+          "share": 1.0
+        },
+        "4": {
+          "fails": 999,
+          "hi": 0.9998234536313233,
+          "lo": 0.9943574413400738,
+          "paths": 1000,
+          "share": 0.999
+        },
+        "5": {
+          "fails": 992,
+          "hi": 0.9959408042021483,
+          "lo": 0.9842936653888887,
+          "paths": 1000,
+          "share": 0.992
+        },
+        "all": {
+          "fails": 1000,
+          "hi": 1.0,
+          "lo": 0.9961732414543059,
+          "paths": 1000,
+          "share": 1.0
+        }
+      }
+    },
+    "0.8": {
+      "randomised": {
+        "1": {
+          "fails": 1000,
+          "hi": 1.0,
+          "lo": 0.9961732414543059,
+          "paths": 1000,
+          "share": 1.0
+        },
+        "2": {
+          "fails": 995,
+          "hi": 0.9978624644862107,
+          "lo": 0.988349044553552,
+          "paths": 1000,
+          "share": 0.995
+        },
+        "3": {
+          "fails": 919,
+          "hi": 0.9343503785680106,
+          "lo": 0.9004427977706978,
+          "paths": 1000,
+          "share": 0.919
+        },
+        "4": {
+          "fails": 855,
+          "hi": 0.875465063922279,
+          "lo": 0.8318179375102781,
+          "paths": 1000,
+          "share": 0.855
+        },
+        "5": {
+          "fails": 771,
+          "hi": 0.7959768704379113,
+          "lo": 0.7439490264303226,
+          "paths": 1000,
+          "share": 0.771
+        },
+        "all": {
+          "fails": 999,
+          "hi": 0.9998234536313233,
+          "lo": 0.9943574413400738,
+          "paths": 1000,
+          "share": 0.999
+        }
+      }
+    },
+    "0.9": {
+      "randomised": {
+        "1": {
+          "fails": 589,
+          "hi": 0.6190977804320281,
+          "lo": 0.5582210565468382,
+          "paths": 1000,
+          "share": 0.589
+        },
+        "2": {
+          "fails": 358,
+          "hi": 0.3882051960238396,
+          "lo": 0.3288816034031373,
+          "paths": 1000,
+          "share": 0.358
+        },
+        "3": {
+          "fails": 208,
+          "hi": 0.2342501313886194,
+          "lo": 0.18398469560206593,
+          "paths": 1000,
+          "share": 0.208
+        },
+        "4": {
+          "fails": 207,
+          "hi": 0.23320955270692445,
+          "lo": 0.18303292780085223,
+          "paths": 1000,
+          "share": 0.207
+        },
+        "5": {
+          "fails": 164,
+          "hi": 0.188227394167847,
+          "lo": 0.1423441875748594,
+          "paths": 1000,
+          "share": 0.164
+        },
+        "all": {
+          "fails": 476,
+          "hi": 0.5069867262231963,
+          "lo": 0.4451969581869969,
+          "paths": 1000,
+          "share": 0.476
+        }
+      }
+    }
+  },
+  "rules_named": [
+    "randomised"
+  ],
+  "seeds": {
+    "draws": "path seed + 50000",
+    "power": "1156*100000 + 50000 + i, i in 0..999",
+    "size": "1156*100000 + i, i in 0..1999"
+  },
+  "size": {
+    "randomised": {
+      "1": {
+        "fails": 78,
+        "hi": 0.048406085125649166,
+        "lo": 0.03136143249549649,
+        "paths": 2000,
+        "share": 0.039
+      },
+      "2": {
+        "fails": 58,
+        "hi": 0.03730545699617279,
+        "lo": 0.022500401571201624,
+        "paths": 2000,
+        "share": 0.029
+      },
+      "3": {
+        "fails": 27,
+        "hi": 0.019570793063468934,
+        "lo": 0.00929449397056005,
+        "paths": 2000,
+        "share": 0.0135
+      },
+      "4": {
+        "fails": 68,
+        "hi": 0.04287842798428472,
+        "lo": 0.026908260109975324,
+        "paths": 2000,
+        "share": 0.034
+      },
+      "5": {
+        "fails": 51,
+        "hi": 0.03337136211566671,
+        "lo": 0.019447915782887765,
+        "paths": 2000,
+        "share": 0.0255
+      },
+      "all": {
+        "fails": 46,
+        "hi": 0.03054120719579779,
+        "lo": 0.017287655939313876,
+        "paths": 2000,
+        "share": 0.023
+      }
+    },
+    "strict": {
+      "1": {
+        "fails": 2000,
+        "hi": 1.0,
+        "lo": 0.9980829526885622,
+        "paths": 2000,
+        "share": 1.0
+      },
+      "2": {
+        "fails": 1974,
+        "hi": 0.9911131044916538,
+        "lo": 0.9810196914270056,
+        "paths": 2000,
+        "share": 0.987
+      },
+      "3": {
+        "fails": 1269,
+        "hi": 0.6553288459633552,
+        "lo": 0.613155468309868,
+        "paths": 2000,
+        "share": 0.6345
+      },
+      "4": {
+        "fails": 1254,
+        "hi": 0.6479320172051695,
+        "lo": 0.6055810527777252,
+        "paths": 2000,
+        "share": 0.627
+      },
+      "5": {
+        "fails": 863,
+        "hi": 0.4533173456611654,
+        "lo": 0.40994528982050155,
+        "paths": 2000,
+        "share": 0.4315
+      },
+      "all": {
+        "fails": 2000,
+        "hi": 1.0,
+        "lo": 0.9980829526885622,
+        "paths": 2000,
+        "share": 1.0
+      }
+    },
+    "tie_counts": {
+      "1": {
+        "fails": 2000,
+        "hi": 1.0,
+        "lo": 0.9980829526885622,
+        "paths": 2000,
+        "share": 1.0
+      },
+      "2": {
+        "fails": 2000,
+        "hi": 1.0,
+        "lo": 0.9980829526885622,
+        "paths": 2000,
+        "share": 1.0
+      },
+      "3": {
+        "fails": 2000,
+        "hi": 1.0,
+        "lo": 0.9980829526885622,
+        "paths": 2000,
+        "share": 1.0
+      },
+      "4": {
+        "fails": 2000,
+        "hi": 1.0,
+        "lo": 0.9980829526885622,
+        "paths": 2000,
+        "share": 1.0
+      },
+      "5": {
+        "fails": 1996,
+        "hi": 0.9992219726983498,
+        "lo": 0.9948686481794582,
+        "paths": 2000,
+        "share": 0.998
+      },
+      "all": {
+        "fails": 2000,
+        "hi": 1.0,
+        "lo": 0.9980829526885622,
+        "paths": 2000,
+        "share": 1.0
+      }
+    }
+  }
+}

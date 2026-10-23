@@ -1,0 +1,39 @@
+{
+  "directive": 1156,
+  "hypothesis": "H1 (scoring protocol synthetic suite) and H5 step 5 (candidate choice)",
+  "tier": "development",
+  "ruling": "Eleonora, 22 October 2026, PR #1137 (comment 6354246426): answers 1, 2, 3 and 5 at their defaults; answer 4 decided by this simulation",
+  "declared_before_any_figure": true,
+  "design": {
+    "method": "thinned",
+    "family": "holm",
+    "alpha": 0.05,
+    "levels": [0.05, 0.95, 0.01, 0.99],
+    "leads": [1, 2, 3, 4, 5],
+    "rules": ["strict", "tie_counts", "randomised"],
+    "randomised_tie_probability": "coverage_tests.tie_hit_probability from the forecast's own discrete distribution",
+    "flag": "scoring_protocol.COVERAGE_REQUIREMENT_IN_FORCE is patched True inside the script only; it is never set in the tree"
+  },
+  "world": {
+    "days": 2000,
+    "target": "round(x_t) in whole bp, x_t = mu_r + a (x_{t-1} - mu_r) + e_t, e_t ~ N(0, s_r^2); the forecaster knows x_t, the regime schedule and the law, so it is calibrated by construction",
+    "a": 0.8,
+    "regimes": [
+      {"label": "calm", "days": 800, "mu": 0.0, "s": 0.6},
+      {"label": "stress", "days": 400, "mu": 2.0, "s": 1.5},
+      {"label": "ordinary", "days": 800, "mu": 0.5, "s": 1.0}
+    ],
+    "forecast_quantiles": "the integer quantile of the forecast's own discretised normal: the smallest integer k with P(Y <= k) >= level, so outcomes tie it",
+    "calendar_start": "2005-01-03 (business days; no locked day)"
+  },
+  "size": {"paths": 2000, "base_seed": 1156, "path_seed": "base_seed * 100000 + path index; the world, then the randomised draws, from random.Random(path_seed) and random.Random(path_seed + 50000)"},
+  "power": {
+    "forecaster": "too narrow: the same law with its standard deviation multiplied by the factor, quantiles and tie probabilities from the narrowed law, outcomes from the true law",
+    "factors": [0.9, 0.8, 0.7],
+    "paths": 1000,
+    "only_for": "each rule whose family-wise size is at most 0.05",
+    "note": "the factors are this declaration's choice; #961's narrow forecaster is not on main, so its width is not reproduced"
+  },
+  "interval": "Wilson 95% interval on the share of paths that fail",
+  "pass_rule": "a rule is named when the calibrated forecaster fails the family-wise requirement on no more than 0.05 of the paths (point estimate); if none does, none is named; if several do, all are named and none is chosen"
+}
