@@ -1,0 +1,5029 @@
+{
+ "declaration": "metadata/b2_pool_fallback_1155.json",
+ "draws": 10000,
+ "groups": {
+  "pooled": {
+   "all decision days": {
+    "days": 1680,
+    "metrics": {
+     "grid_crps": {
+      "means": {
+       "B1": 2.0904193082298144,
+       "B1_prime": 1.7154150419254668,
+       "B2_legacy": 2.4517213266045523,
+       "B2_pool10": 2.452371596014491,
+       "B2_pool20": 2.4175600949792937,
+       "B2_pool30": 2.4175600949792937,
+       "B2_turn": 2.5311029961180136
+      },
+      "pairs": {
+       "B2_pool10 vs B1": {
+        "benchmark_mean": 2.0904193082298144,
+        "candidate_mean": 2.452371596014493,
+        "days": 1680,
+        "difference": -0.36195228778467864,
+        "difference_interval": [
+         -0.7121221846656538,
+         0.3604273121293619
+        ],
+        "dm_p_value": 0.9361228545144025,
+        "dm_statistic": -1.5230176450224473,
+        "skill": -0.17314817479904693,
+        "skill_interval": [
+         -0.4383594298734981,
+         0.2632007419944063
+        ]
+       },
+       "B2_pool10 vs B1_prime": {
+        "benchmark_mean": 1.7154150419254668,
+        "candidate_mean": 2.4523715960144936,
+        "days": 1680,
+        "difference": -0.7369565540890268,
+        "difference_interval": [
+         -1.0507365000032247,
+         -0.47663237961756877
+        ],
+        "dm_p_value": 0.9999999929747572,
+        "dm_statistic": -5.672772393279023,
+        "skill": -0.4296083082388215,
+        "skill_interval": [
+         -0.6678206358843115,
+         -0.22655437379469975
+        ]
+       },
+       "B2_pool10 vs B2_turn": {
+        "benchmark_mean": 2.5311029961180136,
+        "candidate_mean": 2.452371596014494,
+        "days": 1680,
+        "difference": 0.07873140010351946,
+        "difference_interval": [
+         -0.0007473898521069972,
+         0.5075757526507083
+        ],
+        "dm_p_value": 0.11524543821805655,
+        "dm_statistic": 1.1990953385850514,
+        "skill": 0.03110556947870982,
+        "skill_interval": [
+         -0.0010290549147404446,
+         0.19111191379778603
+        ]
+       },
+       "B2_pool20 vs B2_turn": {
+        "benchmark_mean": 2.5311029961180136,
+        "candidate_mean": 2.4175600949792972,
+        "days": 1680,
+        "difference": 0.11354290113871628,
+        "difference_interval": [
+         0.012151001883171517,
+         0.46553446066497234
+        ],
+        "dm_p_value": 0.06880858066535434,
+        "dm_statistic": 1.48472320790884,
+        "skill": 0.04485905998802046,
+        "skill_interval": [
+         0.0038206738800833848,
+         0.17516493379067014
+        ]
+       },
+       "B2_pool30 vs B2_turn": {
+        "benchmark_mean": 2.5311029961180136,
+        "candidate_mean": 2.4175600949792972,
+        "days": 1680,
+        "difference": 0.11354290113871628,
+        "difference_interval": [
+         0.012151001883171517,
+         0.46553446066497234
+        ],
+        "dm_p_value": 0.06880858066535434,
+        "dm_statistic": 1.48472320790884,
+        "skill": 0.04485905998802046,
+        "skill_interval": [
+         0.0038206738800833848,
+         0.17516493379067014
+        ]
+       },
+       "B2_turn vs B2_legacy": {
+        "benchmark_mean": 2.4517213266045523,
+        "candidate_mean": 2.5311029961180096,
+        "days": 1680,
+        "difference": -0.07938166951345743,
+        "difference_interval": [
+         -0.40442651690259296,
+         -0.011862828977594567
+        ],
+        "dm_p_value": 0.9235866631619215,
+        "dm_statistic": -1.4296180446501616,
+        "skill": -0.0323779332716394,
+        "skill_interval": [
+         -0.16083666056981302,
+         -0.005095634370489738
+        ]
+       }
+      }
+     },
+     "upper_tail_twcrps": {
+      "means": {
+       "B1": 1.1685423892339564,
+       "B1_prime": 0.8571238783643859,
+       "B2_legacy": 1.0231074347826037,
+       "B2_pool10": 1.0265875163043445,
+       "B2_pool20": 0.9882328599896416,
+       "B2_pool30": 0.9882328599896416,
+       "B2_turn": 1.098280425983434
+      },
+      "pairs": {
+       "B2_pool10 vs B1": {
+        "benchmark_mean": 1.1685423892339564,
+        "candidate_mean": 1.02658751630435,
+        "days": 1680,
+        "difference": 0.14195487292960635,
+        "difference_interval": [
+         -0.11906054199240318,
+         1.0943975022308379
+        ],
+        "dm_p_value": 0.24516693279253143,
+        "dm_statistic": 0.6897779047812151,
+        "skill": 0.12148029394352185,
+        "skill_interval": [
+         -0.1256761919246398,
+         0.5949121925685383
+        ]
+       },
+       "B2_pool10 vs B1_prime": {
+        "benchmark_mean": 0.8571238783643859,
+        "candidate_mean": 1.0265875163043447,
+        "days": 1680,
+        "difference": -0.16946363793995883,
+        "difference_interval": [
+         -0.3077424797700624,
+         -0.049426219531731486
+        ],
+        "dm_p_value": 0.9945947937892924,
+        "dm_statistic": -2.5487682105768594,
+        "skill": -0.19771195531658656,
+        "skill_interval": [
+         -0.42258612222170855,
+         -0.023202620594193785
+        ]
+       },
+       "B2_pool10 vs B2_turn": {
+        "benchmark_mean": 1.098280425983434,
+        "candidate_mean": 1.026587516304345,
+        "days": 1680,
+        "difference": 0.0716929096790891,
+        "difference_interval": [
+         -0.006489438311898799,
+         0.8127501847557331
+        ],
+        "dm_p_value": 0.1329507499616439,
+        "dm_statistic": 1.1125505696756883,
+        "skill": 0.06527741729976938,
+        "skill_interval": [
+         -0.00995222977009555,
+         0.6690378675281272
+        ]
+       },
+       "B2_pool20 vs B2_turn": {
+        "benchmark_mean": 1.098280425983434,
+        "candidate_mean": 0.9882328599896449,
+        "days": 1680,
+        "difference": 0.11004756599378902,
+        "difference_interval": [
+         0.015319409317929078,
+         0.5758872342313637
+        ],
+        "dm_p_value": 0.06739845513510156,
+        "dm_statistic": 1.4954504964344184,
+        "skill": 0.10019987918408821,
+        "skill_interval": [
+         0.0015052033756293576,
+         0.48242250936706554
+        ]
+       },
+       "B2_pool30 vs B2_turn": {
+        "benchmark_mean": 1.098280425983434,
+        "candidate_mean": 0.9882328599896449,
+        "days": 1680,
+        "difference": 0.11004756599378902,
+        "difference_interval": [
+         0.015319409317929078,
+         0.5758872342313637
+        ],
+        "dm_p_value": 0.06739845513510156,
+        "dm_statistic": 1.4954504964344184,
+        "skill": 0.10019987918408821,
+        "skill_interval": [
+         0.0015052033756293576,
+         0.48242250936706554
+        ]
+       },
+       "B2_turn vs B2_legacy": {
+        "benchmark_mean": 1.0231074347826037,
+        "candidate_mean": 1.0982804259834325,
+        "days": 1680,
+        "difference": -0.07517299120082867,
+        "difference_interval": [
+         -0.6151702773125021,
+         -0.009510262227936828
+        ],
+        "dm_p_value": 0.9169143177540948,
+        "dm_statistic": -1.384611266776622,
+        "skill": -0.07347516853574805,
+        "skill_interval": [
+         -0.5035705631115773,
+         -0.008496919957946561
+        ]
+       }
+      }
+     }
+    }
+   }
+  },
+  "pressure_day_type": {
+   "ordinary": {
+    "days": 1440,
+    "metrics": {
+     "grid_crps": {
+      "means": {
+       "B1": 1.8076220713315225,
+       "B1_prime": 1.3939327870370348,
+       "B2_legacy": 1.999530588164251,
+       "B2_pool10": 2.0095602748590986,
+       "B2_pool20": 2.0095602748590986,
+       "B2_pool30": 2.0095602748590986,
+       "B2_turn": 2.0095602748590986
+      },
+      "pairs": {
+       "B2_pool10 vs B1": {
+        "benchmark_mean": 1.8076220713315225,
+        "candidate_mean": 2.009560274859098,
+        "days": 1440,
+        "difference": -0.20193820352757552,
+        "difference_interval": [
+         -0.5840556149662021,
+         0.6690526143199244
+        ],
+        "dm_p_value": 0.781982951687622,
+        "dm_statistic": -0.7789076849852528,
+        "skill": -0.11171483615423256,
+        "skill_interval": [
+         -0.4034979612140892,
+         0.39395315505351275
+        ]
+       },
+       "B2_pool10 vs B1_prime": {
+        "benchmark_mean": 1.3939327870370348,
+        "candidate_mean": 2.0095602748590955,
+        "days": 1440,
+        "difference": -0.6156274878220606,
+        "difference_interval": [
+         -0.9122070388854202,
+         -0.36488845758608396
+        ],
+        "dm_p_value": 0.9999996494249173,
+        "dm_statistic": -4.961044800854684,
+        "skill": -0.441647899774743,
+        "skill_interval": [
+         -0.680739018054935,
+         -0.23518207353095663
+        ]
+       },
+       "B2_pool10 vs B2_turn": {
+        "benchmark_mean": 2.0095602748590986,
+        "candidate_mean": 2.0095602748590986,
+        "days": 1440,
+        "undefined": "the daily difference has no long-run variance; it cannot be studentized"
+       },
+       "B2_pool20 vs B2_turn": {
+        "benchmark_mean": 2.0095602748590986,
+        "candidate_mean": 2.0095602748590986,
+        "days": 1440,
+        "undefined": "the daily difference has no long-run variance; it cannot be studentized"
+       },
+       "B2_pool30 vs B2_turn": {
+        "benchmark_mean": 2.0095602748590986,
+        "candidate_mean": 2.0095602748590986,
+        "days": 1440,
+        "undefined": "the daily difference has no long-run variance; it cannot be studentized"
+       },
+       "B2_turn vs B2_legacy": {
+        "benchmark_mean": 1.999530588164251,
+        "candidate_mean": 2.009560274859098,
+        "days": 1440,
+        "difference": -0.010029686694846968,
+        "difference_interval": [
+         -0.03159483537780221,
+         0.010222622843454428
+        ],
+        "dm_p_value": 0.8520561383700196,
+        "dm_statistic": -1.0452926724512077,
+        "skill": -0.005016020637151204,
+        "skill_interval": [
+         -0.015404790588553836,
+         0.005651817704903485
+        ]
+       }
+      }
+     },
+     "upper_tail_twcrps": {
+      "means": {
+       "B1": 0.9303850189965773,
+       "B1_prime": 0.5670702335950057,
+       "B2_legacy": 0.6600980233494375,
+       "B2_pool10": 0.6543030110708531,
+       "B2_pool20": 0.6543030110708531,
+       "B2_pool30": 0.6543030110708531,
+       "B2_turn": 0.6543030110708531
+      },
+      "pairs": {
+       "B2_pool10 vs B1": {
+        "benchmark_mean": 0.9303850189965773,
+        "candidate_mean": 0.6543030110708534,
+        "days": 1440,
+        "difference": 0.27608200792572385,
+        "difference_interval": [
+         -0.026935881691780794,
+         1.570979927183282
+        ],
+        "dm_p_value": 0.11654956731994637,
+        "dm_statistic": 1.192413537765783,
+        "skill": 0.2967395242708003,
+        "skill_interval": [
+         -0.039439710714738396,
+         0.9132183742772592
+        ]
+       },
+       "B2_pool10 vs B1_prime": {
+        "benchmark_mean": 0.5670702335950057,
+        "candidate_mean": 0.6543030110708518,
+        "days": 1440,
+        "difference": -0.08723277747584597,
+        "difference_interval": [
+         -0.1983271352500123,
+         0.023001737272264178
+        ],
+        "dm_p_value": 0.9280648859578504,
+        "dm_statistic": -1.4615293461518555,
+        "skill": -0.15383064091166262,
+        "skill_interval": [
+         -0.38651361029577946,
+         0.06943944775612174
+        ]
+       },
+       "B2_pool10 vs B2_turn": {
+        "benchmark_mean": 0.6543030110708531,
+        "candidate_mean": 0.6543030110708531,
+        "days": 1440,
+        "undefined": "the daily difference has no long-run variance; it cannot be studentized"
+       },
+       "B2_pool20 vs B2_turn": {
+        "benchmark_mean": 0.6543030110708531,
+        "candidate_mean": 0.6543030110708531,
+        "days": 1440,
+        "undefined": "the daily difference has no long-run variance; it cannot be studentized"
+       },
+       "B2_pool30 vs B2_turn": {
+        "benchmark_mean": 0.6543030110708531,
+        "candidate_mean": 0.6543030110708531,
+        "days": 1440,
+        "undefined": "the daily difference has no long-run variance; it cannot be studentized"
+       },
+       "B2_turn vs B2_legacy": {
+        "benchmark_mean": 0.6600980233494375,
+        "candidate_mean": 0.6543030110708545,
+        "days": 1440,
+        "difference": 0.005795012278582945,
+        "difference_interval": [
+         -0.007276269975088035,
+         0.020127950878897467
+        ],
+        "dm_p_value": 0.1838247979728358,
+        "dm_statistic": 0.9008847582144383,
+        "skill": 0.008779017772509261,
+        "skill_interval": [
+         -0.011608757563116662,
+         0.034218261552906346
+        ]
+       }
+      }
+     }
+    }
+   },
+   "quarter_end_turn": {
+    "days": 40,
+    "metrics": {
+     "grid_crps": {
+      "means": {
+       "B1": 4.046278173913048,
+       "B1_prime": 3.9431000217391357,
+       "B2_legacy": 4.8768241521739135,
+       "B2_pool10": 5.089113043478263,
+       "B2_pool20": 5.469330554347827,
+       "B2_pool30": 5.469330554347827,
+       "B2_turn": 5.071759913043474
+      },
+      "pairs": {
+       "B2_pool10 vs B1": {
+        "benchmark_mean": 4.046278173913048,
+        "candidate_mean": 5.089113043478264,
+        "days": 40,
+        "difference": -1.0428348695652159,
+        "difference_interval": [
+         -2.6112833214407782,
+         0.3347522780322292
+        ],
+        "dm_p_value": 0.9514518174260498,
+        "dm_statistic": -1.659096417106749,
+        "skill": -0.25772693441803535,
+        "skill_interval": [
+         -0.8708155007152598,
+         0.11426475301607375
+        ]
+       },
+       "B2_pool10 vs B1_prime": {
+        "benchmark_mean": 3.9431000217391357,
+        "candidate_mean": 5.089113043478264,
+        "days": 40,
+        "difference": -1.1460130217391284,
+        "difference_interval": [
+         -2.776819582457637,
+         0.19491079781835507
+        ],
+        "dm_p_value": 0.9654772847317652,
+        "dm_statistic": -1.8181223771955561,
+        "skill": -0.2906375733359334,
+        "skill_interval": [
+         -0.9359185771678633,
+         0.09402636295205341
+        ]
+       },
+       "B2_pool10 vs B2_turn": {
+        "benchmark_mean": 5.071759913043474,
+        "candidate_mean": 5.089113043478263,
+        "days": 40,
+        "difference": -0.017353130434789123,
+        "difference_interval": [
+         -2.013422173976795,
+         1.1155600765886882
+        ],
+        "dm_p_value": 0.5092646015944065,
+        "dm_statistic": -0.023225000070745273,
+        "skill": -0.0034215204844694263,
+        "skill_interval": [
+         -0.5556873579096617,
+         0.20888400888859315
+        ]
+       },
+       "B2_pool20 vs B2_turn": {
+        "benchmark_mean": 5.071759913043474,
+        "candidate_mean": 5.469330554347827,
+        "days": 40,
+        "difference": -0.3975706413043529,
+        "difference_interval": [
+         -4.149232210993242,
+         1.3678241370188813
+        ],
+        "dm_p_value": 0.6470786124695322,
+        "dm_statistic": -0.3774452090773568,
+        "skill": -0.07838908941290514,
+        "skill_interval": [
+         -1.0691262667602721,
+         0.2715239035736953
+        ]
+       },
+       "B2_pool30 vs B2_turn": {
+        "benchmark_mean": 5.071759913043474,
+        "candidate_mean": 5.469330554347827,
+        "days": 40,
+        "difference": -0.3975706413043529,
+        "difference_interval": [
+         -4.149232210993242,
+         1.3678241370188813
+        ],
+        "dm_p_value": 0.6470786124695322,
+        "dm_statistic": -0.3774452090773568,
+        "skill": -0.07838908941290514,
+        "skill_interval": [
+         -1.0691262667602721,
+         0.2715239035736953
+        ]
+       },
+       "B2_turn vs B2_legacy": {
+        "benchmark_mean": 4.8768241521739135,
+        "candidate_mean": 5.071759913043475,
+        "days": 40,
+        "difference": -0.1949357608695612,
+        "difference_interval": [
+         -1.7870880713800512,
+         0.9051270020964732
+        ],
+        "dm_p_value": 0.6038589541711775,
+        "dm_statistic": -0.26334835632564496,
+        "skill": -0.039971865867393604,
+        "skill_interval": [
+         -0.3972195272222298,
+         0.2530800652777547
+        ]
+       }
+      }
+     },
+     "upper_tail_twcrps": {
+      "means": {
+       "B1": 2.2786789347826057,
+       "B1_prime": 2.2496787608695628,
+       "B2_legacy": 2.1303641630434758,
+       "B2_pool10": 2.590310326086953,
+       "B2_pool20": 2.605943195652171,
+       "B2_pool30": 2.605943195652171,
+       "B2_turn": 2.6494390217391275
+      },
+      "pairs": {
+       "B2_pool10 vs B1": {
+        "benchmark_mean": 2.2786789347826057,
+        "candidate_mean": 2.590310326086953,
+        "days": 40,
+        "undefined": "a resampled skill has no long-run variance; it cannot be studentized"
+       },
+       "B2_pool10 vs B1_prime": {
+        "benchmark_mean": 2.2496787608695628,
+        "candidate_mean": 2.590310326086953,
+        "days": 40,
+        "undefined": "a resampled skill has no long-run variance; it cannot be studentized"
+       },
+       "B2_pool10 vs B2_turn": {
+        "benchmark_mean": 2.6494390217391275,
+        "candidate_mean": 2.590310326086953,
+        "days": 40,
+        "undefined": "a resampled benchmark scores zero; skill is undefined"
+       },
+       "B2_pool20 vs B2_turn": {
+        "benchmark_mean": 2.6494390217391275,
+        "candidate_mean": 2.605943195652171,
+        "days": 40,
+        "undefined": "a resampled benchmark scores zero; skill is undefined"
+       },
+       "B2_pool30 vs B2_turn": {
+        "benchmark_mean": 2.6494390217391275,
+        "candidate_mean": 2.605943195652171,
+        "days": 40,
+        "undefined": "a resampled benchmark scores zero; skill is undefined"
+       },
+       "B2_turn vs B2_legacy": {
+        "benchmark_mean": 2.1303641630434758,
+        "candidate_mean": 2.6494390217391275,
+        "days": 40,
+        "undefined": "a resampled skill has no long-run variance; it cannot be studentized"
+       }
+      }
+     }
+    }
+   },
+   "tax_date": {
+    "days": 83,
+    "metrics": {
+     "grid_crps": {
+      "means": {
+       "B1": 5.575991822943949,
+       "B1_prime": 5.487524892613933,
+       "B2_legacy": 7.820229004714507,
+       "B2_pool10": 7.820229004714507,
+       "B2_pool20": 6.822137867993717,
+       "B2_pool30": 6.822137867993717,
+       "B2_turn": 7.820229004714507
+      },
+      "pairs": {
+       "B2_pool10 vs B1": {
+        "benchmark_mean": 5.575991822943949,
+        "candidate_mean": 7.820229004714509,
+        "days": 83,
+        "difference": -2.24423718177056,
+        "difference_interval": [
+         -4.285676005511234,
+         -1.138133506803591
+        ],
+        "dm_p_value": 0.9998764848514248,
+        "dm_statistic": -3.6653191817900383,
+        "skill": -0.40248215080517696,
+        "skill_interval": [
+         -1.022009146675383,
+         0.5551724513496217
+        ]
+       },
+       "B2_pool10 vs B1_prime": {
+        "benchmark_mean": 5.487524892613933,
+        "candidate_mean": 7.82022900471451,
+        "days": 83,
+        "difference": -2.3327041121005774,
+        "difference_interval": [
+         -4.278150874347462,
+         -1.2513782393192887
+        ],
+        "dm_p_value": 0.9999492655357365,
+        "dm_statistic": -3.887052227262237,
+        "skill": -0.4250922151151127,
+        "skill_interval": [
+         -1.0951272556878788,
+         0.6816908228938523
+        ]
+       },
+       "B2_pool10 vs B2_turn": {
+        "benchmark_mean": 7.820229004714507,
+        "candidate_mean": 7.820229004714507,
+        "days": 83,
+        "undefined": "the daily difference has no long-run variance; it cannot be studentized"
+       },
+       "B2_pool20 vs B2_turn": {
+        "benchmark_mean": 7.820229004714507,
+        "candidate_mean": 6.822137867993711,
+        "days": 83,
+        "difference": 0.9980911367207963,
+        "difference_interval": [
+         0.32555058114256163,
+         3.52279608953004
+        ],
+        "dm_p_value": 0.011095962522348346,
+        "dm_statistic": 2.2870667883459688,
+        "skill": 0.1276294001261455,
+        "skill_interval": [
+         -0.09402572084285785,
+         0.2928736207375977
+        ]
+       },
+       "B2_pool30 vs B2_turn": {
+        "benchmark_mean": 7.820229004714507,
+        "candidate_mean": 6.822137867993711,
+        "days": 83,
+        "difference": 0.9980911367207963,
+        "difference_interval": [
+         0.32555058114256163,
+         3.52279608953004
+        ],
+        "dm_p_value": 0.011095962522348346,
+        "dm_statistic": 2.2870667883459688,
+        "skill": 0.1276294001261455,
+        "skill_interval": [
+         -0.09402572084285785,
+         0.2928736207375977
+        ]
+       },
+       "B2_turn vs B2_legacy": {
+        "benchmark_mean": 7.820229004714507,
+        "candidate_mean": 7.820229004714507,
+        "days": 83,
+        "undefined": "the daily difference has no long-run variance; it cannot be studentized"
+       }
+      }
+     },
+     "upper_tail_twcrps": {
+      "means": {
+       "B1": 4.7268433106338374,
+       "B1_prime": 4.7133423939235195,
+       "B2_legacy": 5.664726018858041,
+       "B2_pool10": 5.664726018858041,
+       "B2_pool20": 5.0863699161864835,
+       "B2_pool30": 5.0863699161864835,
+       "B2_turn": 5.664726018858041
+      },
+      "pairs": {
+       "B2_pool10 vs B1": {
+        "benchmark_mean": 4.7268433106338374,
+        "candidate_mean": 5.664726018858041,
+        "days": 83,
+        "undefined": "a resampled skill has no long-run variance; it cannot be studentized"
+       },
+       "B2_pool10 vs B1_prime": {
+        "benchmark_mean": 4.7133423939235195,
+        "candidate_mean": 5.664726018858041,
+        "days": 83,
+        "undefined": "a resampled skill has no long-run variance; it cannot be studentized"
+       },
+       "B2_pool10 vs B2_turn": {
+        "benchmark_mean": 5.664726018858041,
+        "candidate_mean": 5.664726018858041,
+        "days": 83,
+        "undefined": "the daily difference has no long-run variance; it cannot be studentized"
+       },
+       "B2_pool20 vs B2_turn": {
+        "benchmark_mean": 5.664726018858041,
+        "candidate_mean": 5.0863699161864835,
+        "days": 83,
+        "undefined": "a resampled benchmark scores zero; skill is undefined"
+       },
+       "B2_pool30 vs B2_turn": {
+        "benchmark_mean": 5.664726018858041,
+        "candidate_mean": 5.0863699161864835,
+        "days": 83,
+        "undefined": "a resampled benchmark scores zero; skill is undefined"
+       },
+       "B2_turn vs B2_legacy": {
+        "benchmark_mean": 5.664726018858041,
+        "candidate_mean": 5.664726018858041,
+        "days": 83,
+        "undefined": "the daily difference has no long-run variance; it cannot be studentized"
+       }
+      }
+     }
+    }
+   },
+   "turn": {
+    "days": 108,
+    "metrics": {
+     "grid_crps": {
+      "means": {
+       "B1": 2.407500028180354,
+       "B1_prime": 2.2039068196457325,
+       "B2_legacy": 3.219688747987116,
+       "B2_pool10": 3.18974694847021,
+       "B2_pool20": 3.2926704589371956,
+       "B2_pool30": 3.2926704589371956,
+       "B2_turn": 3.18974694847021
+      },
+      "pairs": {
+       "B2_pool10 vs B1": {
+        "benchmark_mean": 2.407500028180354,
+        "candidate_mean": 3.189746948470209,
+        "days": 108,
+        "difference": -0.7822469202898553,
+        "difference_interval": [
+         -2.03550117978511,
+         -0.017063418073492653
+        ],
+        "dm_p_value": 0.9412442294992962,
+        "dm_statistic": -1.5653044466918644,
+        "skill": -0.32492083536177413,
+        "skill_interval": [
+         -0.8203134850369103,
+         0.0014433427918463249
+        ]
+       },
+       "B2_pool10 vs B1_prime": {
+        "benchmark_mean": 2.2039068196457325,
+        "candidate_mean": 3.189746948470208,
+        "days": 108,
+        "difference": -0.9858401288244757,
+        "difference_interval": [
+         -2.5096031174148563,
+         -0.361547098484006
+        ],
+        "dm_p_value": 0.9823464778338244,
+        "dm_statistic": -2.104819255962017,
+        "skill": -0.44731479572396116,
+        "skill_interval": [
+         -0.8051211967703537,
+         -0.14501888547176428
+        ]
+       },
+       "B2_pool10 vs B2_turn": {
+        "benchmark_mean": 3.18974694847021,
+        "candidate_mean": 3.18974694847021,
+        "days": 108,
+        "undefined": "the daily difference has no long-run variance; it cannot be studentized"
+       },
+       "B2_pool20 vs B2_turn": {
+        "benchmark_mean": 3.18974694847021,
+        "candidate_mean": 3.2926704589371973,
+        "days": 108,
+        "difference": -0.10292351046698765,
+        "difference_interval": [
+         -0.7462639458175166,
+         0.8297213407744859
+        ],
+        "dm_p_value": 0.6231110364579688,
+        "dm_statistic": -0.3136617863810172,
+        "skill": -0.0322669829706552,
+        "skill_interval": [
+         -0.2567327594040884,
+         0.30657450412593473
+        ]
+       },
+       "B2_pool30 vs B2_turn": {
+        "benchmark_mean": 3.18974694847021,
+        "candidate_mean": 3.2926704589371973,
+        "days": 108,
+        "difference": -0.10292351046698765,
+        "difference_interval": [
+         -0.7462639458175166,
+         0.8297213407744859
+        ],
+        "dm_p_value": 0.6231110364579688,
+        "dm_statistic": -0.3136617863810172,
+        "skill": -0.0322669829706552,
+        "skill_interval": [
+         -0.2567327594040884,
+         0.30657450412593473
+        ]
+       },
+       "B2_turn vs B2_legacy": {
+        "benchmark_mean": 3.219688747987116,
+        "candidate_mean": 3.1897469484702086,
+        "days": 108,
+        "difference": 0.029941799516907168,
+        "difference_interval": [
+         -0.8019586295409883,
+         0.5612310162143455
+        ],
+        "dm_p_value": 0.4572946813206874,
+        "dm_statistic": 0.10725162262076769,
+        "skill": 0.009299594420617886,
+        "skill_interval": [
+         -0.37583511808469805,
+         0.1685978295285881
+        ]
+       }
+      }
+     },
+     "upper_tail_twcrps": {
+      "means": {
+       "B1": 1.2367380314009662,
+       "B1_prime": 1.2571810708534625,
+       "B2_legacy": 1.7348491103059578,
+       "B2_pool10": 1.8396362801932369,
+       "B2_pool20": 1.7607493558776173,
+       "B2_pool30": 1.7607493558776173,
+       "B2_turn": 1.8396362801932369
+      },
+      "pairs": {
+       "B2_pool10 vs B1": {
+        "benchmark_mean": 1.2367380314009662,
+        "candidate_mean": 1.8396362801932369,
+        "days": 108,
+        "undefined": "a resampled skill has no long-run variance; it cannot be studentized"
+       },
+       "B2_pool10 vs B1_prime": {
+        "benchmark_mean": 1.2571810708534625,
+        "candidate_mean": 1.8396362801932369,
+        "days": 108,
+        "undefined": "a resampled skill has no long-run variance; it cannot be studentized"
+       },
+       "B2_pool10 vs B2_turn": {
+        "benchmark_mean": 1.8396362801932369,
+        "candidate_mean": 1.8396362801932369,
+        "days": 108,
+        "undefined": "the daily difference has no long-run variance; it cannot be studentized"
+       },
+       "B2_pool20 vs B2_turn": {
+        "benchmark_mean": 1.8396362801932369,
+        "candidate_mean": 1.7607493558776173,
+        "days": 108,
+        "undefined": "a resampled benchmark scores zero; skill is undefined"
+       },
+       "B2_pool30 vs B2_turn": {
+        "benchmark_mean": 1.8396362801932369,
+        "candidate_mean": 1.7607493558776173,
+        "days": 108,
+        "undefined": "a resampled benchmark scores zero; skill is undefined"
+       },
+       "B2_turn vs B2_legacy": {
+        "benchmark_mean": 1.7348491103059578,
+        "candidate_mean": 1.8396362801932369,
+        "days": 108,
+        "undefined": "a resampled skill has no long-run variance; it cannot be studentized"
+       }
+      }
+     }
+    }
+   }
+  },
+  "regime": {
+   "2018-19": {
+    "days": 186,
+    "metrics": {
+     "grid_crps": {
+      "means": {
+       "B1": 7.288895283816421,
+       "B1_prime": 4.888795881252924,
+       "B2_legacy": 5.705508221131374,
+       "B2_pool10": 5.65982915303101,
+       "B2_pool20": 5.7266961352656995,
+       "B2_pool30": 5.7266961352656995,
+       "B2_turn": 5.968467911796789
+      },
+      "pairs": {
+       "B2_pool10 vs B1": {
+        "benchmark_mean": 7.288895283816421,
+        "candidate_mean": 5.659829153031008,
+        "days": 186,
+        "difference": 1.6290661307854137,
+        "difference_interval": [
+         -0.6828678381136111,
+         12.701792615833117
+        ],
+        "dm_p_value": 0.1613196333162077,
+        "dm_statistic": 0.9890487989780875,
+        "skill": 0.2234997303915779,
+        "skill_interval": [
+         -0.03899771777398037,
+         0.8136852627965224
+        ]
+       },
+       "B2_pool10 vs B1_prime": {
+        "benchmark_mean": 4.888795881252924,
+        "candidate_mean": 5.659829153031014,
+        "days": 186,
+        "difference": -0.7710332717780898,
+        "difference_interval": [
+         -1.690324194287885,
+         0.036038025483545844
+        ],
+        "dm_p_value": 0.9817870263610518,
+        "dm_statistic": -2.092140521104103,
+        "skill": -0.15771435144894733,
+        "skill_interval": [
+         -0.4935783391528157,
+         0.05784080881125778
+        ]
+       },
+       "B2_pool10 vs B2_turn": {
+        "benchmark_mean": 5.968467911796789,
+        "candidate_mean": 5.65982915303101,
+        "days": 186,
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+       },
+       "B2_pool20 vs B2_turn": {
+        "benchmark_mean": 5.968467911796789,
+        "candidate_mean": 5.726696135265699,
+        "days": 186,
+        "difference": 0.2417717765310901,
+        "difference_interval": [
+         -0.2260749016085209,
+         3.0328803333245875
+        ],
+        "dm_p_value": 0.25829271942308774,
+        "dm_statistic": 0.6486178130893193,
+        "skill": 0.04050818067618721,
+        "skill_interval": [
+         -0.04179109161375605,
+         0.404643170140193
+        ]
+       },
+       "B2_pool30 vs B2_turn": {
+        "benchmark_mean": 5.968467911796789,
+        "candidate_mean": 5.726696135265699,
+        "days": 186,
+        "difference": 0.2417717765310901,
+        "difference_interval": [
+         -0.2260749016085209,
+         3.0328803333245875
+        ],
+        "dm_p_value": 0.25829271942308774,
+        "dm_statistic": 0.6486178130893193,
+        "skill": 0.04050818067618721,
+        "skill_interval": [
+         -0.04179109161375605,
+         0.404643170140193
+        ]
+       },
+       "B2_turn vs B2_legacy": {
+        "benchmark_mean": 5.705508221131374,
+        "candidate_mean": 5.968467911796793,
+        "days": 186,
+        "difference": -0.26295969066541974,
+        "difference_interval": [
+         -1.8380546120975998,
+         -0.01174404533884671
+        ],
+        "dm_p_value": 0.8966567696266481,
+        "dm_statistic": -1.262729354740206,
+        "skill": -0.04608874099795376,
+        "skill_interval": [
+         -0.26415647686791305,
+         -0.0017452882956050866
+        ]
+       }
+      }
+     },
+     "upper_tail_twcrps": {
+      "means": {
+       "B1": 7.094922085865667,
+       "B1_prime": 4.749383428393329,
+       "B2_legacy": 5.397042312607138,
+       "B2_pool10": 5.340483987065605,
+       "B2_pool20": 5.39780171030076,
+       "B2_pool30": 5.39780171030076,
+       "B2_turn": 5.649882388187624
+      },
+      "pairs": {
+       "B2_pool10 vs B1": {
+        "benchmark_mean": 7.094922085865667,
+        "candidate_mean": 5.340483987065605,
+        "days": 186,
+        "difference": 1.7544380988000616,
+        "difference_interval": [
+         -0.5034690575118435,
+         13.76501314176661
+        ],
+        "dm_p_value": 0.14095988332622045,
+        "dm_statistic": 1.0760167470745168,
+        "skill": 0.24728081261036128,
+        "skill_interval": [
+         0.008876834659241384,
+         0.8215311805538612
+        ]
+       },
+       "B2_pool10 vs B1_prime": {
+        "benchmark_mean": 4.749383428393329,
+        "candidate_mean": 5.340483987065605,
+        "days": 186,
+        "difference": -0.5911005586722768,
+        "difference_interval": [
+         -1.3454627747215775,
+         0.10782398093314416
+        ],
+        "dm_p_value": 0.9662915743597692,
+        "dm_statistic": -1.828884909942334,
+        "skill": -0.1244583781419898,
+        "skill_interval": [
+         -0.3804627732183815,
+         0.046278625569341356
+        ]
+       },
+       "B2_pool10 vs B2_turn": {
+        "benchmark_mean": 5.649882388187624,
+        "candidate_mean": 5.340483987065605,
+        "days": 186,
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+       },
+       "B2_pool20 vs B2_turn": {
+        "benchmark_mean": 5.649882388187624,
+        "candidate_mean": 5.397801710300761,
+        "days": 186,
+        "difference": 0.25208067788686356,
+        "difference_interval": [
+         -0.20933290923031417,
+         3.1826308060320403
+        ],
+        "dm_p_value": 0.24760881008994717,
+        "dm_statistic": 0.6820337341734888,
+        "skill": 0.04461697794168177,
+        "skill_interval": [
+         -0.04126658240289562,
+         0.4509173374361594
+        ]
+       },
+       "B2_pool30 vs B2_turn": {
+        "benchmark_mean": 5.649882388187624,
+        "candidate_mean": 5.397801710300761,
+        "days": 186,
+        "difference": 0.25208067788686356,
+        "difference_interval": [
+         -0.20933290923031417,
+         3.1826308060320403
+        ],
+        "dm_p_value": 0.24760881008994717,
+        "dm_statistic": 0.6820337341734888,
+        "skill": 0.04461697794168177,
+        "skill_interval": [
+         -0.04126658240289562,
+         0.4509173374361594
+        ]
+       },
+       "B2_turn vs B2_legacy": {
+        "benchmark_mean": 5.397042312607138,
+        "candidate_mean": 5.649882388187628,
+        "days": 186,
+        "difference": -0.25284007558048927,
+        "difference_interval": [
+         -1.9983253661728857,
+         -0.0029629369634490144
+        ],
+        "dm_p_value": 0.8875291944528749,
+        "dm_statistic": -1.2134924189125587,
+        "skill": -0.046847895742798115,
+        "skill_interval": [
+         -0.2913770853337439,
+         7.0849771362895e-05
+        ]
+       }
+      }
+     }
+    }
+   },
+   "2020": {
+    "days": 251,
+    "metrics": {
+     "grid_crps": {
+      "means": {
+       "B1": 1.648172250129914,
+       "B1_prime": 1.614541907153993,
+       "B2_legacy": 2.796917069114848,
+       "B2_pool10": 2.8228470795080556,
+       "B2_pool20": 2.4922872354062022,
+       "B2_pool30": 2.4922872354062022,
+       "B2_turn": 3.1413407465789027
+      },
+      "pairs": {
+       "B2_pool10 vs B1": {
+        "benchmark_mean": 1.648172250129914,
+        "candidate_mean": 2.822847079508054,
+        "days": 251,
+        "difference": -1.1746748293781397,
+        "difference_interval": [
+         -2.8297393568532074,
+         -0.31642028580720694
+        ],
+        "dm_p_value": 0.993826993488845,
+        "dm_statistic": -2.502096895395577,
+        "skill": -0.7127136312879605,
+        "skill_interval": [
+         -1.7874757126063079,
+         0.051002027550437146
+        ]
+       },
+       "B2_pool10 vs B1_prime": {
+        "benchmark_mean": 1.614541907153993,
+        "candidate_mean": 2.822847079508054,
+        "days": 251,
+        "difference": -1.2083051723540605,
+        "difference_interval": [
+         -2.7554037865947567,
+         -0.3337238605576498
+        ],
+        "dm_p_value": 0.9943022588088057,
+        "dm_statistic": -2.530331441535416,
+        "skill": -0.748388856925975,
+        "skill_interval": [
+         -1.842629601629295,
+         0.1823987290108794
+        ]
+       },
+       "B2_pool10 vs B2_turn": {
+        "benchmark_mean": 3.1413407465789027,
+        "candidate_mean": 2.8228470795080556,
+        "days": 251,
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+       },
+       "B2_pool20 vs B2_turn": {
+        "benchmark_mean": 3.1413407465789027,
+        "candidate_mean": 2.4922872354062022,
+        "days": 251,
+        "difference": 0.6490535111727006,
+        "difference_interval": [
+         0.3270699703644076,
+         1.8904152699771122
+        ],
+        "dm_p_value": 0.008021220551746033,
+        "dm_statistic": 2.4079485627717876,
+        "skill": 0.2066167167250342,
+        "skill_interval": [
+         0.1072438562671986,
+         0.465494679611723
+        ]
+       },
+       "B2_pool30 vs B2_turn": {
+        "benchmark_mean": 3.1413407465789027,
+        "candidate_mean": 2.4922872354062022,
+        "days": 251,
+        "difference": 0.6490535111727006,
+        "difference_interval": [
+         0.3270699703644076,
+         1.8904152699771122
+        ],
+        "dm_p_value": 0.008021220551746033,
+        "dm_statistic": 2.4079485627717876,
+        "skill": 0.2066167167250342,
+        "skill_interval": [
+         0.1072438562671986,
+         0.465494679611723
+        ]
+       },
+       "B2_turn vs B2_legacy": {
+        "benchmark_mean": 2.796917069114848,
+        "candidate_mean": 3.141340746578905,
+        "days": 251,
+        "difference": -0.3444236774640568,
+        "difference_interval": [
+         -2.4923968196846844,
+         -0.04154634963593706
+        ],
+        "dm_p_value": 0.9102099601970399,
+        "dm_statistic": -1.3420490889740406,
+        "skill": -0.12314404358548177,
+        "skill_interval": [
+         -0.9289279156346599,
+         -0.01348146573971798
+        ]
+       }
+      }
+     },
+     "upper_tail_twcrps": {
+      "means": {
+       "B1": 0.7401172024943706,
+       "B1_prime": 0.7642361579767888,
+       "B2_legacy": 1.2190859501125924,
+       "B2_pool10": 1.241551125931057,
+       "B2_pool20": 0.9590055984756638,
+       "B2_pool30": 0.9590055984756638,
+       "B2_turn": 1.5467398215832302
+      },
+      "pairs": {
+       "B2_pool10 vs B1": {
+        "benchmark_mean": 0.7401172024943706,
+        "candidate_mean": 1.2415511259310588,
+        "days": 251,
+        "difference": -0.501433923436688,
+        "difference_interval": [
+         -0.9289504749108752,
+         0.06917953905809981
+        ],
+        "dm_p_value": 0.979731068156653,
+        "dm_statistic": -2.0482259620123586,
+        "skill": -0.6775061054475382,
+        "skill_interval": [
+         -2.2895689270485877,
+         1.0286357835906683
+        ]
+       },
+       "B2_pool10 vs B1_prime": {
+        "benchmark_mean": 0.7642361579767888,
+        "candidate_mean": 1.2415511259310583,
+        "days": 251,
+        "difference": -0.4773149679542695,
+        "difference_interval": [
+         -0.9306846125581936,
+         0.19199353843716888
+        ],
+        "dm_p_value": 0.9628654158708423,
+        "dm_statistic": -1.7849515975910086,
+        "skill": -0.6245647539340403,
+        "skill_interval": [
+         -2.3602951543361756,
+         1.0268138107351565
+        ]
+       },
+       "B2_pool10 vs B2_turn": {
+        "benchmark_mean": 1.5467398215832302,
+        "candidate_mean": 1.241551125931057,
+        "days": 251,
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+       },
+       "B2_pool20 vs B2_turn": {
+        "benchmark_mean": 1.5467398215832302,
+        "candidate_mean": 0.9590055984756601,
+        "days": 251,
+        "difference": 0.5877342231075701,
+        "difference_interval": [
+         0.28255876706547306,
+         1.8540162160648275
+        ],
+        "dm_p_value": 0.012776385104129817,
+        "dm_statistic": 2.232941988062113,
+        "skill": 0.3799826027017072,
+        "skill_interval": [
+         0.17194581259164415,
+         0.7351855747534297
+        ]
+       },
+       "B2_pool30 vs B2_turn": {
+        "benchmark_mean": 1.5467398215832302,
+        "candidate_mean": 0.9590055984756601,
+        "days": 251,
+        "difference": 0.5877342231075701,
+        "difference_interval": [
+         0.28255876706547306,
+         1.8540162160648275
+        ],
+        "dm_p_value": 0.012776385104129817,
+        "dm_statistic": 2.232941988062113,
+        "skill": 0.3799826027017072,
+        "skill_interval": [
+         0.17194581259164415,
+         0.7351855747534297
+        ]
+       },
+       "B2_turn vs B2_legacy": {
+        "benchmark_mean": 1.2190859501125924,
+        "candidate_mean": 1.5467398215832313,
+        "days": 251,
+        "difference": -0.32765387147063907,
+        "difference_interval": [
+         -2.7615058440743967,
+         -0.025147417461559463
+        ],
+        "dm_p_value": 0.9007974823919518,
+        "dm_statistic": -1.2861089666346923,
+        "skill": -0.2687701153806076,
+        "skill_interval": [
+         -2.241767948059404,
+         -0.020867532945924555
+        ]
+       }
+      }
+     }
+    }
+   },
+   "2021-23": {
+    "days": 748,
+    "metrics": {
+     "grid_crps": {
+      "means": {
+       "B1": 0.6974374290862606,
+       "B1_prime": 0.6638472105324369,
+       "B2_legacy": 1.4652657149500106,
+       "B2_pool10": 1.4565732120437056,
+       "B2_pool20": 1.421460976517084,
+       "B2_pool30": 1.421460976517084,
+       "B2_turn": 1.4903037311090395
+      },
+      "pairs": {
+       "B2_pool10 vs B1": {
+        "benchmark_mean": 0.6974374290862606,
+        "candidate_mean": 1.456573212043708,
+        "days": 748,
+        "difference": -0.7591357829574473,
+        "difference_interval": [
+         -1.1252432123217733,
+         -0.4791762843410375
+        ],
+        "dm_p_value": 0.9999999912069644,
+        "dm_statistic": -5.6342118691862755,
+        "skill": -1.0884643572284614,
+        "skill_interval": [
+         -1.7047292034542074,
+         -0.6382022560064324
+        ]
+       },
+       "B2_pool10 vs B1_prime": {
+        "benchmark_mean": 0.6638472105324369,
+        "candidate_mean": 1.4565732120437072,
+        "days": 748,
+        "difference": -0.7927260015112704,
+        "difference_interval": [
+         -1.1501657553560407,
+         -0.5160468144474983
+        ],
+        "dm_p_value": 0.9999999984403833,
+        "dm_statistic": -5.925196942326263,
+        "skill": -1.1941392370624961,
+        "skill_interval": [
+         -1.8270954800262629,
+         -0.7022597592426687
+        ]
+       },
+       "B2_pool10 vs B2_turn": {
+        "benchmark_mean": 1.4903037311090395,
+        "candidate_mean": 1.456573212043706,
+        "days": 748,
+        "difference": 0.033730519065333524,
+        "difference_interval": [
+         0.006277074829380121,
+         0.13458193372501054
+        ],
+        "dm_p_value": 0.06569866637598099,
+        "dm_statistic": 1.508614475518415,
+        "skill": 0.022633318538518507,
+        "skill_interval": [
+         0.003403277156349277,
+         0.09148129179961574
+        ]
+       },
+       "B2_pool20 vs B2_turn": {
+        "benchmark_mean": 1.4903037311090395,
+        "candidate_mean": 1.421460976517084,
+        "days": 748,
+        "difference": 0.06884275459195538,
+        "difference_interval": [
+         0.03756297189467401,
+         0.13828699638567588
+        ],
+        "dm_p_value": 0.0020284346872696535,
+        "dm_statistic": 2.8737055931843227,
+        "skill": 0.046193774567500186,
+        "skill_interval": [
+         0.025926765513513,
+         0.09040780784552832
+        ]
+       },
+       "B2_pool30 vs B2_turn": {
+        "benchmark_mean": 1.4903037311090395,
+        "candidate_mean": 1.421460976517084,
+        "days": 748,
+        "difference": 0.06884275459195538,
+        "difference_interval": [
+         0.03756297189467401,
+         0.13828699638567588
+        ],
+        "dm_p_value": 0.0020284346872696535,
+        "dm_statistic": 2.8737055931843227,
+        "skill": 0.046193774567500186,
+        "skill_interval": [
+         0.025926765513513,
+         0.09040780784552832
+        ]
+       },
+       "B2_turn vs B2_legacy": {
+        "benchmark_mean": 1.4652657149500106,
+        "candidate_mean": 1.4903037311090432,
+        "days": 748,
+        "difference": -0.025038016159032752,
+        "difference_interval": [
+         -0.10877321559342373,
+         0.002157288379164582
+        ],
+        "dm_p_value": 0.867679231160886,
+        "dm_statistic": -1.1154875803070403,
+        "skill": -0.01708769672529119,
+        "skill_interval": [
+         -0.07573938908411028,
+         0.001781046222318984
+        ]
+       }
+      }
+     },
+     "upper_tail_twcrps": {
+      "means": {
+       "B1": 0.008939176935596349,
+       "B1_prime": 0.007041113113229486,
+       "B2_legacy": 0.0030598918856079944,
+       "B2_pool10": 0.0028842728435247533,
+       "B2_pool20": 0.00302745931178795,
+       "B2_pool30": 0.00302745931178795,
+       "B2_turn": 0.0029318205068588617
+      },
+      "pairs": {
+       "B2_pool10 vs B1": {
+        "benchmark_mean": 0.008939176935596349,
+        "candidate_mean": 0.002884272843524758,
+        "days": 748,
+        "difference": 0.006054904092071591,
+        "difference_interval": [
+         0.00218328189105087,
+         0.025162685890387157
+        ],
+        "dm_p_value": 0.010494520723007161,
+        "dm_statistic": 2.308181540269989,
+        "skill": 0.6773446969105839,
+        "skill_interval": [
+         0.47872870838154946,
+         0.7779398935010835
+        ]
+       },
+       "B2_pool10 vs B1_prime": {
+        "benchmark_mean": 0.007041113113229486,
+        "candidate_mean": 0.0028842728435247633,
+        "days": 748,
+        "difference": 0.004156840269704722,
+        "difference_interval": [
+         0.001059983277036495,
+         0.01889185493210084
+        ],
+        "dm_p_value": 0.021345473951465133,
+        "dm_statistic": 2.026721055587715,
+        "skill": 0.5903669210901429,
+        "skill_interval": [
+         0.39954186705617833,
+         0.7301057981093695
+        ]
+       },
+       "B2_pool10 vs B2_turn": {
+        "benchmark_mean": 0.0029318205068588617,
+        "candidate_mean": 0.0028842728435247533,
+        "days": 748,
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+       },
+       "B2_pool20 vs B2_turn": {
+        "benchmark_mean": 0.0029318205068588617,
+        "candidate_mean": 0.003027459311787948,
+        "days": 748,
+        "difference": -9.563880492908639e-05,
+        "difference_interval": [
+         -0.000295524009768758,
+         2.074689778334496e-05
+        ],
+        "dm_p_value": 0.8843451365380535,
+        "dm_statistic": -1.1969918614799775,
+        "skill": -0.032620961858116394,
+        "skill_interval": [
+         -0.07392768981111639,
+         -0.0015261224264137563
+        ]
+       },
+       "B2_pool30 vs B2_turn": {
+        "benchmark_mean": 0.0029318205068588617,
+        "candidate_mean": 0.003027459311787948,
+        "days": 748,
+        "difference": -9.563880492908639e-05,
+        "difference_interval": [
+         -0.000295524009768758,
+         2.074689778334496e-05
+        ],
+        "dm_p_value": 0.8843451365380535,
+        "dm_statistic": -1.1969918614799775,
+        "skill": -0.032620961858116394,
+        "skill_interval": [
+         -0.07392768981111639,
+         -0.0015261224264137563
+        ]
+       },
+       "B2_turn vs B2_legacy": {
+        "benchmark_mean": 0.0030598918856079944,
+        "candidate_mean": 0.002931820506858873,
+        "days": 748,
+        "difference": 0.00012807137874912158,
+        "difference_interval": [
+         2.429805641727938e-05,
+         0.0002391577778658558
+        ],
+        "dm_p_value": 0.028508413521236564,
+        "dm_statistic": 1.9031818007164374,
+        "skill": 0.04185487054346499,
+        "skill_interval": [
+         0.005432122969135325,
+         0.08150878964245106
+        ]
+       }
+      }
+     }
+    }
+   },
+   "2024": {
+    "days": 250,
+    "metrics": {
+     "grid_crps": {
+      "means": {
+       "B1": 1.6131278313043511,
+       "B1_prime": 1.3761891165217406,
+       "B2_legacy": 1.39437394086957,
+       "B2_pool10": 1.3942299965217433,
+       "B2_pool20": 1.454675038260874,
+       "B2_pool30": 1.454675038260874,
+       "B2_turn": 1.3821760313043518
+      },
+      "pairs": {
+       "B2_pool10 vs B1": {
+        "benchmark_mean": 1.6131278313043511,
+        "candidate_mean": 1.3942299965217435,
+        "days": 250,
+        "difference": 0.21889783478260752,
+        "difference_interval": [
+         -0.047137541356994134,
+         0.616469832742962
+        ],
+        "dm_p_value": 0.09167297353322212,
+        "dm_statistic": 1.3305232017220845,
+        "skill": 0.13569776091806066,
+        "skill_interval": [
+         -0.027664702089050336,
+         0.3022973192646887
+        ]
+       },
+       "B2_pool10 vs B1_prime": {
+        "benchmark_mean": 1.3761891165217406,
+        "candidate_mean": 1.3942299965217426,
+        "days": 250,
+        "difference": -0.01804088000000211,
+        "difference_interval": [
+         -0.254465029658893,
+         0.2576058667885891
+        ],
+        "dm_p_value": 0.5558448066180677,
+        "dm_statistic": -0.14044249199342954,
+        "skill": -0.013109302917319727,
+        "skill_interval": [
+         -0.20814990554746926,
+         0.16891341593873244
+        ]
+       },
+       "B2_pool10 vs B2_turn": {
+        "benchmark_mean": 1.3821760313043518,
+        "candidate_mean": 1.3942299965217433,
+        "days": 250,
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+       },
+       "B2_pool20 vs B2_turn": {
+        "benchmark_mean": 1.3821760313043518,
+        "candidate_mean": 1.4546750382608744,
+        "days": 250,
+        "difference": -0.07249900695652257,
+        "difference_interval": [
+         -0.12106286616147766,
+         -0.03422632898824248
+        ],
+        "dm_p_value": 0.9921453820157935,
+        "dm_statistic": -2.4156016739212176,
+        "skill": -0.052452802909702945,
+        "skill_interval": [
+         -0.08173543837505329,
+         -0.02185135365568443
+        ]
+       },
+       "B2_pool30 vs B2_turn": {
+        "benchmark_mean": 1.3821760313043518,
+        "candidate_mean": 1.4546750382608744,
+        "days": 250,
+        "difference": -0.07249900695652257,
+        "difference_interval": [
+         -0.12106286616147766,
+         -0.03422632898824248
+        ],
+        "dm_p_value": 0.9921453820157935,
+        "dm_statistic": -2.4156016739212176,
+        "skill": -0.052452802909702945,
+        "skill_interval": [
+         -0.08173543837505329,
+         -0.02185135365568443
+        ]
+       },
+       "B2_turn vs B2_legacy": {
+        "benchmark_mean": 1.39437394086957,
+        "candidate_mean": 1.3821760313043523,
+        "days": 250,
+        "difference": 0.01219790956521759,
+        "difference_interval": [
+         -0.016903474199563347,
+         0.04209027524852374
+        ],
+        "dm_p_value": 0.24546040296298766,
+        "dm_statistic": 0.688845012541032,
+        "skill": 0.008747947166604849,
+        "skill_interval": [
+         -0.015551206003041497,
+         0.03399939092006931
+        ]
+       }
+      }
+     },
+     "upper_tail_twcrps": {
+      "means": {
+       "B1": 0.280454740869564,
+       "B1_prime": 0.20756561739130344,
+       "B2_legacy": 0.1964287304347819,
+       "B2_pool10": 0.2039999999999992,
+       "B2_pool20": 0.2031147408695644,
+       "B2_pool30": 0.2031147408695644,
+       "B2_turn": 0.2039999999999992
+      },
+      "pairs": {
+       "B2_pool10 vs B1": {
+        "benchmark_mean": 0.280454740869564,
+        "candidate_mean": 0.2039999999999992,
+        "days": 250,
+        "undefined": "a resampled skill has no long-run variance; it cannot be studentized"
+       },
+       "B2_pool10 vs B1_prime": {
+        "benchmark_mean": 0.20756561739130344,
+        "candidate_mean": 0.2039999999999992,
+        "days": 250,
+        "undefined": "a resampled skill has no long-run variance; it cannot be studentized"
+       },
+       "B2_pool10 vs B2_turn": {
+        "benchmark_mean": 0.2039999999999992,
+        "candidate_mean": 0.2039999999999992,
+        "days": 250,
+        "undefined": "the daily difference has no long-run variance; it cannot be studentized"
+       },
+       "B2_pool20 vs B2_turn": {
+        "benchmark_mean": 0.2039999999999992,
+        "candidate_mean": 0.2031147408695644,
+        "days": 250,
+        "undefined": "a resampled benchmark scores zero; skill is undefined"
+       },
+       "B2_pool30 vs B2_turn": {
+        "benchmark_mean": 0.2039999999999992,
+        "candidate_mean": 0.2031147408695644,
+        "days": 250,
+        "undefined": "a resampled benchmark scores zero; skill is undefined"
+       },
+       "B2_turn vs B2_legacy": {
+        "benchmark_mean": 0.1964287304347819,
+        "candidate_mean": 0.2039999999999992,
+        "days": 250,
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+       }
+      }
+     }
+    }
+   },
+   "2025-26": {
+    "days": 249,
+    "metrics": {
+     "grid_crps": {
+      "means": {
+       "B1": 3.3570950599499456,
+       "B1_prime": 2.993058466329085,
+       "B2_legacy": 3.7757804260520405,
+       "B2_pool10": 3.814233117979172,
+       "B2_pool20": 3.9296003294336823,
+       "B2_pool30": 3.9296003294336823,
+       "B2_turn": 3.7159457633432353
+      },
+      "pairs": {
+       "B2_pool10 vs B1": {
+        "benchmark_mean": 3.3570950599499456,
+        "candidate_mean": 3.8142331179791706,
+        "days": 249,
+        "difference": -0.4571380580292251,
+        "difference_interval": [
+         -1.7949480959713042,
+         0.4382301686104108
+        ],
+        "dm_p_value": 0.829919323676984,
+        "dm_statistic": -0.9538464903398671,
+        "skill": -0.13617072196818908,
+        "skill_interval": [
+         -0.5202172778664891,
+         0.13037720516924262
+        ]
+       },
+       "B2_pool10 vs B1_prime": {
+        "benchmark_mean": 2.993058466329085,
+        "candidate_mean": 3.8142331179791698,
+        "days": 249,
+        "difference": -0.8211746516500847,
+        "difference_interval": [
+         -2.470579074707297,
+         0.17547913101712898
+        ],
+        "dm_p_value": 0.948191071932999,
+        "dm_statistic": -1.6275616983559655,
+        "skill": -0.2743597096040813,
+        "skill_interval": [
+         -0.7531124451825582,
+         0.048501642044107285
+        ]
+       },
+       "B2_pool10 vs B2_turn": {
+        "benchmark_mean": 3.7159457633432353,
+        "candidate_mean": 3.814233117979172,
+        "days": 249,
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+       },
+       "B2_pool20 vs B2_turn": {
+        "benchmark_mean": 3.7159457633432353,
+        "candidate_mean": 3.929600329433684,
+        "days": 249,
+        "difference": -0.2136545660904487,
+        "difference_interval": [
+         -0.3868373184526481,
+         -0.11234060311936904
+        ],
+        "dm_p_value": 0.9949991543083152,
+        "dm_statistic": -2.575770822012372,
+        "skill": -0.05749668582305242,
+        "skill_interval": [
+         -0.11149984588743254,
+         -0.02240348306061305
+        ]
+       },
+       "B2_pool30 vs B2_turn": {
+        "benchmark_mean": 3.7159457633432353,
+        "candidate_mean": 3.929600329433684,
+        "days": 249,
+        "difference": -0.2136545660904487,
+        "difference_interval": [
+         -0.3868373184526481,
+         -0.11234060311936904
+        ],
+        "dm_p_value": 0.9949991543083152,
+        "dm_statistic": -2.575770822012372,
+        "skill": -0.05749668582305242,
+        "skill_interval": [
+         -0.11149984588743254,
+         -0.02240348306061305
+        ]
+       },
+       "B2_turn vs B2_legacy": {
+        "benchmark_mean": 3.7757804260520405,
+        "candidate_mean": 3.7159457633432345,
+        "days": 249,
+        "difference": 0.05983466270880598,
+        "difference_interval": [
+         0.0068562229012838274,
+         0.12532590694416296
+        ],
+        "dm_p_value": 0.07413297688003384,
+        "dm_statistic": 1.4456836446920496,
+        "skill": 0.015846965648733224,
+        "skill_interval": [
+         -0.0026135167707479166,
+         0.03767246068703121
+        ]
+       }
+      }
+     },
+     "upper_tail_twcrps": {
+      "means": {
+       "B1": 1.6025722203305934,
+       "B1_prime": 1.3091246184738916,
+       "B2_legacy": 1.5392793731447518,
+       "B2_pool10": 1.568301342762353,
+       "B2_pool20": 1.570441843897327,
+       "B2_pool30": 1.570441843897327,
+       "B2_turn": 1.5274993591758328
+      },
+      "pairs": {
+       "B2_pool10 vs B1": {
+        "benchmark_mean": 1.6025722203305934,
+        "candidate_mean": 1.5683013427623522,
+        "days": 249,
+        "difference": 0.03427087756824125,
+        "difference_interval": [
+         -0.43950215380549135,
+         0.3357759635822379
+        ],
+        "dm_p_value": 0.44158427529015376,
+        "dm_statistic": 0.1469537189122433,
+        "skill": 0.02138491927756712,
+        "skill_interval": [
+         -0.369555288800024,
+         0.2254929599275706
+        ]
+       },
+       "B2_pool10 vs B1_prime": {
+        "benchmark_mean": 1.3091246184738916,
+        "candidate_mean": 1.5683013427623522,
+        "days": 249,
+        "difference": -0.2591767242884607,
+        "difference_interval": [
+         -1.244391304766412,
+         0.06157625087794716
+        ],
+        "dm_p_value": 0.8581659289203152,
+        "dm_statistic": -1.072115534708948,
+        "skill": -0.197977121987512,
+        "skill_interval": [
+         -0.660935934388287,
+         0.028022703594404286
+        ]
+       },
+       "B2_pool10 vs B2_turn": {
+        "benchmark_mean": 1.5274993591758328,
+        "candidate_mean": 1.568301342762353,
+        "days": 249,
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+       },
+       "B2_pool20 vs B2_turn": {
+        "benchmark_mean": 1.5274993591758328,
+        "candidate_mean": 1.5704418438973275,
+        "days": 249,
+        "difference": -0.04294248472149469,
+        "difference_interval": [
+         -0.14741206453786784,
+         0.01754468132802861
+        ],
+        "dm_p_value": 0.8212922296790518,
+        "dm_statistic": -0.920300896661026,
+        "skill": -0.0281129314153457,
+        "skill_interval": [
+         -0.10988643064302095,
+         0.02184849592023153
+        ]
+       },
+       "B2_pool30 vs B2_turn": {
+        "benchmark_mean": 1.5274993591758328,
+        "candidate_mean": 1.5704418438973275,
+        "days": 249,
+        "difference": -0.04294248472149469,
+        "difference_interval": [
+         -0.14741206453786784,
+         0.01754468132802861
+        ],
+        "dm_p_value": 0.8212922296790518,
+        "dm_statistic": -0.920300896661026,
+        "skill": -0.0281129314153457,
+        "skill_interval": [
+         -0.10988643064302095,
+         0.02184849592023153
+        ]
+       },
+       "B2_turn vs B2_legacy": {
+        "benchmark_mean": 1.5392793731447518,
+        "candidate_mean": 1.5274993591758326,
+        "days": 249,
+        "difference": 0.011780013968919168,
+        "difference_interval": [
+         -0.014532310262698944,
+         0.05668183595534205
+        ],
+        "dm_p_value": 0.2844388363404158,
+        "dm_statistic": 0.569705185117298,
+        "skill": 0.007652940833510013,
+        "skill_interval": [
+         -0.012409694039238825,
+         0.038493512414087896
+        ]
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ "hits": {
+  "kinds": {
+   "band50": 0.5,
+   "band90": 0.1,
+   "q95": 0.05
+  },
+  "rows": {
+   "B1": {
+    "above": {
+     "band50": {
+      "pooled": {
+       "hits": 3921,
+       "kupiec_p": 1.1254344932762875e-09,
+       "n": 8400,
+       "rate": 0.4667857142857143
+      },
+      "pressure_day_type/ordinary": {
+       "hits": 3236,
+       "kupiec_p": 4.19772239583763e-17,
+       "n": 7184,
+       "rate": 0.45044543429844097
+      },
+      "pressure_day_type/quarter_end_turn": {
+       "hits": 128,
+       "kupiec_p": 6.707596205230165e-05,
+       "n": 200,
+       "rate": 0.64
+      },
+      "pressure_day_type/tax_date": {
+       "hits": 197,
+       "kupiec_p": 0.30250817063199953,
+       "n": 415,
+       "rate": 0.4746987951807229
+      },
+      "pressure_day_type/turn": {
+       "hits": 329,
+       "kupiec_p": 3.4240618991339983e-07,
+       "n": 540,
+       "rate": 0.6092592592592593
+      },
+      "pressure_day_type/year_end": {
+       "hits": 31,
+       "kupiec_p": 0.8981175178269302,
+       "n": 61,
+       "rate": 0.5081967213114754
+      },
+      "regime/2018-19": {
+       "hits": 482,
+       "kupiec_p": 0.14680387136521192,
+       "n": 920,
+       "rate": 0.5239130434782608
+      },
+      "regime/2020": {
+       "hits": 254,
+       "kupiec_p": 2.020247507811074e-105,
+       "n": 1255,
+       "rate": 0.20239043824701194
+      },
+      "regime/2021-23": {
+       "hits": 1530,
+       "kupiec_p": 7.145402497987381e-29,
+       "n": 3740,
+       "rate": 0.4090909090909091
+      },
+      "regime/2024": {
+       "hits": 709,
+       "kupiec_p": 1.945958550439092e-06,
+       "n": 1250,
+       "rate": 0.5672
+      },
+      "regime/2025-26": {
+       "hits": 946,
+       "kupiec_p": 4.590679105491527e-82,
+       "n": 1235,
+       "rate": 0.7659919028340081
+      }
+     },
+     "band90": {
+      "pooled": {
+       "hits": 1315,
+       "kupiec_p": 2.5257227411879033e-58,
+       "n": 8400,
+       "rate": 0.15654761904761905
+      },
+      "pressure_day_type/ordinary": {
+       "hits": 997,
+       "kupiec_p": 2.1276864605965955e-25,
+       "n": 7184,
+       "rate": 0.13878062360801782
+      },
+      "pressure_day_type/quarter_end_turn": {
+       "hits": 85,
+       "kupiec_p": 6.0872036699958486e-33,
+       "n": 200,
+       "rate": 0.425
+      },
+      "pressure_day_type/tax_date": {
+       "hits": 79,
+       "kupiec_p": 3.153011246502506e-08,
+       "n": 415,
+       "rate": 0.19036144578313252
+      },
+      "pressure_day_type/turn": {
+       "hits": 137,
+       "kupiec_p": 1.8738839102202823e-24,
+       "n": 540,
+       "rate": 0.2537037037037037
+      },
+      "pressure_day_type/year_end": {
+       "hits": 17,
+       "kupiec_p": 8.833605480394379e-05,
+       "n": 61,
+       "rate": 0.2786885245901639
+      },
+      "regime/2018-19": {
+       "hits": 169,
+       "kupiec_p": 1.6298753801129508e-14,
+       "n": 920,
+       "rate": 0.18369565217391304
+      },
+      "regime/2020": {
+       "hits": 32,
+       "kupiec_p": 4.287860973257504e-25,
+       "n": 1255,
+       "rate": 0.02549800796812749
+      },
+      "regime/2021-23": {
+       "hits": 431,
+       "kupiec_p": 0.002358284672103732,
+       "n": 3740,
+       "rate": 0.11524064171122994
+      },
+      "regime/2024": {
+       "hits": 287,
+       "kupiec_p": 1.5981161174885515e-40,
+       "n": 1250,
+       "rate": 0.2296
+      },
+      "regime/2025-26": {
+       "hits": 396,
+       "kupiec_p": 4.66160196383248e-100,
+       "n": 1235,
+       "rate": 0.32064777327935223
+      }
+     },
+     "q95": {
+      "pooled": {
+       "hits": 689,
+       "kupiec_p": 3.355932844223032e-35,
+       "n": 8400,
+       "rate": 0.08202380952380953
+      },
+      "pressure_day_type/ordinary": {
+       "hits": 410,
+       "kupiec_p": 0.007102416966741847,
+       "n": 7184,
+       "rate": 0.057071269487750556
+      },
+      "pressure_day_type/quarter_end_turn": {
+       "hits": 82,
+       "kupiec_p": 1.5661833405971374e-52,
+       "n": 200,
+       "rate": 0.41
+      },
+      "pressure_day_type/tax_date": {
+       "hits": 49,
+       "kupiec_p": 4.831428868445488e-08,
+       "n": 415,
+       "rate": 0.1180722891566265
+      },
+      "pressure_day_type/turn": {
+       "hits": 134,
+       "kupiec_p": 5.337920056693874e-54,
+       "n": 540,
+       "rate": 0.24814814814814815
+      },
+      "pressure_day_type/year_end": {
+       "hits": 14,
+       "kupiec_p": 1.6344527325292656e-06,
+       "n": 61,
+       "rate": 0.22950819672131148
+      },
+      "regime/2018-19": {
+       "hits": 81,
+       "kupiec_p": 1.5527337187867883e-06,
+       "n": 920,
+       "rate": 0.08804347826086957
+      },
+      "regime/2020": {
+       "hits": 17,
+       "kupiec_p": 2.7894035542727795e-12,
+       "n": 1255,
+       "rate": 0.013545816733067729
+      },
+      "regime/2021-23": {
+       "hits": 242,
+       "kupiec_p": 7.640991947794225e-05,
+       "n": 3740,
+       "rate": 0.06470588235294118
+      },
+      "regime/2024": {
+       "hits": 137,
+       "kupiec_p": 3.925495147932192e-17,
+       "n": 1250,
+       "rate": 0.1096
+      },
+      "regime/2025-26": {
+       "hits": 212,
+       "kupiec_p": 1.055140385412501e-54,
+       "n": 1235,
+       "rate": 0.17165991902834007
+      }
+     }
+    },
+    "at_or_above": {
+     "band50": {
+      "pooled": {
+       "hits": 5782,
+       "kupiec_p": 1.1806477892407738e-267,
+       "n": 8400,
+       "rate": 0.6883333333333334
+      },
+      "pressure_day_type/ordinary": {
+       "hits": 4917,
+       "kupiec_p": 1.0938362476359573e-219,
+       "n": 7184,
+       "rate": 0.6844376391982183
+      },
+      "pressure_day_type/quarter_end_turn": {
+       "hits": 147,
+       "kupiec_p": 1.2007477250836154e-11,
+       "n": 200,
+       "rate": 0.735
+      },
+      "pressure_day_type/tax_date": {
+       "hits": 266,
+       "kupiec_p": 7.360926922530381e-09,
+       "n": 415,
+       "rate": 0.6409638554216868
+      },
+      "pressure_day_type/turn": {
+       "hits": 405,
+       "kupiec_p": 1.399498229355246e-32,
+       "n": 540,
+       "rate": 0.75
+      },
+      "pressure_day_type/year_end": {
+       "hits": 47,
+       "kupiec_p": 1.4179532300833913e-05,
+       "n": 61,
+       "rate": 0.7704918032786885
+      },
+      "regime/2018-19": {
+       "hits": 528,
+       "kupiec_p": 7.055176776196853e-06,
+       "n": 920,
+       "rate": 0.5739130434782609
+      },
+      "regime/2020": {
+       "hits": 295,
+       "kupiec_p": 1.1051307216465589e-82,
+       "n": 1255,
+       "rate": 0.2350597609561753
+      },
+      "regime/2021-23": {
+       "hits": 2858,
+       "kupiec_p": 5.489449574677278e-241,
+       "n": 3740,
+       "rate": 0.7641711229946524
+      },
+      "regime/2024": {
+       "hits": 1018,
+       "kupiec_p": 5.095263839196989e-118,
+       "n": 1250,
+       "rate": 0.8144
+      },
+      "regime/2025-26": {
+       "hits": 1083,
+       "kupiec_p": 5.574177917896418e-174,
+       "n": 1235,
+       "rate": 0.8769230769230769
+      }
+     },
+     "band90": {
+      "pooled": {
+       "hits": 1514,
+       "kupiec_p": 2.8907642568616755e-110,
+       "n": 8400,
+       "rate": 0.18023809523809523
+      },
+      "pressure_day_type/ordinary": {
+       "hits": 1165,
+       "kupiec_p": 1.5256192238484054e-59,
+       "n": 7184,
+       "rate": 0.16216592427616927
+      },
+      "pressure_day_type/quarter_end_turn": {
+       "hits": 89,
+       "kupiec_p": 2.5101356309050424e-36,
+       "n": 200,
+       "rate": 0.445
+      },
+      "pressure_day_type/tax_date": {
+       "hits": 88,
+       "kupiec_p": 1.6607079233549427e-11,
+       "n": 415,
+       "rate": 0.21204819277108433
+      },
+      "pressure_day_type/turn": {
+       "hits": 155,
+       "kupiec_p": 6.121528259546831e-34,
+       "n": 540,
+       "rate": 0.28703703703703703
+      },
+      "pressure_day_type/year_end": {
+       "hits": 17,
+       "kupiec_p": 8.833605480394379e-05,
+       "n": 61,
+       "rate": 0.2786885245901639
+      },
+      "regime/2018-19": {
+       "hits": 177,
+       "kupiec_p": 4.191465281506866e-17,
+       "n": 920,
+       "rate": 0.1923913043478261
+      },
+      "regime/2020": {
+       "hits": 32,
+       "kupiec_p": 4.287860973257504e-25,
+       "n": 1255,
+       "rate": 0.02549800796812749
+      },
+      "regime/2021-23": {
+       "hits": 499,
+       "kupiec_p": 7.162224002764444e-11,
+       "n": 3740,
+       "rate": 0.13342245989304813
+      },
+      "regime/2024": {
+       "hits": 347,
+       "kupiec_p": 9.815184480251136e-70,
+       "n": 1250,
+       "rate": 0.2776
+      },
+      "regime/2025-26": {
+       "hits": 459,
+       "kupiec_p": 7.794927466494128e-143,
+       "n": 1235,
+       "rate": 0.37165991902834006
+      }
+     },
+     "q95": {
+      "pooled": {
+       "hits": 777,
+       "kupiec_p": 4.207327432196496e-58,
+       "n": 8400,
+       "rate": 0.0925
+      },
+      "pressure_day_type/ordinary": {
+       "hits": 471,
+       "kupiec_p": 7.113524212547176e-09,
+       "n": 7184,
+       "rate": 0.06556236080178174
+      },
+      "pressure_day_type/quarter_end_turn": {
+       "hits": 86,
+       "kupiec_p": 4.188229945404534e-57,
+       "n": 200,
+       "rate": 0.43
+      },
+      "pressure_day_type/tax_date": {
+       "hits": 55,
+       "kupiec_p": 1.015125776623627e-10,
+       "n": 415,
+       "rate": 0.13253012048192772
+      },
+      "pressure_day_type/turn": {
+       "hits": 151,
+       "kupiec_p": 3.2683316837186672e-68,
+       "n": 540,
+       "rate": 0.2796296296296296
+      },
+      "pressure_day_type/year_end": {
+       "hits": 14,
+       "kupiec_p": 1.6344527325292656e-06,
+       "n": 61,
+       "rate": 0.22950819672131148
+      },
+      "regime/2018-19": {
+       "hits": 84,
+       "kupiec_p": 2.2077264062538584e-07,
+       "n": 920,
+       "rate": 0.09130434782608696
+      },
+      "regime/2020": {
+       "hits": 17,
+       "kupiec_p": 2.7894035542727795e-12,
+       "n": 1255,
+       "rate": 0.013545816733067729
+      },
+      "regime/2021-23": {
+       "hits": 273,
+       "kupiec_p": 1.3884952137253651e-09,
+       "n": 3740,
+       "rate": 0.07299465240641712
+      },
+      "regime/2024": {
+       "hits": 171,
+       "kupiec_p": 9.603817269986391e-32,
+       "n": 1250,
+       "rate": 0.1368
+      },
+      "regime/2025-26": {
+       "hits": 232,
+       "kupiec_p": 3.8962403606650966e-67,
+       "n": 1235,
+       "rate": 0.18785425101214576
+      }
+     }
+    }
+   },
+   "B1_prime": {
+    "above": {
+     "band50": {
+      "pooled": {
+       "hits": 3926,
+       "kupiec_p": 2.2137182769493313e-09,
+       "n": 8400,
+       "rate": 0.4673809523809524
+      },
+      "pressure_day_type/ordinary": {
+       "hits": 3285,
+       "kupiec_p": 4.2130617985269097e-13,
+       "n": 7184,
+       "rate": 0.45726614699331847
+      },
+      "pressure_day_type/quarter_end_turn": {
+       "hits": 129,
+       "kupiec_p": 3.6139643729410916e-05,
+       "n": 200,
+       "rate": 0.645
+      },
+      "pressure_day_type/tax_date": {
+       "hits": 196,
+       "kupiec_p": 0.2587650160969293,
+       "n": 415,
+       "rate": 0.472289156626506
+      },
+      "pressure_day_type/turn": {
+       "hits": 289,
+       "kupiec_p": 0.10185305559716973,
+       "n": 540,
+       "rate": 0.5351851851851852
+      },
+      "pressure_day_type/year_end": {
+       "hits": 27,
+       "kupiec_p": 0.36958747014210774,
+       "n": 61,
+       "rate": 0.4426229508196721
+      },
+      "regime/2018-19": {
+       "hits": 477,
+       "kupiec_p": 0.2622561740173864,
+       "n": 920,
+       "rate": 0.5184782608695652
+      },
+      "regime/2020": {
+       "hits": 307,
+       "kupiec_p": 1.1810089484527708e-76,
+       "n": 1255,
+       "rate": 0.2446215139442231
+      },
+      "regime/2021-23": {
+       "hits": 1462,
+       "kupiec_p": 6.305585376473852e-41,
+       "n": 3740,
+       "rate": 0.39090909090909093
+      },
+      "regime/2024": {
+       "hits": 726,
+       "kupiec_p": 1.0284175485310812e-08,
+       "n": 1250,
+       "rate": 0.5808
+      },
+      "regime/2025-26": {
+       "hits": 954,
+       "kupiec_p": 2.935807233966775e-86,
+       "n": 1235,
+       "rate": 0.7724696356275303
+      }
+     },
+     "band90": {
+      "pooled": {
+       "hits": 1431,
+       "kupiec_p": 7.798363159143666e-87,
+       "n": 8400,
+       "rate": 0.17035714285714285
+      },
+      "pressure_day_type/ordinary": {
+       "hits": 1142,
+       "kupiec_p": 4.270663307680081e-54,
+       "n": 7184,
+       "rate": 0.15896436525612473
+      },
+      "pressure_day_type/quarter_end_turn": {
+       "hits": 82,
+       "kupiec_p": 1.700741575245793e-30,
+       "n": 200,
+       "rate": 0.41
+      },
+      "pressure_day_type/tax_date": {
+       "hits": 68,
+       "kupiec_p": 6.056043476956489e-05,
+       "n": 415,
+       "rate": 0.163855421686747
+      },
+      "pressure_day_type/turn": {
+       "hits": 122,
+       "kupiec_p": 1.3910336574924943e-17,
+       "n": 540,
+       "rate": 0.22592592592592592
+      },
+      "pressure_day_type/year_end": {
+       "hits": 17,
+       "kupiec_p": 8.833605480394379e-05,
+       "n": 61,
+       "rate": 0.2786885245901639
+      },
+      "regime/2018-19": {
+       "hits": 171,
+       "kupiec_p": 3.827829427026642e-15,
+       "n": 920,
+       "rate": 0.1858695652173913
+      },
+      "regime/2020": {
+       "hits": 44,
+       "kupiec_p": 2.191084265050229e-18,
+       "n": 1255,
+       "rate": 0.0350597609561753
+      },
+      "regime/2021-23": {
+       "hits": 413,
+       "kupiec_p": 0.03623416411248351,
+       "n": 3740,
+       "rate": 0.11042780748663102
+      },
+      "regime/2024": {
+       "hits": 312,
+       "kupiec_p": 6.822665964399421e-52,
+       "n": 1250,
+       "rate": 0.2496
+      },
+      "regime/2025-26": {
+       "hits": 491,
+       "kupiec_p": 7.167473824884281e-167,
+       "n": 1235,
+       "rate": 0.39757085020242916
+      }
+     },
+     "q95": {
+      "pooled": {
+       "hits": 798,
+       "kupiec_p": 2.7464969446255045e-64,
+       "n": 8400,
+       "rate": 0.095
+      },
+      "pressure_day_type/ordinary": {
+       "hits": 571,
+       "kupiec_p": 2.964331731390961e-26,
+       "n": 7184,
+       "rate": 0.07948218262806236
+      },
+      "pressure_day_type/quarter_end_turn": {
+       "hits": 78,
+       "kupiec_p": 4.217476544642097e-48,
+       "n": 200,
+       "rate": 0.39
+      },
+      "pressure_day_type/tax_date": {
+       "hits": 42,
+       "kupiec_p": 2.3320239683223003e-05,
+       "n": 415,
+       "rate": 0.10120481927710843
+      },
+      "pressure_day_type/turn": {
+       "hits": 93,
+       "kupiec_p": 4.63828617777849e-25,
+       "n": 540,
+       "rate": 0.17222222222222222
+      },
+      "pressure_day_type/year_end": {
+       "hits": 14,
+       "kupiec_p": 1.6344527325292656e-06,
+       "n": 61,
+       "rate": 0.22950819672131148
+      },
+      "regime/2018-19": {
+       "hits": 110,
+       "kupiec_p": 1.2000346259520602e-16,
+       "n": 920,
+       "rate": 0.11956521739130435
+      },
+      "regime/2020": {
+       "hits": 21,
+       "kupiec_p": 4.3025752252069657e-10,
+       "n": 1255,
+       "rate": 0.016733067729083666
+      },
+      "regime/2021-23": {
+       "hits": 242,
+       "kupiec_p": 7.640991947794225e-05,
+       "n": 3740,
+       "rate": 0.06470588235294118
+      },
+      "regime/2024": {
+       "hits": 171,
+       "kupiec_p": 9.603817269986391e-32,
+       "n": 1250,
+       "rate": 0.1368
+      },
+      "regime/2025-26": {
+       "hits": 254,
+       "kupiec_p": 7.196435179703865e-82,
+       "n": 1235,
+       "rate": 0.20566801619433198
+      }
+     }
+    },
+    "at_or_above": {
+     "band50": {
+      "pooled": {
+       "hits": 6129,
+       "kupiec_p": 0.0,
+       "n": 8400,
+       "rate": 0.7296428571428571
+      },
+      "pressure_day_type/ordinary": {
+       "hits": 5257,
+       "kupiec_p": 0.0,
+       "n": 7184,
+       "rate": 0.7317650334075724
+      },
+      "pressure_day_type/quarter_end_turn": {
+       "hits": 142,
+       "kupiec_p": 1.6085176790949295e-09,
+       "n": 200,
+       "rate": 0.71
+      },
+      "pressure_day_type/tax_date": {
+       "hits": 271,
+       "kupiec_p": 3.2879618738933333e-10,
+       "n": 415,
+       "rate": 0.653012048192771
+      },
+      "pressure_day_type/turn": {
+       "hits": 411,
+       "kupiec_p": 1.533335526795874e-35,
+       "n": 540,
+       "rate": 0.7611111111111111
+      },
+      "pressure_day_type/year_end": {
+       "hits": 48,
+       "kupiec_p": 3.8036720651979773e-06,
+       "n": 61,
+       "rate": 0.7868852459016393
+      },
+      "regime/2018-19": {
+       "hits": 592,
+       "kupiec_p": 1.8613304577386332e-18,
+       "n": 920,
+       "rate": 0.6434782608695652
+      },
+      "regime/2020": {
+       "hits": 391,
+       "kupiec_p": 1.2159389534486202e-41,
+       "n": 1255,
+       "rate": 0.3115537848605578
+      },
+      "regime/2021-23": {
+       "hits": 2933,
+       "kupiec_p": 3.6452693610045724e-281,
+       "n": 3740,
+       "rate": 0.7842245989304812
+      },
+      "regime/2024": {
+       "hits": 1117,
+       "kupiec_p": 1.3495850639011012e-194,
+       "n": 1250,
+       "rate": 0.8936
+      },
+      "regime/2025-26": {
+       "hits": 1096,
+       "kupiec_p": 2.310536125873698e-185,
+       "n": 1235,
+       "rate": 0.8874493927125506
+      }
+     },
+     "band90": {
+      "pooled": {
+       "hits": 1708,
+       "kupiec_p": 3.0153815941189495e-174,
+       "n": 8400,
+       "rate": 0.20333333333333334
+      },
+      "pressure_day_type/ordinary": {
+       "hits": 1350,
+       "kupiec_p": 1.3730493174144986e-111,
+       "n": 7184,
+       "rate": 0.1879175946547884
+      },
+      "pressure_day_type/quarter_end_turn": {
+       "hits": 86,
+       "kupiec_p": 8.940855428396805e-34,
+       "n": 200,
+       "rate": 0.43
+      },
+      "pressure_day_type/tax_date": {
+       "hits": 76,
+       "kupiec_p": 2.9906577067904355e-07,
+       "n": 415,
+       "rate": 0.18313253012048192
+      },
+      "pressure_day_type/turn": {
+       "hits": 179,
+       "kupiec_p": 1.540827397784645e-48,
+       "n": 540,
+       "rate": 0.3314814814814815
+      },
+      "pressure_day_type/year_end": {
+       "hits": 17,
+       "kupiec_p": 8.833605480394379e-05,
+       "n": 61,
+       "rate": 0.2786885245901639
+      },
+      "regime/2018-19": {
+       "hits": 182,
+       "kupiec_p": 8.060549780998878e-19,
+       "n": 920,
+       "rate": 0.19782608695652174
+      },
+      "regime/2020": {
+       "hits": 60,
+       "kupiec_p": 1.0833307107796338e-11,
+       "n": 1255,
+       "rate": 0.04780876494023904
+      },
+      "regime/2021-23": {
+       "hits": 521,
+       "kupiec_p": 2.7129024322266422e-14,
+       "n": 3740,
+       "rate": 0.1393048128342246
+      },
+      "regime/2024": {
+       "hits": 383,
+       "kupiec_p": 2.72080570969831e-90,
+       "n": 1250,
+       "rate": 0.3064
+      },
+      "regime/2025-26": {
+       "hits": 562,
+       "kupiec_p": 1.5977552889274932e-225,
+       "n": 1235,
+       "rate": 0.45506072874493925
+      }
+     },
+     "q95": {
+      "pooled": {
+       "hits": 901,
+       "kupiec_p": 2.4427843433711187e-98,
+       "n": 8400,
+       "rate": 0.10726190476190477
+      },
+      "pressure_day_type/ordinary": {
+       "hits": 661,
+       "kupiec_p": 6.0957827294441095e-49,
+       "n": 7184,
+       "rate": 0.09201002227171493
+      },
+      "pressure_day_type/quarter_end_turn": {
+       "hits": 82,
+       "kupiec_p": 1.5661833405971374e-52,
+       "n": 200,
+       "rate": 0.41
+      },
+      "pressure_day_type/tax_date": {
+       "hits": 49,
+       "kupiec_p": 4.831428868445488e-08,
+       "n": 415,
+       "rate": 0.1180722891566265
+      },
+      "pressure_day_type/turn": {
+       "hits": 95,
+       "kupiec_p": 2.821523349721108e-26,
+       "n": 540,
+       "rate": 0.17592592592592593
+      },
+      "pressure_day_type/year_end": {
+       "hits": 14,
+       "kupiec_p": 1.6344527325292656e-06,
+       "n": 61,
+       "rate": 0.22950819672131148
+      },
+      "regime/2018-19": {
+       "hits": 117,
+       "kupiec_p": 1.1244333445813831e-19,
+       "n": 920,
+       "rate": 0.12717391304347825
+      },
+      "regime/2020": {
+       "hits": 21,
+       "kupiec_p": 4.3025752252069657e-10,
+       "n": 1255,
+       "rate": 0.016733067729083666
+      },
+      "regime/2021-23": {
+       "hits": 278,
+       "kupiec_p": 1.6761691491913735e-10,
+       "n": 3740,
+       "rate": 0.07433155080213903
+      },
+      "regime/2024": {
+       "hits": 205,
+       "kupiec_p": 9.781351118124509e-50,
+       "n": 1250,
+       "rate": 0.164
+      },
+      "regime/2025-26": {
+       "hits": 280,
+       "kupiec_p": 1.293005855013476e-100,
+       "n": 1235,
+       "rate": 0.22672064777327935
+      }
+     }
+    }
+   },
+   "B2_legacy": {
+    "above": {
+     "band50": {
+      "pooled": {
+       "hits": 4548,
+       "kupiec_p": 2.9995829828492165e-14,
+       "n": 8400,
+       "rate": 0.5414285714285715
+      },
+      "pressure_day_type/ordinary": {
+       "hits": 3719,
+       "kupiec_p": 0.002725947298415931,
+       "n": 7184,
+       "rate": 0.5176781737193764
+      },
+      "pressure_day_type/quarter_end_turn": {
+       "hits": 150,
+       "kupiec_p": 4.703928404646179e-13,
+       "n": 200,
+       "rate": 0.75
+      },
+      "pressure_day_type/tax_date": {
+       "hits": 278,
+       "kupiec_p": 2.7307017293186634e-12,
+       "n": 415,
+       "rate": 0.6698795180722892
+      },
+      "pressure_day_type/turn": {
+       "hits": 360,
+       "kupiec_p": 5.252226866124886e-15,
+       "n": 540,
+       "rate": 0.6666666666666666
+      },
+      "pressure_day_type/year_end": {
+       "hits": 41,
+       "kupiec_p": 0.0065969857741731384,
+       "n": 61,
+       "rate": 0.6721311475409836
+      },
+      "regime/2018-19": {
+       "hits": 512,
+       "kupiec_p": 0.0005981616502245421,
+       "n": 920,
+       "rate": 0.5565217391304348
+      },
+      "regime/2020": {
+       "hits": 511,
+       "kupiec_p": 4.2176246557924645e-11,
+       "n": 1255,
+       "rate": 0.40717131474103585
+      },
+      "regime/2021-23": {
+       "hits": 2060,
+       "kupiec_p": 5.002381803113118e-10,
+       "n": 3740,
+       "rate": 0.5508021390374331
+      },
+      "regime/2024": {
+       "hits": 578,
+       "kupiec_p": 0.007814599352950551,
+       "n": 1250,
+       "rate": 0.4624
+      },
+      "regime/2025-26": {
+       "hits": 887,
+       "kupiec_p": 7.343186168352037e-55,
+       "n": 1235,
+       "rate": 0.7182186234817813
+      }
+     },
+     "band90": {
+      "pooled": {
+       "hits": 1524,
+       "kupiec_p": 2.976100788486072e-113,
+       "n": 8400,
+       "rate": 0.18142857142857144
+      },
+      "pressure_day_type/ordinary": {
+       "hits": 1103,
+       "kupiec_p": 2.0934774574300565e-45,
+       "n": 7184,
+       "rate": 0.15353563474387527
+      },
+      "pressure_day_type/quarter_end_turn": {
+       "hits": 105,
+       "kupiec_p": 2.969206334651027e-51,
+       "n": 200,
+       "rate": 0.525
+      },
+      "pressure_day_type/tax_date": {
+       "hits": 160,
+       "kupiec_p": 1.6122657835862223e-53,
+       "n": 415,
+       "rate": 0.3855421686746988
+      },
+      "pressure_day_type/turn": {
+       "hits": 120,
+       "kupiec_p": 9.645911078145113e-17,
+       "n": 540,
+       "rate": 0.2222222222222222
+      },
+      "pressure_day_type/year_end": {
+       "hits": 36,
+       "kupiec_p": 5.1229696602041336e-21,
+       "n": 61,
+       "rate": 0.5901639344262295
+      },
+      "regime/2018-19": {
+       "hits": 185,
+       "kupiec_p": 6.943150935162005e-20,
+       "n": 920,
+       "rate": 0.20108695652173914
+      },
+      "regime/2020": {
+       "hits": 154,
+       "kupiec_p": 0.009340798036706493,
+       "n": 1255,
+       "rate": 0.12270916334661354
+      },
+      "regime/2021-23": {
+       "hits": 644,
+       "kupiec_p": 1.5909297716948318e-41,
+       "n": 3740,
+       "rate": 0.17219251336898395
+      },
+      "regime/2024": {
+       "hits": 178,
+       "kupiec_p": 2.2458960605077764e-06,
+       "n": 1250,
+       "rate": 0.1424
+      },
+      "regime/2025-26": {
+       "hits": 363,
+       "kupiec_p": 3.585594836773417e-80,
+       "n": 1235,
+       "rate": 0.29392712550607286
+      }
+     },
+     "q95": {
+      "pooled": {
+       "hits": 784,
+       "kupiec_p": 3.9081559952758455e-60,
+       "n": 8400,
+       "rate": 0.09333333333333334
+      },
+      "pressure_day_type/ordinary": {
+       "hits": 527,
+       "kupiec_p": 1.603592156091867e-17,
+       "n": 7184,
+       "rate": 0.07335746102449889
+      },
+      "pressure_day_type/quarter_end_turn": {
+       "hits": 60,
+       "kupiec_p": 5.2603060120881e-30,
+       "n": 200,
+       "rate": 0.3
+      },
+      "pressure_day_type/tax_date": {
+       "hits": 61,
+       "kupiec_p": 1.0280516807500067e-13,
+       "n": 415,
+       "rate": 0.14698795180722893
+      },
+      "pressure_day_type/turn": {
+       "hits": 105,
+       "kupiec_p": 1.1214056184237532e-32,
+       "n": 540,
+       "rate": 0.19444444444444445
+      },
+      "pressure_day_type/year_end": {
+       "hits": 31,
+       "kupiec_p": 1.7694900447180488e-24,
+       "n": 61,
+       "rate": 0.5081967213114754
+      },
+      "regime/2018-19": {
+       "hits": 155,
+       "kupiec_p": 1.8281586894126676e-39,
+       "n": 920,
+       "rate": 0.16847826086956522
+      },
+      "regime/2020": {
+       "hits": 10,
+       "kupiec_p": 3.4499536174722865e-17,
+       "n": 1255,
+       "rate": 0.00796812749003984
+      },
+      "regime/2021-23": {
+       "hits": 211,
+       "kupiec_p": 0.07739476598369047,
+       "n": 3740,
+       "rate": 0.05641711229946524
+      },
+      "regime/2024": {
+       "hits": 168,
+       "kupiec_p": 2.6048158863139142e-30,
+       "n": 1250,
+       "rate": 0.1344
+      },
+      "regime/2025-26": {
+       "hits": 240,
+       "kupiec_p": 2.276995377721026e-72,
+       "n": 1235,
+       "rate": 0.19433198380566802
+      }
+     }
+    },
+    "at_or_above": {
+     "band50": {
+      "pooled": {
+       "hits": 6346,
+       "kupiec_p": 0.0,
+       "n": 8400,
+       "rate": 0.7554761904761905
+      },
+      "pressure_day_type/ordinary": {
+       "hits": 5379,
+       "kupiec_p": 0.0,
+       "n": 7184,
+       "rate": 0.7487472160356348
+      },
+      "pressure_day_type/quarter_end_turn": {
+       "hits": 155,
+       "kupiec_p": 1.2484078306481967e-15,
+       "n": 200,
+       "rate": 0.775
+      },
+      "pressure_day_type/tax_date": {
+       "hits": 325,
+       "kupiec_p": 1.388200573904548e-32,
+       "n": 415,
+       "rate": 0.7831325301204819
+      },
+      "pressure_day_type/turn": {
+       "hits": 431,
+       "kupiec_p": 1.3828913964048769e-46,
+       "n": 540,
+       "rate": 0.7981481481481482
+      },
+      "pressure_day_type/year_end": {
+       "hits": 56,
+       "kupiec_p": 1.5602614924884152e-12,
+       "n": 61,
+       "rate": 0.9180327868852459
+      },
+      "regime/2018-19": {
+       "hits": 571,
+       "kupiec_p": 1.9035337904636583e-13,
+       "n": 920,
+       "rate": 0.6206521739130435
+      },
+      "regime/2020": {
+       "hits": 671,
+       "kupiec_p": 0.0140176789742773,
+       "n": 1255,
+       "rate": 0.5346613545816733
+      },
+      "regime/2021-23": {
+       "hits": 2970,
+       "kupiec_p": 2.160432167095919e-302,
+       "n": 3740,
+       "rate": 0.7941176470588235
+      },
+      "regime/2024": {
+       "hits": 1132,
+       "kupiec_p": 6.700402208302517e-209,
+       "n": 1250,
+       "rate": 0.9056
+      },
+      "regime/2025-26": {
+       "hits": 1002,
+       "kupiec_p": 3.296704421839291e-114,
+       "n": 1235,
+       "rate": 0.8113360323886639
+      }
+     },
+     "band90": {
+      "pooled": {
+       "hits": 3243,
+       "kupiec_p": 0.0,
+       "n": 8400,
+       "rate": 0.38607142857142857
+      },
+      "pressure_day_type/ordinary": {
+       "hits": 2636,
+       "kupiec_p": 0.0,
+       "n": 7184,
+       "rate": 0.3669265033407572
+      },
+      "pressure_day_type/quarter_end_turn": {
+       "hits": 116,
+       "kupiec_p": 8.37092655807788e-63,
+       "n": 200,
+       "rate": 0.58
+      },
+      "pressure_day_type/tax_date": {
+       "hits": 218,
+       "kupiec_p": 1.7652144200838025e-104,
+       "n": 415,
+       "rate": 0.5253012048192771
+      },
+      "pressure_day_type/turn": {
+       "hits": 227,
+       "kupiec_p": 7.247841241140123e-84,
+       "n": 540,
+       "rate": 0.4203703703703704
+      },
+      "pressure_day_type/year_end": {
+       "hits": 46,
+       "kupiec_p": 8.053396800315732e-34,
+       "n": 61,
+       "rate": 0.7540983606557377
+      },
+      "regime/2018-19": {
+       "hits": 222,
+       "kupiec_p": 4.486094971156575e-35,
+       "n": 920,
+       "rate": 0.24130434782608695
+      },
+      "regime/2020": {
+       "hits": 219,
+       "kupiec_p": 8.1800059066604e-16,
+       "n": 1255,
+       "rate": 0.1745019920318725
+      },
+      "regime/2021-23": {
+       "hits": 1990,
+       "kupiec_p": 0.0,
+       "n": 3740,
+       "rate": 0.5320855614973262
+      },
+      "regime/2024": {
+       "hits": 362,
+       "kupiec_p": 4.903452988877353e-78,
+       "n": 1250,
+       "rate": 0.2896
+      },
+      "regime/2025-26": {
+       "hits": 450,
+       "kupiec_p": 2.3801591404471195e-136,
+       "n": 1235,
+       "rate": 0.3643724696356275
+      }
+     },
+     "q95": {
+      "pooled": {
+       "hits": 1135,
+       "kupiec_p": 3.69801065347611e-196,
+       "n": 8400,
+       "rate": 0.1351190476190476
+      },
+      "pressure_day_type/ordinary": {
+       "hits": 829,
+       "kupiec_p": 1.9706241700533547e-106,
+       "n": 7184,
+       "rate": 0.11539532293986637
+      },
+      "pressure_day_type/quarter_end_turn": {
+       "hits": 60,
+       "kupiec_p": 5.2603060120881e-30,
+       "n": 200,
+       "rate": 0.3
+      },
+      "pressure_day_type/tax_date": {
+       "hits": 83,
+       "kupiec_p": 4.714076239959691e-27,
+       "n": 415,
+       "rate": 0.2
+      },
+      "pressure_day_type/turn": {
+       "hits": 132,
+       "kupiec_p": 2.089579330301365e-52,
+       "n": 540,
+       "rate": 0.24444444444444444
+      },
+      "pressure_day_type/year_end": {
+       "hits": 31,
+       "kupiec_p": 1.7694900447180488e-24,
+       "n": 61,
+       "rate": 0.5081967213114754
+      },
+      "regime/2018-19": {
+       "hits": 172,
+       "kupiec_p": 6.075943378250678e-50,
+       "n": 920,
+       "rate": 0.18695652173913044
+      },
+      "regime/2020": {
+       "hits": 10,
+       "kupiec_p": 3.4499536174722865e-17,
+       "n": 1255,
+       "rate": 0.00796812749003984
+      },
+      "regime/2021-23": {
+       "hits": 401,
+       "kupiec_p": 9.601391014562758e-45,
+       "n": 3740,
+       "rate": 0.1072192513368984
+      },
+      "regime/2024": {
+       "hits": 302,
+       "kupiec_p": 4.713320383294479e-116,
+       "n": 1250,
+       "rate": 0.2416
+      },
+      "regime/2025-26": {
+       "hits": 250,
+       "kupiec_p": 4.121745848895326e-79,
+       "n": 1235,
+       "rate": 0.20242914979757085
+      }
+     }
+    }
+   },
+   "B2_pool10": {
+    "above": {
+     "band50": {
+      "pooled": {
+       "hits": 4601,
+       "kupiec_p": 2.0014879988487994e-18,
+       "n": 8400,
+       "rate": 0.5477380952380952
+      },
+      "pressure_day_type/ordinary": {
+       "hits": 3778,
+       "kupiec_p": 1.1339080970100839e-05,
+       "n": 7184,
+       "rate": 0.5258908685968819
+      },
+      "pressure_day_type/quarter_end_turn": {
+       "hits": 165,
+       "kupiec_p": 9.7443158992068e-22,
+       "n": 200,
+       "rate": 0.825
+      },
+      "pressure_day_type/tax_date": {
+       "hits": 278,
+       "kupiec_p": 2.7307017293186634e-12,
+       "n": 415,
+       "rate": 0.6698795180722892
+      },
+      "pressure_day_type/turn": {
+       "hits": 339,
+       "kupiec_p": 2.348266280629344e-09,
+       "n": 540,
+       "rate": 0.6277777777777778
+      },
+      "pressure_day_type/year_end": {
+       "hits": 41,
+       "kupiec_p": 0.0065969857741731384,
+       "n": 61,
+       "rate": 0.6721311475409836
+      },
+      "regime/2018-19": {
+       "hits": 520,
+       "kupiec_p": 7.434745005520888e-05,
+       "n": 920,
+       "rate": 0.5652173913043478
+      },
+      "regime/2020": {
+       "hits": 525,
+       "kupiec_p": 6.643157004447967e-09,
+       "n": 1255,
+       "rate": 0.41832669322709165
+      },
+      "regime/2021-23": {
+       "hits": 2065,
+       "kupiec_p": 1.7367084570405183e-10,
+       "n": 3740,
+       "rate": 0.5521390374331551
+      },
+      "regime/2024": {
+       "hits": 586,
+       "kupiec_p": 0.02732174402906257,
+       "n": 1250,
+       "rate": 0.4688
+      },
+      "regime/2025-26": {
+       "hits": 905,
+       "kupiec_p": 1.7305828111611338e-62,
+       "n": 1235,
+       "rate": 0.7327935222672065
+      }
+     },
+     "band90": {
+      "pooled": {
+       "hits": 1661,
+       "kupiec_p": 1.3230834795958032e-157,
+       "n": 8400,
+       "rate": 0.19773809523809524
+      },
+      "pressure_day_type/ordinary": {
+       "hits": 1216,
+       "kupiec_p": 1.8821976140529995e-72,
+       "n": 7184,
+       "rate": 0.16926503340757237
+      },
+      "pressure_day_type/quarter_end_turn": {
+       "hits": 120,
+       "kupiec_p": 2.872093172673249e-67,
+       "n": 200,
+       "rate": 0.6
+      },
+      "pressure_day_type/tax_date": {
+       "hits": 160,
+       "kupiec_p": 1.6122657835862223e-53,
+       "n": 415,
+       "rate": 0.3855421686746988
+      },
+      "pressure_day_type/turn": {
+       "hits": 135,
+       "kupiec_p": 1.7571368938638215e-23,
+       "n": 540,
+       "rate": 0.25
+      },
+      "pressure_day_type/year_end": {
+       "hits": 30,
+       "kupiec_p": 8.834928023496801e-15,
+       "n": 61,
+       "rate": 0.4918032786885246
+      },
+      "regime/2018-19": {
+       "hits": 190,
+       "kupiec_p": 1.0213163452185636e-21,
+       "n": 920,
+       "rate": 0.20652173913043478
+      },
+      "regime/2020": {
+       "hits": 164,
+       "kupiec_p": 0.0005076437737345424,
+       "n": 1255,
+       "rate": 0.1306772908366534
+      },
+      "regime/2021-23": {
+       "hits": 704,
+       "kupiec_p": 2.239728122227146e-59,
+       "n": 3740,
+       "rate": 0.18823529411764706
+      },
+      "regime/2024": {
+       "hits": 231,
+       "kupiec_p": 1.338371523877468e-19,
+       "n": 1250,
+       "rate": 0.1848
+      },
+      "regime/2025-26": {
+       "hits": 372,
+       "kupiec_p": 2.039668567000467e-85,
+       "n": 1235,
+       "rate": 0.30121457489878545
+      }
+     },
+     "q95": {
+      "pooled": {
+       "hits": 861,
+       "kupiec_p": 2.103398380074047e-84,
+       "n": 8400,
+       "rate": 0.1025
+      },
+      "pressure_day_type/ordinary": {
+       "hits": 660,
+       "kupiec_p": 1.1762008675317845e-48,
+       "n": 7184,
+       "rate": 0.09187082405345212
+      },
+      "pressure_day_type/quarter_end_turn": {
+       "hits": 60,
+       "kupiec_p": 5.2603060120881e-30,
+       "n": 200,
+       "rate": 0.3
+      },
+      "pressure_day_type/tax_date": {
+       "hits": 61,
+       "kupiec_p": 1.0280516807500067e-13,
+       "n": 415,
+       "rate": 0.14698795180722893
+      },
+      "pressure_day_type/turn": {
+       "hits": 60,
+       "kupiec_p": 1.549067005751635e-08,
+       "n": 540,
+       "rate": 0.1111111111111111
+      },
+      "pressure_day_type/year_end": {
+       "hits": 20,
+       "kupiec_p": 7.659673879667077e-12,
+       "n": 61,
+       "rate": 0.32786885245901637
+      },
+      "regime/2018-19": {
+       "hits": 160,
+       "kupiec_p": 1.8913503093327968e-42,
+       "n": 920,
+       "rate": 0.17391304347826086
+      },
+      "regime/2020": {
+       "hits": 10,
+       "kupiec_p": 3.4499536174722865e-17,
+       "n": 1255,
+       "rate": 0.00796812749003984
+      },
+      "regime/2021-23": {
+       "hits": 221,
+       "kupiec_p": 0.013035342312258958,
+       "n": 3740,
+       "rate": 0.05909090909090909
+      },
+      "regime/2024": {
+       "hits": 221,
+       "kupiec_p": 3.0999518503280373e-59,
+       "n": 1250,
+       "rate": 0.1768
+      },
+      "regime/2025-26": {
+       "hits": 249,
+       "kupiec_p": 1.9914515468519918e-78,
+       "n": 1235,
+       "rate": 0.20161943319838058
+      }
+     }
+    },
+    "at_or_above": {
+     "band50": {
+      "pooled": {
+       "hits": 6425,
+       "kupiec_p": 0.0,
+       "n": 8400,
+       "rate": 0.7648809523809523
+      },
+      "pressure_day_type/ordinary": {
+       "hits": 5485,
+       "kupiec_p": 0.0,
+       "n": 7184,
+       "rate": 0.7635022271714922
+      },
+      "pressure_day_type/quarter_end_turn": {
+       "hits": 165,
+       "kupiec_p": 9.7443158992068e-22,
+       "n": 200,
+       "rate": 0.825
+      },
+      "pressure_day_type/tax_date": {
+       "hits": 325,
+       "kupiec_p": 1.388200573904548e-32,
+       "n": 415,
+       "rate": 0.7831325301204819
+      },
+      "pressure_day_type/turn": {
+       "hits": 394,
+       "kupiec_p": 1.504139149092681e-27,
+       "n": 540,
+       "rate": 0.7296296296296296
+      },
+      "pressure_day_type/year_end": {
+       "hits": 56,
+       "kupiec_p": 1.5602614924884152e-12,
+       "n": 61,
+       "rate": 0.9180327868852459
+      },
+      "regime/2018-19": {
+       "hits": 554,
+       "kupiec_p": 4.969174710650381e-10,
+       "n": 920,
+       "rate": 0.6021739130434782
+      },
+      "regime/2020": {
+       "hits": 698,
+       "kupiec_p": 6.766917274992749e-05,
+       "n": 1255,
+       "rate": 0.5561752988047809
+      },
+      "regime/2021-23": {
+       "hits": 3015,
+       "kupiec_p": 0.0,
+       "n": 3740,
+       "rate": 0.8061497326203209
+      },
+      "regime/2024": {
+       "hits": 1136,
+       "kupiec_p": 7.265745859715173e-213,
+       "n": 1250,
+       "rate": 0.9088
+      },
+      "regime/2025-26": {
+       "hits": 1022,
+       "kupiec_p": 2.2583903257143064e-127,
+       "n": 1235,
+       "rate": 0.8275303643724696
+      }
+     },
+     "band90": {
+      "pooled": {
+       "hits": 3416,
+       "kupiec_p": 0.0,
+       "n": 8400,
+       "rate": 0.4066666666666667
+      },
+      "pressure_day_type/ordinary": {
+       "hits": 2833,
+       "kupiec_p": 0.0,
+       "n": 7184,
+       "rate": 0.39434855233853006
+      },
+      "pressure_day_type/quarter_end_turn": {
+       "hits": 130,
+       "kupiec_p": 4.5648416441722945e-79,
+       "n": 200,
+       "rate": 0.65
+      },
+      "pressure_day_type/tax_date": {
+       "hits": 218,
+       "kupiec_p": 1.7652144200838025e-104,
+       "n": 415,
+       "rate": 0.5253012048192771
+      },
+      "pressure_day_type/turn": {
+       "hits": 195,
+       "kupiec_p": 1.9552395409397174e-59,
+       "n": 540,
+       "rate": 0.3611111111111111
+      },
+      "pressure_day_type/year_end": {
+       "hits": 40,
+       "kupiec_p": 9.384762376007192e-26,
+       "n": 61,
+       "rate": 0.6557377049180327
+      },
+      "regime/2018-19": {
+       "hits": 238,
+       "kupiec_p": 9.434130057488463e-43,
+       "n": 920,
+       "rate": 0.25869565217391305
+      },
+      "regime/2020": {
+       "hits": 249,
+       "kupiec_p": 2.3959678087577457e-25,
+       "n": 1255,
+       "rate": 0.19840637450199203
+      },
+      "regime/2021-23": {
+       "hits": 2028,
+       "kupiec_p": 0.0,
+       "n": 3740,
+       "rate": 0.5422459893048128
+      },
+      "regime/2024": {
+       "hits": 420,
+       "kupiec_p": 1.2741881504584052e-113,
+       "n": 1250,
+       "rate": 0.336
+      },
+      "regime/2025-26": {
+       "hits": 481,
+       "kupiec_p": 3.385452328121873e-159,
+       "n": 1235,
+       "rate": 0.3894736842105263
+      }
+     },
+     "q95": {
+      "pooled": {
+       "hits": 1239,
+       "kupiec_p": 1.1010450064184932e-247,
+       "n": 8400,
+       "rate": 0.1475
+      },
+      "pressure_day_type/ordinary": {
+       "hits": 1016,
+       "kupiec_p": 5.093240195556528e-190,
+       "n": 7184,
+       "rate": 0.14142538975501115
+      },
+      "pressure_day_type/quarter_end_turn": {
+       "hits": 60,
+       "kupiec_p": 5.2603060120881e-30,
+       "n": 200,
+       "rate": 0.3
+      },
+      "pressure_day_type/tax_date": {
+       "hits": 83,
+       "kupiec_p": 4.714076239959691e-27,
+       "n": 415,
+       "rate": 0.2
+      },
+      "pressure_day_type/turn": {
+       "hits": 60,
+       "kupiec_p": 1.549067005751635e-08,
+       "n": 540,
+       "rate": 0.1111111111111111
+      },
+      "pressure_day_type/year_end": {
+       "hits": 20,
+       "kupiec_p": 7.659673879667077e-12,
+       "n": 61,
+       "rate": 0.32786885245901637
+      },
+      "regime/2018-19": {
+       "hits": 188,
+       "kupiec_p": 1.2761603625722192e-60,
+       "n": 920,
+       "rate": 0.20434782608695654
+      },
+      "regime/2020": {
+       "hits": 15,
+       "kupiec_p": 1.5911972837730794e-13,
+       "n": 1255,
+       "rate": 0.01195219123505976
+      },
+      "regime/2021-23": {
+       "hits": 395,
+       "kupiec_p": 1.3214763217619772e-42,
+       "n": 3740,
+       "rate": 0.10561497326203209
+      },
+      "regime/2024": {
+       "hits": 360,
+       "kupiec_p": 1.5111891011351068e-164,
+       "n": 1250,
+       "rate": 0.288
+      },
+      "regime/2025-26": {
+       "hits": 281,
+       "kupiec_p": 2.3070461021054536e-101,
+       "n": 1235,
+       "rate": 0.22753036437246962
+      }
+     }
+    }
+   },
+   "B2_pool20": {
+    "above": {
+     "band50": {
+      "pooled": {
+       "hits": 4573,
+       "kupiec_p": 3.7961970587237667e-16,
+       "n": 8400,
+       "rate": 0.544404761904762
+      },
+      "pressure_day_type/ordinary": {
+       "hits": 3778,
+       "kupiec_p": 1.1339080970100839e-05,
+       "n": 7184,
+       "rate": 0.5258908685968819
+      },
+      "pressure_day_type/quarter_end_turn": {
+       "hits": 165,
+       "kupiec_p": 9.7443158992068e-22,
+       "n": 200,
+       "rate": 0.825
+      },
+      "pressure_day_type/tax_date": {
+       "hits": 244,
+       "kupiec_p": 0.00032717750100250966,
+       "n": 415,
+       "rate": 0.5879518072289157
+      },
+      "pressure_day_type/turn": {
+       "hits": 350,
+       "kupiec_p": 3.995608941184621e-12,
+       "n": 540,
+       "rate": 0.6481481481481481
+      },
+      "pressure_day_type/year_end": {
+       "hits": 36,
+       "kupiec_p": 0.15787122039349485,
+       "n": 61,
+       "rate": 0.5901639344262295
+      },
+      "regime/2018-19": {
+       "hits": 554,
+       "kupiec_p": 4.969174710650381e-10,
+       "n": 920,
+       "rate": 0.6021739130434782
+      },
+      "regime/2020": {
+       "hits": 496,
+       "kupiec_p": 9.225903265395805e-14,
+       "n": 1255,
+       "rate": 0.3952191235059761
+      },
+      "regime/2021-23": {
+       "hits": 2006,
+       "kupiec_p": 8.601445507840576e-06,
+       "n": 3740,
+       "rate": 0.5363636363636364
+      },
+      "regime/2024": {
+       "hits": 607,
+       "kupiec_p": 0.3085334291370473,
+       "n": 1250,
+       "rate": 0.4856
+      },
+      "regime/2025-26": {
+       "hits": 910,
+       "kupiec_p": 1.040500208347393e-64,
+       "n": 1235,
+       "rate": 0.7368421052631579
+      }
+     },
+     "band90": {
+      "pooled": {
+       "hits": 1557,
+       "kupiec_p": 2.3437884005267033e-123,
+       "n": 8400,
+       "rate": 0.18535714285714286
+      },
+      "pressure_day_type/ordinary": {
+       "hits": 1216,
+       "kupiec_p": 1.8821976140529995e-72,
+       "n": 7184,
+       "rate": 0.16926503340757237
+      },
+      "pressure_day_type/quarter_end_turn": {
+       "hits": 110,
+       "kupiec_p": 2.2584691677948605e-56,
+       "n": 200,
+       "rate": 0.55
+      },
+      "pressure_day_type/tax_date": {
+       "hits": 94,
+       "kupiec_p": 5.732714733589326e-14,
+       "n": 415,
+       "rate": 0.22650602409638554
+      },
+      "pressure_day_type/turn": {
+       "hits": 111,
+       "kupiec_p": 3.466571346366818e-13,
+       "n": 540,
+       "rate": 0.20555555555555555
+      },
+      "pressure_day_type/year_end": {
+       "hits": 26,
+       "kupiec_p": 3.494178686156139e-11,
+       "n": 61,
+       "rate": 0.4262295081967213
+      },
+      "regime/2018-19": {
+       "hits": 212,
+       "kupiec_p": 1.3175380050645989e-30,
+       "n": 920,
+       "rate": 0.23043478260869565
+      },
+      "regime/2020": {
+       "hits": 126,
+       "kupiec_p": 0.9624982976209951,
+       "n": 1255,
+       "rate": 0.100398406374502
+      },
+      "regime/2021-23": {
+       "hits": 604,
+       "kupiec_p": 3.1342630692157837e-31,
+       "n": 3740,
+       "rate": 0.16149732620320856
+      },
+      "regime/2024": {
+       "hits": 246,
+       "kupiec_p": 1.4942663858549613e-24,
+       "n": 1250,
+       "rate": 0.1968
+      },
+      "regime/2025-26": {
+       "hits": 369,
+       "kupiec_p": 1.1829427880449227e-83,
+       "n": 1235,
+       "rate": 0.2987854251012146
+      }
+     },
+     "q95": {
+      "pooled": {
+       "hits": 926,
+       "kupiec_p": 1.7339276779813093e-107,
+       "n": 8400,
+       "rate": 0.11023809523809523
+      },
+      "pressure_day_type/ordinary": {
+       "hits": 660,
+       "kupiec_p": 1.1762008675317845e-48,
+       "n": 7184,
+       "rate": 0.09187082405345212
+      },
+      "pressure_day_type/quarter_end_turn": {
+       "hits": 75,
+       "kupiec_p": 7.124845743181352e-45,
+       "n": 200,
+       "rate": 0.375
+      },
+      "pressure_day_type/tax_date": {
+       "hits": 55,
+       "kupiec_p": 1.015125776623627e-10,
+       "n": 415,
+       "rate": 0.13253012048192772
+      },
+      "pressure_day_type/turn": {
+       "hits": 110,
+       "kupiec_p": 4.53721603129588e-36,
+       "n": 540,
+       "rate": 0.2037037037037037
+      },
+      "pressure_day_type/year_end": {
+       "hits": 26,
+       "kupiec_p": 2.6460059487366435e-18,
+       "n": 61,
+       "rate": 0.4262295081967213
+      },
+      "regime/2018-19": {
+       "hits": 195,
+       "kupiec_p": 1.5824408347584965e-65,
+       "n": 920,
+       "rate": 0.21195652173913043
+      },
+      "regime/2020": {
+       "hits": 10,
+       "kupiec_p": 3.4499536174722865e-17,
+       "n": 1255,
+       "rate": 0.00796812749003984
+      },
+      "regime/2021-23": {
+       "hits": 230,
+       "kupiec_p": 0.0018137960946984924,
+       "n": 3740,
+       "rate": 0.06149732620320856
+      },
+      "regime/2024": {
+       "hits": 236,
+       "kupiec_p": 1.0803218864451709e-68,
+       "n": 1250,
+       "rate": 0.1888
+      },
+      "regime/2025-26": {
+       "hits": 255,
+       "kupiec_p": 1.4529659367352713e-82,
+       "n": 1235,
+       "rate": 0.20647773279352227
+      }
+     }
+    },
+    "at_or_above": {
+     "band50": {
+      "pooled": {
+       "hits": 6493,
+       "kupiec_p": 0.0,
+       "n": 8400,
+       "rate": 0.7729761904761905
+      },
+      "pressure_day_type/ordinary": {
+       "hits": 5485,
+       "kupiec_p": 0.0,
+       "n": 7184,
+       "rate": 0.7635022271714922
+      },
+      "pressure_day_type/quarter_end_turn": {
+       "hits": 180,
+       "kupiec_p": 7.00480539760904e-34,
+       "n": 200,
+       "rate": 0.9
+      },
+      "pressure_day_type/tax_date": {
+       "hits": 325,
+       "kupiec_p": 1.388200573904548e-32,
+       "n": 415,
+       "rate": 0.7831325301204819
+      },
+      "pressure_day_type/turn": {
+       "hits": 447,
+       "kupiec_p": 7.571814093843511e-57,
+       "n": 540,
+       "rate": 0.8277777777777777
+      },
+      "pressure_day_type/year_end": {
+       "hits": 56,
+       "kupiec_p": 1.5602614924884152e-12,
+       "n": 61,
+       "rate": 0.9180327868852459
+      },
+      "regime/2018-19": {
+       "hits": 598,
+       "kupiec_p": 4.729959744262258e-20,
+       "n": 920,
+       "rate": 0.65
+      },
+      "regime/2020": {
+       "hits": 684,
+       "kupiec_p": 0.001413349759816336,
+       "n": 1255,
+       "rate": 0.5450199203187251
+      },
+      "regime/2021-23": {
+       "hits": 3017,
+       "kupiec_p": 0.0,
+       "n": 3740,
+       "rate": 0.8066844919786096
+      },
+      "regime/2024": {
+       "hits": 1167,
+       "kupiec_p": 4.691911005224913e-246,
+       "n": 1250,
+       "rate": 0.9336
+      },
+      "regime/2025-26": {
+       "hits": 1027,
+       "kupiec_p": 8.158109755085596e-131,
+       "n": 1235,
+       "rate": 0.8315789473684211
+      }
+     },
+     "band90": {
+      "pooled": {
+       "hits": 3402,
+       "kupiec_p": 0.0,
+       "n": 8400,
+       "rate": 0.405
+      },
+      "pressure_day_type/ordinary": {
+       "hits": 2833,
+       "kupiec_p": 0.0,
+       "n": 7184,
+       "rate": 0.39434855233853006
+      },
+      "pressure_day_type/quarter_end_turn": {
+       "hits": 140,
+       "kupiec_p": 8.062287233792494e-92,
+       "n": 200,
+       "rate": 0.7
+      },
+      "pressure_day_type/tax_date": {
+       "hits": 162,
+       "kupiec_p": 4.883565882924457e-55,
+       "n": 415,
+       "rate": 0.39036144578313253
+      },
+      "pressure_day_type/turn": {
+       "hits": 231,
+       "kupiec_p": 3.6849958512042392e-87,
+       "n": 540,
+       "rate": 0.42777777777777776
+      },
+      "pressure_day_type/year_end": {
+       "hits": 36,
+       "kupiec_p": 5.1229696602041336e-21,
+       "n": 61,
+       "rate": 0.5901639344262295
+      },
+      "regime/2018-19": {
+       "hits": 263,
+       "kupiec_p": 5.443075166775543e-56,
+       "n": 920,
+       "rate": 0.2858695652173913
+      },
+      "regime/2020": {
+       "hits": 211,
+       "kupiec_p": 1.2727367375364097e-13,
+       "n": 1255,
+       "rate": 0.16812749003984065
+      },
+      "regime/2021-23": {
+       "hits": 2009,
+       "kupiec_p": 0.0,
+       "n": 3740,
+       "rate": 0.5371657754010695
+      },
+      "regime/2024": {
+       "hits": 432,
+       "kupiec_p": 1.195749448555749e-121,
+       "n": 1250,
+       "rate": 0.3456
+      },
+      "regime/2025-26": {
+       "hits": 487,
+       "kupiec_p": 8.764126286795605e-164,
+       "n": 1235,
+       "rate": 0.39433198380566803
+      }
+     },
+     "q95": {
+      "pooled": {
+       "hits": 1323,
+       "kupiec_p": 1.4638828928843784e-292,
+       "n": 8400,
+       "rate": 0.1575
+      },
+      "pressure_day_type/ordinary": {
+       "hits": 1016,
+       "kupiec_p": 5.093240195556528e-190,
+       "n": 7184,
+       "rate": 0.14142538975501115
+      },
+      "pressure_day_type/quarter_end_turn": {
+       "hits": 85,
+       "kupiec_p": 6.004786475117111e-56,
+       "n": 200,
+       "rate": 0.425
+      },
+      "pressure_day_type/tax_date": {
+       "hits": 55,
+       "kupiec_p": 1.015125776623627e-10,
+       "n": 415,
+       "rate": 0.13253012048192772
+      },
+      "pressure_day_type/turn": {
+       "hits": 141,
+       "kupiec_p": 1.045358218479681e-59,
+       "n": 540,
+       "rate": 0.2611111111111111
+      },
+      "pressure_day_type/year_end": {
+       "hits": 26,
+       "kupiec_p": 2.6460059487366435e-18,
+       "n": 61,
+       "rate": 0.4262295081967213
+      },
+      "regime/2018-19": {
+       "hits": 223,
+       "kupiec_p": 1.695623492093901e-86,
+       "n": 920,
+       "rate": 0.24239130434782608
+      },
+      "regime/2020": {
+       "hits": 15,
+       "kupiec_p": 1.5911972837730794e-13,
+       "n": 1255,
+       "rate": 0.01195219123505976
+      },
+      "regime/2021-23": {
+       "hits": 416,
+       "kupiec_p": 2.79925465305989e-50,
+       "n": 3740,
+       "rate": 0.11122994652406418
+      },
+      "regime/2024": {
+       "hits": 372,
+       "kupiec_p": 2.607547939854496e-175,
+       "n": 1250,
+       "rate": 0.2976
+      },
+      "regime/2025-26": {
+       "hits": 297,
+       "kupiec_p": 1.313943800174727e-113,
+       "n": 1235,
+       "rate": 0.24048582995951417
+      }
+     }
+    }
+   },
+   "B2_pool30": {
+    "above": {
+     "band50": {
+      "pooled": {
+       "hits": 4573,
+       "kupiec_p": 3.7961970587237667e-16,
+       "n": 8400,
+       "rate": 0.544404761904762
+      },
+      "pressure_day_type/ordinary": {
+       "hits": 3778,
+       "kupiec_p": 1.1339080970100839e-05,
+       "n": 7184,
+       "rate": 0.5258908685968819
+      },
+      "pressure_day_type/quarter_end_turn": {
+       "hits": 165,
+       "kupiec_p": 9.7443158992068e-22,
+       "n": 200,
+       "rate": 0.825
+      },
+      "pressure_day_type/tax_date": {
+       "hits": 244,
+       "kupiec_p": 0.00032717750100250966,
+       "n": 415,
+       "rate": 0.5879518072289157
+      },
+      "pressure_day_type/turn": {
+       "hits": 350,
+       "kupiec_p": 3.995608941184621e-12,
+       "n": 540,
+       "rate": 0.6481481481481481
+      },
+      "pressure_day_type/year_end": {
+       "hits": 36,
+       "kupiec_p": 0.15787122039349485,
+       "n": 61,
+       "rate": 0.5901639344262295
+      },
+      "regime/2018-19": {
+       "hits": 554,
+       "kupiec_p": 4.969174710650381e-10,
+       "n": 920,
+       "rate": 0.6021739130434782
+      },
+      "regime/2020": {
+       "hits": 496,
+       "kupiec_p": 9.225903265395805e-14,
+       "n": 1255,
+       "rate": 0.3952191235059761
+      },
+      "regime/2021-23": {
+       "hits": 2006,
+       "kupiec_p": 8.601445507840576e-06,
+       "n": 3740,
+       "rate": 0.5363636363636364
+      },
+      "regime/2024": {
+       "hits": 607,
+       "kupiec_p": 0.3085334291370473,
+       "n": 1250,
+       "rate": 0.4856
+      },
+      "regime/2025-26": {
+       "hits": 910,
+       "kupiec_p": 1.040500208347393e-64,
+       "n": 1235,
+       "rate": 0.7368421052631579
+      }
+     },
+     "band90": {
+      "pooled": {
+       "hits": 1557,
+       "kupiec_p": 2.3437884005267033e-123,
+       "n": 8400,
+       "rate": 0.18535714285714286
+      },
+      "pressure_day_type/ordinary": {
+       "hits": 1216,
+       "kupiec_p": 1.8821976140529995e-72,
+       "n": 7184,
+       "rate": 0.16926503340757237
+      },
+      "pressure_day_type/quarter_end_turn": {
+       "hits": 110,
+       "kupiec_p": 2.2584691677948605e-56,
+       "n": 200,
+       "rate": 0.55
+      },
+      "pressure_day_type/tax_date": {
+       "hits": 94,
+       "kupiec_p": 5.732714733589326e-14,
+       "n": 415,
+       "rate": 0.22650602409638554
+      },
+      "pressure_day_type/turn": {
+       "hits": 111,
+       "kupiec_p": 3.466571346366818e-13,
+       "n": 540,
+       "rate": 0.20555555555555555
+      },
+      "pressure_day_type/year_end": {
+       "hits": 26,
+       "kupiec_p": 3.494178686156139e-11,
+       "n": 61,
+       "rate": 0.4262295081967213
+      },
+      "regime/2018-19": {
+       "hits": 212,
+       "kupiec_p": 1.3175380050645989e-30,
+       "n": 920,
+       "rate": 0.23043478260869565
+      },
+      "regime/2020": {
+       "hits": 126,
+       "kupiec_p": 0.9624982976209951,
+       "n": 1255,
+       "rate": 0.100398406374502
+      },
+      "regime/2021-23": {
+       "hits": 604,
+       "kupiec_p": 3.1342630692157837e-31,
+       "n": 3740,
+       "rate": 0.16149732620320856
+      },
+      "regime/2024": {
+       "hits": 246,
+       "kupiec_p": 1.4942663858549613e-24,
+       "n": 1250,
+       "rate": 0.1968
+      },
+      "regime/2025-26": {
+       "hits": 369,
+       "kupiec_p": 1.1829427880449227e-83,
+       "n": 1235,
+       "rate": 0.2987854251012146
+      }
+     },
+     "q95": {
+      "pooled": {
+       "hits": 926,
+       "kupiec_p": 1.7339276779813093e-107,
+       "n": 8400,
+       "rate": 0.11023809523809523
+      },
+      "pressure_day_type/ordinary": {
+       "hits": 660,
+       "kupiec_p": 1.1762008675317845e-48,
+       "n": 7184,
+       "rate": 0.09187082405345212
+      },
+      "pressure_day_type/quarter_end_turn": {
+       "hits": 75,
+       "kupiec_p": 7.124845743181352e-45,
+       "n": 200,
+       "rate": 0.375
+      },
+      "pressure_day_type/tax_date": {
+       "hits": 55,
+       "kupiec_p": 1.015125776623627e-10,
+       "n": 415,
+       "rate": 0.13253012048192772
+      },
+      "pressure_day_type/turn": {
+       "hits": 110,
+       "kupiec_p": 4.53721603129588e-36,
+       "n": 540,
+       "rate": 0.2037037037037037
+      },
+      "pressure_day_type/year_end": {
+       "hits": 26,
+       "kupiec_p": 2.6460059487366435e-18,
+       "n": 61,
+       "rate": 0.4262295081967213
+      },
+      "regime/2018-19": {
+       "hits": 195,
+       "kupiec_p": 1.5824408347584965e-65,
+       "n": 920,
+       "rate": 0.21195652173913043
+      },
+      "regime/2020": {
+       "hits": 10,
+       "kupiec_p": 3.4499536174722865e-17,
+       "n": 1255,
+       "rate": 0.00796812749003984
+      },
+      "regime/2021-23": {
+       "hits": 230,
+       "kupiec_p": 0.0018137960946984924,
+       "n": 3740,
+       "rate": 0.06149732620320856
+      },
+      "regime/2024": {
+       "hits": 236,
+       "kupiec_p": 1.0803218864451709e-68,
+       "n": 1250,
+       "rate": 0.1888
+      },
+      "regime/2025-26": {
+       "hits": 255,
+       "kupiec_p": 1.4529659367352713e-82,
+       "n": 1235,
+       "rate": 0.20647773279352227
+      }
+     }
+    },
+    "at_or_above": {
+     "band50": {
+      "pooled": {
+       "hits": 6493,
+       "kupiec_p": 0.0,
+       "n": 8400,
+       "rate": 0.7729761904761905
+      },
+      "pressure_day_type/ordinary": {
+       "hits": 5485,
+       "kupiec_p": 0.0,
+       "n": 7184,
+       "rate": 0.7635022271714922
+      },
+      "pressure_day_type/quarter_end_turn": {
+       "hits": 180,
+       "kupiec_p": 7.00480539760904e-34,
+       "n": 200,
+       "rate": 0.9
+      },
+      "pressure_day_type/tax_date": {
+       "hits": 325,
+       "kupiec_p": 1.388200573904548e-32,
+       "n": 415,
+       "rate": 0.7831325301204819
+      },
+      "pressure_day_type/turn": {
+       "hits": 447,
+       "kupiec_p": 7.571814093843511e-57,
+       "n": 540,
+       "rate": 0.8277777777777777
+      },
+      "pressure_day_type/year_end": {
+       "hits": 56,
+       "kupiec_p": 1.5602614924884152e-12,
+       "n": 61,
+       "rate": 0.9180327868852459
+      },
+      "regime/2018-19": {
+       "hits": 598,
+       "kupiec_p": 4.729959744262258e-20,
+       "n": 920,
+       "rate": 0.65
+      },
+      "regime/2020": {
+       "hits": 684,
+       "kupiec_p": 0.001413349759816336,
+       "n": 1255,
+       "rate": 0.5450199203187251
+      },
+      "regime/2021-23": {
+       "hits": 3017,
+       "kupiec_p": 0.0,
+       "n": 3740,
+       "rate": 0.8066844919786096
+      },
+      "regime/2024": {
+       "hits": 1167,
+       "kupiec_p": 4.691911005224913e-246,
+       "n": 1250,
+       "rate": 0.9336
+      },
+      "regime/2025-26": {
+       "hits": 1027,
+       "kupiec_p": 8.158109755085596e-131,
+       "n": 1235,
+       "rate": 0.8315789473684211
+      }
+     },
+     "band90": {
+      "pooled": {
+       "hits": 3402,
+       "kupiec_p": 0.0,
+       "n": 8400,
+       "rate": 0.405
+      },
+      "pressure_day_type/ordinary": {
+       "hits": 2833,
+       "kupiec_p": 0.0,
+       "n": 7184,
+       "rate": 0.39434855233853006
+      },
+      "pressure_day_type/quarter_end_turn": {
+       "hits": 140,
+       "kupiec_p": 8.062287233792494e-92,
+       "n": 200,
+       "rate": 0.7
+      },
+      "pressure_day_type/tax_date": {
+       "hits": 162,
+       "kupiec_p": 4.883565882924457e-55,
+       "n": 415,
+       "rate": 0.39036144578313253
+      },
+      "pressure_day_type/turn": {
+       "hits": 231,
+       "kupiec_p": 3.6849958512042392e-87,
+       "n": 540,
+       "rate": 0.42777777777777776
+      },
+      "pressure_day_type/year_end": {
+       "hits": 36,
+       "kupiec_p": 5.1229696602041336e-21,
+       "n": 61,
+       "rate": 0.5901639344262295
+      },
+      "regime/2018-19": {
+       "hits": 263,
+       "kupiec_p": 5.443075166775543e-56,
+       "n": 920,
+       "rate": 0.2858695652173913
+      },
+      "regime/2020": {
+       "hits": 211,
+       "kupiec_p": 1.2727367375364097e-13,
+       "n": 1255,
+       "rate": 0.16812749003984065
+      },
+      "regime/2021-23": {
+       "hits": 2009,
+       "kupiec_p": 0.0,
+       "n": 3740,
+       "rate": 0.5371657754010695
+      },
+      "regime/2024": {
+       "hits": 432,
+       "kupiec_p": 1.195749448555749e-121,
+       "n": 1250,
+       "rate": 0.3456
+      },
+      "regime/2025-26": {
+       "hits": 487,
+       "kupiec_p": 8.764126286795605e-164,
+       "n": 1235,
+       "rate": 0.39433198380566803
+      }
+     },
+     "q95": {
+      "pooled": {
+       "hits": 1323,
+       "kupiec_p": 1.4638828928843784e-292,
+       "n": 8400,
+       "rate": 0.1575
+      },
+      "pressure_day_type/ordinary": {
+       "hits": 1016,
+       "kupiec_p": 5.093240195556528e-190,
+       "n": 7184,
+       "rate": 0.14142538975501115
+      },
+      "pressure_day_type/quarter_end_turn": {
+       "hits": 85,
+       "kupiec_p": 6.004786475117111e-56,
+       "n": 200,
+       "rate": 0.425
+      },
+      "pressure_day_type/tax_date": {
+       "hits": 55,
+       "kupiec_p": 1.015125776623627e-10,
+       "n": 415,
+       "rate": 0.13253012048192772
+      },
+      "pressure_day_type/turn": {
+       "hits": 141,
+       "kupiec_p": 1.045358218479681e-59,
+       "n": 540,
+       "rate": 0.2611111111111111
+      },
+      "pressure_day_type/year_end": {
+       "hits": 26,
+       "kupiec_p": 2.6460059487366435e-18,
+       "n": 61,
+       "rate": 0.4262295081967213
+      },
+      "regime/2018-19": {
+       "hits": 223,
+       "kupiec_p": 1.695623492093901e-86,
+       "n": 920,
+       "rate": 0.24239130434782608
+      },
+      "regime/2020": {
+       "hits": 15,
+       "kupiec_p": 1.5911972837730794e-13,
+       "n": 1255,
+       "rate": 0.01195219123505976
+      },
+      "regime/2021-23": {
+       "hits": 416,
+       "kupiec_p": 2.79925465305989e-50,
+       "n": 3740,
+       "rate": 0.11122994652406418
+      },
+      "regime/2024": {
+       "hits": 372,
+       "kupiec_p": 2.607547939854496e-175,
+       "n": 1250,
+       "rate": 0.2976
+      },
+      "regime/2025-26": {
+       "hits": 297,
+       "kupiec_p": 1.313943800174727e-113,
+       "n": 1235,
+       "rate": 0.24048582995951417
+      }
+     }
+    }
+   },
+   "B2_turn": {
+    "above": {
+     "band50": {
+      "pooled": {
+       "hits": 4573,
+       "kupiec_p": 3.7961970587237667e-16,
+       "n": 8400,
+       "rate": 0.544404761904762
+      },
+      "pressure_day_type/ordinary": {
+       "hits": 3778,
+       "kupiec_p": 1.1339080970100839e-05,
+       "n": 7184,
+       "rate": 0.5258908685968819
+      },
+      "pressure_day_type/quarter_end_turn": {
+       "hits": 119,
+       "kupiec_p": 0.007034729425656939,
+       "n": 200,
+       "rate": 0.595
+      },
+      "pressure_day_type/tax_date": {
+       "hits": 278,
+       "kupiec_p": 2.7307017293186634e-12,
+       "n": 415,
+       "rate": 0.6698795180722892
+      },
+      "pressure_day_type/turn": {
+       "hits": 339,
+       "kupiec_p": 2.348266280629344e-09,
+       "n": 540,
+       "rate": 0.6277777777777778
+      },
+      "pressure_day_type/year_end": {
+       "hits": 59,
+       "kupiec_p": 2.7716348903567016e-16,
+       "n": 61,
+       "rate": 0.9672131147540983
+      },
+      "regime/2018-19": {
+       "hits": 515,
+       "kupiec_p": 0.0002823959417946274,
+       "n": 920,
+       "rate": 0.5597826086956522
+      },
+      "regime/2020": {
+       "hits": 515,
+       "kupiec_p": 1.9090758066810356e-10,
+       "n": 1255,
+       "rate": 0.4103585657370518
+      },
+      "regime/2021-23": {
+       "hits": 2079,
+       "kupiec_p": 7.799818038407224e-12,
+       "n": 3740,
+       "rate": 0.5558823529411765
+      },
+      "regime/2024": {
+       "hits": 581,
+       "kupiec_p": 0.012772667174375762,
+       "n": 1250,
+       "rate": 0.4648
+      },
+      "regime/2025-26": {
+       "hits": 883,
+       "kupiec_p": 3.048343374675391e-53,
+       "n": 1235,
+       "rate": 0.7149797570850203
+      }
+     },
+     "band90": {
+      "pooled": {
+       "hits": 1651,
+       "kupiec_p": 3.717817354347801e-154,
+       "n": 8400,
+       "rate": 0.19654761904761905
+      },
+      "pressure_day_type/ordinary": {
+       "hits": 1216,
+       "kupiec_p": 1.8821976140529995e-72,
+       "n": 7184,
+       "rate": 0.16926503340757237
+      },
+      "pressure_day_type/quarter_end_turn": {
+       "hits": 81,
+       "kupiec_p": 1.0673875466863735e-29,
+       "n": 200,
+       "rate": 0.405
+      },
+      "pressure_day_type/tax_date": {
+       "hits": 160,
+       "kupiec_p": 1.6122657835862223e-53,
+       "n": 415,
+       "rate": 0.3855421686746988
+      },
+      "pressure_day_type/turn": {
+       "hits": 135,
+       "kupiec_p": 1.7571368938638215e-23,
+       "n": 540,
+       "rate": 0.25
+      },
+      "pressure_day_type/year_end": {
+       "hits": 59,
+       "kupiec_p": 2.6832671061077383e-57,
+       "n": 61,
+       "rate": 0.9672131147540983
+      },
+      "regime/2018-19": {
+       "hits": 190,
+       "kupiec_p": 1.0213163452185636e-21,
+       "n": 920,
+       "rate": 0.20652173913043478
+      },
+      "regime/2020": {
+       "hits": 169,
+       "kupiec_p": 9.251387393865518e-05,
+       "n": 1255,
+       "rate": 0.1346613545816733
+      },
+      "regime/2021-23": {
+       "hits": 715,
+       "kupiec_p": 5.980900719784877e-63,
+       "n": 3740,
+       "rate": 0.19117647058823528
+      },
+      "regime/2024": {
+       "hits": 231,
+       "kupiec_p": 1.338371523877468e-19,
+       "n": 1250,
+       "rate": 0.1848
+      },
+      "regime/2025-26": {
+       "hits": 346,
+       "kupiec_p": 1.2223432279916729e-70,
+       "n": 1235,
+       "rate": 0.28016194331983807
+      }
+     },
+     "q95": {
+      "pooled": {
+       "hits": 840,
+       "kupiec_p": 1.9161371333965596e-77,
+       "n": 8400,
+       "rate": 0.1
+      },
+      "pressure_day_type/ordinary": {
+       "hits": 660,
+       "kupiec_p": 1.1762008675317845e-48,
+       "n": 7184,
+       "rate": 0.09187082405345212
+      },
+      "pressure_day_type/quarter_end_turn": {
+       "hits": 30,
+       "kupiec_p": 1.1520458666826556e-07,
+       "n": 200,
+       "rate": 0.15
+      },
+      "pressure_day_type/tax_date": {
+       "hits": 61,
+       "kupiec_p": 1.0280516807500067e-13,
+       "n": 415,
+       "rate": 0.14698795180722893
+      },
+      "pressure_day_type/turn": {
+       "hits": 60,
+       "kupiec_p": 1.549067005751635e-08,
+       "n": 540,
+       "rate": 0.1111111111111111
+      },
+      "pressure_day_type/year_end": {
+       "hits": 29,
+       "kupiec_p": 6.339948349555561e-22,
+       "n": 61,
+       "rate": 0.47540983606557374
+      },
+      "regime/2018-19": {
+       "hits": 160,
+       "kupiec_p": 1.8913503093327968e-42,
+       "n": 920,
+       "rate": 0.17391304347826086
+      },
+      "regime/2020": {
+       "hits": 10,
+       "kupiec_p": 3.4499536174722865e-17,
+       "n": 1255,
+       "rate": 0.00796812749003984
+      },
+      "regime/2021-23": {
+       "hits": 226,
+       "kupiec_p": 0.004549389045997253,
+       "n": 3740,
+       "rate": 0.06042780748663101
+      },
+      "regime/2024": {
+       "hits": 221,
+       "kupiec_p": 3.0999518503280373e-59,
+       "n": 1250,
+       "rate": 0.1768
+      },
+      "regime/2025-26": {
+       "hits": 223,
+       "kupiec_p": 2.0070330853913872e-61,
+       "n": 1235,
+       "rate": 0.1805668016194332
+      }
+     }
+    },
+    "at_or_above": {
+     "band50": {
+      "pooled": {
+       "hits": 6391,
+       "kupiec_p": 0.0,
+       "n": 8400,
+       "rate": 0.7608333333333334
+      },
+      "pressure_day_type/ordinary": {
+       "hits": 5485,
+       "kupiec_p": 0.0,
+       "n": 7184,
+       "rate": 0.7635022271714922
+      },
+      "pressure_day_type/quarter_end_turn": {
+       "hits": 126,
+       "kupiec_p": 0.0002171434095309163,
+       "n": 200,
+       "rate": 0.63
+      },
+      "pressure_day_type/tax_date": {
+       "hits": 325,
+       "kupiec_p": 1.388200573904548e-32,
+       "n": 415,
+       "rate": 0.7831325301204819
+      },
+      "pressure_day_type/turn": {
+       "hits": 394,
+       "kupiec_p": 1.504139149092681e-27,
+       "n": 540,
+       "rate": 0.7296296296296296
+      },
+      "pressure_day_type/year_end": {
+       "hits": 61,
+       "kupiec_p": 3.71985178207352e-20,
+       "n": 61,
+       "rate": 1.0
+      },
+      "regime/2018-19": {
+       "hits": 549,
+       "kupiec_p": 3.9316578159271106e-09,
+       "n": 920,
+       "rate": 0.5967391304347827
+      },
+      "regime/2020": {
+       "hits": 688,
+       "kupiec_p": 0.0006303046755850869,
+       "n": 1255,
+       "rate": 0.5482071713147411
+      },
+      "regime/2021-23": {
+       "hits": 3015,
+       "kupiec_p": 0.0,
+       "n": 3740,
+       "rate": 0.8061497326203209
+      },
+      "regime/2024": {
+       "hits": 1136,
+       "kupiec_p": 7.265745859715173e-213,
+       "n": 1250,
+       "rate": 0.9088
+      },
+      "regime/2025-26": {
+       "hits": 1003,
+       "kupiec_p": 7.6242344150037095e-115,
+       "n": 1235,
+       "rate": 0.8121457489878543
+      }
+     },
+     "band90": {
+      "pooled": {
+       "hits": 3407,
+       "kupiec_p": 0.0,
+       "n": 8400,
+       "rate": 0.4055952380952381
+      },
+      "pressure_day_type/ordinary": {
+       "hits": 2833,
+       "kupiec_p": 0.0,
+       "n": 7184,
+       "rate": 0.39434855233853006
+      },
+      "pressure_day_type/quarter_end_turn": {
+       "hits": 100,
+       "kupiec_p": 2.3709573960710266e-46,
+       "n": 200,
+       "rate": 0.5
+      },
+      "pressure_day_type/tax_date": {
+       "hits": 218,
+       "kupiec_p": 1.7652144200838025e-104,
+       "n": 415,
+       "rate": 0.5253012048192771
+      },
+      "pressure_day_type/turn": {
+       "hits": 195,
+       "kupiec_p": 1.9552395409397174e-59,
+       "n": 540,
+       "rate": 0.3611111111111111
+      },
+      "pressure_day_type/year_end": {
+       "hits": 61,
+       "kupiec_p": 4.7437285250825303e-63,
+       "n": 61,
+       "rate": 1.0
+      },
+      "regime/2018-19": {
+       "hits": 238,
+       "kupiec_p": 9.434130057488463e-43,
+       "n": 920,
+       "rate": 0.25869565217391305
+      },
+      "regime/2020": {
+       "hits": 254,
+       "kupiec_p": 3.960333760920629e-27,
+       "n": 1255,
+       "rate": 0.20239043824701194
+      },
+      "regime/2021-23": {
+       "hits": 2038,
+       "kupiec_p": 0.0,
+       "n": 3740,
+       "rate": 0.5449197860962567
+      },
+      "regime/2024": {
+       "hits": 420,
+       "kupiec_p": 1.2741881504584052e-113,
+       "n": 1250,
+       "rate": 0.336
+      },
+      "regime/2025-26": {
+       "hits": 457,
+       "kupiec_p": 2.2051018241803477e-141,
+       "n": 1235,
+       "rate": 0.3700404858299595
+      }
+     },
+     "q95": {
+      "pooled": {
+       "hits": 1220,
+       "kupiec_p": 6.255077797780456e-238,
+       "n": 8400,
+       "rate": 0.14523809523809525
+      },
+      "pressure_day_type/ordinary": {
+       "hits": 1016,
+       "kupiec_p": 5.093240195556528e-190,
+       "n": 7184,
+       "rate": 0.14142538975501115
+      },
+      "pressure_day_type/quarter_end_turn": {
+       "hits": 30,
+       "kupiec_p": 1.1520458666826556e-07,
+       "n": 200,
+       "rate": 0.15
+      },
+      "pressure_day_type/tax_date": {
+       "hits": 83,
+       "kupiec_p": 4.714076239959691e-27,
+       "n": 415,
+       "rate": 0.2
+      },
+      "pressure_day_type/turn": {
+       "hits": 60,
+       "kupiec_p": 1.549067005751635e-08,
+       "n": 540,
+       "rate": 0.1111111111111111
+      },
+      "pressure_day_type/year_end": {
+       "hits": 31,
+       "kupiec_p": 1.7694900447180488e-24,
+       "n": 61,
+       "rate": 0.5081967213114754
+      },
+      "regime/2018-19": {
+       "hits": 188,
+       "kupiec_p": 1.2761603625722192e-60,
+       "n": 920,
+       "rate": 0.20434782608695654
+      },
+      "regime/2020": {
+       "hits": 15,
+       "kupiec_p": 1.5911972837730794e-13,
+       "n": 1255,
+       "rate": 0.01195219123505976
+      },
+      "regime/2021-23": {
+       "hits": 400,
+       "kupiec_p": 2.196919550490978e-44,
+       "n": 3740,
+       "rate": 0.10695187165775401
+      },
+      "regime/2024": {
+       "hits": 360,
+       "kupiec_p": 1.5111891011351068e-164,
+       "n": 1250,
+       "rate": 0.288
+      },
+      "regime/2025-26": {
+       "hits": 257,
+       "kupiec_p": 5.836189767955654e-84,
+       "n": 1235,
+       "rate": 0.20809716599190284
+      }
+     }
+    }
+   }
+  },
+  "rules": [
+   "above",
+   "at_or_above"
+  ]
+ },
+ "issue": 1155,
+ "label": "development, not a verdict",
+ "means": {
+  "grid_crps": {
+   "B1": 2.0904193082298144,
+   "B1_prime": 1.7154150419254668,
+   "B2_legacy": 2.4517213266045523,
+   "B2_pool10": 2.452371596014491,
+   "B2_pool20": 2.4175600949792937,
+   "B2_pool30": 2.4175600949792937,
+   "B2_turn": 2.5311029961180136
+  },
+  "upper_tail_twcrps": {
+   "B1": 1.1685423892339564,
+   "B1_prime": 0.8571238783643859,
+   "B2_legacy": 1.0231074347826037,
+   "B2_pool10": 1.0265875163043445,
+   "B2_pool20": 0.9882328599896416,
+   "B2_pool30": 0.9882328599896416,
+   "B2_turn": 1.098280425983434
+  }
+ },
+ "models": [
+  "B1",
+  "B1_prime",
+  "B2_legacy",
+  "B2_turn",
+  "B2_pool10",
+  "B2_pool20",
+  "B2_pool30"
+ ],
+ "notes": {
+  "decision_days_offered": 1680,
+  "dropped": {
+   "B1_or_B1_prime_no_history": [],
+   "B2_turn_empty_pool": []
+  },
+  "first": "2019-04-03",
+  "last": "2025-12-23",
+  "last_target": "2025-12-31",
+  "scored_decision_days": 1680
+ },
+ "pairs": [
+  [
+   "B2_pool10",
+   "B2_turn"
+  ],
+  [
+   "B2_pool20",
+   "B2_turn"
+  ],
+  [
+   "B2_pool30",
+   "B2_turn"
+  ],
+  [
+   "B2_turn",
+   "B2_legacy"
+  ],
+  [
+   "B2_pool10",
+   "B1"
+  ],
+  [
+   "B2_pool10",
+   "B1_prime"
+  ]
+ ],
+ "panel_sha256": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+ "pool_min_drafted": 10,
+ "pool_mins": [
+  10,
+  20,
+  30
+ ],
+ "pools": {
+  "B2_pool10": {
+   "ordinary": {
+    "cells": 7184,
+    "pools": {
+     "ordinary": 7184
+    },
+    "rows_max": 215,
+    "rows_min": 211
+   },
+   "quarter_end_turn": {
+    "cells": 200,
+    "pools": {
+     "turn": 200
+    },
+    "rows_max": 16,
+    "rows_min": 16
+   },
+   "tax_date": {
+    "cells": 415,
+    "pools": {
+     "tax_date": 415
+    },
+    "rows_max": 13,
+    "rows_min": 10
+   },
+   "turn": {
+    "cells": 540,
+    "pools": {
+     "turn": 540
+    },
+    "rows_max": 16,
+    "rows_min": 15
+   },
+   "year_end": {
+    "cells": 61,
+    "pools": {
+     "turn": 61
+    },
+    "rows_max": 16,
+    "rows_min": 16
+   }
+  },
+  "B2_pool20": {
+   "ordinary": {
+    "cells": 7184,
+    "pools": {
+     "ordinary": 7184
+    },
+    "rows_max": 215,
+    "rows_min": 211
+   },
+   "quarter_end_turn": {
+    "cells": 200,
+    "pools": {
+     "all_days": 200
+    },
+    "rows_max": 250,
+    "rows_min": 248
+   },
+   "tax_date": {
+    "cells": 415,
+    "pools": {
+     "all_days": 415
+    },
+    "rows_max": 251,
+    "rows_min": 247
+   },
+   "turn": {
+    "cells": 540,
+    "pools": {
+     "all_days": 540
+    },
+    "rows_max": 251,
+    "rows_min": 248
+   },
+   "year_end": {
+    "cells": 61,
+    "pools": {
+     "all_days": 61
+    },
+    "rows_max": 250,
+    "rows_min": 248
+   }
+  },
+  "B2_pool30": {
+   "ordinary": {
+    "cells": 7184,
+    "pools": {
+     "ordinary": 7184
+    },
+    "rows_max": 215,
+    "rows_min": 211
+   },
+   "quarter_end_turn": {
+    "cells": 200,
+    "pools": {
+     "all_days": 200
+    },
+    "rows_max": 250,
+    "rows_min": 248
+   },
+   "tax_date": {
+    "cells": 415,
+    "pools": {
+     "all_days": 415
+    },
+    "rows_max": 251,
+    "rows_min": 247
+   },
+   "turn": {
+    "cells": 540,
+    "pools": {
+     "all_days": 540
+    },
+    "rows_max": 251,
+    "rows_min": 248
+   },
+   "year_end": {
+    "cells": 61,
+    "pools": {
+     "all_days": 61
+    },
+    "rows_max": 250,
+    "rows_min": 248
+   }
+  }
+ },
+ "seed": 1155,
+ "skipped_groups": {
+  "pressure_day_type/year_end": 13
+ }
+}
