@@ -149,6 +149,7 @@ data, dating, holidays and panel declarations). None of their scripts calls a on
 |---|---|---|---|
 | `metadata/all_inputs.json` | `scripts/all_inputs.py` | direct | `ml.pressure_all_inputs_exceedance`, direct pairs |
 | `metadata/announcement_dating.json` | `scripts/announcement_dating_rescore.py` | direct | a re-score of pressure models under announcement-dated settlements |
+| `metadata/b2_pool_fallback_1155.json` | `scripts/b2_pool_fallback_1155.py` | direct | benchmarks only (B1, B1', B2 on the legacy and the turn types, and B2 with a minimum pool): no fit; every target's type is read from its own calendar columns and date (the day types are known in advance), so the calendar is read at the target day |
 | `metadata/backfill_spread_633.json` | `scripts/backfill_spread_633.py` | direct | its own quantile estimator on pairs read through `InformationRule.observation` at each target's decision instant |
 | `metadata/balance_sheet_nested_1031.json` | `scripts/balance_sheet_nested_1031.py` | direct | both arms fit #1027's gbm_funding_cal_direct on direct pairs (`training_pairs="direct"`) and read the calendar columns, treasury_settlement at lead 1 and their three balance-sheet flag columns from the target row |
 | `metadata/calendar_mr_1115.json` | `scripts/calendar_mr_1115.py` | direct | scaled mean reversion with additive calendar, scheduled and FOMC terms read from the target row on direct pairs (repo_model.spread_mr_calendar, guarded by one_step_guard with no allow-list entry); no gradient-boosted fit is called |
