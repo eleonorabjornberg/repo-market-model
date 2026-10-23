@@ -27,6 +27,8 @@ from __future__ import annotations
 from datetime import date
 from typing import List, Mapping, Optional, Sequence
 
+from . import turn_days
+
 SCHEDULED = "scheduled"
 NON_ORDINARY = "non_ordinary"
 DEFINITIONS = (SCHEDULED, NON_ORDINARY)
@@ -77,7 +79,7 @@ def is_risk_date(
     if definition == NON_ORDINARY:
         if splits is None:
             raise ValueError("the non_ordinary definition reads the day type: pass the split declaration as splits=")
-        kind = splits.day_type(values) if reporting_on is None else splits.reporting_day_type(reporting_on, values)
+        kind = splits.day_type(values) if reporting_on is None else turn_days.reporting_day_type(splits, reporting_on, values)
         return non_ordinary_day(kind, values.get(COUPONS), coupon_clause)
     raise ValueError(f"unknown risk-date definition {definition!r}; use one of {DEFINITIONS}")
 

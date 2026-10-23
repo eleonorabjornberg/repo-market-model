@@ -100,7 +100,7 @@ v1 = _script("pressure_model_v1")
 #: published distribution and as-of persistence exactly as `compare` does.
 final_test = _script("final_test_preregistration")
 
-from repo_model import onset, pressure, prospective_log  # noqa: E402
+from repo_model import field_flags, onset, pressure, prospective_log  # noqa: E402
 from repo_model.asof import (  # noqa: E402
     KIND_OBSERVED,
     InformationRule,
@@ -160,9 +160,15 @@ RECORD_VERSION_V2 = 2
 #: scoring protocol (`repo_model.prospective_log`). The format only gains that block: every field a version 2 file
 #: has is written as before.
 RECORD_VERSION_V3 = 3
-READABLE_VERSIONS = (RECORD_VERSION, RECORD_VERSION_V2, RECORD_VERSION_V3)
+#: A file that also carries `field_flags` (#1132): per declared feature and horizon, the age of the value read, whether
+#: it was the latest public row, whether it is a carried weekly value, and whether the cell was a hole
+#: (`repo_model.field_flags`). The format only gains that block: every field a version 3 file has is written as before.
+RECORD_VERSION_V4 = 4
+READABLE_VERSIONS = (RECORD_VERSION, RECORD_VERSION_V2, RECORD_VERSION_V3, RECORD_VERSION_V4)
 #: Versions that carry `distributions.published_v2`.
-V2_VERSIONS = (RECORD_VERSION_V2, RECORD_VERSION_V3)
+V2_VERSIONS = (RECORD_VERSION_V2, RECORD_VERSION_V3, RECORD_VERSION_V4)
+#: Versions that carry `protocol`.
+PROTOCOL_VERSIONS = (RECORD_VERSION_V3, RECORD_VERSION_V4)
 #: The last day of the published panel. The final test (#150) scores no day
 #: after it; the live record logs no day on or before it.
 PANEL_END = date(2026, 9, 3)
@@ -340,14 +346,18 @@ def _forecast_block(block, targets, where):
 def validate_record(record) -> None:
     """The record's schema. Raises `ValueError` naming what is wrong."""
 
-    optional = {"dry_run", "chain", "environment", "protocol"} & set(record) if isinstance(record, dict) else set()
+    optional = {"dry_run", "chain", "environment", "protocol", "field_flags"} & set(record) if isinstance(record, dict) else set()
     if not isinstance(record, dict) or set(record) != set(RECORD_KEYS) | optional:
         missing = sorted(set(RECORD_KEYS) - set(record or {}))
         raise ValueError(f"a record holds exactly {list(RECORD_KEYS)}; missing {missing}")
     if record["record_version"] not in READABLE_VERSIONS:
         raise ValueError(f"record_version must be one of {list(READABLE_VERSIONS)}")
-    if (record["record_version"] == RECORD_VERSION_V3) != ("protocol" in record):
-        raise ValueError("a version 3 file carries `protocol`, and no other version does")
+    if (record["record_version"] in PROTOCOL_VERSIONS) != ("protocol" in record):
+        raise ValueError("a version 3 or 4 file carries `protocol`, and no other version does")
+    if (record["record_version"] == RECORD_VERSION_V4) != ("field_flags" in record):
+        raise ValueError("a version 4 file carries `field_flags`, and no other version does")
+    if "field_flags" in record:
+        field_flags.validate_field_flags_block(record["field_flags"])
     day = date.fromisoformat(record["decision_day"])
     if "protocol" in record:
         # Read back against the record's own decision day (#806): a stored `written_at` past the cut-off is refused.
@@ -1138,6 +1148,21 @@ def protocol_for(extended, decision_day: date, registry, splits, written_at: dat
     )
 
 
+def field_flags_for(extended, registry) -> dict:
+    """The record's `field_flags` block (#1132): the flags of every feature each horizon's forecasts read.
+
+    `extended[h][0]` is the panel extended for horizon `h` (`extend_panel`). The features are the union of what the
+    published model, the baselines' calendar columns, the anchor's spread and the published distribution declare at
+    that horizon, the same four rules `main` checks the reads of.
+    """
+
+    return field_flags.field_flags_block(
+        {h: extended[h][0] for h in HORIZONS},
+        {h: V1_FEATURES[h] + tuple(CALENDAR_FEATURES) + ("spread_bps",) + published_features(h) for h in HORIZONS},
+        registry=registry, decision_time=DECISION,
+    )
+
+
 # -- provenance ---------------------------------------------------------------
 
 
@@ -1322,7 +1347,7 @@ def run_command(args) -> int:
     tick = clock.monotonic()
     _status(args.status, "write")
     record = {
-        "record_version": RECORD_VERSION_V3,
+        "record_version": RECORD_VERSION_V4,
         "decision_day": day.isoformat(),
         "decision_instant": instant.isoformat(),
         "code": {"sha": head, "pinned_sha": pinned},
@@ -1341,6 +1366,7 @@ def run_command(args) -> int:
         "baselines": baselines,
         "distributions": distributions,
         "protocol": protocol_for(extended[HORIZONS[-1]][0], day, registry, splits, datetime.now(timezone.utc)),
+        "field_flags": field_flags_for(extended, registry),
         "run": {
             "started_at": started.isoformat(),
             "workflow_run": args.workflow_run,

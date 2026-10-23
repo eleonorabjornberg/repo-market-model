@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/walk_calibration_1133.json",
+  "script": "scripts/walk_calibration_1133.py",
+  "pairing": "none",
+  "why": "a walk-forward recalibration of #941's mean-reversion law: no gradient-boosted fit, and no calendar column trained or read as an input; the base reads no calendar column, so every figure is provisional under the calendar-first rule as #941's are, and the classification is Eleonora's (the pull request asks)"
+}

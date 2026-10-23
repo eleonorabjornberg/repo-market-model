@@ -105,6 +105,27 @@ class WorkflowFileTests(unittest.TestCase):
                 with self.subTest(job=job):
                     self.assertIn("fetch-depth: 0", match.group(1) or "")
 
+    def test_pushes_to_main_are_never_cancelled(self):
+        """A push to main keeps its own run, so the owner-attestation check covers every pushed range (#1168, finding #1164).
+
+        `concurrency` with a group per ref and `cancel-in-progress: true` cancelled the run of every push
+        that a later push superseded (runs for b48b546e, e4d4b265, 288dbd14 and 46802583 on 22 October
+        2026), and the check over a pushed range `event.before..sha` then never ran for those ranges.
+        A push now gets a group of its own commit, and only a pull request cancels its predecessor.
+
+        Recorded mutation: the group line changed back to `group: tests-${{ github.ref }}`;
+        this test then fails with `AssertionError` (the group does not name the pushed commit).
+        """
+        text = (ROOT / ".github" / "workflows" / "tests.yml").read_text(encoding="utf-8")
+        block = re.search(r"^concurrency:\n((?:[ ]+\S.*\n)+)", text, flags=re.M)
+        self.assertIsNotNone(block, "tests.yml has no top-level concurrency block")
+        body = block.group(1)
+        group = re.search(r"^\s+group:\s*(.+)$", body, flags=re.M).group(1)
+        cancel = re.search(r"^\s+cancel-in-progress:\s*(.+)$", body, flags=re.M).group(1).strip()
+        self.assertIn("github.event_name == 'push' && github.sha", group, "a push's group must name its commit")
+        self.assertIn("github.ref", group, "a pull request keeps a group per ref")
+        self.assertEqual(cancel, "${{ github.event_name == 'pull_request' }}", "only a pull request cancels a superseded run")
+
     def test_tests_yml_runs_the_results_page_check(self):
         path = next(p for p in WORKFLOWS if p.name == "tests.yml")
         text = "\n".join(jobs(path)["pages"])

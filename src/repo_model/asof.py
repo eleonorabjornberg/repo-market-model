@@ -847,8 +847,10 @@ HOURS_OBSERVABLE_BASIS = (
     "value's own print, not the panel row it is read from) to the decision instant"
 )
 
-#: The weekday a weekly field is observed on: the Wednesday level of the H.4.1,
-#: FR 2004 and H.8 weeklies the registry declares.
+#: The weekday a weekly field is observed on: the Wednesday that ends the week of
+#: the H.4.1, FR 2004 and H.8 weeklies the registry declares. `WRESBAL` and
+#: `WTREGEN` are the averages over the week ending that Wednesday, not the
+#: Wednesday levels (`WRBWFRBL`, `WDTGAL`; `WLRRAOL` is a level).
 WEEKLY_OBSERVATION_WEEKDAY = 2
 
 

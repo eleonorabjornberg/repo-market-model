@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/s3_decomposition_1172.json",
+  "script": "scripts/s3_decomposition_1172.py",
+  "pairing": "direct",
+  "why": "why (s3) of #1145 wins: (s3) and its arms r1, r2 and r3 (and v4 of #1153 on (s3)) read the calendar columns, and for r3 the announced settlement size, at the target day on direct pairs (training_pairs = direct; the estimation routine is guarded by one_step_guard with no allow-list entry); no gradient-boosted fit is called, and the gbm_funding walks are read as a comparison only when supplied (a Mac run), so the arms are not provisional; the arm (a) and the benchmarks read no calendar column and carry the register's mark as before"
+}
