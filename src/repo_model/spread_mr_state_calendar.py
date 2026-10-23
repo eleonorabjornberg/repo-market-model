@@ -14,6 +14,11 @@ standardised units (the raw residual of a pair divided by the scale at the pair'
   and a heavier ridge, so an outlier day (March 2020) does not set the effect and a term with few flagged days is shrunk toward 0;
 * (s4) (s1) with the FOMC and IORB terms added, the separate arm of the ruling.
 
+The arms that take (s3) apart (#1172) are (r1) (s1) with (s3)'s ridge alone, (r2) (s1) with (s3)'s Huber fit alone, and (r3) (s3)
+with the announced size of the coupon and bill settlements (USD billions over `SIZE_UNIT`) times the scarcity state in place of the
+0/1 flags. A size is a scheduled field of the target row: it is read at lead 1 only, where `asof` rule 2 admits it
+(`SizeTable`), and the announcement dating that would admit it at leads 2 to 5 is not in force.
+
 **A term** is a 0/1 flag of the *target* row, `spread_mr_calendar.TermTable`'s: its flag is read at the target day on direct
 pairs, never from the origin, and a scheduled field is read only where `asof` rule 2 admits it. **The state** is a slow variable
 of the decision, not of the target: it is the state as read at the decision instant of the pair (the legs each at their latest
@@ -57,6 +62,10 @@ TOLERANCE = 1e-8
 STATE_MAX = 3.0
 BASE_VARIANT = cal.BASE_VARIANT
 ARM_A = cal.ARM_A
+#: The settlement terms whose size can stand in for the flag (#1172, (r3)).
+SIZED_TERMS: Tuple[str, ...] = ("settlement_coupon", "settlement_bill")
+#: A settlement size is read in units of USD 100 bn (a coupon settlement is typically 0.5 to 1.5 of them).
+SIZE_UNIT = 100.0
 
 
 @dataclass(frozen=True)
@@ -70,6 +79,18 @@ class StateArm:
     robust: bool
     #: No arm has a scale term; the field lets `spread_mr_calendar.regressors_of` read an arm of this module.
     scale: Tuple[str, ...] = ()
+    #: The L2 penalty on the term coefficients, in pseudo-days; `None` is `RIDGE`, or `ROBUST_RIDGE` for a robust arm (#1145's).
+    ridge: Optional[float] = None
+    #: The settlement terms enter as `size / SIZE_UNIT * state` instead of as 0/1 flags (#1172, (r3)).
+    sized: bool = False
+
+
+def ridge_of(arm: StateArm) -> float:
+    """The penalty an arm fits with."""
+
+    if arm.ridge is not None:
+        return arm.ridge
+    return ROBUST_RIDGE if arm.robust else RIDGE
 
 
 ARMS: Tuple[StateArm, ...] = (
@@ -79,6 +100,14 @@ ARMS: Tuple[StateArm, ...] = (
     StateArm("sc_s4_fomc_iorb", "(s4) (s1) with the FOMC and IORB terms", cal.ALL_TERMS, False, False),
 )
 ARM_NAMES: Tuple[str, ...] = (ARM_A,) + tuple(arm.name for arm in ARMS)
+
+#: The arms of #1172: (s3)'s two changes apart, and (s3) with the settlement sizes (`metadata/s3_decomposition_1172.json`).
+R1 = StateArm("sc_r1_ridge5", "(r1) (s1) with the ridge of 5 alone", cal.NO_FOMC_IORB, False, False, ridge=ROBUST_RIDGE)
+R2 = StateArm("sc_r2_huber", "(r2) (s1) with the Huber fit alone", cal.NO_FOMC_IORB, False, True, ridge=RIDGE)
+R3 = StateArm("sc_r3_size", "(r3) (s3) with settlement size times the scarcity state", cal.NO_FOMC_IORB, False, True, sized=True)
+#: (s1), (r1), (r2), (s3) and (r3): the 2 x 2 of the ridge and the Huber fit, and the sized arm.
+DECOMPOSITION: Tuple[StateArm, ...] = (ARMS[0], R1, R2, ARMS[2], R3)
+ALL_ARMS: Mapping[str, StateArm] = {arm.name: arm for arm in ARMS + (R1, R2, R3)}
 
 
 # -- the state, as a decision could read it ----------------------------------------------------------------------------------
@@ -129,13 +158,70 @@ def pair_state(states: Mapping[date, Optional[float]], dates: Sequence[date], or
 # -- the estimation ---------------------------------------------------------------------------------------------------------
 
 
+class SizeTable:
+    """The announced size, in USD billions, of the coupon and bill settlements at every panel row (#1172).
+
+    A size is a scheduled field of the *target* row (`treasury_settlement_coupons`, `treasury_settlement_bills`): it is public at
+    15:00 on the panel day before it, so a decision reads it at lead 1 only (`spread_mr_calendar.readable_offsets`), exactly as the
+    0/1 flag of the same term. The announcement dating that would admit it at leads 2 to 5 (`metadata/settlement_announcement_dating.json`)
+    is not in force and is not used here.
+    """
+
+    def __init__(self, panel: Sequence[DailyObservation]):
+        self.dates = [row.date for row in panel]
+        self._values: Dict[str, List[float]] = {
+            "settlement_coupon": [float(row.values.get("treasury_settlement_coupons") or 0.0) for row in panel],
+            "settlement_bill": [float(row.values.get("treasury_settlement_bills") or 0.0) for row in panel],
+        }
+
+    def sizes_at(self, lead: int, row: int) -> Dict[str, float]:
+        """The sizes of the terms readable at `lead`, at row `row` (a training row: public by construction)."""
+
+        return {name: values[row] for name, values in self._values.items() if cal.available(cal.TERM[name], lead)}
+
+    def read(self, lead: int, decision_index: int) -> Dict[str, float]:
+        """The sizes a forecast of the decision on row `decision_index` at `lead` reads, from the target row.
+
+        Raises:
+            LookAheadError: a scheduled field of a row that is not public at the decision (`cal.require_public`).
+
+        Mutation record: see `tests/test_spread_mr_s3_decomposition.py` (`SizeTable.read`).
+        """
+
+        row = cal.target_row(decision_index, lead)
+        out = {}
+        for name, values in self._values.items():
+            term = cal.TERM[name]
+            if not cal.available(term, lead):
+                continue
+            cal.require_public(term, [row - j for j in cal.readable_offsets(term, lead)], decision_index, self.dates)
+            out[name] = values[row]
+        return out
+
+
 class StatePair(NamedTuple):
-    """One training pair: its raw residual (bp), the scale at its origin, the flags of the readable terms, the state level."""
+    """One training pair: its raw residual (bp), the scale at its origin, the flags of the readable terms, the state level.
+
+    `sizes` are the settlement sizes of the target row (USD bn) where the pair has them, and `origin` and `target` its rows, kept
+    for the layer of #1172 that scales the pool by a type and a miss; none of them changes an arm that reads the flags.
+    """
 
     raw: float
     scale: float
     flags: Mapping[str, int]
     state: Optional[float]
+    sizes: Mapping[str, float] = {}
+    origin: int = -1
+    target: int = -1
+
+
+def regressor(name: str, flags: Mapping[str, int], sizes: Mapping[str, float], state: Optional[float], sized: bool) -> float:
+    """The column of term `name`: its 0/1 flag, or for a sized settlement term `size / SIZE_UNIT * state` (0 where the state is
+    unknown)."""
+
+    if sized and name in SIZED_TERMS:
+        return sizes.get(name, 0.0) / SIZE_UNIT * (0.0 if state is None else state)
+    return float(flags[name])
 
 
 def solve_weighted(rows: Sequence[Sequence[float]], y: Sequence[float], weights: Sequence[float], ridge: float) -> List[float]:
@@ -178,10 +264,22 @@ class StateEstimate:
     pairs: int
     unknown_state: int
     iterations: int
+    #: Whether the settlement terms are sizes times the state (the estimate is then read with the target row's sizes).
+    sized: bool = False
+    #: The origin and target rows of each pair and the residual it leaves (`z`, scale units), in the pairs' order.
+    origins: Tuple[int, ...] = ()
+    targets: Tuple[int, ...] = ()
+    residuals: Tuple[float, ...] = ()
 
 
-def _entering(names: Sequence[str], pairs: Sequence[StatePair], min_flagged: int) -> Tuple[Tuple[str, ...], Dict[str, int]]:
-    counts = {name: sum(p.flags[name] for p in pairs) for name in names if pairs and name in pairs[0].flags}
+def _entering(
+    names: Sequence[str], pairs: Sequence[StatePair], min_flagged: int, sized: bool = False
+) -> Tuple[Tuple[str, ...], Dict[str, int]]:
+    counts = {
+        name: sum(1 for p in pairs if regressor(name, p.flags, p.sizes, p.state, sized) > 0.0) if sized and name in SIZED_TERMS
+        else sum(p.flags[name] for p in pairs)
+        for name in names if pairs and name in pairs[0].flags
+    }
     return tuple(n for n in cal.ALL_TERMS if n in counts and counts[n] >= min_flagged), counts
 
 
@@ -195,12 +293,16 @@ def fit_state_terms(
     robust: bool,
     training_pairs: str,
     min_flagged: int = MIN_FLAGGED,
+    ridge: Optional[float] = None,
+    sized: bool = False,
 ) -> StateEstimate:
     """The term effects, in standardised units, and the pool of one arm at one lead.
 
     The target is `raw / scale(origin)`. The columns are the entering terms, and with `interact` each term times the state level
-    (0 where the state is unknown); the fit is ridge least squares, or Huber with `ROBUST_RIDGE` when `robust`. The intercept is
-    dropped, so the pool, the quantiles of the residual after the terms, keeps the ordinary-day centre.
+    (0 where the state is unknown); the fit is ridge least squares, or Huber when `robust`, with the penalty `ridge` (`RIDGE`, or
+    `ROBUST_RIDGE` for a robust fit, when `None`). With `sized` the settlement terms are `size / SIZE_UNIT * state`, and enter when
+    at least `min_flagged` pairs have a positive such column. The intercept is dropped, so the pool, the quantiles of the residual
+    after the terms, keeps the ordinary-day centre.
 
     `regressors` are the panel columns the terms read (for `one_step_guard`). `training_pairs` is required, and `'direct'` is the
     only value this fit trains on.
@@ -214,7 +316,8 @@ def fit_state_terms(
         raise ValueError(f"fit_state_terms trains on direct pairs only, got training_pairs={training_pairs!r}")
     if not pairs:
         raise smr.InsufficientHistory("no training pair to estimate the state-scaled calendar terms on")
-    active, counts = _entering(terms, pairs, min_flagged)
+    penalty = (ridge if ridge is not None else (ROBUST_RIDGE if robust else RIDGE))
+    active, counts = _entering(terms, pairs, min_flagged, sized)
     target = [p.raw / p.scale for p in pairs]
     effect: Dict[str, float] = {}
     slope: Dict[str, float] = {}
@@ -223,40 +326,51 @@ def fit_state_terms(
         design = []
         for p in pairs:
             s = 0.0 if p.state is None else p.state
-            row = [1.0] + [float(p.flags[name]) for name in active]
+            row = [1.0] + [regressor(name, p.flags, p.sizes, p.state, sized) for name in active]
             if interact:
                 row += [float(p.flags[name]) * s for name in active]
             design.append(row)
         if robust:
-            coefficients, iterations = huber(design, target, ROBUST_RIDGE)
+            coefficients, iterations = huber(design, target, penalty)
         else:
-            coefficients = cal.solve_ridge(design, target, RIDGE)
+            coefficients = cal.solve_ridge(design, target, penalty)
         effect = dict(zip(active, coefficients[1 : 1 + len(active)]))
         if interact:
             slope = dict(zip(active, coefficients[1 + len(active) :]))
     pool = []
     for p, y in zip(pairs, target):
         s = 0.0 if p.state is None else p.state
-        pool.append(y - sum(effect[n] * p.flags[n] for n in effect) - sum(slope[n] * p.flags[n] * s for n in slope))
+        pool.append(
+            y - sum(effect[n] * regressor(n, p.flags, p.sizes, p.state, sized) for n in effect)
+            - sum(slope[n] * p.flags[n] * s for n in slope)
+        )
     return StateEstimate(
         active, effect, slope, counts, pb.empirical_quantiles(sorted(pool)), len(pairs),
-        sum(1 for p in pairs if p.state is None), iterations,
+        sum(1 for p in pairs if p.state is None), iterations, sized,
+        tuple(p.origin for p in pairs), tuple(p.target for p in pairs), tuple(pool),
     )
 
 
-def standardised_shift(estimate: StateEstimate, flags: Mapping[str, int], state: Optional[float]) -> float:
-    """The location shift in scale units for a row with `flags` and the state level `state` (`None` reads as 0)."""
+def standardised_shift(
+    estimate: StateEstimate, flags: Mapping[str, int], state: Optional[float], sizes: Optional[Mapping[str, float]] = None
+) -> float:
+    """The location shift in scale units for a row with `flags` (and `sizes`, for a sized estimate) and the state level `state`
+    (`None` reads as 0)."""
 
     s = 0.0 if state is None else state
-    return sum(effect * flags[name] for name, effect in estimate.effect.items()) + sum(
-        g * flags[name] * s for name, g in estimate.slope.items()
-    )
+    sizes = {} if sizes is None else sizes
+    return sum(
+        effect * regressor(name, flags, sizes, state, estimate.sized) for name, effect in estimate.effect.items()
+    ) + sum(g * flags[name] * s for name, g in estimate.slope.items())
 
 
-def lead_quantiles(estimate: StateEstimate, *, centre: float, scale: float, flags: Mapping[str, int], state: Optional[float]) -> List[float]:
+def lead_quantiles(
+    estimate: StateEstimate, *, centre: float, scale: float, flags: Mapping[str, int], state: Optional[float],
+    sizes: Optional[Mapping[str, float]] = None,
+) -> List[float]:
     """The 23 quantiles: `centre + scale * (shift + pool)`, so the effect in bp is the shift times the anchor's scale."""
 
-    shift = standardised_shift(estimate, flags, state)
+    shift = standardised_shift(estimate, flags, state, sizes)
     return [centre + scale * (shift + value) for value in estimate.pool]
 
 
@@ -275,6 +389,7 @@ def refit(
     levels: Sequence[Optional[float]],
     base: smr.Fit,
     training_pairs: str = "direct",
+    sizes: Optional[SizeTable] = None,
 ) -> Dict[str, Dict[int, StateEstimate]]:
     """Each arm's estimate at each lead as of the decision on row `decision_index`, on the base model's training pairs.
 
@@ -296,6 +411,8 @@ def refit(
     reader = fhs.ScaleReader(spreads, variant)
     out: Dict[str, Dict[int, StateEstimate]] = {}
     for arm in arms:
+        if arm.sized and sizes is None:
+            raise ValueError(f"{arm.name} reads the settlement sizes and needs the size table")
         per_lead: Dict[int, StateEstimate] = {}
         for h in HORIZONS:
             k = h + lag
@@ -306,13 +423,14 @@ def refit(
                     continue
                 raw = (spreads[target] - levels[origin]) - base.phi**k * (spreads[origin] - levels[origin])
                 flags_row = target if training_pairs == "direct" else origin
-                state = level(pair_state(states, dates, origin, lag, decision_index)) if arm.interact else None
-                pairs.append(StatePair(raw, scale, table.flags_at(h, flags_row), state))
+                state = level(pair_state(states, dates, origin, lag, decision_index)) if (arm.interact or arm.sized) else None
+                size = sizes.sizes_at(h, flags_row) if arm.sized else {}
+                pairs.append(StatePair(raw, scale, table.flags_at(h, flags_row), state, size, origin, target))
             if not pairs:
                 raise smr.InsufficientHistory(f"{dates[decision_index]}: no training pair of lead {h} has a scale")
             per_lead[h] = fit_state_terms(
                 pairs, regressors=cal.regressors_of(arm, h), terms=arm.location, interact=arm.interact, robust=arm.robust,
-                training_pairs=training_pairs,
+                training_pairs=training_pairs, ridge=arm.ridge, sized=arm.sized,
             )
         out[arm.name] = per_lead
     return out
@@ -330,6 +448,7 @@ def forecast(
     decision_time: time,
     levels: Sequence[Optional[float]],
     base: smr.Fit,
+    sizes: Optional[SizeTable] = None,
 ) -> Tuple[Dict[str, Dict[int, List[float]]], Dict[str, object]]:
     """The arms' forecasts of the decision day from `estimates` (possibly an older fit), and the day's detail (the scale at the
     anchor and the state level): `last`, `level`, `k`, the anchor, its scale, the flags of each target row and the state of the
@@ -360,9 +479,13 @@ def forecast(
     for h in HORIZONS:
         flags = table.read(h, decision_index)
         centre = level_at + base.phi ** (h + lag) * (last - level_at)
+        read_sizes = sizes.read(h, decision_index) if sizes is not None and any(a.sized for a in arms) else {}
         for arm in arms:
+            if arm.sized and sizes is None:
+                raise ValueError(f"{arm.name} reads the settlement sizes and needs the size table")
             out[arm.name][h] = lead_quantiles(
-                estimates[arm.name][h], centre=centre, scale=scale, flags=flags, state=state if arm.interact else None
+                estimates[arm.name][h], centre=centre, scale=scale, flags=flags, state=state if (arm.interact or arm.sized) else None,
+                sizes=read_sizes if arm.sized else None,
             )
     return out, {"scale": scale, "state": state}
 
@@ -393,6 +516,7 @@ def walk(
     splits: SplitDeclaration,
     refit_every: int = smr.REFIT_EVERY,
     training_pairs: str = "direct",
+    sizes: Optional[SizeTable] = None,
 ) -> Walk:
     """Arm (a) and `arms` on `decision_days`, refitting as `spread_mr_fhs.walk` does (the base fit and #941's pool, then the terms).
 
@@ -425,7 +549,7 @@ def walk(
                 scaled = fhs.fit(panel, index, [BASE_VARIANT], base=base, **settings)[BASE_VARIANT.name]
                 found = refit(
                     panel, index, table, states, arms, registry=registry, decision_time=decision_time, levels=levels, base=base,
-                    training_pairs=training_pairs,
+                    training_pairs=training_pairs, sizes=sizes,
                 )
                 current, current_scaled, current_estimates = base, scaled, found
                 fits[day], estimates[day] = base, found
@@ -433,7 +557,7 @@ def walk(
             today = {ARM_A: fhs.forecast(panel, index, current_scaled, current, BASE_VARIANT, **settings)}
             mine, extra = forecast(
                 panel, index, current_estimates, table, states, arms, registry=registry, decision_time=decision_time,
-                levels=levels, base=current,
+                levels=levels, base=current, sizes=sizes,
             )
             today.update(mine)
         except smr.InsufficientHistory:
