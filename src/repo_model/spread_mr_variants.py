@@ -25,6 +25,7 @@ from dataclasses import dataclass
 from datetime import date, datetime, time
 from typing import Dict, Iterator, List, Mapping, Optional, Sequence, Tuple
 
+from . import turn_days
 from . import protocol_benchmarks as pb
 from . import risk_dates
 from .asof import declared_availability
@@ -410,7 +411,7 @@ def b1_recentred_forecast(
     ordinary = next(
         (
             s for s in range(anchor, -1, -1)
-            if splits.reporting_day_type(panel[s].date, panel[s].values) == "ordinary"
+            if turn_days.reporting_day_type(splits, panel[s].date, panel[s].values) == "ordinary"
         ),
         None,
     )
