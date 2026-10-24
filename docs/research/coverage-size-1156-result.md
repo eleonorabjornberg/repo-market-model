@@ -47,4 +47,4 @@ Share of paths on which the requirement fails a forecaster whose standard deviat
 - The requirement is not in force (`COVERAGE_REQUIREMENT_IN_FORCE` stays False in the tree), no attestation entry is added and no published record changes. Setting the flag is a later step after her merge of the record and her own `GO`.
 - Not checked: HAC (`method="hac"`) size; other forecasters (a pooled-calibrated or a regime-miscalibrated one); the real candidates, which need walks on her Mac.
 
-Seeds: size `1156*100000 + i, i in 0..1999`; power `1156*100000 + 50000 + i, i in 0..999`; draws `path seed + 50000`. Declaration sha256 `3c632c77f62f…`. Python 3.11.17.
+Seeds: size `1156*100000 + i, i in 0..1999`; power `1156*100000 + 50000 + i, i in 0..999`; draws `path seed + 50000`. Declaration sha256 `18b4476355f6…`. Python 3.11.17.
