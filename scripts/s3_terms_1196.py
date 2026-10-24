@@ -7,8 +7,9 @@ Huber fit, ridge 5), the comparator; (s3+state), (s3) with each term times the a
 (s3) with the `fomc_day` and `iorb_window` terms, as (s4). They are scored with the scorer of scoring protocol v1
 (`repo_model.scoring_protocol`) against (s3), (a), B1, B1' (#960) and B2 and, when its walks are supplied, `gbm_funding`, with the
 studentized stationary bootstrap of ruling 1 (read on the bound on mean d, her #1009 ruling, with the skill interval beside), the
-Politis-White block beside it, the scaled score of #967 beside the raw one, and the q95 exceedance and band coverage under both hit
-rules. Scored decision days are those whose five targets are on or before 2025-12-31; no later day is read and no locked day is
+Politis-White block beside it, and the q95 exceedance and band coverage under both hit rules. The scaled score of #967 is not
+scored: it needs B2 on the pool's first days, which the month-end turn record in force since #1161 cannot give (see the declaration's
+amendment 1). Scored decision days are those whose five targets are on or before 2025-12-31; no later day is read and no locked day is
 scored (`docs/decisions/lockbox.md`). Nothing here is a verdict (scoring protocol v1, #640).
 
 It reuses the helpers of `scripts/calendar_mr_1115.py`, `scripts/state_calendar_1145.py` and `scripts/s3_decomposition_1172.py` (the
@@ -64,7 +65,6 @@ from repo_model.splits import SplitError  # noqa: E402
 
 c = _load("calendar_mr_1115")
 s686, s761, b949 = c.s686, c.s761, c.b949
-s967 = _load("scaled_score_967")
 sv = _load("scarcity_validation")
 d1145 = _load("state_calendar_1145")
 d1172 = _load("s3_decomposition_1172")
@@ -90,7 +90,6 @@ REGIMES = c.REGIMES
 DAY_TYPES = c.DAY_TYPES
 ORDINARY = c.ORDINARY
 MEDIAN = c.MEDIAN
-SCALED = "scaled_grid_crps"
 #: The splits (s3) loses on the upper tail on the mean-d bound (#1187): the 2020 regime and the FOMC target days.
 AIMED = (("regime", "2020"), ("target_day_type", "fomc_day"))
 #: The calibration measures of a cell: the q95 exceedance under both hit rules and the 50% and 90% bands, closed and open.
@@ -172,12 +171,6 @@ def cell_table(frame, forecasts: Mapping[date, Mapping[int, Sequence[float]]]) -
     return d1145.cell_table(frame, forecasts)
 
 
-def scaled_series(frame, cells, pool, scales, position) -> Dict[date, float]:
-    """The scaled score of #967 of each decision day that has a scale (`state_calendar_1145.scaled_series`)."""
-
-    return d1145.scaled_series(frame, cells, pool, scales, position)
-
-
 # -- the tests, in parallel ------------------------------------------------------------------------------------------
 
 _STATE: Dict = {}
@@ -208,7 +201,7 @@ def _pairs_task(job):
     series = _STATE["series"][(grain, metric)]
     out: Dict[str, dict] = {}
     for name in pair_plan(candidate, _STATE["gbm_have"]):
-        days = [d for d in members if d in series[name]] if name in GBMS or grain == "scaled" else list(members)
+        days = [d for d in members if d in series[name]] if name in GBMS else list(members)
         if len(days) < MIN_GROUP_DAYS:
             continue
         out[name] = s761.run_pairs({name: series[name]}, series[candidate], days, seed=SEED, draws=_STATE["draws"])[name]
@@ -366,14 +359,6 @@ def score(args) -> int:
         if set(official) != set(mean) or any(abs(official[d] - mean[d]) > 1e-9 for d in mean):
             raise SystemExit(f"grid CRPS of {m}: the cell means differ from scoring_protocol.day_scores")
 
-    # the scaled score of #967: the scale needs B2's cells over the trailing year of the pool, which starts before the first scored day
-    pool = s967.build_pool(panel, splits, registry)
-    scales = s967.trailing_scales(pool.decisions, pool.targets, pool.kinds, pool.s2)
-    position = {d: i for i, d in enumerate(pool.decisions)}
-    scaled = {m: scaled_series(frame, cells[m], pool, scales, position) for m in MODELS}
-    scaled_gbm = {name: scaled_series(frame, table_, pool, scales, position) for name, table_ in gbm_frames.items()}
-    scaled_days = sorted(scaled["B1"])
-
     groups = c.groups_of(frame, labels)
     series: Dict[Tuple[str, str], Dict[str, Dict[date, float]]] = {}
     for _s, _l, grain, _m in groups:
@@ -383,12 +368,6 @@ def score(args) -> int:
                 for name, table_ in gbm_frames.items():
                     entry[name] = c.series_of(frame, table_[metric], grain)
                 series[(grain, metric)] = entry
-    series[("scaled", SCALED)] = {**scaled, **scaled_gbm}
-    scaled_groups: List[Tuple[str, str, str, List[date]]] = [("scaled", "all decision days", "scaled", scaled_days)]
-    for label in REGIMES:
-        members = [d for d in scaled_days if frame.regime(d) == label]
-        if members:
-            scaled_groups.append(("scaled", label, "scaled", members))
     _STATE.update(series=series, draws=args.draws, reps=args.reps, gbm_have=tuple(gbm_frames))
 
     jobs, skipped = [], {}
@@ -401,12 +380,6 @@ def score(args) -> int:
                 jobs.append(("pairs", (split, label, grain, metric, candidate, tuple(members))))
                 if candidate != A and split in ("pooled", "regime"):
                     jobs.append(("block", (split, label, grain, metric, candidate, tuple(members))))
-    for split, label, grain, members in scaled_groups:
-        if len(members) < MIN_GROUP_DAYS:
-            skipped[f"{split}/{label}"] = len(members)
-            continue
-        for candidate in ARMS:
-            jobs.append(("pairs", (split, label, grain, SCALED, candidate, tuple(members))))
     # calibration: the rates, pooled and by regime, with an interval over the cells in date order
     rate_models = {m: (cells[m] if m in cells else gbm_frames[m]) for m in list(MODELS) + list(gbm_frames)}
     cell_groups: Dict[Tuple[str, str], List[Tuple[date, int]]] = {}
@@ -422,7 +395,7 @@ def score(args) -> int:
             jobs.append(("interval", (rule, (m, name), [rate_models[m][rule][k] for k in keys], c.CELL_BLOCK)))
     done = run_jobs(jobs, args.workers)
 
-    by_key = {(s_, l_): (g, m) for s_, l_, g, m in groups + scaled_groups}
+    by_key = {(s_, l_): (g, m) for s_, l_, g, m in groups}
     result: dict = {
         "issue": 1196, "declaration": str(DECLARATION.relative_to(REPO)), "panel_sha256": published_sha,
         "subset_from": None if args.first is None else args.first.isoformat(), "label": "development, not a verdict",
@@ -432,7 +405,6 @@ def score(args) -> int:
         "refits": [{"fitted_on": day.isoformat(), "phi": fit.phi} for day, fit in sorted(mine.fits.items())],
         "groups": {}, "skipped_groups": skipped, "politis_white": {}, "q95": {},
         "reading_rules": declaration["reading_rules"],
-        "scaled": {"first_day": scaled_days[0].isoformat(), "days": len(scaled_days)},
     }
     for kind, (ident, payload) in done:
         if kind == "pairs":
@@ -448,7 +420,7 @@ def score(args) -> int:
     for split, labels_ in result["groups"].items():
         for label, entry in labels_.items():
             grain, members = by_key[(split, label)]
-            for metric in list(METRIC_NAMES) + [SCALED]:
+            for metric in METRIC_NAMES:
                 if metric not in entry:
                     continue
                 ser = series[(grain, metric)]
@@ -498,8 +470,7 @@ def score(args) -> int:
 LABELS = {"B1": "B1", B1P: "B1' (#960)", "B2": "B2", GBM: "gbm_funding (#634)", A: "(a) base: #941 mad 20, floor 0.5"}
 LABELS.update({a.name: a.role for a in sc.S3_TERMS})
 LABELS[S3] = "(s3) (s1) with a Huber fit and a heavier ridge; the H5 candidate"
-METRIC_TITLES = {"grid_crps": "grid CRPS (23 levels)", "upper_tail_twcrps": "upper-tail twCRPS (weight 1{z > 0 bp})",
-                 SCALED: "scaled grid CRPS (#967)"}
+METRIC_TITLES = {"grid_crps": "grid CRPS (23 levels)", "upper_tail_twcrps": "upper-tail twCRPS (weight 1{z > 0 bp})"}
 
 
 def model_table(r: dict, cell: dict) -> List[str]:
@@ -578,7 +549,11 @@ def render(r: dict) -> str:
         "(ridge 1) that lost, and #1172 found the Huber fit does most of (s3)'s work. **(s3+state)** is (s3) with each term also times "
         "the as-of scarcity state (the own-leg state of #586 over 3, 0 on the floor, 1 when scarce), as (s2); **(s3+FOMC/IORB)** is (s3) "
         "with the `fomc_day` and `iorb_window` terms, as (s4) (the IORB window is absent at leads 4 and 5, where no scheduled field is "
-        "readable). Both keep the Huber fit and the ridge of 5. All read the calendar at the target day on direct pairs.", ""]
+        "readable). Both keep the Huber fit and the ridge of 5. All read the calendar at the target day on direct pairs. The benchmarks "
+        "and the mean-reversion level read the pressure-day types of the month-end turn record in force since #1161, so (a) and (s3) are not "
+        "the figures of the #1145 and #1172 pages, which were scored on the earlier labels; the arms are compared with each other here, not with "
+        "those pages. The "
+        "scaled score of #967 is not scored: its pool needs B2 on days the in-force record cannot forecast.", ""]
     if r["gbm"]:
         out += ["The `gbm_funding` comparison uses the walks supplied, on the decision days both cover.", ""]
     else:
@@ -645,12 +620,6 @@ def render(r: dict) -> str:
     if r["skipped_groups"]:
         out += ["Groups with fewer than %d days are listed and not tested: %s." % (
             MIN_GROUP_DAYS, ", ".join(f"{k} ({v})" for k, v in sorted(r["skipped_groups"].items()))), ""]
-    out += ["## The scaled score beside the raw one (#967)", "",
-            "Each cell of a decision day divided by the scale of its target's reporting day type (the median of B2's grid CRPS over the "
-            f"trailing 252 pool positions, the last 6 left out); the first scaled day is {r['scaled']['first_day']} ({r['scaled']['days']:,} "
-            "decision days). By the regime of the decision day.", ""]
-    for label, entry in r["groups"].get("scaled", {}).items():
-        out += [f"**{label}** ({entry['days']} days)", ""] + model_table(r, entry[SCALED]) + [""]
     out += ["## Reading under the declared rules (the mean-d bound, with the skill interval's reading beside it)", ""]
     for name in (S3, S3S, S3C):
         for reference in ([A] if name == S3 else [A, S3]):

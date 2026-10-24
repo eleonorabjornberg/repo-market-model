@@ -23,11 +23,6 @@ from repo_model import scoring_protocol as sp
 from repo_model import spread_mr_calendar as cal
 from repo_model import spread_mr_state_calendar as sc
 
-import legacy_day_types
-
-# this module reproduces legacy figures: the pre-#1135 day types (see tests/legacy_day_types.py)
-setUpModule, tearDownModule = legacy_day_types.setUpModule, legacy_day_types.tearDownModule
-
 ROOT = Path(__file__).resolve().parent.parent
 _spec = importlib.util.spec_from_file_location("s3_terms_1196", ROOT / "scripts" / "s3_terms_1196.py")
 script = importlib.util.module_from_spec(_spec)
@@ -88,7 +83,6 @@ class DeclarationTests(unittest.TestCase):
         self.assertEqual(declaration["limits"]["last_day"], script.LAST_DAY.isoformat())
         self.assertEqual(declaration["scoring"]["paired"].count("seed 1196"), 1)
         self.assertEqual(script.SEED, 1196)
-        self.assertEqual(declaration["amendments"], [])
 
     def test_both_arms_are_robust_with_the_ridge_of_5_and_only_one_has_each_extra(self):
         for arm in (sc.S3_STATE, sc.S3_CAL):
@@ -171,16 +165,23 @@ class EndToEndTests(unittest.TestCase):
         self.assertIn("pooled", groups)
         self.assertEqual(sorted(groups["lead"]), [f"h={h}" for h in sp.HORIZONS])
         self.assertIn("2025-26", groups["regime"])
-        for label in ("fomc_day", "iorb_window", "dom_19_23", "ordinary", "calendar_days"):
+        for label in ("dom_19_23", "ordinary", "calendar_days"):
             self.assertIn(label, groups["target_day_type"])
+        # the late subset has fewer than 20 FOMC or IORB-window target days, so those groups are listed and not tested here; the
+        # declared run has 118 and 78 of them (metadata/s3_terms_1196.json)
+        for label in ("fomc_day", "iorb_window"):
+            self.assertIn(label, script.DAY_TYPES)
+            self.assertTrue(label in groups["target_day_type"] or f"target_day_type/{label}" in self.result["skipped_groups"], label)
         self.assertIn("fomc_day", self.result["q95_by_day_type"])
         self.assertIn("iorb_window", self.result["q95_by_day_type"])
 
-    def test_the_scaled_score_is_beside_the_raw_one_pooled_and_by_regime(self):
-        pooled = self.result["groups"]["scaled"]["all decision days"][script.SCALED]
-        self.assertEqual(sorted(pooled["vs"]), sorted(script.ARMS))
-        self.assertIn("2025-26", self.result["groups"]["scaled"])
-        self.assertIn("The scaled score beside the raw one", self.page.read_text(encoding="utf-8"))
+    def test_the_scaled_score_is_not_scored_and_the_page_says_why(self):
+        self.assertNotIn("scaled", self.result["groups"])
+        self.assertFalse(hasattr(script, "SCALED"))
+        declaration = json.loads(script.DECLARATION.read_text(encoding="utf-8"))
+        self.assertNotIn("scaled_score", declaration["scoring"])
+        self.assertEqual([a["number"] for a in declaration["amendments"]], [1])
+        self.assertIn("scaled score of #967 is not scored", self.page.read_text(encoding="utf-8"))
 
     def test_the_calibration_is_pooled_and_by_regime_for_every_model_under_both_hit_rules_and_both_bands(self):
         self.assertIn("pooled/all cells", self.result["q95"])

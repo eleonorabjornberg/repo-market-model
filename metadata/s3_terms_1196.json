@@ -106,12 +106,12 @@
   "paired": "skill = mean(d) / mean(S(benchmark)) with d = S(benchmark) - S(candidate), positive favours the candidate; scoring_protocol.paired_tests, the studentized stationary bootstrap (ruling 1), mean block 10 business days, 10,000 draws, seed 1196; two-sided 90% interval, so the lower end is the one-sided 95% bound. Both the skill interval and the studentized interval on mean d (bp) are reported for every tested row",
   "reading": "a reading is taken from the mean-d bound (Eleonora's ruling on #1009, 20 October 2026): an arm is read better than a reference when the lower end of the 90% interval of mean d is above zero, worse when the upper end is below zero, otherwise undecided. The reading the skill interval alone would give is listed beside it when it differs. Lens C's caveat (the lag-10 HAC standard error is understated about 2x after 2020) is stated on the page",
   "politis_white": "beside the block of 10, the Politis-White automatic block length (scripts/block_length_949.py politis_white, with the Patton-Politis-White correction) of the paired loss differential of each arm against (a) and, for (s3+state) and (s3+FOMC/IORB), against (s3), pooled and within each regime, and the pooled interval at that block length (rounded to a whole number of days). Reported, never substituted for the protocol's 10",
-  "scaled_score": "beside the raw grid CRPS, the scaled score of #967 (scripts/scaled_score_967.py): each cell of a decision day divided by the scale of its target's reporting day type, the scale being the median of B2's grid CRPS over the trailing 252 pool positions, the last 6 left out, 20 cells of a type at least, else the median of the whole window; a decision day's scaled score is the mean over its leads. Pooled and by regime of the decision day, paired as above",
   "min_days": "a group of fewer than 20 days is listed and not tested",
   "calibration": {
    "measure": "the share of (decision day, lead) cells whose outcome is above the model's q95 (y > q) and, beside it, at or above it (y >= q), the two hit rules of Eleonora's open question #993, with the 90% stationary-bootstrap percentile interval over cells (mean block 50 cells, 2,000 resamples, seed 1196), for each arm, (a), B1, B1', B2 and, when walks are supplied, gbm_funding; pooled, by regime and by target day type. The nominal rate is 0.05. The band coverage of the 23-level quantiles is read the same way: the share of cells whose outcome falls in the central 50% band (q25 to q75) and the central 90% band (q05 to q95), with the same interval, under both hit rules (inside the closed band, and inside the open band)"
   },
-  "aimed": "the page has a section for the two splits (s3) loses on the upper tail on the mean-d bound (#1187; #1194): the 2020 regime (251 days) and the FOMC target days (118 days), with the IORB-window target days beside them, giving for (s3) and each arm the mean score and the reading against (a) and against (s3) on the upper-tail twCRPS and on the grid CRPS"
+  "aimed": "the page has a section for the two splits (s3) loses on the upper tail on the mean-d bound (#1187; #1194): the 2020 regime (251 days) and the FOMC target days (118 days), with the IORB-window target days beside them, giving for (s3) and each arm the mean score and the reading against (a) and against (s3) on the upper-tail twCRPS and on the grid CRPS",
+  "pressure_day_types": "the benchmarks (B2's pools) and the mean-reversion level read the pressure-day types of the month-end turn record in force since #1161 (repo_model.turn_days.IN_FORCE is True), as every scoring entry point on main does; (a) and (s3) therefore score differently from the pages of #1145 and #1172, which were scored on the earlier labels. The arms are compared with each other and with the benchmarks in this run"
  },
  "splits": {
   "regime": "SplitDeclaration.regime of the target day (metadata/evaluation_splits.json): 2018-19, 2020, 2021-23, 2024, 2025-26 (the scaled score by the regime of the decision day)",
@@ -146,5 +146,12 @@
   "allow_list": "repo_model.one_step_guard.ONE_STEP_ALLOW_LIST is not changed"
  },
  "long_run": "cloud, about 40 minutes on 4 cores as #1145 (the walks are minutes; the paired tests and bootstrap intervals are the long part). The gbm_funding comparison is a long run on Eleonora's Mac and is not run first",
- "amendments": []
+ "amendments": [
+  {
+   "number": 1,
+   "what": "The scaled score of #967 is removed from the scoring: the declaration as first committed listed it beside the raw score, as #1145 and #1172 do.",
+   "why": "The first run of the scoring script walked the arms and then stopped in scaled_score_967.build_pool with ProtocolError: B2 has no quarter_end_turn day in the year before 2018-06-29 to forecast 2018-07-02 from. Under the month-end turn record in force since #1161, B2 cannot forecast the pool's first days. The ruling for #1196 does not list the scaled score.",
+   "made": "before any score was written or read: that run stopped before it wrote result.json, and nothing it computed was seen. The scoring script, its test and the page drop the scaled score; no other choice changes."
+  }
+ ]
 }
