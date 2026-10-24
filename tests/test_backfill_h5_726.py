@@ -229,5 +229,66 @@ class TheDeclaration(unittest.TestCase):
         self.assertIn("development", declared["reading_rule"]["kill_lines"])
 
 
+class TheSecondReread(unittest.TestCase):
+    """#935: the re-read without the workbook SOFR volume, the kill read at 75% back-filled."""
+
+    def test_the_935_declaration_reads_the_kill_at_75_percent_and_keeps_50_and_90_for_reference(self):
+        declared = json.loads((ROOT / "metadata" / "backfill_h5_935.json").read_text(encoding="utf-8"))
+        self.assertEqual(declared["issue"], 935)
+        self.assertEqual(declared["mostly_imputed_fits"]["primary_share"], 0.75)
+        self.assertEqual(declared["mostly_imputed_fits"]["sensitivity_shares"], [0.5, 0.9])
+        self.assertIn("studentized", declared["interval"]["rule"])
+        self.assertIn("development", declared["reading_rule"]["kill_lines"])
+
+    def test_the_volume_is_blank_on_every_back_filled_row_and_kept_on_published_rows(self):
+        module = _module()
+        admitted = {name: datetime(2018, 5, 17) for name in ("tgcr", "bgcr", "sofr")}
+        with tempfile.TemporaryDirectory() as tmp:
+            source, target = Path(tmp) / "ext.csv", Path(tmp) / "est.csv"
+            with source.open("w", newline="", encoding="utf-8") as handle:
+                writer = csv.DictWriter(handle, fieldnames=FIELDS)
+                writer.writeheader()
+                writer.writerow(_row("2018-03-30", "1.5"))
+                writer.writerow(_row("2018-04-03", "1.5"))
+            module.established_panel(source, target, admitted)
+            rows = list(csv.DictReader(target.open(newline="", encoding="utf-8")))
+        self.assertEqual(module.backfilled_volume_cells(rows_as_panel(rows)), 0)
+        self.assertEqual(rows[1]["sofr_volume"], "1.5")
+
+    def test_a_back_filled_volume_cell_is_counted(self):
+        module = _module()
+        rows = [_panel_row("2018-03-30", sofr_volume=3.0), _panel_row("2018-04-03", sofr_volume=3.0)]
+        self.assertEqual(module.backfilled_volume_cells(rows), 1)
+
+    def test_the_comparison_with_895_lines_up_the_groups_and_marks_a_missing_one(self):
+        module = _module()
+        new = {"period 2018 H2": {"mean_d": -0.1, "interval_90": [-0.2, -0.05]}, "pooled": {"mean_d": 0.0, "interval_90": [-0.04, 0.04]}}
+        old = {"period 2018 H2": {"mean_d": -0.229, "interval_90": [-0.359, -0.114]}, "regime 2024": {"mean_d": -0.03, "interval_90": [-0.077, -0.005]}}
+        table = module.compare_with_previous(new, old, ["period 2018 H2", "regime 2024"])
+        self.assertEqual(table[0]["group"], "period 2018 H2")
+        self.assertAlmostEqual(table[0]["moved_by"], 0.129)
+        self.assertIsNone(table[1]["new"])
+        self.assertEqual(table[1]["previous"]["mean_d"], -0.03)
+
+    def test_the_markdown_names_the_issue_of_its_declaration(self):
+        module = _module()
+        document = {"issue": 935, "decision_days": ["2018-06-29", "2025-12-31", 3], "groups": {}, "group_sizes": {},
+                    "refits_lead_1": [], "kill_lines": [], "comparison": []}
+        self.assertIn("#935", module.reread_markdown(document).splitlines()[0])
+
+
+class _PanelRow:
+    def __init__(self, day: str, values: dict):
+        self.date, self.values = date.fromisoformat(day), values
+
+
+def _panel_row(day: str, **values) -> "_PanelRow":
+    return _PanelRow(day, values)
+
+
+def rows_as_panel(rows):
+    return [_PanelRow(r["date"], {k: (float(v) if v != "" else None) for k, v in r.items() if k != "date"}) for r in rows]
+
+
 if __name__ == "__main__":
     unittest.main()
