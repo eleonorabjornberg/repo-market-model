@@ -184,3 +184,35 @@ def randomised_hit_sequence(
             raise ValueError("a draw lies in [0, 1), got %r" % (u,))
         out.append(int(y > q or (y == q and u < tie)))
     return out
+
+
+def tie_hit_probability(cdf_below: float, cdf_at: float, tail_level: float, *, upper: bool) -> float:
+    """The probability that a tie at a forecast quantile counts as a hit, from the forecast's own distribution (#1156).
+
+    The randomised tie rule (Czado, Gneiting and Held 2009, applied to a quantile hit): for a discrete forecast
+    distribution with `cdf_below` = P(Y < q) and `cdf_at` = P(Y <= q) at its quantile `q`, a hit in a tail of
+    probability `tail_level` must have exactly that probability. The upper tail already holds P(Y > q) = 1 - `cdf_at`
+    and the lower tail P(Y < q) = `cdf_below`; the shortfall to `tail_level`, as a share of the mass P(Y = q), is the
+    probability that a tie is a hit. It is 0 where `q` carries no mass (a continuous forecast). `upper` is True for the
+    upper tail (hit when y beyond q above) and False for the lower. Data guards raise `ValueError`: a quantile that is
+    not the tail's quantile of the distribution (the shortfall outside [0, mass]).
+    """
+
+    if not isinstance(upper, bool):
+        raise ValueError("upper must be True or False, got %r" % (upper,))
+    if not (0.0 < tail_level < 1.0):
+        raise ValueError("the tail probability must lie strictly between 0 and 1, got %r" % (tail_level,))
+    if not (0.0 <= cdf_below <= cdf_at <= 1.0):
+        raise ValueError("need 0 <= P(Y < q) <= P(Y <= q) <= 1, got %r and %r" % (cdf_below, cdf_at))
+    mass = cdf_at - cdf_below
+    beyond = (1.0 - cdf_at) if upper else cdf_below
+    need = tail_level - beyond
+    tolerance = 1e-9
+    if need < -tolerance or need > mass + tolerance:
+        raise ValueError(
+            "q is not the %s-tail quantile of the distribution: the tail needs %r from a mass of %r"
+            % ("upper" if upper else "lower", need, mass)
+        )
+    if mass <= tolerance:
+        return 0.0
+    return min(1.0, max(0.0, need / mass))

@@ -94,6 +94,9 @@ class EndToEndTests(unittest.TestCase):
         from repo_model.baseline import panel_sha256
         from repo_model.data import load_daily_panel
 
+        # Another test module that loads this script under the same name (faster_scale_1153, state_calendar_1145)
+        # replaces the entry at import time when both land in one shard; the pool pickles by module name.
+        sys.modules["calendar_mr_1115"] = script
         cls.panel_path = Path(panel_cache.published_build()["path"])
         cls.tmp = tempfile.TemporaryDirectory()
         base = Path(cls.tmp.name)
