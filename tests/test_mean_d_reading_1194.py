@@ -122,7 +122,18 @@ class ReadingSectionOf1172Tests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         global s1172
-        s1172 = load("s3_decomposition_1172", "s3_decomposition_1172.py")
+        # the 1172 script re-registers the 1115, 967, 1145 and scarcity scripts under their module names as it loads, which
+        # breaks the worker pool of the module that registered them first (the shard order puts this module before it):
+        # put every name back as it was found.
+        before = dict(sys.modules)
+        try:
+            s1172 = load("s3_decomposition_1172", "s3_decomposition_1172.py")
+        finally:
+            for name in [n for n in sys.modules if n not in before]:
+                del sys.modules[name]
+            for name, module in before.items():
+                if sys.modules.get(name) is not module:
+                    sys.modules[name] = module
 
     def test_the_reading_section_adds_the_twcrps_readings(self):
         data = json.loads((ROOT / "docs/research/s3-decomposition-1172/result.json").read_text(encoding="utf-8"))
