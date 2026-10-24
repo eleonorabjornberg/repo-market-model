@@ -99,16 +99,27 @@ class CallersTests(unittest.TestCase):
                 )
 
     def test_the_reporting_reading_asks_the_reporting_day_type_of_the_date(self):
-        """`reporting_on=` reads the day type as `reporting_day_type` does (the month's last two business days), #800.
+        """`reporting_on=` reads the day type as `turn_days.reporting_day_type` does, #800, #1135.
 
-        2024-03-27 is a reporting month-end (Good Friday, 29 March, is a holiday) that is four calendar days from the month's
-        end, so the calendar-day window of `day_type` calls it ordinary.
+        2024-03-28 is the last business day of March (Good Friday, 29 March, is a holiday) and three calendar days from the
+        month's end. With the turn record in force 28 March is a turn day and 27 March, the penultimate business day, is
+        ordinary; with the switch patched off the legacy reading (the last two business days) makes 27 March a risk date.
         """
 
-        day = date(2024, 3, 27)
-        values = row(days_to_month_end=4.0)
-        self.assertFalse(risk_dates.is_risk_date(values, "non_ordinary", splits=SPLITS))
-        self.assertTrue(risk_dates.is_risk_date(values, "non_ordinary", splits=SPLITS, reporting_on=day))
+        from unittest import mock
+
+        from repo_model import turn_days
+
+        day = date(2024, 3, 28)
+        self.assertTrue(risk_dates.is_risk_date(row(days_to_month_end=3.0), "non_ordinary", splits=SPLITS, reporting_on=day))
+        penultimate = row(days_to_month_end=4.0)
+        self.assertFalse(
+            risk_dates.is_risk_date(penultimate, "non_ordinary", splits=SPLITS, reporting_on=date(2024, 3, 27))
+        )
+        with mock.patch.object(turn_days, "IN_FORCE", False):
+            self.assertTrue(
+                risk_dates.is_risk_date(penultimate, "non_ordinary", splits=SPLITS, reporting_on=date(2024, 3, 27))
+            )
         coupon = row(days_to_month_end=10.0, coupons=3.0)
         self.assertTrue(risk_dates.is_risk_date(coupon, "non_ordinary", splits=SPLITS, reporting_on=date(2024, 3, 12)))
         self.assertFalse(

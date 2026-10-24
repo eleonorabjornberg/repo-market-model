@@ -90,6 +90,13 @@
       "comment_id": 6354003011,
       "phrase": "GO #1134",
       "what": "approve the draft decision docs/decisions/retire-idle-freezes.md (retire the freezes that protect no live registration), with her answers 1(a), 2(a), 3(a) (PR #1136)"
+    },
+    {
+      "kind": "decisions",
+      "issue": 1135,
+      "comment_id": 6354007213,
+      "phrase": "GO #1135",
+      "what": "put the approved record in force (#1161): move docs/decisions/drafts/month-end-turn.md to docs/decisions/month-end-turn.md with its status line in force, and set turn_days.IN_FORCE True, as the record's 'Putting it in force' section says"
     }
   ],
   "rule": "docs/decisions/drafts/owner-attestation.md",
