@@ -107,7 +107,15 @@ R2 = StateArm("sc_r2_huber", "(r2) (s1) with the Huber fit alone", cal.NO_FOMC_I
 R3 = StateArm("sc_r3_size", "(r3) (s3) with settlement size times the scarcity state", cal.NO_FOMC_IORB, False, True, sized=True)
 #: (s1), (r1), (r2), (s3) and (r3): the 2 x 2 of the ridge and the Huber fit, and the sized arm.
 DECOMPOSITION: Tuple[StateArm, ...] = (ARMS[0], R1, R2, ARMS[2], R3)
-ALL_ARMS: Mapping[str, StateArm] = {arm.name: arm for arm in ARMS + (R1, R2, R3)}
+
+#: The arms of #1196: (s3)'s Huber fit and ridge of 5 with the two terms that were tried only on the least-squares fit
+#: (`metadata/s3_terms_1196.json`). (s3+state) is (s3) with each term times the as-of scarcity state, as (s2); (s3+FOMC/IORB) is (s3)
+#: with `fomc_day` and `iorb_window`, as (s4).
+S3_STATE = StateArm("sc_s3_state", "(s3+state) (s3) and each term times the scarcity state", cal.NO_FOMC_IORB, True, True)
+S3_CAL = StateArm("sc_s3_fomc_iorb", "(s3+FOMC/IORB) (s3) with the FOMC and IORB terms", cal.ALL_TERMS, False, True)
+#: (s3) and the two arms that add to it.
+S3_TERMS: Tuple[StateArm, ...] = (ARMS[2], S3_STATE, S3_CAL)
+ALL_ARMS: Mapping[str, StateArm] = {arm.name: arm for arm in ARMS + (R1, R2, R3, S3_STATE, S3_CAL)}
 
 
 # -- the state, as a decision could read it ----------------------------------------------------------------------------------
