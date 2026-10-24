@@ -237,7 +237,7 @@ class ProvisionalMarkAndStudentizedColumnTests(unittest.TestCase):
             for lead, cells in definition.items():
                 for regime, cell in cells.items():
                     for name, row in cell["rows"].items():
-                        entry = row["auroc_minus_reference"]
+                        entry = row.get("auroc_minus_reference")  # the reference row carries no difference
                         if entry is not None and entry.get("interval") is not None and "studentized" not in entry:
                             missing.append((lead, regime, name))
         self.assertEqual(missing, [])
