@@ -1,0 +1,15 @@
+{
+  "order": 198,
+  "directive": 901,
+  "pull_request": 1097,
+  "hypothesis": "H5",
+  "result": "The skill headlines by the as-of scarcity state of the decision day, `gbm_funding` rows only",
+  "declarations": [],
+  "model": "`gbm_funding` as a series (#634's walk); the rows of #1027's two variants are not provisional",
+  "pairing": "one_step",
+  "class": "series",
+  "on_the_page": [
+    "2026-10-22-model-01097-H5-step3"
+  ],
+  "concluded": "Pending the Mac run: development data, not a verdict; the split of `gbm_funding` and of #1027's two variants against B1, B2 and B1' by ample and scarce days."
+}
