@@ -368,6 +368,8 @@ def render(record: dict) -> str:
         f"{sp.BLOCK_LENGTH} business days, {record['draws']:,} draws, seed {record['seed']}; the interval is a two-sided 90% interval. "
         "Skill is `mean(d) / mean(S(benchmark))` with `d = S(benchmark) - S(candidate)`: positive favours the candidate. "
         f"Panel digest `{record['panel_sha256'][:8]}…`.", "",
+        "**Calendar first:** no calendar or scheduled column is trained or read as an input here (the flag is a trailing SOFR-to-floor median), "
+        "so the figures are provisional under the calendar-first rule as #941's are; the classification is Eleonora's (the pull request asks).", "",
         "## The flag", "",
         f"On from rows: {flag['rows_on']:,}; off {flag['rows_off']:,}; undefined {flag['rows_undefined']:,}. The runs of consecutive rows "
         "with the flag on: " + "; ".join(f"{a} to {b}" for a, b in flag["windows"]) + ". (Lens B read it on from 2021-04-21 to 2023-12-11 and "
@@ -434,6 +436,9 @@ def render(record: dict) -> str:
             "## Not checked, or for Eleonora", "",
             "- The flag and its three arms were chosen after the author saw 2018-2025 (Lens B's replication is on the same days), so every figure is "
             "exploration. Whether any arm joins #634's candidates, and the flag's threshold (1 bp) and windows (60 and 40 rows), are hers.",
+            "- Calendar first: arms (i), (ii), (iv) and (v) are pool selectors on B1, #686 and #941, none of which reads a calendar column at the target day, "
+            "so every figure is provisional under the calendar-first rule as #941's are. Whether that classification stands, and whether a calendar-reading "
+            "base is re-run, is hers (the pull request asks); no re-run is asked here.",
             "- The outcome is the panel's `spread_bps`, not the first-published vintage of protocol section 11.",
             "- Lens B's crude replication used its own exact CRPS on B1's change pool; the figures here use the protocol's grid scorer and are not "
             "expected to match it.", ""]

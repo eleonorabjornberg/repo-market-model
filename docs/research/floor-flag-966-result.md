@@ -2,6 +2,8 @@
 
 **Hypothesis and step:** H5 (primary goal), step 3 (2021-23 and the residual pools). **Development data only: this is not a verdict** (scoring protocol v1, #640) and nothing here is registered or published. Every figure is read from `docs/research/floor-flag-966/result.json` by `scripts/floor_flag_966.py report`; the declaration is `metadata/floor_flag_966.json`, committed before any score. Studentized stationary bootstrap (ruling 1), mean block 10 business days, 10,000 draws, seed 966; the interval is a two-sided 90% interval. Skill is `mean(d) / mean(S(benchmark))` with `d = S(benchmark) - S(candidate)`: positive favours the candidate. Panel digest `4ddc3882…`.
 
+**Calendar first:** no calendar or scheduled column is trained or read as an input here (the flag is a trailing SOFR-to-floor median), so the figures are provisional under the calendar-first rule as #941's are; the classification is Eleonora's (the pull request asks).
+
 ## The flag
 
 On from rows: 759; off 1,306; undefined 39. The runs of consecutive rows with the flag on: 2021-04-21 to 2023-12-08; 2024-02-14 to 2024-07-08. (Lens B read it on from 2021-04-21 to 2023-12-11 and from 2024-02-14 to 2024-07-09.)
@@ -884,5 +886,6 @@ Five arms on one flag (three declared first, (iv) and (v) added on 22 October 20
 ## Not checked, or for Eleonora
 
 - The flag and its three arms were chosen after the author saw 2018-2025 (Lens B's replication is on the same days), so every figure is exploration. Whether any arm joins #634's candidates, and the flag's threshold (1 bp) and windows (60 and 40 rows), are hers.
+- Calendar first: arms (i), (ii), (iv) and (v) are pool selectors on B1, #686 and #941, none of which reads a calendar column at the target day, so every figure is provisional under the calendar-first rule as #941's are. Whether that classification stands, and whether a calendar-reading base is re-run, is hers (the pull request asks); no re-run is asked here.
 - The outcome is the panel's `spread_bps`, not the first-published vintage of protocol section 11.
 - Lens B's crude replication used its own exact CRPS on B1's change pool; the figures here use the protocol's grid scorer and are not expected to match it.
