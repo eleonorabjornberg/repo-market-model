@@ -20,8 +20,8 @@ fewer than `MIN_STATE_POOL` such origins, from the full pool, which is (s3)'s.
 **(m2) a two-state Markov-switching scale.** The one-step residual is `N(0, sigma_s^2)` in a calm (0) or a stress (1) state, the
 state a Markov chain with entry probability `p01` and stay probability `p11`. `fit_regimes` fits it by EM (forward-backward) on
 the training window only. The state probability at a row is the Hamilton filter (`filter_step`) over the residuals up to that row
-and never past it. The pool of (s3)'s residuals is divided by the scale its own origin's `k`-step state probability implies, and
-the forecast is the mixture of the pool scaled by `sigma_0` and by `sigma_1`, weighted by the `k`-step state probability from the
+and never past it. The pool of (s3)'s residuals is divided by the scale of the state at its own target row (the filtered probability
+after that row), and the forecast is the mixture of the pool scaled by `sigma_0` and by `sigma_1`, weighted by the `k`-step state probability from the
 anchor (`mixture_quantiles`).
 
 **(m3)** (m2) with the entry probability a logistic function of the calendar type of the day entered (`ENTRY_TERMS`: the month-end
@@ -626,13 +626,12 @@ def _predicted_scale(params: Params, stress: float) -> float:
     return math.sqrt((1.0 - stress) * params.sigma[0] ** 2 + stress * params.sigma[1] ** 2)
 
 
-def _markov_lead(
-    estimate: sc.StateEstimate, name: str, track: Track, params: Params, table: cal.TermTable, calendar: bool, lag: int
-) -> MarkovLead:
-    pool = []
-    for e, origin, target in zip(estimate.residuals, estimate.origins, estimate.targets):
-        xs = [entry_flags(table, r, origin + lag) if calendar else None for r in range(origin + 1, target + 1)]
-        pool.append(e / _predicted_scale(params, stress_after(track.stress(name, origin), xs, params)))
+def _markov_lead(estimate: sc.StateEstimate, name: str, track: Track, params: Params, lag: int) -> MarkovLead:
+    """The pool of (s3)'s residuals, each divided by the scale of the state at its own target row: the filtered stress probability
+    after the target row (a row at or before the anchor), so that the pool is free of the state and the forecast re-applies each state's
+    scale. (The first version divided by the scale predicted from the origin and was too narrow: amendment 1 of the declaration.)"""
+
+    pool = [e / _predicted_scale(params, track.stress(name, target)) for e, target in zip(estimate.residuals, estimate.targets)]
     return MarkovLead(estimate, tuple(sorted(pool)), lag)
 
 
@@ -698,8 +697,7 @@ def refit(
             episode[arm.name] = per_lead
         else:
             markov[arm.name] = {
-                h: _markov_lead(s3[h], arm.name, track, params[arm.name], table, arm.kind == "markov_calendar", lag)
-                for h in HORIZONS
+                h: _markov_lead(s3[h], arm.name, track, params[arm.name], lag) for h in HORIZONS
             }
     return Fitted(dict(s3), track, band, params, episode, markov, lag)
 

@@ -289,6 +289,29 @@ class MixtureTests(unittest.TestCase):
             self.assertAlmostEqual(a, b, places=9)
 
 
+class PoolTests(unittest.TestCase):
+
+    def test_the_pool_is_divided_by_the_scale_of_the_state_at_each_target(self):
+        source = FakeSource(lambda j: 0.0, 40)
+        track = rg.Track(5)
+        track.collect(source, 40)
+        p = params(sigma=(1.0, 4.0))
+        track.calibrate((-1.0, 1.0), {"m2_markov": (p, False)}, source)
+        track.filters["m2_markov"].f.update({20: 1.0, 21: 0.0})
+        est = sc.StateEstimate((), {}, {}, {}, [0.0] * 23, 2, 0, 0, False, (18, 19), (20, 21), (8.0, 8.0))
+        lead = rg._markov_lead(est, "m2_markov", track, p, 2)
+        self.assertEqual(lead.pool, (2.0, 8.0))
+
+    def test_a_target_after_the_last_row_read_is_refused(self):
+        source = FakeSource(lambda j: 0.0, 40)
+        track = rg.Track(5)
+        track.collect(source, 30)
+        track.calibrate((-1.0, 1.0), {"m2_markov": (params(), False)}, source)
+        est = sc.StateEstimate((), {}, {}, {}, [0.0] * 23, 1, 0, 0, False, (30,), (32,), (1.0,))
+        with self.assertRaises(LookAheadError):
+            rg._markov_lead(est, "m2_markov", track, params(), 2)
+
+
 class FakeSource:
     """A source whose residual of row `j` is `rule(j)`, for a track without a panel."""
 

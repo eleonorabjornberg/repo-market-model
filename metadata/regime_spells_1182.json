@@ -136,5 +136,13 @@
     ]
   },
   "long_run": "the walk (five models, each refitted about 90 times, the chains by EM) and the scoring are arithmetic on the panel; if the run exceeds about two hours the pull request says so and gives the paste for her Mac (.claude/skills/long-run)",
-  "amendments": []
+  "amendments": [
+    {
+      "number": 1,
+      "made": "24 October 2026, after the first full score of this declaration and before any page was committed",
+      "what": "In (m2) and (m3), the pool of (s3)'s residuals is divided by the scale of the state at each pair's own TARGET row (the filtered stress probability after the target row, a row at or before the anchor) instead of by the scale predicted from the pair's origin (the k-step state probability). The forecast, the chains, their fits, (m1) and every constant are unchanged.",
+      "why": "The first score showed the construction was wrong, not a finding: the 90% band's miss rate of (m2) and (m3) was 0.21 to 0.24 at every lead against 0.12 for (s3), mean run 2.52 and 2.47 against 2.126, so the bands were far too narrow. Dividing by the origin-predicted scale leaves the surprise of a stress entry in the pool, and the forecast then scales the pool again by the state's scale; the pool must be free of the state. First-run figures, kept for the record: independence p = 0.000 at every lead for every arm; mean run (closed rule) (m1,k=3) 1.903, (m1,k=5) 1.891, (m2) 2.522, (m3) 2.465, (s3) 2.126; (m1) is untouched by this amendment and its figures stand.",
+      "effect": "two variants of each of (m2) and (m3) were scored; the page reports the second and this amendment names the first."
+    }
+  ]
 }
