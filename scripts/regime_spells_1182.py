@@ -364,7 +364,7 @@ def kill_assessment(hits: Mapping) -> dict:
     for m in ARMS:
         mean = out["models"][m]["runs"]["above"]["mean"]
         cuts[m] = None if mean is None or not base else 1.0 - mean / base
-        if cuts[m] is not None and cuts[m] > RUN_CUT:
+        if mean is not None and base and mean < (1.0 - RUN_CUT) * base:
             over.append(m)
     out.update({"run_cut": cuts, "run_cut_threshold": RUN_CUT, "arms_cut_runs": over, "met": not out["arms_off_zero"] and not over})
     return out
