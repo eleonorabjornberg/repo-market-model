@@ -90,6 +90,7 @@ class EndToEndTests(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        sys.modules["calendar_mr_1115"] = script  # another test module may have re-registered the name (pickling by module name)
         import panel_cache
         from repo_model.baseline import panel_sha256
         from repo_model.data import load_daily_panel
