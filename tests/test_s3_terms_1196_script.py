@@ -96,6 +96,39 @@ class DeclarationTests(unittest.TestCase):
         self.assertEqual(script.AIMED, (("regime", "2020"), ("target_day_type", "fomc_day")))
 
 
+class CommittedRecordTests(unittest.TestCase):
+    """The tracked record of the declared run, and the page generated from it."""
+
+    RECORD = ROOT / "docs" / "research" / "s3-terms-1196" / "result.json"
+    PAGE = ROOT / "docs" / "research" / "s3-terms-1196-result.md"
+
+    def test_the_tracked_page_is_what_the_script_renders_from_the_tracked_record(self):
+        record = json.loads(self.RECORD.read_text(encoding="utf-8"))
+        self.assertEqual(self.PAGE.read_text(encoding="utf-8"), script.render(record))
+
+    def test_the_record_is_the_declared_full_run_not_a_subset(self):
+        record = json.loads(self.RECORD.read_text(encoding="utf-8"))
+        manifest = json.loads((ROOT / "metadata" / "funding_panel_manifest.json").read_text(encoding="utf-8"))
+        self.assertIsNone(record["subset_from"])
+        self.assertEqual((record["seed"], record["draws"]), (script.SEED, sp.DRAWS))
+        self.assertEqual(record["declaration"], "metadata/s3_terms_1196.json")
+        self.assertEqual(record["models"], list(script.MODELS))
+        self.assertLessEqual(record["notes"]["last_target"], script.LAST_DAY.isoformat())
+        self.assertEqual(record["gbm"], [])
+        self.assertIn(record["panel_sha256"], json.dumps(manifest))
+
+    def test_arm_a_and_s3_score_close_to_the_regime_spells_study_on_the_same_tree(self):
+        # #1182 scored the same two arms on main after the turn record was put in force. The walks are the same code; the figures are not
+        # equal to the last digit because #1182 walks only the days B2 can forecast, so its refits fall on other days than the
+        # convention of #1145 and #1172, which this study follows (the comparator's pages are on that convention)
+        other = ROOT / "docs" / "research" / "regime-spells-1182" / "result.json"
+        mine = json.loads(self.RECORD.read_text(encoding="utf-8"))["groups"]["pooled"]["all decision days"]["grid_crps"]["means"]
+        theirs = json.loads(other.read_text(encoding="utf-8"))["groups"]["pooled"]["all decision days"]["grid_crps"]["means"]
+        for name in (sc.ARM_A, script.S3):
+            self.assertAlmostEqual(mine[name], theirs[name], delta=0.01, msg=name)
+        self.assertNotEqual(mine[sc.ARM_A], theirs[sc.ARM_A])
+
+
 class EndToEndTests(unittest.TestCase):
     """`score` and `page` on the last months of the fixture panel, with few resamples: the shape, not the figures."""
 

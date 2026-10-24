@@ -579,7 +579,7 @@ def render(r: dict) -> str:
             + (f" | {t['gain']} / {t['loss']} / {t['undecided']} | {_fmt(ordv)} | {_fmt(calv)} |" if t else " | | | |"))
     out.append("")
     out += ["## Aimed at (s3)'s upper-tail losses: 2020 and the FOMC target days", "",
-            "On the mean-d bound (s3) loses to (a) on upper-tail twCRPS in 2020 and on FOMC target days (#1187; #1194). The rows below are "
+            "On #1194's reading of the #1145 record (scored on the earlier pressure-day labels) (s3) loses to (a) on upper-tail twCRPS in 2020 and on FOMC target days (#1187; #1194); this run, on the labels in force, is read afresh below. The rows are "
             "those two splits, and the IORB-window target days beside them, for (s3) and for each arm: the mean score (bp) and the reading "
             "against (a) and against (s3), on the upper-tail twCRPS (the key secondary) and on the grid CRPS (the primary). A reading is "
             "taken from the mean-d bound; the skill interval's reading is in brackets where it differs.", "",
