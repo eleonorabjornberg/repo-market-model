@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/mechanism_encodings_1029.json",
+  "script": "scripts/mechanism_encodings_1029.py",
+  "pairing": "direct",
+  "why": "#1027's direct variant with its raw levels re-encoded (#1029): direct pairs, the calendar and scheduled columns read from the target row"
+}

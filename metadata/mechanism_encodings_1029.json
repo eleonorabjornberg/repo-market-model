@@ -1,0 +1,120 @@
+{
+ "benchmarks": [
+  "gbm_funding",
+  "gbm_funding_cal_direct",
+  "B1",
+  "B1_prime",
+  "B2",
+  "spread_mr_ctx"
+ ],
+ "caveat": "Lens C of #958: the lag-10 standard error behind the block length is itself noisy on this many days; every interval here is read with that in mind",
+ "cuts": {
+  "calendar_days": [
+   "quarter_end",
+   "month_end",
+   "tax_date",
+   "settlement"
+  ],
+  "pooled": "all scored decision days",
+  "regimes": [
+   "2018-19",
+   "2020",
+   "2021-23",
+   "2024",
+   "2025-26"
+  ],
+  "settlement": "a target day whose reporting day type is ordinary and whose treasury_settlement_coupons or treasury_settlement_bills is above 0",
+  "target_day_types": [
+   "quarter_end",
+   "month_end",
+   "tax_date",
+   "settlement",
+   "ordinary"
+  ]
+ },
+ "hypothesis": "H5 step 3 (mechanism-consistent encodings of gbm_funding's raw-level inputs; Lens D of #958)",
+ "interval": "stationary bootstrap, seed 1029, the studentized interval of ruling 1 (#739); the lower end of the two-sided 90% interval is the one-sided 95% lower bound",
+ "issue": 1029,
+ "limits": [
+  "no day after 2025-12-31",
+  "no lockbox day",
+  "no published record is edited",
+  "gbm_funding's declaration and scripts/final_test_preregistration.py are not changed"
+ ],
+ "metrics": [
+  "grid_crps",
+  "upper_tail_twcrps"
+ ],
+ "panel": "#951's scratch panel AUG3, built from the tracked fixtures by the commands in scripts/mechanism_encodings_1029.py; the encoded columns are added in memory by repo_model.mechanism_encodings.build_columns; #1027's direct variant is re-walked on the same panel; gbm_funding's reference walks are #634's on the published panel",
+ "reading_rules": {
+  "against_each_comparator": "for gbm_funding and for gbm_funding_cal_direct: the variant beats it when the lower end of its pooled grid-CRPS skill interval is above 0, and loses to it when the upper end is below 0; otherwise it is not shown to differ",
+  "calendar_and_ordinary": "as #1027: beats gbm_funding on calendar days when the lower end of its skill interval on the calendar_days cut is above 0, and loses on ordinary days when the upper end of its skill interval there is below 0",
+  "no_verdict": "development data gives no verdict",
+  "regimes": "reported per regime, with no threshold: the encodings are meant to carry the mechanism across regimes, so the per-regime skill over gbm_funding_cal_direct is the table to read",
+  "replacement": "naming the variant that reads calendar days and does not lose is a marked question for Eleonora; replacing the candidate is hers"
+ },
+ "ruling": "Eleonora, 19 and 20 October 2026 (the five-lens review is the queue's guide; calendar first)",
+ "settings": "gbm_funding's and #1027's: seed, quantile grid, refit every 21 scored days, 61 minimum history, leaf 5",
+ "status": "declared by the pull request that closes #1029 before any number was computed; a measurement, not a record. Nothing is published: the variant joins no published declaration, no day after 2025-12-31 is scored (docs/decisions/lockbox.md), no rule changes, the live record and pin do not move. Development data gives no verdict (scoring protocol v1, #46).",
+ "variant": {
+  "gbm_funding_cal_direct_enc": {
+   "as_of": "each column is declared on the union of its constituents' source fields (repo_model.mechanism_encodings.COLUMN_FIELDS), so asof.InformationRule reads it at the row of its slowest constituent; no new publication instant; InformationRule, contract.FEATURE_FIELDS and the registry are unchanged",
+   "base": "gbm_funding_cal_direct of metadata/aligned_calendar_1027.json: direct pairs, the target-row calendar and scheduled columns, the observed net_settlement columns, leaf 5",
+   "definitions": {
+    "bp": "(upper - lower) * 100, the panel's levels being in percent",
+    "ratio": "the value over the median of the present values among the last 250 panel rows ending at the row (the row included), at least 20 present, else missing"
+   },
+   "encodings": {
+    "reserve_balances": {
+     "column": "reserves_to_median",
+     "constituents": [
+      "reserve_balances"
+     ]
+    },
+    "sofr_p25": {
+     "column": "sofr_less_p25_bps",
+     "constituents": [
+      "sofr",
+      "sofr_p25"
+     ]
+    },
+    "sofr_p75": {
+     "column": "p75_less_sofr_bps",
+     "constituents": [
+      "sofr_p75",
+      "sofr"
+     ]
+    },
+    "sofr_volume": {
+     "column": "sofr_volume_to_median",
+     "constituents": [
+      "sofr_volume"
+     ]
+    },
+    "tbill_13w": {
+     "column": "tbill_13w_less_iorb_bps",
+     "constituents": [
+      "tbill_13w",
+      "iorb"
+     ]
+    },
+    "tbill_4w": {
+     "column": "tbill_4w_less_iorb_bps",
+     "constituents": [
+      "tbill_4w",
+      "iorb"
+     ]
+    }
+   },
+   "pairing": "direct pairs (training_pairs='direct'): each target is paired with its own as-of read; the #947 guard needs no allow-list entry",
+   "unchanged": [
+    "spread_bps",
+    "tga",
+    "treasury_settlement",
+    "the target-row columns",
+    "net_settlement",
+    "net_settlement_due_5d"
+   ]
+  }
+ }
+}
