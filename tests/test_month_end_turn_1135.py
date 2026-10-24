@@ -1,13 +1,14 @@
-"""#1135: the month-end turn definition is one function, behind the decision record, inert until it is merged.
+"""#1135, #1161: the month-end turn definition is one function, in force with `docs/decisions/month-end-turn.md`.
 
-`docs/decisions/drafts/month-end-turn.md` drafts the record; `turn_days.IN_FORCE` is the switch, and it is `False` until the
-record sits in `docs/decisions/`. While it is off, `turn_days.reporting_day_type` (B2's pools, the mean-reversion
-level, the day-type splits) and `risk_dates.is_risk_date(..., reporting_on=...)` give exactly what they gave before, so no
-published record can move. With it on, both read the turn labels of `turn_days`. Nothing here reads a source, a publication
+`turn_days.IN_FORCE` is the switch, and it is `True` exactly when the record sits in `docs/decisions/` (PR #1139 drafted it,
+#1161 put it in force on her `GO #1135`). In force, `turn_days.reporting_day_type` (B2's pools, the mean-reversion
+level, the day-type splits) and `risk_dates.is_risk_date(..., reporting_on=...)` read the turn labels of `turn_days`; with the
+switch patched off they give the legacy reading, which the tests below keep. Nothing here reads a source, a publication
 time or a revision: every label is a function of the date and the holiday table, so no leakage guard is added and no
 mutation is recorded.
 """
 
+import json
 import unittest
 from datetime import date
 from pathlib import Path
@@ -37,30 +38,75 @@ def on(flag=True):
     return mock.patch.object(td, "IN_FORCE", flag)
 
 
-class TestInertUntilTheRecordIsMerged(unittest.TestCase):
-    def test_the_switch_is_off_while_the_record_is_only_a_draft(self):
-        self.assertFalse(td.IN_FORCE)
-        self.assertFalse((REPO / "docs" / "decisions" / "month-end-turn.md").exists())
-        draft = (REPO / "docs" / "decisions" / "drafts" / "month-end-turn.md").read_text()
-        self.assertIn("a draft for Eleonora, not in force", draft)
+class TestInForceWithTheRecord(unittest.TestCase):
+    def test_the_switch_is_on_and_the_record_is_in_decisions(self):
+        self.assertTrue(td.IN_FORCE)
+        self.assertTrue(td.in_force())
+        self.assertTrue((REPO / "docs" / "decisions" / "month-end-turn.md").exists())
+        self.assertFalse((REPO / "docs" / "decisions" / "drafts" / "month-end-turn.md").exists())
+
+    def test_the_record_says_it_is_in_force_and_cites_her_go(self):
+        record = (REPO / "docs" / "decisions" / "month-end-turn.md").read_text()
+        self.assertIn("in force", record.split("\n\n")[0] + record.split("\n\n")[1])
+        self.assertIn("GO #1135", record)
+        self.assertNotIn("not in force", record)
 
     def test_the_switch_and_the_record_move_together(self):
         in_force = (REPO / "docs" / "decisions" / "month-end-turn.md").exists()
         self.assertEqual(td.IN_FORCE, in_force)
 
-    def test_reporting_day_type_is_the_old_month_end_label(self):
-        self.assertEqual(reporting(date(2019, 5, 30), to_end=1.0), "month_end")  # penultimate
-        self.assertEqual(reporting(date(2019, 5, 31), to_end=0.0), "month_end")
-        self.assertEqual(reporting(date(2019, 6, 3), to_end=27.0), "ordinary")
-        self.assertEqual(reporting(date(2019, 6, 28), quarter_end=1.0, to_end=0.0), "quarter_end")
+    def test_the_attestation_names_this_change(self):
+        entries = json.loads((REPO / "metadata" / "owner_attestations.json").read_text())["attestations"]
+        mine = [e for e in entries if e["issue"] == 1135 and e["comment_id"] == 6354007213 and "IN_FORCE True" in e["what"]]
+        self.assertEqual(len(mine), 1)
+        self.assertEqual(mine[0]["kind"], "decisions")
 
-    def test_the_risk_date_reading_keeps_the_penultimate_day_a_risk_date(self):
-        self.assertTrue(
+    def test_reporting_day_type_is_the_turn_label_by_default(self):
+        self.assertEqual(reporting(date(2019, 5, 30), to_end=1.0), "ordinary")
+        self.assertEqual(reporting(date(2019, 5, 31), to_end=0.0), "turn")
+        self.assertEqual(reporting(date(2019, 6, 3), to_end=27.0), "turn")
+        self.assertEqual(reporting(date(2019, 6, 28), quarter_end=1.0, to_end=0.0), "quarter_end_turn")
+
+    def test_the_risk_date_reading_drops_the_penultimate_day(self):
+        self.assertFalse(
             risk_dates.is_risk_date(
                 values(date(2019, 5, 30)), risk_dates.NON_ORDINARY, splits=SPLITS, coupon_clause=False,
                 reporting_on=date(2019, 5, 30),
             )
         )
+
+
+class TestB2ReadsTheTurnLabels(unittest.TestCase):
+    def test_b2_for_a_year_end_target_is_the_trailing_years_year_end_spreads(self):
+        """`protocol_benchmarks.b2_forecast` pools by `turn_days.reporting_day_type`, so a year-end target reads year-end rows.
+
+        Run on the simulated panel of `benchmark_simulation` (spreads vary by row); the decision is 30 December 2019 and the
+        target 31 December, whose window holds 31 December 2018 and 2 January 2019 only (the pool a fallback, #1155, would
+        widen; B2 itself has none in force).
+        """
+
+        import benchmark_simulation as sim
+        from repo_model import protocol_benchmarks as pb
+
+        rows = sim.simulate(sim.ProcessSpec(), seed=741).rows
+        days = [r.date for r in rows]
+        t = days.index(date(2019, 12, 30))
+        got = pb.b2_forecast(rows, t, registry=sim.REGISTRY, decision_time=sim.DECISION, splits=sim.SPLITS)
+        window = [
+            r.spread_bps for r in rows[:t]
+            if date(2018, 12, 30) <= r.date and td.reporting_day_type(sim.SPLITS, r.date, r.values) == "year_end"
+        ]
+        self.assertEqual(len(window), 2)
+        self.assertEqual(got[1], pb.empirical_quantiles(sorted(window)))
+
+
+class TestTheLegacyReadingIsStillThereWhenSwitchedOff(unittest.TestCase):
+    def test_reporting_day_type_is_the_old_month_end_label(self):
+        with on(False):
+            self.assertEqual(reporting(date(2019, 5, 30), to_end=1.0), "month_end")  # penultimate
+            self.assertEqual(reporting(date(2019, 5, 31), to_end=0.0), "month_end")
+            self.assertEqual(reporting(date(2019, 6, 3), to_end=27.0), "ordinary")
+            self.assertEqual(reporting(date(2019, 6, 28), quarter_end=1.0, to_end=0.0), "quarter_end")
 
 
 class TestTheDefinitionInForce(unittest.TestCase):
