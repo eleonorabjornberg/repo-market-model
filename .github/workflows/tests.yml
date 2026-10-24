@@ -313,8 +313,9 @@ jobs:
           PYTHONDONTWRITEBYTECODE: "1"
           GH_TOKEN: ${{ github.token }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         if: github.event_name == 'pull_request'
-        run: python3 -B scripts/owner_attested.py check --base "$BASE_SHA"
+        run: python3 -B scripts/owner_attested.py check --base "$BASE_SHA" --merge-ref --pr "$PR_NUMBER"
 
       # A push to main re-runs the check over the pushed range, so a pull request whose CI ran before a path
       # became binding cannot merge a binding change unchecked (#1110, #1122). It fails the push, and main, red.
