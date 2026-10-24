@@ -94,6 +94,8 @@ OFF_ZERO = f1153.OFF_ZERO
 RULES: Tuple[str, ...] = tuple(ct.HIT_RULES) + ("randomised",)
 #: The kill rule's: an arm cuts the mean run when it falls below this share of (s3)'s.
 RUN_CUT = 0.15
+#: A mean band-miss rate above this is called too narrow in the kill section's caveat.
+NARROW_RATE = 0.15
 LABELS: Dict[str, str] = {
     "B1": "B1", "B1p": "B1' (#960)", "B2": "B2", A: "(a) #941 mad20", S3: "(s3) base (#1145)",
     "m1_episode_k3": "(m1) episode, last 3 rows", "m1_episode_k5": "(m1) episode, last 5 rows",
@@ -563,6 +565,16 @@ def kill_section(r: dict) -> List[str]:
         out += ["No arm moves independence off 0.000 and none cuts the mean run by more than the threshold: the clustering of the misses is not a "
                 "two-state phenomenon either, on this evidence. The issue's recommendation follows: report it as a known limit in the use "
                 "limitation, and do not try another arm. Whether to do so is Eleonora's decision.", ""]
+    narrow = []
+    for m in r["arms"]:
+        rates = [r["hits"]["rows"][m]["above"]["band90"][f"h={h}"]["pooled"]["rate"] for h in sp.HORIZONS]
+        if sum(rates) / len(rates) > NARROW_RATE:
+            narrow.append(f"{label_of(m)} ({sum(rates) / len(rates):.3f})")
+    if narrow:
+        out += [f"**A limit on that reading.** The 90% band of {', '.join(narrow)} misses more than {NARROW_RATE:.2f} of outcomes (mean over leads, "
+                "closed rule; nominal 0.10, (s3) about 0.12): these bands are too narrow, so a run length measured on them is a property of a "
+                "miscalibrated band, and the Markov arms' failure to cut the runs is weaker evidence against a two-state account than the "
+                "(m1) arms' is. See amendment 1 of the declaration.", ""]
     return out
 
 
