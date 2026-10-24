@@ -260,7 +260,7 @@ def score(args) -> int:
             if set(official) != set(mine) or any(abs(official[d] - mine[d]) > 1e-9 for d in mine):
                 raise SystemExit(f"{label} of {m}: the cell means differ from scoring_protocol.day_scores")
 
-    states = {h: _load("pressure_judge")._scarcity_states(h, LAST_DAY) for h in sp.HORIZONS}
+    states = {h: _load("scarcity_states").scarcity_states(h, LAST_DAY) for h in sp.HORIZONS}
     splits_of = groupings(frame, states)
 
     # series and groups

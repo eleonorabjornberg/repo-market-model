@@ -74,13 +74,22 @@ class DefinitionTests(unittest.TestCase):
 class CallersTests(unittest.TestCase):
     """The scripts and the judge read the definition from here, so they cannot drift apart again."""
 
-    def test_the_judge_grouping_is_the_scheduled_definition(self):
+    def test_the_scheduled_grouping_lives_here_and_the_judge_no_longer_defines_it(self):
+        """Stage 1 of #1055: `pressure_judge._scheduled_risk_date` moved into `risk_dates`.
+
+        The judge's grouping reads `risk_dates.scheduled_risk_date`, so the module that is retired later (stage 3)
+        holds no copy of the definition.
+        """
+
         from repo_model import pressure_judge as pj
 
+        self.assertFalse(hasattr(pj, "_scheduled_risk_date"))
         for kwargs in ({}, {"quarter_end": 1.0}, {"tax_date": 1.0}, {"coupons": 1.0}, {"days_to_month_end": 0.0}):
             self.assertEqual(
-                pj._scheduled_risk_date(row(**kwargs)), risk_dates.is_risk_date(row(**kwargs), "scheduled"), kwargs
+                risk_dates.scheduled_risk_date(row(**kwargs)), risk_dates.is_risk_date(row(**kwargs), "scheduled"), kwargs
             )
+        self.assertTrue(risk_dates.scheduled_risk_date(row(quarter_end=1.0)))
+        self.assertFalse(risk_dates.scheduled_risk_date(row()))
 
     def test_risk_flag_is_the_non_ordinary_definition(self):
         sys.path.insert(0, str(ROOT / "src"))

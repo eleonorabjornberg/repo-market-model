@@ -6,7 +6,7 @@ in bp on a day that is known in advance to be a risk date, h business days after
 
 * A **risk date** has one of four types, in this precedence (`risk_day_type`): `quarter_end`, `month_end` (one of the month's last
   two business days) and `tax_date`, which are `SplitDeclaration.reporting_day_type`, then `settlement`, a day with a coupon
-  settlement (`treasury_settlement_coupons > 0`, the reading of `pressure_judge._scheduled_risk_date`). Every other day is not a
+  settlement (`treasury_settlement_coupons > 0`, the reading of `risk_dates.scheduled_risk_date`). Every other day is not a
   risk date and is not scored here. The type is read from the target row's own calendar columns, as protocol B2 reads them,
   except the coupon settlement, which counts at a lead only where the registry makes it public by the decision instant
   (`target_risk_type`; Eleonora's ruling on #720, 13 October 2026, point 2; #849). A day already public (a sample day) is typed
