@@ -178,6 +178,7 @@ data, dating, holidays and panel declarations). None of their scripts calls a on
 | `metadata/pressure_tail.json` | `scripts/pressure_tail.py` | direct | pressure models on direct pairs |
 | `metadata/pressure_track_q.json` | `scripts/pressure_track_q.py` | direct | pressure models on direct pairs |
 | `metadata/projected_reserves.json` | `scripts/projected_reserves.py` | direct | pressure models on direct pairs |
+| `metadata/quantile_average_1113.json` | `scripts/quantile_average_1113.py` | none | the equal-weight quantile average of spread_mr_ctx and gbm_funding_cal_aligned: the script fits nothing and calls no gradient-boosted fitter; the aligned part is #1027's, whose calendar and scheduled columns are read from the target row (class aligned in the producers table), and the cuts name the calendar day types only to split the report; whether the arm needs a row of its own is Eleonora's (the pull request asks) |
 | `metadata/ranking_694.json` | `scripts/ranking_694.py` | as_of_read | the calendar ranker reads the target's day type |
 | `metadata/ranking_765.json` | `scripts/ranking_765.py` | as_of_read | the calendar ranker reads the target's day type |
 | `metadata/rare_event_training.json` | `scripts/rare_event_training.py` | direct | pressure models on direct pairs |

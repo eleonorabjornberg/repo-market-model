@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/quantile_average_1113.json",
+  "script": "scripts/quantile_average_1113.py",
+  "pairing": "none",
+  "why": "the equal-weight quantile average of spread_mr_ctx and gbm_funding_cal_aligned: the script fits nothing and calls no gradient-boosted fitter; the aligned part is #1027's, whose calendar and scheduled columns are read from the target row (class aligned in the producers table), and the cuts name the calendar day types only to split the report; whether the arm needs a row of its own is Eleonora's (the pull request asks)"
+}

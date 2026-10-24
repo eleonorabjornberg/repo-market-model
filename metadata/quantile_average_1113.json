@@ -1,0 +1,97 @@
+{
+ "arm": {
+  "combination": "the weighted mean of the two parts' 23-level laws, level by level on the protocol grid, at every lead h = 1 to 5, then sorted so the result stays monotone",
+  "decision_days": "the days on which every scored model has a forecast at all five leads and whose fifth target is on or before 2025-12-31",
+  "name": "quantile_average",
+  "parts": [
+   "spread_mr_ctx",
+   "gbm_funding_cal_aligned"
+  ],
+  "parts_as_scored": "each part is the forecast as the other scores read it: spread_mr_ctx from scripts/spread_mr_variants_761.py on the published panel, gbm_funding_cal_aligned from #1027's walks, a lead a walk does not carry standing in as B1 (#634, #1027)",
+  "weights": {
+   "gbm_funding_cal_aligned": 0.5,
+   "spread_mr_ctx": 0.5
+  }
+ },
+ "avenue": 1113,
+ "b1_prime": "reported beside B1 on every table (Eleonora, 22 October 2026, #46); B1 stays the protocol's benchmark",
+ "benchmarks": [
+  "spread_mr_ctx",
+  "gbm_funding_cal_aligned",
+  "gbm_funding",
+  "B1",
+  "B1_prime",
+  "B2"
+ ],
+ "bootstrap": {
+  "blocks": {
+   "politis_white": "the automatic block of the pair's own loss differential, at least 1",
+   "protocol": 10
+  },
+  "kind": "stationary bootstrap, studentized (ruling 1, #739), seed 1123; the lower end of the two-sided 90% interval is the one-sided 95% lower bound",
+  "politis_white": "scripts/block_length_949.py politis_white (Politis and White 2004 with the correction of Patton, Politis and White 2009); the protocol's block 10 is not changed (Eleonora, 22 October 2026: keep 10, report the Politis-White block beside it)"
+ },
+ "caveat": "Lens C of #958: the lag-10 standard error behind the block length is itself noisy on this many days; every interval here is read with that in mind",
+ "cuts": {
+  "calendar_days": "the union of quarter_end, month_end, tax_date and settlement target days",
+  "minimum_days": "a cut of fewer than 20 days is listed and not tested",
+  "pooled": "all scored decision days",
+  "regimes": [
+   "2018-19",
+   "2020",
+   "2021-23",
+   "2024",
+   "2025-26"
+  ],
+  "settlement": "a target day whose reporting day type is ordinary and whose treasury_settlement_coupons or treasury_settlement_bills is above 0",
+  "target_day_types": [
+   "quarter_end",
+   "month_end",
+   "tax_date",
+   "settlement",
+   "ordinary"
+  ]
+ },
+ "exceedance": {
+  "hit_rules": [
+   "above",
+   "at_or_above"
+  ],
+  "level": 0.95,
+  "models": [
+   "B1",
+   "B1_prime",
+   "B2",
+   "spread_mr_ctx",
+   "gbm_funding",
+   "gbm_funding_cal_aligned",
+   "quantile_average"
+  ],
+  "nominal": 0.05,
+  "reading": "the share of cells (decision day, lead) whose outcome is beyond the model's 95th percentile, with the studentized interval of the daily share's mean against the nominal 0.05; no rule is attached",
+  "rule_note": "the hit rule (y > q or y >= q) is an open question of Eleonora's; both are reported and neither is chosen here (Eleonora, 22 October 2026). Outcome and quantile are compared after rounding to 9 decimals, so a whole-basis-point tie that carries float noise is a tie"
+ },
+ "hypothesis": "H5 step 3 (a development arm)",
+ "issue": 1123,
+ "limits": [
+  "no day after 2025-12-31",
+  "no lockbox day",
+  "no published record is edited",
+  "gbm_funding's declaration and scripts/final_test_preregistration.py are not changed",
+  "no walk is made by this script: the parts' walks are #634's and #1027's"
+ ],
+ "metrics": [
+  "grid_crps",
+  "upper_tail_twcrps"
+ ],
+ "reading_rules": {
+  "b1_and_b1_prime": "pooled skill over B1 and over B1' is reported with its one-sided 95% lower bound; no rule is applied",
+  "beats_a_part": "the average beats a part when the lower end of its pooled grid-CRPS skill interval over that part (block 10) is above 0",
+  "no_verdict": "development data gives no verdict",
+  "reads_calendar_days_and_beats": "the average beats gbm_funding on calendar days when the lower end of its grid-CRPS skill interval over gbm_funding on the calendar_days cut is above 0",
+  "replacement": "replacing the candidate is hers, and waits for #1115; this page does not decide it",
+  "without_losing_on_ordinary_days": "and its skill over gbm_funding on ordinary target days has an upper interval end of 0 or more; 'loses' means an interval wholly below 0"
+ },
+ "ruling": "Eleonora, 22 October 2026, relayed by the orchestrating session: queue them now (avenue #1113)",
+ "status": "declared by the pull request that closes #1123 before any number was computed; a measurement, not a record. Development arm, not a candidate change: gbm_funding stays the H5 candidate until #1115 reports (Eleonora, 22 October 2026). Nothing is published, no day after 2025-12-31 is scored (docs/decisions/lockbox.md), no rule changes, the live record and pin do not move. Development data gives no verdict (scoring protocol v1, #46)."
+}
