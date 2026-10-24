@@ -1,0 +1,140 @@
+{
+  "status": "declared by the pull request that closes #1182 before any score was computed; a development study, never a verdict. Nothing is published: no published declaration, record or registration changes, no day after 2025-12-31 is scored, no lockbox day is scored, and no record in docs/runs/ is edited. Any change to the candidate is Eleonora's decision.",
+  "issue": 1182,
+  "ruling": "Eleonora, 24 October 2026, on #1182: 'queue it' (the draft of 23 October 2026, 'draft the regime-switching step'). Kill rule and adoption rule are the issue's, restated below.",
+  "hypothesis": "H5 (primary goal): the SOFR - IORB spread distribution in bp. Step 3 (fix), the failure after #1145, #1153 and #1175: the misses of the scaled mean reversion's bands come in runs (Christoffersen's independence test, p = 0.000 at every lead; mean run about 2.0 against 1.1 if independent) although coverage is right on average, and neither a faster scale (#1153) nor a dispersion-scaled one (#1175) fixes them. This step asks whether the misses cluster because the market moves between calm and stress spells that the candidate's single law cannot represent.",
+  "target": "spread_bps at the scored day, in basis points, as a 23-quantile distribution at each lead h = 1..5 (scoring_protocol.GRID)",
+  "base": {
+    "name": "(s3) of #1145, sc_s3_robust (on main since PR #1151): #941's spread_mr_fhs_mad20_f0.5 with state-scaled calendar terms in standardised units, a Huber fit (threshold 1.345 robust sd) and ridge 5, the terms quarter-end, tax date and the other calendar terms of spread_mr_calendar.NO_FOMC_IORB read at the target day on direct pairs",
+    "module": "repo_model.spread_mr_state_calendar, unchanged; the arms here call its refit and forecast for (s3) and take its estimates (terms, pool, residuals, origins and targets of the training pairs). tests/test_spread_mr_regime.py pins that the (s3) and (a) walks this study produces equal repo_model.spread_mr_state_calendar.walk's and repo_model.spread_mr_fhs's exactly, and that an arm whose two scales are equal is (s3)",
+    "comparators": "(s3) the base and (a) #941's variant (spread_mr_fhs_mad20_f0.5), both walked and scored on the same days as the arms",
+    "calendar": "(s3) and every arm read the calendar terms at the target day on direct pairs (training_pairs='direct'; spread_mr_state_calendar.fit_state_terms and spread_mr_regime.fit_regimes are one_step_guard-guarded), so the results are not provisional on the calendar-first rule. (a) reads no calendar column and is a comparator only"
+  },
+  "input": {
+    "series": "the spread, the ordinary level and the scale of (s3) (spread_mr_fhs's MAD of 20 daily changes, floor 0.5), all as (s3) reads them, and the calendar flags of the target day. No new panel column is read.",
+    "one_step_residual": "z1(j) = ((spread[j] - level[j-1]) - phi * (spread[j-1] - level[j-1])) / scale[j-1] - shift(flags of row j), with phi the base fit's and shift the lead-1 calendar terms of (s3) (spread_mr_state_calendar.standardised_shift). It reads rows j and j-1, the level and scale of row j-1 and the flags of row j itself (direct, never one row off). It is None where there is no level or scale.",
+    "own_band": "(s3)'s own 90% band, in these units: the 5th and 95th percentile (protocol_benchmarks.empirical_quantiles) of z1 over the refit's training window, rows from five rows plus the decision lag before the window start up to the anchor. A row is a miss when z1 is strictly outside it. The band is fitted at each refit and held until the next; a row after the refit is judged against it (the band is known at the refit, not after). READING SETTLED HERE, not by Eleonora: the issue says 'the spread printed outside (s3)'s own 90% band'; (s3) forecasts at k = h + lag steps, and the band here is its one-step version, so a miss is the day's own surprise and not the k-step interval. See the pull request's marked question 1.",
+    "availability": "every row read is at or before the anchor, the last row whose spread is public at the decision (protocol_benchmarks._require_public raises LookAheadError); a miss, an episode flag or a filtered probability of a row the track has not read raises LookAheadError (Track._require_read)",
+    "missing": "a row with no level or no scale has no residual: it is no miss, and the filter only moves the chain on"
+  },
+  "arms": {
+    "principle": "Filtered historical simulation stays and the base is (s3): forecast = centre + scale(anchor) * (shift + z_h), with shift the fitted calendar terms in standardised units and z_h the quantiles of the pool of the standardised residuals after the terms. An arm changes which pool, and for the Markov arms what scale multiplier, the law takes; the terms, the centre, phi, the refit cadence (21 rows) and the training pairs are (s3)'s.",
+    "listed_in_full": {
+      "m1_episode_k3": "(m1) observable episode state, memory k = 3: an origin or the anchor is in an episode when a miss fell on any of the 3 rows ending at it. In an episode the law takes the pool (and with it the scale, which is the spread of that pool in standardised units) of the training pairs whose origin was in an episode; outside, the pool of the calm origins; with fewer than 60 origins in the state, (s3)'s full pool. The terms are (s3)'s, fitted on all pairs: READING SETTLED HERE, the issue says 'the residual pool and scale come from past in-episode origins only'; there is no separate scale multiplier, the pool's own spread is the scale. See the pull request's marked question 2.",
+      "m1_episode_k5": "(m1) as above with k = 5",
+      "m2_markov": "(m2) two-state Markov-switching scale. z1 is N(0, sigma_s^2) in a calm (0) or stress (1) state; the state is a Markov chain with entry probability p01 (constant) and stay probability p11. Fitted by EM (forward-backward, scaled) on the z1 of the training window, state 1 starting as the high-scale state (starting scales 0.6 and 1.8 times the rms, entry 0.05, stay 0.90, at most 60 iterations, stop when the log-likelihood moves by less than 1e-6); a fit whose stress scale is below 1.05 times the calm scale, or a window with fewer than 120 residuals, is degenerate (one scale) and is (s3). The state probability at a row is the Hamilton filter over the z1 up to and including that row, started at the chain's stationary share. The k-step predictive probability of stress from a row is the filter propagated k steps. (s3)'s residuals e of lead h (k = h + lag steps apart) are divided by sqrt((1-pi) sigma_0^2 + pi sigma_1^2), pi the k-step stress probability from their own origin; the forecast is the mixture, weighted by the k-step stress probability from the anchor, of that pool scaled by sigma_0 and by sigma_1, its distribution function the weighted sum of the two scaled continuous laws whose quantile functions interpolate the pool, inverted by bisection.",
+      "m3_markov_calendar": "(m3) (m2) with the entry probability p01 = logistic(a + b . x), x the 0/1 flags of the day entered: month_end (the turn), quarter_end (the quarter-end turn), tax_date and settlement_coupon (the coupon settlement), read at that day itself. Fitted by EM with a Newton step on the soft-count logistic likelihood, an L2 penalty of 1 on the slopes. A scheduled flag (the coupon settlement) is public at the decision of the business day before it (asof rule 2), so a step to a day beyond the day after the decision reads it as 0; the calendar columns are known whenever read. The h-step probability propagates step by step, each step with its own day's flags. READING SETTLED HERE: the issue's 'turn, quarter-end turn, tax date, coupon settlement' are mapped to the four terms of spread_mr_calendar named above, and the flags of the days between the anchor and the target are read as calendar dates. See the pull request's marked question 3."
+    },
+    "constants": {
+      "episode_memory": [
+        3,
+        5
+      ],
+      "min_state_pool": 60,
+      "band": [
+        0.05,
+        0.95
+      ],
+      "entry_terms": [
+        "month_end",
+        "quarter_end",
+        "tax_date",
+        "settlement_coupon"
+      ],
+      "em_iterations": 60,
+      "em_tolerance": 1e-06,
+      "min_observations": 120,
+      "sigma_start": [
+        0.6,
+        1.8
+      ],
+      "sigma_floor": 0.001,
+      "entry_start": 0.05,
+      "stay_start": 0.9,
+      "p_min": 0.001,
+      "slope_ridge": 1.0,
+      "newton_steps": 8,
+      "coefficient_limit": 8.0,
+      "min_scale_ratio": 1.05,
+      "ridge": 5.0,
+      "huber_k": 1.345
+    },
+    "no_others": "six models are scored besides the benchmarks: (a), (s3), (m1) at k = 3 and 5, (m2), (m3). No arm is added after a number is computed, and constants are declared once, not searched. A debug subset run may print a number; none of the arms or constants above is changed after one, and an amendment is recorded below if a numerical degeneracy forces one"
+  },
+  "references": {
+    "base_arm": "(s3) and (a), on the same days",
+    "benchmarks": "B1 and B2 of scoring protocol v1 (repo_model.protocol_benchmarks), and B1' of #960 beside B1 (repo_model.b1_calendar): a reference row, not a benchmark of the protocol; B1 stays as ruled",
+    "gbm_funding": "not compared: its walks are a long run for Eleonora's Mac and the directive does not ask for it. The page says so"
+  },
+  "scoring": {
+    "scorer": "repo_model.scoring_protocol (#655), the development tier: no verdict, no registration",
+    "days": "decision days on which every model has a forecast and whose five targets (h = 1..5 business days on the panel's calendar) fall on or before 2025-12-31; no day after 2025-12-31 is read; the scored days pass lockbox.require_unlocked",
+    "outcomes": "the panel's spread_bps at the target day",
+    "paired": "each model against B1, B1', B2, (a) and (s3) (an arm against both; (s3) against (a); (a) against (s3)): skill = mean(d) / mean(S(benchmark)) with d = S(benchmark) - S(candidate), positive favours the candidate; scoring_protocol.paired_tests, the studentized stationary bootstrap (ruling 1), mean block 10 business days, 10,000 draws, seed 1182; two-sided 90% interval. Each row shows the skill interval and the studentized interval of mean(d) beside it, and the reading is the mean-d bound (#1009; the lower bound above zero is a gain, the upper bound below zero a loss). The page states Lens C's caveat that the lag-10 HAC standard error is understated by about 2x after 2020. Politis-White block length beside the block of 10 (scripts/block_length_949.py's estimate on the difference series, for each arm against (s3), pooled and by regime, on grid CRPS and upper-tail twCRPS, with the pooled skill at that block; never substituted for 10)",
+    "measures": [
+      "grid CRPS (23 levels), pooled and by lead",
+      "upper-tail twCRPS, weight 1{z > 0 bp}, pooled and by lead",
+      "the scaled score of #967 beside the raw one (each cell's grid CRPS over the trailing-year median of B2's grid CRPS for cells of the same pressure-day type of the target; scaled_score_967.trailing_scales)",
+      "all of these by regime and by pressure-day type (target day)",
+      "coverage of the 50%, 80%, 90% and 98% bands with a 90% stationary-bootstrap percentile interval (2,000 resamples), pooled, by lead, by regime and by pressure-day type",
+      "the exceedance rates of q05, q95, q01 and q99, with Kupiec's test",
+      "Christoffersen independence and conditional coverage per lead, for the bands and the four tails, pooled and within a regime, under the two hit rules; and the randomised tie rule of #1156",
+      "the miss runs: for the 90% band and for q95, per lead and pooled over leads, the number of runs, their mean length and the longest, under both hit rules, for every model, against (s3)",
+      "the fitted chains: over the refits, the median calm and stress scale, the stay probability, the entry probability, the share of degenerate fits, the entry slopes of (m3) and the share positive; for (m1) the share of cells that fell back to the full pool; the share of scored decision days in an episode and the share with a filtered stress probability above one half, by regime",
+      "the filtered stress probability of (m2) and (m3) at the anchor of every scored decision day, drawn as one SVG, with the declared episodes marked"
+    ],
+    "hit_rules": "OPEN QUESTION, Eleonora's (#993): whole-bp outcomes tie with a quantile. The strict ('above') and at-or-beyond ('at_or_above') rules and the randomised tie rule of #1156 ('randomised') are reported side by side; none is chosen. The randomised rule is run with coverage_tests.randomised_hit_sequence and tie_hit_probability: the forecast is 23 quantiles of a continuous law, linear between them, so P(Y < q) = P(Y <= q) = the level at every quantile and the tie probability is 0; the rule then coincides with 'above' and the page says so. The draws are seeded with 1182 and recorded. Upper exceedance: y > q ('above') or y >= q ('at_or_above'). Lower exceedance: y < q or y <= q, the mirror. A band is missed when the outcome is outside it, so under 'above' the band is closed and under 'at_or_above' it is open",
+    "runs": "a run is a maximal block of consecutive hits in the per-lead sequence of consecutive decision days. Mean run length = hits / runs; longest = the longest block. Under independence at a 10% miss rate the mean run is about 1.11",
+    "splits": {
+      "pooled": "one number per decision day (protocol section 3); the coverage measures are read on the cells (decision day, lead)",
+      "by_lead": "h = 1..5",
+      "regime": "SplitDeclaration.regime of the target day (metadata/evaluation_splits.json): 2018-19, 2020, 2021-23, 2024, 2025-26. The labels are only the report's split, never an input of an arm",
+      "pressure_day_type": "SplitDeclaration.reporting_day_type of the target day: quarter_end, month_end, tax_date, ordinary",
+      "min_days": "a group of fewer than 20 days is listed and not tested"
+    }
+  },
+  "kill_rule": {
+    "text": "The issue's: if no arm moves independence off p = 0.000 at any lead, and no arm cuts the mean run by more than 15%, state that the clustering is not a two-state phenomenon either, and recommend reporting it as a known limit in the use limitation rather than another arm.",
+    "reading": "'off 0.000' is a p-value of at least 0.0005 for the Christoffersen independence test of the 90% band's misses, pooled, at any of the five leads, under any of the three hit rules. 'cuts the mean run by more than 15%' is a mean run of the 90% band (closed rule, pooled over leads) below 0.85 times (s3)'s. The page lists, for every arm, the leads off 0.000 under each rule, the mean and longest run and the cut against (s3)'s, and says whether the kill rule is met. It states the recommendation if so; adopting it is Eleonora's decision"
+  },
+  "adoption": "The issue's: an arm replaces (s3) only if independence is no longer rejected at the leads, or the mean miss run falls clearly towards 1.1, without losing CRPS beyond the interval. That is her decision on the page. The page lists the facts (leads off 0.000, the mean run and its cut, the pooled grid CRPS reading against (s3) on the mean-d bound and the regimes and day types read as a loss) and settles nothing.",
+  "reading": {
+    "rules": [
+      "An arm's gain over (s3) is read as present on a split when the studentized one-sided bound on mean(d) of its grid CRPS excludes zero on the positive side (the two-sided 90% interval of mean(d) is above zero), and as a loss when that interval is below zero; otherwise undecided. The skill interval is shown beside and not read.",
+      "A pooled figure is never read without the regime and pressure-day-type splits beside it; a gain pooled and a loss in 2018-19, 2021-23 or on quarter-end days is reported as mixed.",
+      "A calibration measure moving toward its nominal value is reported with its interval; a hit-sequence p-value is reported as a p-value and is no gate. Run lengths are reported as counts with no interval.",
+      "Nothing in this study is a verdict, and the page says so."
+    ]
+  },
+  "figure": {
+    "what": "the filtered stress probability at the anchor of each scored decision day for (m2) and (m3), the last scored decision day being the last in the study (no day after 2025-12-31 is read), one panel each, with the episodes shaded. READING SETTLED HERE: the issue says 2018-2026; the study's days end at 2025-12-31 like every comparison since #1145, and the figure does not extend them. See the pull request's marked question 4.",
+    "episodes": [
+      {
+        "label": "Sep 2019",
+        "start": "2019-09-16",
+        "end": "2019-09-20",
+        "source": "metadata/events.json, sep-2019"
+      },
+      {
+        "label": "Mar 2020",
+        "start": "2020-03-09",
+        "end": "2020-03-20",
+        "source": "metadata/events.json, mar-2020"
+      },
+      {
+        "label": "Oct 2025",
+        "start": "2025-10-14",
+        "end": "2025-11-04",
+        "source": "marks only: the run of 4 to 32 bp spreads around the 31 October peak"
+      },
+      {
+        "label": "Nov-Dec 2025",
+        "start": "2025-11-24",
+        "end": "2025-12-02",
+        "source": "marks only: the second run of 6 to 22 bp spreads"
+      }
+    ]
+  },
+  "long_run": "the walk (five models, each refitted about 90 times, the chains by EM) and the scoring are arithmetic on the panel; if the run exceeds about two hours the pull request says so and gives the paste for her Mac (.claude/skills/long-run)",
+  "amendments": []
+}
