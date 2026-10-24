@@ -1,0 +1,65 @@
+{
+ "checks": {
+  "effective_sample": "pairs in the training set, and n (1 - r) / (1 + r) with r the lag-1 autocorrelation of the targets in date order, floored at 0",
+  "leaf_size": "floor-regime pairs divided by the leaf: 5 (the variants) and 20 (gbm_funding)",
+  "reading": "no threshold: the page reads the figures in words and says which explanation they support; a cause that needs a refit is declared first and goes to the Mac",
+  "refits": "every refit (every 21 scored days, 61 days of minimum history, as the walks) whose first scored day is in the window, at each lead 1 to 5",
+  "sets": "direct pairs of ml._direct_pairs through the lead's as-of rule on the direct variant's inputs; one-step pairs (p, p + 1) on the same training frame",
+  "target_variance": "variance of the targets, of target minus the spread at the pair's anchor, and of the floor-regime pairs' targets"
+ },
+ "decomposition": {
+  "bands": {
+   "centre": "0.25 <= level <= 0.75",
+   "lower_shoulder": "0.10 < level < 0.25",
+   "lower_tail": "level <= 0.10",
+   "upper_shoulder": "0.75 < level < 0.90",
+   "upper_tail": "level >= 0.90"
+  },
+  "contrast": "the same decomposition on target days outside 2021-23",
+  "cuts": [
+   "all cells",
+   "lead 1 to 5",
+   "target day type (ordinary, settlement, month_end, tax_date, quarter_end)",
+   "calendar year of the target day (the floor regime fills a refit's training window over 2021-23, see the training check's per-refit floor pairs)",
+   "quantile level (23), grouped into bands"
+  ],
+  "excess": "candidate minus reference of the grid CRPS; positive is a loss of the candidate",
+  "pairs_candidate_over_reference": [
+   [
+    "gbm_funding_cal_direct",
+    "gbm_funding"
+   ],
+   [
+    "gbm_funding_cal_aligned",
+    "gbm_funding_cal_direct"
+   ],
+   [
+    "gbm_funding_cal_aligned",
+    "gbm_funding"
+   ]
+  ],
+  "pairs_note": "direct over gbm_funding differs in the pairing, the leaf (5 against 20) and the inputs (calendar and net-settlement columns added); aligned against direct differs in the pairing alone",
+  "walks": "#1036's: gbm_funding (#634's), gbm_funding_cal_direct and gbm_funding_cal_aligned, five leads each, read as they are; nothing is refitted"
+ },
+ "hypothesis": "H5 step 3, the 2021-23 diagnosis",
+ "issue": 1086,
+ "limits": [
+  "no refit",
+  "no day after 2025-12-31",
+  "no lockbox day",
+  "no published record is edited",
+  "no published declaration is changed"
+ ],
+ "ruling": "Eleonora, 21 October 2026, relayed by the orchestrating session: keep gbm_funding as the H5 candidate, adopt nothing, find out why the direct-pairs variant loses in 2021-23",
+ "status": "declared by the pull request that closes #1086 before any number was computed; a diagnosis of development data, not a record. No refit, no published figure moves, no day after 2025-12-31 and no locked day is read. Development data gives no verdict (scoring protocol v1, #46).",
+ "variants": {
+  "gbm_funding": "the control: #634's gbm_funding, leaf 20, one-step pairs; its #1036 walk is read, not refitted",
+  "gbm_funding_cal_aligned": "the aligned one-step variant of #1027, leaf 5, the same inputs; its #1036 walk is read, not refitted",
+  "gbm_funding_cal_direct": "the direct-pairs variant of #1027, leaf 5, calendar and net-settlement columns at the target day; its #1036 walk is read, not refitted"
+ },
+ "window": [
+  "2021-01-01",
+  "2023-12-31"
+ ],
+ "window_meaning": "the regime '2021-23' of #1036's report, by target day; 'floor-regime pairs' are the training pairs whose target day is in it (a description of the period of the ON RRP floor, not a rule)"
+}

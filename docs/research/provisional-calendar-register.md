@@ -155,6 +155,7 @@ data, dating, holidays and panel declarations). None of their scripts calls a on
 | `metadata/calendar_mr_1115.json` | `scripts/calendar_mr_1115.py` | direct | scaled mean reversion with additive calendar, scheduled and FOMC terms read from the target row on direct pairs (repo_model.spread_mr_calendar, guarded by one_step_guard with no allow-list entry); no gradient-boosted fit is called |
 | `metadata/combined_model_561.json` | `scripts/combined_model_561.py` | direct | `_combined_pairs`, direct pairs |
 | `metadata/derived_features_631.json` | `scripts/derived_features_631.py` | direct | pressure models on direct pairs |
+| `metadata/direct_pairs_diagnosis_1086.json` | `scripts/direct_pairs_diagnosis_1086.py` | direct | fits nothing; decomposes the walks of #1027 (direct and aligned variants, which read the calendar columns at the target day); the calendar-blind control gbm_funding is only the reference of the excess |
 | `metadata/effr_pretrain.json` | `scripts/effr_pretrain.py` | direct | pressure models on direct pairs |
 | `metadata/evaluation_splits.json` | none | none | the regime and day-type splits: a declaration, no model |
 | `metadata/every_day_steps_687.json` | `scripts/every_day_steps_687.py` | direct | the every-day part, direct pairs |
