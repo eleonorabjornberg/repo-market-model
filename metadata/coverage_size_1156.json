@@ -4,6 +4,19 @@
   "tier": "development",
   "ruling": "Eleonora, 22 October 2026, PR #1137 (comment 6354246426): answers 1, 2, 3 and 5 at their defaults; answer 4 decided by this simulation",
   "declared_before_any_figure": true,
+  "variants": {
+    "strict": {"note": "a tie with a quantile is a miss"},
+    "tie_counts": {"note": "a tie with a quantile is a hit"},
+    "randomised": {"note": "a tie is a hit with the probability the forecast's own distribution gives it"}
+  },
+  "variants_note": "three hit rules compared on one set of paths, all three reported in every table; no model variant is added",
+  "amendments": [
+    {
+      "made": "24 October 2026, PR #1160",
+      "what": "added the variants block and its note, which the #803 rule (tests/test_model_declarations.py) asks of a declaration under metadata/",
+      "effect": "no design, world, seed or factor changed; the figures are re-run unchanged and the record carries the new hash"
+    }
+  ],
   "design": {
     "method": "thinned",
     "family": "holm",
