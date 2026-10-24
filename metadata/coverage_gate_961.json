@@ -1,0 +1,37 @@
+{
+  "status": "declared by the pull request that closes #961 before any score was computed; a measurement on a simulated world, not a record. Nothing is published, no gate is in force and no protocol text changes. Whether a coverage gate joins the registration requirements is a section 13 kind-(a) amendment and Eleonora's alone. Development data, not a verdict (scoring protocol v1, #640)",
+  "issue": 961,
+  "hypothesis": "H1 (the synthetic suite: does the selection rule rank forecasts of known quality correctly) and H5 step 5 (candidate choice); five-lens review item 3, Lens D (#958)",
+  "ruling": "Eleonora, 19 October 2026, relayed on #958; her #741 ruling that a candidate's own result cannot motivate a section 13 change binds: the demonstration stands on the synthetic world alone",
+  "variants": {},
+  "variants_note": "no model and no variant is added; the forecasters below are synthetic and exist only inside the demonstration",
+  "world": {
+    "process": "y[t] = PHI * y[t-1] + sigma[t] * e[t], e ~ N(0, 1), PHI = 0.9, y[0] drawn from the first regime's stationary law",
+    "regimes": "calm (sigma 1.0) and stress (sigma 2.5), alternating blocks of 250 weekdays, calm first; the schedule is public and known to the ideal forecaster",
+    "days": "demonstration path: 5000 decision days (20 blocks, 10 per regime), seed 961; the regime of a forecast is the regime of its target day",
+    "leads": [1, 2, 3, 4, 5]
+  },
+  "forecasters": {
+    "ideal": "the true conditional law N(PHI^h y[t], sum over j = 1..h of PHI^(2(h-j)) sigma[t+j]^2): calibrated in every regime",
+    "pooled": "the same form with one innovation sd for every day, sqrt(mean sigma^2): calibrated pooled, not by regime",
+    "persistence": "y[t] plus the pooled unconditional law of the h-day change, N(0, 2 (1 - PHI^h) VAR), VAR = pooled sigma^2 / (1 - PHI^2): calibrated pooled, not by regime",
+    "climatology": "N(0, VAR): calibrated pooled, not by regime",
+    "under_0.5": "ideal with every quantile moved to 0.5 of its distance from the median: under-dispersed",
+    "under_0.75": "ideal with every quantile moved to 0.75 of its distance from the median",
+    "over_1.5": "ideal moved to 1.5 times its distance: over-dispersed"
+  },
+  "current_rule": "grid CRPS (scoring_protocol.grid_crps) averaged over leads 1-5 and decision days; the field is ranked by it, and the paired test (scoring_protocol.paired_test, seed 961, 2000 draws) is reported for under_0.5 against each calibrated forecaster",
+  "gate": {
+    "status": "a candidate rule evaluated here, not in force",
+    "hit_rule": "scoring-protocol hit definition 'y > q' is used as hit_sequence(rule='above'); the world is continuous, so ties have probability zero and the choice does not move a number here. The whole-bp tie question stays Eleonora's and is asked in the PR",
+    "tests": {
+      "kupiec_q05": "Kupiec at nominal 0.05 on the lower-tail miss y < q05, by lead and regime; fails below p = 0.01",
+      "kupiec_q95": "Kupiec at nominal 0.05 on the upper-tail miss y > q95, by lead and regime; fails below p = 0.01",
+      "independence_q95": "Christoffersen independence on the q95 miss, by lead and regime, at p = 0.01; at lead h the decision days are thinned to every h-th day first, because the errors of h-step forecasts made on consecutive days overlap and are dependent by construction; the regime's days are concatenated in date order",
+      "band_98": "the share of outcomes inside [q01, q99] must lie within [0.95, 0.995], by lead and regime"
+    },
+    "pass": "every test passes in every lead and regime cell; a pooled pass never substitutes for a failing regime (pooled results are reported and decide nothing)",
+    "size": "300 simulated paths of 2000 days (4 blocks per regime), seeds 1..300 offset by 961, ideal forecaster only: the share of paths on which a calibrated forecast fails the gate, overall and by test, because the gate is a family of tests"
+  },
+  "limits": "no published record, declaration or protocol constant changes; the protocol's constants are only read; no real data, no panel, no day after 2025-12-31 and no lockbox day is touched. The candidate scoring (gbm_funding, B3, the direct-pairs twin) needs walks and is not part of this declaration's first run (see the PR)"
+}
