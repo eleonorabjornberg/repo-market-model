@@ -307,6 +307,7 @@ class CandidateStandings(unittest.TestCase):
         self.assertNotIn("names <b>gbm_funding</b> as its best candidate", block)
         for e in self.record()["evidence"]:
             self.assertIn(e["page"], block)
+            self.assertIn(e["mean_d_page"], block)  # #1194: each evidence page is linked beside its reading on the mean-d bound
         self.assertNotRegex(block, r"(?<![&\w])#\d+")
         self.assertIn(self.record()["ruling"], block)
         self.assertIn("2026-10-23", block)

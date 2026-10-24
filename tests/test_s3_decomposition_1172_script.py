@@ -22,6 +22,11 @@ from repo_model import scoring_protocol as sp
 from repo_model import spread_mr_calendar as cal
 from repo_model import spread_mr_state_calendar as sc
 
+import legacy_day_types
+
+# this module reproduces legacy figures: the pre-#1135 day types (see tests/legacy_day_types.py)
+setUpModule, tearDownModule = legacy_day_types.setUpModule, legacy_day_types.tearDownModule
+
 ROOT = Path(__file__).resolve().parent.parent
 _spec = importlib.util.spec_from_file_location("s3_decomposition_1172", ROOT / "scripts" / "s3_decomposition_1172.py")
 script = importlib.util.module_from_spec(_spec)
@@ -125,6 +130,7 @@ class EndToEndTests(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        sys.modules["s3_decomposition_1172"] = script  # another test module may have re-registered the name (pickling by module name)
         import panel_cache
         from repo_model.baseline import panel_sha256
         from repo_model.data import load_daily_panel

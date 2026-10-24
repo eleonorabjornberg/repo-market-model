@@ -1,0 +1,8 @@
+{
+  "command": [
+    "scripts/floor_flag_966.py",
+    "check"
+  ],
+  "where": "suite",
+  "pre_review": false
+}

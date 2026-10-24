@@ -37,11 +37,15 @@ A pull request that makes one cites her approval by appending an entry to
 `metadata/owner_attestations.json`: its kind, the issue, the comment id, and the
 phrase, which by the "GO" convention is always `GO #<issue>`. The registry is
 append-only. CI (`tests.yml`, job `owner-attested`) runs `check` on every pull
-request: each binding kind changed needs an added entry of that kind, and every
-added entry is fetched from the REST API and must be owner-attested.
+request: each binding kind changed needs an entry ADDED by that change, of that kind, for an issue the change
+cites (its branch `directive/N-...`, a `Closes #N` line or a `GO #N` phrase in the pull request or commit message),
+and every added entry is fetched from the REST API and must be owner-attested. An entry already on the base, or for
+an issue the change does not cite, covers nothing (#1188). A pull request is checked on its own range (`--merge-ref`
+drops the main that the event's merge ref picks up); a push range is checked merge by merge.
 
     python3 scripts/owner_attested.py find --issue N --phrase "GO #N" [--comments-file F]
-    python3 scripts/owner_attested.py check --base REF [--head REF]
+    python3 scripts/owner_attested.py check --base REF [--head REF] [--merge-ref] [--pr N] [--cite N]
+    python3 scripts/owner_attested.py check --push-before SHA [--head REF]
 
 `find` prints the first owner-attested comment on issue N carrying the phrase,
 from the REST API or a recorded payload, and exits 1 if there is none. `check`
@@ -303,21 +307,50 @@ def added_entries(base_text, head_text) -> list:
     return head[len(base):]
 
 
-def check(read_base, read_head, fetch_comment, changed_paths=None) -> list:
+CLOSING = re.compile(r"\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s*:?\s+#(\d+)", re.IGNORECASE)
+GO_MENTION = re.compile(r"(?<![\w#])GO #(\d+)(?!\w)")
+BRANCH_ISSUE = re.compile(r"(?:^|[/\s])directive/(\d+)-")
+
+
+def cited_issues(*texts) -> set:
+    """The issues a change cites: the directive branch (`directive/N-...`), a closing line (`Closes #N`) and a
+    `GO #N` phrase, in the texts given (a pull request's branch, title and body, a commit message).
+
+    A bare `#N` mention does not cite: a pull request that names an issue in passing does not borrow its
+    attestation (#1188).
+    """
+
+    found = set()
+    for text in texts:
+        for pattern in (BRANCH_ISSUE, CLOSING, GO_MENTION):
+            found.update(int(n) for n in pattern.findall(text or ""))
+    return found
+
+
+def check(read_base, read_head, fetch_comment, changed_paths=None, cited=None) -> list:
     """Every binding change cites an owner-attested comment; return those comments.
 
-    `fetch_comment(comment_id)` returns the REST payload of an issue comment.
+    A binding kind is covered only by an entry ADDED in this range whose kind is that kind and whose issue is
+    one the change cites (`cited`, see `cited_issues`). An entry already on the base, or for another issue,
+    covers nothing (#1188). `fetch_comment(comment_id)` returns the REST payload of an issue comment.
     Nothing is fetched when nothing is added.
     """
 
     kinds = binding_kinds(read_base, read_head, changed_paths)
     added = added_entries(read_base(REGISTRY), read_head(REGISTRY))
-    missing = sorted(kinds - {entry["kind"] for entry in added})
+    if kinds and cited is None:
+        raise ValueError("check needs the issues the change cites when it is binding")
+    cited = set(cited or ())
+    covered = {entry["kind"] for entry in added if entry["issue"] in cited}
+    missing = sorted(kinds - covered)
     if missing:
+        have = ", ".join(f"{e['kind']} #{e['issue']}" for e in added) or "none"
         raise NotOwnerAttested(
-            f"this change is binding ({', '.join(missing)}) and cites no owner-attested "
-            f"comment: append an entry of that kind to {REGISTRY} citing Eleonora's own "
-            f"'GO #N' comment (rule: {RULE})"
+            f"this change is binding ({', '.join(missing)}) and no entry added by it covers that kind for an "
+            f"issue it cites (cites: {', '.join('#%d' % n for n in sorted(cited)) or 'no issue'}; "
+            f"entries added: {have}). Append an entry of that kind to {REGISTRY} citing Eleonora's own "
+            f"'GO #N' comment, and cite #N in the pull request (branch directive/N-, 'Closes #N' or 'GO #N') "
+            f"(rule: {RULE})"
         )
     verified = []
     for entry in added:
@@ -399,6 +432,33 @@ def resolve_push_base(before, head):
     return f"{head}^"
 
 
+def git_lines(*args):
+    return subprocess.run(["git", *args], cwd=REPO, capture_output=True, text=True, check=True).stdout.splitlines()
+
+
+def push_commits(base, head) -> list:
+    """The commits a push range holds, first-parent, oldest first: each merge (or commit) is one unit."""
+
+    return git_lines("rev-list", "--first-parent", "--reverse", f"{base}..{head}")
+
+
+def pr_number(subject):
+    """The pull request a merge or squash subject names: `Merge pull request #N ...` or `... (#N)`."""
+
+    found = re.match(r"Merge pull request #(\d+)\b", subject) or re.search(r"\(#(\d+)\)\s*$", subject)
+    return int(found.group(1)) if found else None
+
+
+def fetch_pull(repository, number, token):
+    return _get(f"repos/{repository}/pulls/{int(number)}", token)
+
+
+def pull_texts(pull) -> list:
+    """Branch, title and body of a pull request payload, as texts `cited_issues` reads."""
+
+    return [pull["head"]["ref"], pull.get("title") or "", pull.get("body") or ""]
+
+
 def push_range_report(base, head) -> str:
     """One line per commit in `base..head` that touches a binding path: its short SHA, subject and those files."""
 
@@ -436,21 +496,57 @@ def _find(args):
     print(json.dumps({k: found.get(k) for k in ("id", "html_url", "created_at")}))
 
 
+def _commit_texts(sha):
+    return ["\n".join(git_lines("log", "-1", "--format=%B", sha))]
+
+
+def _check_range(args, base, head, token, texts):
+    cited = cited_issues(*texts)
+    cited.update(args.cite)
+    return check(
+        git_reader(base), git_reader(head),
+        lambda comment_id: fetch_comment(args.repo, comment_id, token),
+        changed_paths=git_changed(base, head), cited=cited,
+    )
+
+
 def _check(args):
     token = os.environ.get("GH_TOKEN")
+    verified = []
     if args.push_before is not None:
-        args.base = resolve_push_base(args.push_before, args.head)
-    try:
-        verified = check(
-            git_reader(args.base), git_reader(args.head),
-            lambda comment_id: fetch_comment(args.repo, comment_id, token),
-            changed_paths=git_changed(args.base, args.head),
-        )
-    except NotOwnerAttested as exc:
-        report = push_range_report(args.base, args.head)
-        if report:
-            raise NotOwnerAttested(f"{exc}\nbinding paths changed in {args.base[:8]}..{args.head[:8]}:\n{report}") from exc
-        raise
+        # Each merge (or commit) of the pushed range is checked on its own range: an entry another merge in the
+        # range added covers nothing here (#1188).
+        base = resolve_push_base(args.push_before, args.head)
+        for sha in push_commits(base, args.head):
+            subject = git_lines("log", "-1", "--format=%s", sha)[0]
+            texts = _commit_texts(sha)
+            number = pr_number(subject)
+            if number is not None and not args.no_fetch_pull:
+                texts += pull_texts(fetch_pull(args.repo, number, token))
+            try:
+                verified += _check_range(args, f"{sha}^", sha, token, texts)
+            except NotOwnerAttested as exc:
+                report = push_range_report(f"{sha}^", sha)
+                raise NotOwnerAttested(f"{sha[:8]} {subject}: {exc}" + (f"\nbinding paths:\n{report}" if report else "")) from exc
+    else:
+        base, head = args.base, args.head
+        texts = []
+        if args.merge_ref:
+            # The pull_request event checks out a merge ref, whose first parent is main as it is now. The pull
+            # request's own change is the range from the merge base to its second parent.
+            head = f"{args.head}^2"
+            base = git_lines("merge-base", args.base, head)[0]
+        else:
+            texts += _commit_texts(head)
+        if args.pr is not None:
+            texts += pull_texts(fetch_pull(args.repo, args.pr, token))
+        try:
+            verified = _check_range(args, base, head, token, texts)
+        except NotOwnerAttested as exc:
+            report = push_range_report(base, head)
+            if report:
+                raise NotOwnerAttested(f"{exc}\nbinding paths changed in {base[:8]}..{head[:8]}:\n{report}") from exc
+            raise
     if not verified:
         print("owner-attested: no binding change and no new attestation")
     for comment in verified:
@@ -471,6 +567,13 @@ def build_parser():
     chk.add_argument("--push-before", help="a push's `before` SHA, used as the base; an all-zero or unknown SHA "
                      "falls back to the head's first parent")
     chk.add_argument("--head", default="HEAD")
+    chk.add_argument("--pr", type=int, help="the pull request number: its branch, title and body say which issues "
+                     "the change cites")
+    chk.add_argument("--merge-ref", action="store_true", help="--head is the merge ref a pull_request event checks out; "
+                     "check the pull request's own range (merge base .. second parent)")
+    chk.add_argument("--cite", type=int, action="append", default=[], help="an issue the change cites, when no "
+                     "pull request is fetched")
+    chk.add_argument("--no-fetch-pull", action="store_true", help="on a push range, read only commit messages")
     chk.set_defaults(func=_check)
     return parser
 

@@ -24,11 +24,10 @@ from typing import Mapping, Optional, Tuple
 from . import data
 from .evaluation_splits import SplitDeclaration
 
-#: Whether the month-end turn record (#1135) is in force. It is a draft, `docs/decisions/drafts/month-end-turn.md`, until
-#: Eleonora merges it into `docs/decisions/month-end-turn.md`; the PR that moves it there flips this to `True`
-#: (`tests/test_month_end_turn_1135.py` fails if the two disagree). While `False`, `SplitDeclaration.reporting_day_type`
-#: (B2's pools, the mean-reversion level, the day-type splits, `risk_dates`) is exactly what it was.
-IN_FORCE = False
+#: Whether the month-end turn record (#1135) is in force: `docs/decisions/month-end-turn.md` (moved from the draft by #1161
+#: on her `GO #1135`). `tests/test_month_end_turn_1135.py` fails if the record and this switch disagree. Patched to `False`,
+#: `reporting_day_type` is the legacy reading (B2's pools, the mean-reversion level, the day-type splits, `risk_dates`).
+IN_FORCE = True
 
 TURN = "turn"
 QUARTER_END_TURN = "quarter_end_turn"

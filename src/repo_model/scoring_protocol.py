@@ -1090,6 +1090,10 @@ COVERAGE_LEVELS: Tuple[float, ...] = (0.05, 0.95, 0.01, 0.99)
 #: "strict" is a hit beyond the quantile (y < q below, y > q above); "tie_counts" counts y == q too. Both are
 #: reported (Eleonora, 22 October 2026, #998); which one the requirement reads is a marked question of the record.
 COVERAGE_RULES: Tuple[str, ...] = ("strict", "tie_counts")
+#: The randomised tie rule (Eleonora, 22 October 2026, #1137 answer 4; #1156): a tie counts as a hit with the probability
+#: the forecast's own distribution assigns (`coverage_tests.tie_hit_probability`). Reported by `coverage_cells` only when
+#: the caller supplies the tie probabilities and the draws; it is not in `COVERAGE_RULES` because it needs them.
+RANDOMISED_RULE = "randomised"
 #: How Kupiec is applied at leads above 1 (a marked question of the record): on every h-th decision day, or on every
 #: day with a Newey-West variance at lag h - 1.
 COVERAGE_METHODS: Tuple[str, ...] = ("thinned", "hac")
@@ -1139,6 +1143,8 @@ def coverage_cells(
     regimes: Mapping[date, str],
     *,
     method: str,
+    tie_probabilities: Optional[Mapping[date, Mapping[int, Sequence[float]]]] = None,
+    draws: Optional[Mapping[date, Mapping[int, Sequence[float]]]] = None,
 ) -> List[CoverageCell]:
     """Kupiec and Christoffersen at q05/q95 and q01/q99, by lead and regime, under both hit rules.
 
@@ -1151,6 +1157,12 @@ def coverage_cells(
         method: required, no default. "thinned" reads every h-th decision day of the ordered list at lead h, for
             both tests; "hac" reads Kupiec on every day with a Newey-West variance at lag h - 1, and
             independence still on every h-th day.
+        tie_probabilities, draws: optional, and only together (#1156). Decision day -> lead -> one value per grid
+            level (aligned with `GRID`; only the four levels of `COVERAGE_LEVELS` are read). With them the cells also
+            carry the randomised tie rule (`rule="randomised"`): a tie (y == q) counts as a hit when its draw, in
+            [0, 1), is below its probability, in [0, 1], which is the probability that a tie is a hit in that level's
+            own tail (`coverage_tests.tie_hit_probability`). The caller supplies both and records the draws' seed.
+            Without them the cells are exactly the two deterministic rules'.
 
     Raises:
         LookAheadError: a decision or target day is in a locked lockbox tier.
@@ -1159,10 +1171,15 @@ def coverage_cells(
 
     if method not in COVERAGE_METHODS:
         raise ProtocolError(f"method must be one of {COVERAGE_METHODS}, got {method!r}")
+    if (tie_probabilities is None) != (draws is None):
+        raise ProtocolError("tie_probabilities and draws come together: supply both or neither")
+    randomised = tie_probabilities is not None
     days = _calendar(calendar)
     position = {day: index for index, day in enumerate(days)}
     decisions = sorted(forecasts)
-    rows: Dict[int, List[Tuple[int, date, str, Sequence[float], float]]] = {h: [] for h in HORIZONS}
+    rows: Dict[int, List[Tuple[int, date, str, Sequence[float], float, Optional[Sequence[float]], Optional[Sequence[float]]]]] = {
+        h: [] for h in HORIZONS
+    }
     touched = set()
     for order, decision in enumerate(decisions):
         if decision not in position:
@@ -1177,7 +1194,15 @@ def coverage_cells(
                 raise ProtocolError(f"lead {h} from {decision} runs past the end of the scoring calendar")
             target = days[position[decision] + h]
             if outcomes.get(target) is not None:
-                rows[h].append((order, decision, regimes[decision], leads[h], outcomes[target]))
+                ties = unifs = None
+                if randomised:
+                    try:
+                        ties, unifs = tie_probabilities[decision][h], draws[decision][h]
+                    except KeyError:
+                        raise ProtocolError(f"no tie probability or draw for decision day {decision}, lead {h}") from None
+                    if len(ties) != len(GRID) or len(unifs) != len(GRID):
+                        raise ProtocolError(f"tie probabilities and draws carry one value per grid level ({len(GRID)})")
+                rows[h].append((order, decision, regimes[decision], leads[h], outcomes[target], ties, unifs))
                 touched.update((decision, target))
     lockbox.require_unlocked(touched, where="scoring_protocol.coverage_cells")
     cells: List[CoverageCell] = []
@@ -1188,10 +1213,16 @@ def coverage_cells(
             for level in COVERAGE_LEVELS:
                 p = min(level, 1.0 - level)
                 index = GRID.index(level)
-                for rule in COVERAGE_RULES:
+                for rule in COVERAGE_RULES + ((RANDOMISED_RULE,) if randomised else ()):
                     def hits_of(selection):
                         ys = [row[4] for row in selection]
                         qs = [row[3][index] for row in selection]
+                        if rule == RANDOMISED_RULE:
+                            ps = [row[5][index] for row in selection]
+                            us = [row[6][index] for row in selection]
+                            if level > 0.5:
+                                return coverage_tests.randomised_hit_sequence(ys, qs, ps, us)
+                            return coverage_tests.randomised_hit_sequence([-y for y in ys], [-q for q in qs], ps, us)
                         if level > 0.5:
                             return coverage_tests.hit_sequence(
                                 ys, qs, rule="above" if rule == "strict" else "at_or_above"
@@ -1233,8 +1264,8 @@ def enforce_coverage_requirement(
 
     if family not in COVERAGE_FAMILIES:
         raise ProtocolError(f"family must be one of {COVERAGE_FAMILIES}, got {family!r}")
-    if rule not in COVERAGE_RULES:
-        raise ProtocolError(f"rule must be one of {COVERAGE_RULES}, got {rule!r}")
+    if rule not in COVERAGE_RULES + (RANDOMISED_RULE,):
+        raise ProtocolError(f"rule must be one of {COVERAGE_RULES + (RANDOMISED_RULE,)}, got {rule!r}")
     if not (0.0 < alpha < 1.0):
         raise ProtocolError(f"alpha must lie strictly between 0 and 1, got {alpha!r}")
     if not COVERAGE_REQUIREMENT_IN_FORCE:

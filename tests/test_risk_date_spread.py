@@ -32,6 +32,7 @@ from repo_model import protocol_benchmarks as pb
 from repo_model import risk_date_spread as rds
 from repo_model import scoring_protocol as sp
 from repo_model import spread_mr_variants as smv
+from repo_model import turn_days as td
 from repo_model.splits import LookAheadError
 
 import test_protocol_benchmarks as tpb
@@ -70,21 +71,22 @@ class DayTypeTests(unittest.TestCase):
         seen = {}
         for row in self.panel:
             kind = self.type_of(row)
-            reporting = tpb.SPLITS.reporting_day_type(row.date, row.values)
+            reporting = td.reporting_day_type(tpb.SPLITS, row.date, row.values)
             coupons = float(row.values.get("treasury_settlement_coupons") or 0.0)
-            if reporting in ("quarter_end", "month_end", "tax_date"):
+            if reporting in ("quarter_end", "month_end", "tax_date", "turn", "quarter_end_turn", "year_end"):
                 self.assertEqual(kind, reporting)
             elif coupons > 0.0:
                 self.assertEqual(kind, "settlement")
             else:
                 self.assertIsNone(kind)
             seen[kind] = seen.get(kind, 0) + 1
-        self.assertEqual(set(seen) - {None}, set(rds.RISK_TYPES))
+        # the turn record (#1135) is in force: the calendar types are the turn labels, not month_end and quarter_end
+        self.assertEqual(set(seen) - {None}, {"turn", "quarter_end_turn", "year_end", "tax_date", "settlement"})
 
     def test_a_coupon_settlement_on_an_ordinary_day_is_a_settlement_day(self):
         row = next(
             r for r in self.panel
-            if tpb.SPLITS.reporting_day_type(r.date, r.values) == "ordinary"
+            if td.reporting_day_type(tpb.SPLITS, r.date, r.values) == "ordinary"
             and float(r.values.get("treasury_settlement_coupons") or 0.0) > 0.0
         )
         self.assertEqual(self.type_of(row), "settlement")
@@ -92,7 +94,7 @@ class DayTypeTests(unittest.TestCase):
     def test_an_ordinary_day_with_no_coupon_settlement_is_not_a_risk_date(self):
         row = next(
             r for r in self.panel
-            if tpb.SPLITS.reporting_day_type(r.date, r.values) == "ordinary"
+            if td.reporting_day_type(tpb.SPLITS, r.date, r.values) == "ordinary"
             and not float(r.values.get("treasury_settlement_coupons") or 0.0) > 0.0
         )
         self.assertIsNone(self.type_of(row))
@@ -279,7 +281,7 @@ def settlement_only_targets(panel, leads):
     """(decision index, lead) pairs, after 2020, whose target is an ordinary day by its calendar columns that settles a coupon."""
     return [
         (i, h) for i in range(600, len(panel) - max(sp.HORIZONS)) for h in leads
-        if tpb.SPLITS.reporting_day_type(panel[i + h].date, panel[i + h].values) == "ordinary"
+        if td.reporting_day_type(tpb.SPLITS, panel[i + h].date, panel[i + h].values) == "ordinary"
         and float(panel[i + h].values.get("treasury_settlement_coupons") or 0.0) > 0.0
     ]
 
@@ -320,8 +322,8 @@ class SettlementByLeadTests(unittest.TestCase):
         for i in range(600, 700):
             for h in sp.HORIZONS:
                 target = self.panel[i + h]
-                kind = tpb.SPLITS.reporting_day_type(target.date, target.values)
-                if kind in ("quarter_end", "month_end", "tax_date"):
+                kind = td.reporting_day_type(tpb.SPLITS, target.date, target.values)
+                if kind in ("quarter_end", "month_end", "tax_date", "turn", "quarter_end_turn", "year_end"):
                     checked += 1
                     self.assertEqual(rds.target_risk_type(self.panel, i, h, splits=tpb.SPLITS, **_clock()), kind)
         self.assertTrue(checked)

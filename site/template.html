@@ -230,6 +230,8 @@ ol.tail li{break-inside:avoid;margin:0 0 3px;font-variant-numeric:tabular-nums}
 ol.tail time{font-weight:600;color:var(--ink)}
 .held-note{font-family:var(--sans);font-size:.82rem;color:var(--ink-2);margin:10px 0 0;max-width:74ch}
 .grid2{margin-top:14px;max-width:720px}
+#n6 .grid2{max-width:none;overflow-x:auto}
+#n6 h3{font-family:var(--sans);font-size:1.05rem;margin:28px 0 6px}
 .grid2 table{border-collapse:collapse;width:100%;font-family:var(--sans);font-size:.84rem;font-variant-numeric:tabular-nums lining-nums;border-top:1px solid var(--ink-2);border-bottom:1px solid var(--ink-2)}
 .grid2 caption{caption-side:top;text-align:left;font-size:.8rem;font-weight:600;color:var(--ink);padding:0 0 6px;line-height:1.4}
 .grid2 caption::before{content:"Table. ";color:var(--ink-2)}
@@ -385,7 +387,7 @@ details.terms{margin-top:72px}
     <li><b>1</b><span><a href="#best-performer">Current best performer</a><small>The incumbent forecast and the development leader</small></span></li>
     <li><b>2</b><span><a href="#hypotheses">The hypotheses, H1 to H10</a><small>One line each; details fold open</small></span></li>
     <li class="part"><span>Background and detailed records</span></li>
-    <li><b>3</b><span><a href="#start">Start here</a><small>Five short views for a reader new to this market</small></span>{{newcomer_nav}}</li>
+    <li><b>3</b><span><a href="#start">Start here</a><small>Short views for a reader new to this market</small></span>{{newcomer_nav}}</li>
     <li><b>4</b><span><a href="#final-test">The final test</a><small>The result, from its record</small></span></li>
     <li><b>5</b><span><a href="#forecast-actual">Forecast against what happened</a><small>Each day, in basis points</small></span></li>
     <li><b>6</b><span><a href="#plumbing">The plumbing</a><small>The market and the Fed&rsquo;s rates</small></span></li>
@@ -418,7 +420,7 @@ details.terms{margin-top:72px}
 <!-- start-here -->
 <div id="start">
   <h2><span class="n">3</span>Start here</h2>
-  <div class="prose"><p>New to this market? Five short views, in order.</p></div>
+  <div class="prose"><p>New to this market? Short views, in order.</p></div>
   <nav aria-label="Start here">{{newcomer_nav}}</nav>
 
 <section id="n1" aria-labelledby="n1-title">
@@ -588,6 +590,13 @@ details.terms{margin-top:72px}
     {{n5_table}}
     <p>When each input is public relative to the decision is <a href="#clock">section 9</a>; pressure by day type and year is <a href="#why">section 8</a>.</p>
   </details>
+</section>
+<section id="n6" aria-labelledby="n6-title">
+  <h2 id="n6-title"><span class="n">N6</span>What the data show about the repo market</h2>
+  <p class="prose lede">{{n6_lede}}</p>
+  <div class="prose">
+    {{n6_body}}
+  </div>
 </section>
 </div>
 <!-- /start-here -->

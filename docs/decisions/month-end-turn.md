@@ -1,11 +1,10 @@
-# Draft: the month-end turn is the one month-end definition (#1135)
+# The month-end turn is the one month-end definition (#1135)
 
-**Status: a draft for Eleonora, not in force; her answers of 22 October 2026 are recorded below.** Drafted by the pull request that closes #1135, from her ruling of 22 October
+**Status: in force.** Eleonora approved the draft (PR #1139) with her own `GO #1135` (comment 6354007213, 22 October 2026), answers 1-3 at their defaults. The draft merged inert (`repo_model.turn_days.IN_FORCE` False); the pull request that closes #1161 moved this file here and set `IN_FORCE = True`. Drafted from her ruling of 22 October
 2026 (relayed by the orchestrating session; five-lens review item 1, Lens A, #958; the label is the one #959 and PR #975
-measured). It binds nothing until she merges it into `docs/decisions/month-end-turn.md` with her own `GO #1135`. Until then
-the implementation below is inert: `repo_model.turn_days.IN_FORCE` is `False`, and every reader gives what it gave before.
-This is a §13 change to `scoring-protocol.md` (ruling 6 and the implementation ruling on B2's day type), and the definition
-is a data meaning: both are hers.
+measured). This is a §13 change to `scoring-protocol.md` (ruling 6 and the implementation ruling on B2's day type), and the
+definition is a data meaning: both hers. It applies to days logged after it is in force; no published record in `docs/runs/`
+moves and no published figure changes.
 
 ## The question
 
@@ -88,7 +87,7 @@ Two notes for the record. Neither changes the definition.
 
 ## Putting it in force
 
-The pull request that moves this file to `docs/decisions/month-end-turn.md` also sets `turn_days.IN_FORCE = True`
+The pull request that moved this file here (#1161) also set `turn_days.IN_FORCE = True`
 (`tests/test_month_end_turn_1135.py` fails if the record and the switch disagree) and carries her `GO #1135` in
 `metadata/owner_attestations.json`. Scripts that hard-code the legacy vocabulary (`month_end`, `quarter_end`; for example
 `risk_date_spread.RISK_TYPES` and the study scripts that count by it) are read on the new types by new studies; none of them
