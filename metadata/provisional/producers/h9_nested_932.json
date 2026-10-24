@@ -1,0 +1,10 @@
+{
+  "script": "scripts/h9_nested_932.py",
+  "declarations": [
+    "metadata/h9_nested_932.json"
+  ],
+  "model": "#842's one-step base (`gbm_funding` with a richer target's forecast as an input) and the plus walks fitted on direct pairs",
+  "calendar_inputs": "treasury_settlement at lead 1 (one-step base); the direct plus walks read it at the target day",
+  "pairing": "one_step+direct",
+  "class": "a+b"
+}
