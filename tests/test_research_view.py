@@ -216,7 +216,7 @@ class Standings(unittest.TestCase):
             collect(group["days"])
             collect(grid["means"])
             for pair in grid["pairs"].values():
-                collect([pair["skill"], pair["skill_interval"]])
+                collect([pair["skill"], pair["skill_interval"], pair["difference"], pair["difference_interval"]])
         interval = research_view.esc(self.record(self.DECLARATION)["scoring"]["interval"])
         text = re.sub(r"<code>.*?</code>", " ", self.leader().replace(interval, " "))
         text = re.sub(r"<[^>]+>", " ", text)
@@ -225,6 +225,39 @@ class Standings(unittest.TestCase):
         self.assertTrue(found)
         for number in found:
             self.assertIn(number, allowed, f"{number} is on the page and in no committed record")
+
+    def test_it_shows_the_mean_d_bound_beside_the_skill_interval_with_lens_c(self):
+        """#1118, applying the #1009 ruling: both intervals are in the table, from the record, with Lens C's caveat.
+
+        Red on main: the table printed `skill_interval` only. Recorded mutation (2026-10-22): making `standings`
+        read `skill_interval` in place of `difference_interval` (so the mean-d bound was the skill interval) made
+        this test fail with AssertionError (the record's difference_interval was not in the table).
+        """
+        pair = self.record()["groups"]["pooled"]["all decision days"]["metrics"]["grid_crps"]["pairs"]
+        pair = pair["gbm_funding vs B1"]
+        low, high = pair["difference_interval"]
+        table = self.leader()
+        self.assertIn(f"{100 * pair['skill_interval'][0]:+.1f}%", table)
+        self.assertIn(f"[{low:+.2f}, {high:+.2f}]", table)
+        self.assertIn(f"{pair['difference']:+.2f}", table)
+        block = self.best()
+        self.assertRegex(block, r"(?s)lag-10 HAC standard error.*understated.*2&times;.*after 2020")
+        self.assertNotIn("issues/958", block)
+        self.assertNotRegex(block, r">[^<]*#\d+")
+
+    def test_a_record_without_a_mean_d_bound_says_so(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            for rel in (self.STEP4, self.SCORE, self.DECLARATION):
+                (Path(tmp) / rel).parent.mkdir(parents=True, exist_ok=True)
+                (Path(tmp) / rel).write_bytes((ROOT / rel).read_bytes())
+            score = Path(tmp) / self.SCORE
+            doc = json.loads(score.read_text(encoding="utf-8"))
+            for group in doc["groups"].values():
+                for sub in group.values():
+                    for pair in sub["metrics"]["grid_crps"]["pairs"].values():
+                        pair.pop("difference_interval", None)
+            score.write_text(json.dumps(doc), encoding="utf-8")
+            self.assertIn("no mean-d bound", research_view.standings_html(research_view.standings(tmp)))
 
     def test_it_reads_the_records_not_a_constant(self):
         with tempfile.TemporaryDirectory() as tmp:
