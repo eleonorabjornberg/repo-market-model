@@ -47,6 +47,33 @@ class ReadingTests(unittest.TestCase):
         self.assertEqual(script.reading_words(row(0.01, 0.05, 0.001, 0.05)), "gain")
         self.assertEqual(script.reading_words(row(0.01, 0.05, -0.001, 0.05)), "undecided (skill interval: gain)")
 
+    def test_a_row_without_a_mean_d_bound_has_no_reading_not_undecided(self):
+        """#1215. Mutation (recorded): returning "undecided" for an undefined row in `verdict` made this fail with
+        AssertionError ('undecided' != '**no reading** ...') and the tally test below fail on the count of `no reading`."""
+
+        undefined = {"undefined": "the daily difference has no long-run variance; it cannot be studentized", "days": 20}
+        words = "**no reading** (mean-d bound not computed: the daily difference has no long-run variance; it cannot be studentized)"
+        self.assertEqual(script.verdict(undefined), words)
+        self.assertEqual(script.reading_words(undefined), words)
+        self.assertEqual(script._bold(script.reading_words(undefined)), words)
+        self.assertEqual(script._bold("gain"), "**gain**")
+        self.assertEqual(script.verdict(None), "undecided")
+
+    def test_a_mean_d_only_row_reads_on_the_bound_and_says_skill_is_undefined(self):
+        only = {"skill": None, "skill_interval": None, "skill_undefined": "x", "difference": 0.01, "difference_interval": [0.001, 0.05]}
+        self.assertEqual(script.verdict(only), "gain")
+        self.assertEqual(script.skill_verdict(only), "skill undefined")
+        self.assertEqual(script.reading_words(only), "gain (skill interval: skill undefined)")
+        self.assertIn("skill undefined", script._fmt(only))
+
+    def test_the_regime_tally_keeps_no_reading_apart_from_undecided(self):
+        undefined = {"undefined": "x", "days": 5}
+        regimes = list(script.REGIMES)
+        groups = {"regime": {regimes[0]: {"grid_crps": {"vs": {"arm": {"ref": undefined}}}},
+                             regimes[1]: {"grid_crps": {"vs": {"arm": {"ref": row(-1, 1, -0.1, 0.1)}}}}}}
+        count = script.tally({"groups": groups}, "arm", "ref")
+        self.assertEqual((count["no reading"], count["undecided"], count["gain"], count["loss"]), (1, 1, 0, 0))
+
     def test_a_cell_shows_the_skill_interval_and_the_mean_d_bound(self):
         text = script._fmt(row(0.01, 0.05, 0.001, 0.05))
         self.assertIn("[+1.0%, +5.0%]", text)

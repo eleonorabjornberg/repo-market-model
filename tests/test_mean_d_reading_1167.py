@@ -59,7 +59,7 @@ class ReadingTests(unittest.TestCase):
         self.assertEqual(script.verdict_words(DISAGREE), "loss")
         self.assertEqual(script.verdict_words(LOSS_ON_SKILL), "undecided")
         self.assertEqual(script.verdict_words({"skill_interval": [-0.1, 0.1], "difference_interval": [0.01, 0.2]}), "gain")
-        self.assertEqual(script.verdict_words({"undefined": "x"}), "undecided")
+        self.assertEqual(script.verdict_words({"undefined": "x"}), "**no reading** (mean-d bound not computed: x)")  # #1215
         self.assertEqual(script.skill_words(DISAGREE), "undecided")
         self.assertEqual(script.skill_words(LOSS_ON_SKILL), "loss")
 

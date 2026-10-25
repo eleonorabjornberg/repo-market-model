@@ -68,6 +68,7 @@ s686, s761, b949 = c.s686, c.s761, c.b949
 sv = _load("scarcity_validation")
 d1145 = _load("state_calendar_1145")
 d1172 = _load("s3_decomposition_1172")
+m1167 = _load("mean_d_reading_1167")
 
 DECLARATION = REPO / "metadata" / "s3_terms_1196.json"
 SEED = 1196
@@ -96,10 +97,36 @@ AIMED = (("regime", "2020"), ("target_day_type", "fomc_day"))
 RATES = ("hit_above", "hit_at_or_above", "b50_closed", "b50_open", "b90_closed", "b90_open")
 Q95 = c.Q95
 
-verdict = d1172.verdict
-skill_verdict = d1172.skill_verdict
+
+
+def verdict(row: Optional[dict]) -> str:
+    """As #1172's reading on the mean-d bound, except that a row whose bound was not computed reads "no reading" (#1215)."""
+
+    return m1167.no_reading(row) if row is not None and "undefined" in row else d1172.verdict(row)
+
+
+def skill_verdict(row: Optional[dict]) -> str:
+    """As #1172's reading on the skill interval; "skill undefined" where only the mean-d bound was computed (#1215)."""
+
+    if row is not None and "undefined" not in row and row["skill_interval"] is None:
+        return "skill undefined"
+    return d1172.skill_verdict(row)
+
+
 _fmt = d1172._fmt
-tally = d1172.tally
+
+
+def tally(r: dict, arm: str, reference: str, metric: str = "grid_crps") -> Dict[str, int]:
+    """As #1172's: the regimes in which the arm's mean-d bound reads as a gain, a loss and undecided; `no reading` counts the
+    regimes whose bound was not computed (#1215), which `undecided` must not absorb."""
+
+    count = {"gain": 0, "loss": 0, "undecided": 0, "no reading": 0}
+    for label in REGIMES:
+        entry = r["groups"].get("regime", {}).get(label)
+        if entry is not None:
+            row = entry[metric]["vs"].get(arm, {}).get(reference)
+            count["no reading" if row is not None and "undefined" in row else verdict(row)] += 1
+    return count
 
 
 def committed_declaration(path: Path = DECLARATION) -> dict:
@@ -204,7 +231,8 @@ def _pairs_task(job):
         days = [d for d in members if d in series[name]] if name in GBMS else list(members)
         if len(days) < MIN_GROUP_DAYS:
             continue
-        out[name] = s761.run_pairs({name: series[name]}, series[candidate], days, seed=SEED, draws=_STATE["draws"])[name]
+        out[name] = s761.run_pairs({name: series[name]}, series[candidate], days, seed=SEED, draws=_STATE["draws"],
+                                  mean_d_fallback=True)[name]
     return (split, label, metric, candidate), out
 
 
@@ -496,7 +524,15 @@ def reading_words(row: Optional[dict]) -> str:
     """`gain`, `loss` or `undecided` on the mean-d bound, with the skill interval's reading in brackets where it differs."""
 
     word, other = verdict(row), skill_verdict(row)
+    if row is not None and "undefined" in row:
+        return word
     return word if word == other else f"{word} (skill interval: {other})"
+
+
+def _bold(words: str) -> str:
+    """The reading in bold, once: a "no reading" phrase is bold already (#1215)."""
+
+    return words if words.startswith("**") else f"**{words}**"
 
 
 def aimed_rows(r: dict) -> List[dict]:
@@ -541,7 +577,8 @@ def render(r: dict) -> str:
         "interval and, beside it, the studentized interval on mean d (bp); a reading (gain, loss, undecided) is taken from the mean-d bound** "
         "(her ruling on #1009, 20 October 2026), not from the skill interval. **Caveat (Lens C, #958):** the lag-10 HAC standard error that "
         "studentizes the bound is understated about 2x after 2020, so an interval that excludes zero is narrower than it should be; a "
-        f"reading here is evidence for a question. Scored decision days: {n['scored_decision_days']:,} ({n['first']} to {n['last']}); the "
+        f"reading here is evidence for a question. Where the benchmark scores zero on a resample, skill is undefined but the mean-d bound is still computed (#1215): the row shows \"skill undefined\" and is read on the bound. A row with no mean-d bound reads \"no reading\" with the reason, not \"undecided\". "
+        f"Scored decision days: {n['scored_decision_days']:,} ({n['first']} to {n['last']}); the "
         f"fit is renewed {n['refits']} times. B1' (Lens C's calendar-aware persistence, #960) is reported beside B1 in every table; B1 and "
         "B2 stay the protocol's benchmarks.", "",
         "**The arms.** (s3) of #1145 is #941's scaled mean reversion (a) with calendar terms in standardised units, a Huber fit and a "
@@ -576,7 +613,8 @@ def render(r: dict) -> str:
             f"| {LABELS[name]} | {_fmt(pooled['grid_crps']['vs'][name].get(A))} | "
             + (_fmt(pooled['grid_crps']['vs'][name].get(S3)) if name != S3 else "") + f" | {_fmt(pooled['upper_tail_twcrps']['vs'][name].get(A))} | "
             + (_fmt(pooled['upper_tail_twcrps']['vs'][name].get(S3)) if name != S3 else "")
-            + (f" | {t['gain']} / {t['loss']} / {t['undecided']} | {_fmt(ordv)} | {_fmt(calv)} |" if t else " | | | |"))
+            + (f" | {t['gain']} / {t['loss']} / {t['undecided']}" + (f" / {t['no reading']} no reading" if t["no reading"] else "")
+               + f" | {_fmt(ordv)} | {_fmt(calv)} |" if t else " | | | |"))
     out.append("")
     out += ["## Aimed at (s3)'s upper-tail losses: 2020 and the FOMC target days", "",
             "On #1194's reading of the #1145 record (scored on the earlier pressure-day labels) (s3) loses to (a) on upper-tail twCRPS in 2020 and on FOMC target days (#1187; #1194); this run, on the labels in force, is read afresh below. The rows are "
@@ -588,9 +626,9 @@ def render(r: dict) -> str:
     for row in aimed_rows(r):
         tw, gr = row["upper_tail_twcrps"], row["grid_crps"]
         out.append(
-            f"| {row['group']} | {row['days']} | {LABELS[row['arm']]} | {tw['mean']:.3f} | {_fmt(tw['vs_a'])}: **{reading_words(tw['vs_a'])}** "
+            f"| {row['group']} | {row['days']} | {LABELS[row['arm']]} | {tw['mean']:.3f} | {_fmt(tw['vs_a'])}: {_bold(reading_words(tw['vs_a']))} "
             f"| {'' if tw['vs_s3'] is None else _fmt(tw['vs_s3']) + ': **' + reading_words(tw['vs_s3']) + '**'} | {gr['mean']:.3f} "
-            f"| {_fmt(gr['vs_a'])}: **{reading_words(gr['vs_a'])}** "
+            f"| {_fmt(gr['vs_a'])}: {_bold(reading_words(gr['vs_a']))} "
             f"| {'' if gr['vs_s3'] is None else _fmt(gr['vs_s3']) + ': **' + reading_words(gr['vs_s3']) + '**'} |")
     iorb = r["groups"].get("target_day_type", {}).get("iorb_window")
     if iorb is not None:
@@ -598,8 +636,8 @@ def render(r: dict) -> str:
             tw = iorb["upper_tail_twcrps"]
             out.append(
                 f"| iorb_window | {iorb['days']} | {LABELS[arm]} | {tw['means'][arm]:.3f} | {_fmt(tw['vs'].get(arm, {}).get(A))}: "
-                f"**{reading_words(tw['vs'].get(arm, {}).get(A))}** | "
-                + ("" if arm == S3 else f"{_fmt(tw['vs'].get(arm, {}).get(S3))}: **{reading_words(tw['vs'].get(arm, {}).get(S3))}**")
+                f"{_bold(reading_words(tw['vs'].get(arm, {}).get(A)))} | "
+                + ("" if arm == S3 else f"{_fmt(tw['vs'].get(arm, {}).get(S3))}: {_bold(reading_words(tw['vs'].get(arm, {}).get(S3)))}")
                 + " | | | |")
     out.append("")
     for split, title in (("pooled", "Pooled"), ("lead", "By lead")):
