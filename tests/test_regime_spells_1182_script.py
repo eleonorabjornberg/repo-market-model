@@ -124,8 +124,8 @@ class ReadingTests(unittest.TestCase):
         self.assertEqual(script.reading(self.row([0.001, 0.02], [-0.01, 0.02])), "undecided")
         self.assertEqual(script.reading(self.row([0.001, 0.02], [-0.03, -0.001])), "loss")
 
-    def test_an_undefined_comparison_is_undecided(self):
-        self.assertEqual(script.reading({"undefined": "x"}), "undecided")
+    def test_an_undefined_comparison_has_no_reading_not_undecided(self):
+        self.assertEqual(script.reading({"undefined": "x"}), "**no reading** (mean-d bound not computed: x)")
         self.assertEqual(script.reading(None), "undecided")
 
 

@@ -645,11 +645,12 @@ def paired_tests(
         cand = [_finite(candidate[day], "a candidate score") for day in days]
         diff = [b - c for b, c in zip(bench, cand)]
         benchmark_mean = sum(bench) / n
-        if benchmark_mean == 0.0:
+        # Skill's guard (#1215): a benchmark scoring zero leaves only skill undefined, not the bound on mean(d).
+        if with_skill and benchmark_mean == 0.0:
             raise ProtocolError("the benchmark scores zero on every day; skill is undefined")
         mean = sum(diff) / n
         se = _standard_error(diff, hac_lag, "the daily difference")
-        skill = mean / benchmark_mean
+        skill = mean / benchmark_mean if benchmark_mean != 0.0 else math.nan
         skill_se = None
         if with_skill:
             linear = [d - skill * b for d, b in zip(diff, bench)]
@@ -669,9 +670,10 @@ def paired_tests(
             resampled_mean = sum(resample) / n
             means.append(resampled_mean)
             resampled_bench_mean = sum(map(bench.__getitem__, indices)) / n
-            if resampled_bench_mean == 0.0:
+            if resampled_bench_mean != 0.0:
+                skills.append(resampled_mean / resampled_bench_mean)
+            elif with_skill:
                 raise ProtocolError("a resampled benchmark scores zero; skill is undefined")
-            skills.append(resampled_mean / resampled_bench_mean)
             outer_t = (resampled_mean - mean) / _standard_error(resample, hac_lag, "a resampled difference")
             t_out.append(outer_t)
             if inner:

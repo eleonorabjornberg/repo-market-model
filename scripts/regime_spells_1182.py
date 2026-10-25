@@ -301,7 +301,8 @@ def _pairs_task(job):
         return (split, label, metric, candidate), {
             n: {"undefined": "fewer than %d days with a scale" % MIN_GROUP_DAYS, "days": len(days)} for n in names}
     return (split, label, metric, candidate), s761.run_pairs(
-        {n: series[n] for n in names}, series[candidate], days, seed=SEED, draws=_STATE["draws"])
+        {n: series[n] for n in names}, series[candidate], days, seed=SEED, draws=_STATE["draws"],
+        mean_d_fallback=True)
 
 
 def _coverage_task(job):
@@ -463,8 +464,10 @@ def bound(row: Optional[dict]) -> str:
 def reading(row: Optional[dict]) -> str:
     """The reading on the mean-d bound (#1009): gain, loss or undecided."""
 
-    if row is None or "undefined" in row:
+    if row is None:
         return "undecided"
+    if "undefined" in row:
+        return f"**no reading** (mean-d bound not computed: {row['undefined']})"
     lo, hi = row["difference_interval"]
     return "gain" if lo > 0.0 else "loss" if hi < 0.0 else "undecided"
 
@@ -800,7 +803,9 @@ def render(r: dict) -> str:
         f"days, {r['draws']:,} draws, seed {r['seed']}, two-sided 90% interval. Skill is `mean(d) / mean(S(comparator))` with "
         "`d = S(comparator) - S(candidate)`, positive favours the candidate; beside it the studentized interval of mean(d) itself (the "
         "mean-d bound of #1009), on which the reading is made: a gain when the interval is above zero, a loss when below, otherwise "
-        f"undecided. {LENS_C} Coverage intervals are 90% stationary-bootstrap percentile intervals ({r['reps']:,} resamples), pooled. "
+        "undecided. Where a benchmark scores zero on a resample, skill is undefined but the mean-d bound is still computed (#1215): the row "
+        "shows \"skill undefined\" and is read on the bound; a row with no mean-d bound reads \"no reading\" with the reason, not \"undecided\". "
+        f"{LENS_C} Coverage intervals are 90% stationary-bootstrap percentile intervals ({r['reps']:,} resamples), pooled. "
         f"Scored decision days: {n['scored_decision_days']:,} ({n['first']} to {n['last']}); every model is scored on the same days.", "",
         "**What this is.** The base is (s3) of #1145: #941's scaled mean reversion with state-scaled calendar terms, a Huber fit and ridge "
         "5, the calendar read at the target day on direct pairs. The misses of its bands come in runs (Christoffersen independence p = 0.000 at "

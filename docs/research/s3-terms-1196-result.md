@@ -4,7 +4,7 @@
 
 **What kind of look this is.** This is a further look at 2018-2025 after (s3) was chosen on the same days: (s3) was picked from #1145's arms on this data, and the two arms here are aimed at the two upper-tail losses it showed on the mean-d bound, in 2020 and on FOMC target days (finding #1187, her ruling of 24 October 2026). A gain here is evidence for a question, with the selection noted, not a result.
 
-Panel digest `4ddc3882…`. Studentized stationary bootstrap (ruling 1), mean block 10 business days, 10,000 draws, seed 1196, two-sided 90% interval (the lower end is the one-sided 95% bound). Skill is `mean(d) / mean(S(benchmark))` with `d = S(benchmark) - S(candidate)`, positive favours the candidate. **Every row shows the skill interval and, beside it, the studentized interval on mean d (bp); a reading (gain, loss, undecided) is taken from the mean-d bound** (her ruling on #1009, 20 October 2026), not from the skill interval. **Caveat (Lens C, #958):** the lag-10 HAC standard error that studentizes the bound is understated about 2x after 2020, so an interval that excludes zero is narrower than it should be; a reading here is evidence for a question. Scored decision days: 1,849 (2018-07-19 to 2025-12-23); the fit is renewed 89 times. B1' (Lens C's calendar-aware persistence, #960) is reported beside B1 in every table; B1 and B2 stay the protocol's benchmarks.
+Panel digest `4ddc3882…`. Studentized stationary bootstrap (ruling 1), mean block 10 business days, 10,000 draws, seed 1196, two-sided 90% interval (the lower end is the one-sided 95% bound). Skill is `mean(d) / mean(S(benchmark))` with `d = S(benchmark) - S(candidate)`, positive favours the candidate. **Every row shows the skill interval and, beside it, the studentized interval on mean d (bp); a reading (gain, loss, undecided) is taken from the mean-d bound** (her ruling on #1009, 20 October 2026), not from the skill interval. **Caveat (Lens C, #958):** the lag-10 HAC standard error that studentizes the bound is understated about 2x after 2020, so an interval that excludes zero is narrower than it should be; a reading here is evidence for a question. Where the benchmark scores zero on a resample, skill is undefined but the mean-d bound is still computed (#1215): the row shows "skill undefined" and is read on the bound. A row with no mean-d bound reads "no reading" with the reason, not "undecided". Scored decision days: 1,849 (2018-07-19 to 2025-12-23); the fit is renewed 89 times. B1' (Lens C's calendar-aware persistence, #960) is reported beside B1 in every table; B1 and B2 stay the protocol's benchmarks.
 
 **The arms.** (s3) of #1145 is #941's scaled mean reversion (a) with calendar terms in standardised units, a Huber fit and a ridge of 5 pseudo-days. #1145 tried the scarcity interaction (s2) and the FOMC and IORB terms (s4) only on the least-squares fit (ridge 1) that lost, and #1172 found the Huber fit does most of (s3)'s work. **(s3+state)** is (s3) with each term also times the as-of scarcity state (the own-leg state of #586 over 3, 0 on the floor, 1 when scarce), as (s2); **(s3+FOMC/IORB)** is (s3) with the `fomc_day` and `iorb_window` terms, as (s4) (the IORB window is absent at leads 4 and 5, where no scheduled field is readable). Both keep the Huber fit and the ridge of 5. All read the calendar at the target day on direct pairs. The benchmarks and the mean-reversion level read the pressure-day types of the month-end turn record in force since #1161, so (a) and (s3) are not the figures of the #1145 and #1172 pages, which were scored on the earlier labels; the arms are compared with each other here, not with those pages. The scaled score of #967 is not scored: its pool needs B2 on days the in-force record cannot forecast.
 
@@ -32,9 +32,9 @@ On #1194's reading of the #1145 record (scored on the earlier pressure-day label
 | fomc_day | 118 | (s3) (s1) with a Huber fit and a heavier ridge; the H5 candidate | 3.614 | -1.7% [-5.4%, +1.7%]; d -0.062 [-0.238, -0.011]: **loss (skill interval: undecided)** |  | 4.471 | -1.5% [-6.0%, +0.7%]; d -0.067 [-0.318, +0.042]: **undecided** |  |
 | fomc_day | 118 | (s3+state) (s3) and each term times the scarcity state | 3.643 | -2.6% [-9.7%, +3.1%]; d -0.091 [-0.357, -0.007]: **loss (skill interval: undecided)** | -0.8% [-6.5%, +0.7%]; d -0.029 [-0.303, +0.004]: **undecided** | 4.512 | -2.5% [-11.5%, +1.3%]; d -0.108 [-0.602, +0.047]: **undecided** | -0.9% [-8.5%, +0.5%]; d -0.041 [-0.524, +0.007]: **undecided** |
 | fomc_day | 118 | (s3+FOMC/IORB) (s3) with the FOMC and IORB terms | 3.631 | -2.2% [-8.7%, +1.8%]; d -0.079 [-0.343, -0.008]: **loss (skill interval: undecided)** | -0.5% [-1.8%, +0.3%]; d -0.017 [-0.081, +0.007]: **undecided** | 4.529 | -2.8% [-14.2%, +1.1%]; d -0.125 [-0.717, +0.037]: **undecided** | -1.3% [-8.3%, +0.5%]; d -0.058 [-0.387, +0.002]: **undecided** |
-| iorb_window | 78 | (s3) (s1) with a Huber fit and a heavier ridge; the H5 candidate | 1.448 | undefined: **undecided** |  | | | |
-| iorb_window | 78 | (s3+state) (s3) and each term times the scarcity state | 1.445 | undefined: **undecided** | undefined: **undecided** | | | |
-| iorb_window | 78 | (s3+FOMC/IORB) (s3) with the FOMC and IORB terms | 1.425 | undefined: **undecided** | undefined: **undecided** | | | |
+| iorb_window | 78 | (s3) (s1) with a Huber fit and a heavier ridge; the H5 candidate | 1.448 | skill undefined; d +0.144 [-0.069, +0.691]: **undecided (skill interval: skill undefined)** |  | | | |
+| iorb_window | 78 | (s3+state) (s3) and each term times the scarcity state | 1.445 | skill undefined; d +0.148 [-0.081, +0.713]: **undecided (skill interval: skill undefined)** | undefined: **no reading** (mean-d bound not computed: a resampled difference has no long-run variance; it cannot be studentized) | | | |
+| iorb_window | 78 | (s3+FOMC/IORB) (s3) with the FOMC and IORB terms | 1.425 | skill undefined; d +0.168 [-0.036, +0.777]: **undecided (skill interval: skill undefined)** | skill undefined; d +0.024 [-0.001, +0.185]: **undecided (skill interval: skill undefined)** | | | |
 
 ## Pooled: all decision days, grid CRPS (23 levels), mean over leads 1 to 5 (bp)
 
@@ -287,10 +287,10 @@ On #1194's reading of the #1145 record (scored on the earlier pressure-day label
 | B1 | 0.280 | | | | | |
 | B1' (#960) | 0.208 | | | | | |
 | B2 | 0.204 | | | | | |
-| (a) base: #941 mad 20, floor 0.5 | 0.184 | +34.3% [+16.1%, +104.0%]; d +0.096 [+0.004, +0.979] | +11.2% [-5.7%, +27.4%]; d +0.023 [-0.006, +0.311] | undefined |  |  |
-| (s3) (s1) with a Huber fit and a heavier ridge; the H5 candidate | 0.175 | +37.6% [+20.4%, +86.2%]; d +0.105 [+0.009, +0.978] | +15.6% [-3.8%, +44.3%]; d +0.032 [-0.003, +0.419] | undefined | +5.0% [-16.3%, +15.7%]; d +0.009 [+0.002, +0.065] |  |
-| (s3+state) (s3) and each term times the scarcity state | 0.175 | +37.6% [+20.4%, +86.2%]; d +0.105 [+0.009, +0.978] | +15.6% [-3.8%, +44.3%]; d +0.032 [-0.003, +0.419] | undefined | +5.0% [-16.3%, +15.7%]; d +0.009 [+0.002, +0.065] | +0.0% [-0.0%, +0.0%]; d +0.000 [-0.000, +0.000] |
-| (s3+FOMC/IORB) (s3) with the FOMC and IORB terms | 0.175 | +37.6% [+20.4%, +86.1%]; d +0.105 [+0.009, +0.975] | +15.6% [-3.9%, +44.4%]; d +0.032 [-0.003, +0.416] | undefined | +5.0% [-16.5%, +15.8%]; d +0.009 [+0.002, +0.065] | +0.0% [-0.1%, +0.0%]; d +0.000 [-0.000, +0.000] |
+| (a) base: #941 mad 20, floor 0.5 | 0.184 | +34.3% [+16.1%, +104.0%]; d +0.096 [+0.004, +0.979] | +11.2% [-5.7%, +27.4%]; d +0.023 [-0.006, +0.311] | skill undefined; d +0.020 [-0.012, +0.364] |  |  |
+| (s3) (s1) with a Huber fit and a heavier ridge; the H5 candidate | 0.175 | +37.6% [+20.4%, +86.2%]; d +0.105 [+0.009, +0.978] | +15.6% [-3.8%, +44.3%]; d +0.032 [-0.003, +0.419] | skill undefined; d +0.029 [-0.009, +0.725] | +5.0% [-16.3%, +15.7%]; d +0.009 [+0.002, +0.065] |  |
+| (s3+state) (s3) and each term times the scarcity state | 0.175 | +37.6% [+20.4%, +86.2%]; d +0.105 [+0.009, +0.978] | +15.6% [-3.8%, +44.3%]; d +0.032 [-0.003, +0.419] | skill undefined; d +0.029 [-0.009, +0.725] | +5.0% [-16.3%, +15.7%]; d +0.009 [+0.002, +0.065] | +0.0% [-0.0%, +0.0%]; d +0.000 [-0.000, +0.000] |
+| (s3+FOMC/IORB) (s3) with the FOMC and IORB terms | 0.175 | +37.6% [+20.4%, +86.1%]; d +0.105 [+0.009, +0.975] | +15.6% [-3.9%, +44.4%]; d +0.032 [-0.003, +0.416] | skill undefined; d +0.029 [-0.009, +0.724] | +5.0% [-16.5%, +15.8%]; d +0.009 [+0.002, +0.065] | +0.0% [-0.1%, +0.0%]; d +0.000 [-0.000, +0.000] |
 
 **2025-26** (249 days)
 
@@ -447,10 +447,10 @@ On #1194's reading of the #1145 record (scored on the earlier pressure-day label
 | B1 | 3.691 | | | | | |
 | B1' (#960) | 3.628 | | | | | |
 | B2 | 6.224 | | | | | |
-| (a) base: #941 mad 20, floor 0.5 | 3.339 | undefined | undefined | undefined |  |  |
-| (s3) (s1) with a Huber fit and a heavier ridge; the H5 candidate | 2.500 | undefined | undefined | undefined | undefined |  |
-| (s3+state) (s3) and each term times the scarcity state | 2.423 | undefined | undefined | undefined | undefined | undefined |
-| (s3+FOMC/IORB) (s3) with the FOMC and IORB terms | 2.494 | undefined | undefined | undefined | undefined | undefined |
+| (a) base: #941 mad 20, floor 0.5 | 3.339 | skill undefined; d +0.352 [+0.047, +1.730] | skill undefined; d +0.290 [+0.033, +1.288] | skill undefined; d +2.885 [-0.223, +45.713] |  |  |
+| (s3) (s1) with a Huber fit and a heavier ridge; the H5 candidate | 2.500 | skill undefined; d +1.191 [+0.005, +5.307] | skill undefined; d +1.128 [-0.001, +4.954] | skill undefined; d +3.724 [+0.046, +45.330] | undefined |  |
+| (s3+state) (s3) and each term times the scarcity state | 2.423 | skill undefined; d +1.267 [-0.055, +5.449] | skill undefined; d +1.205 [-0.070, +5.144] | skill undefined; d +3.801 [-0.018, +48.561] | undefined | undefined |
+| (s3+FOMC/IORB) (s3) with the FOMC and IORB terms | 2.494 | skill undefined; d +1.196 [+0.005, +5.335] | skill undefined; d +1.134 [-0.000, +4.978] | skill undefined; d +3.730 [+0.048, +45.421] | undefined | undefined |
 
 **tax_date** (89 days)
 
@@ -459,10 +459,10 @@ On #1194's reading of the #1145 record (scored on the earlier pressure-day label
 | B1 | 4.662 | | | | | |
 | B1' (#960) | 4.646 | | | | | |
 | B2 | 5.660 | | | | | |
-| (a) base: #941 mad 20, floor 0.5 | 4.397 | +5.7% [-11.1%, +15.6%]; d +0.265 [+0.021, +1.882] | +5.4% [-1.8%, +11.6%]; d +0.249 [+0.015, +2.412] | undefined |  |  |
-| (s3) (s1) with a Huber fit and a heavier ridge; the H5 candidate | 4.415 | +5.3% [-7.2%, +12.5%]; d +0.247 [+0.011, +1.685] | +5.0% [-1.1%, +8.6%]; d +0.231 [+0.009, +1.872] | undefined | -0.4% [-2.4%, +0.9%]; d -0.018 [-0.096, +0.022] |  |
-| (s3+state) (s3) and each term times the scarcity state | 4.419 | +5.2% [-5.4%, +11.5%]; d +0.244 [+0.016, +1.699] | +4.9% [-0.2%, +7.8%]; d +0.227 [+0.012, +1.908] | undefined | -0.5% [-3.0%, +1.1%]; d -0.021 [-0.113, +0.022] | -0.1% [-0.5%, +0.3%]; d -0.003 [-0.024, +0.007] |
-| (s3+FOMC/IORB) (s3) with the FOMC and IORB terms | 4.447 | +4.6% [-2.4%, +10.0%]; d +0.216 [+0.010, +1.442] | +4.3% [+1.2%, +6.5%]; d +0.199 [+0.008, +1.561] | undefined | -1.1% [-5.9%, +1.4%]; d -0.049 [-0.250, +0.015] | -0.7% [-4.7%, +0.7%]; d -0.031 [-0.327, +0.005] |
+| (a) base: #941 mad 20, floor 0.5 | 4.397 | +5.7% [-11.1%, +15.6%]; d +0.265 [+0.021, +1.882] | +5.4% [-1.8%, +11.6%]; d +0.249 [+0.015, +2.412] | skill undefined; d +1.263 [+0.100, +4.811] |  |  |
+| (s3) (s1) with a Huber fit and a heavier ridge; the H5 candidate | 4.415 | +5.3% [-7.2%, +12.5%]; d +0.247 [+0.011, +1.685] | +5.0% [-1.1%, +8.6%]; d +0.231 [+0.009, +1.872] | skill undefined; d +1.245 [+0.097, +4.767] | -0.4% [-2.4%, +0.9%]; d -0.018 [-0.096, +0.022] |  |
+| (s3+state) (s3) and each term times the scarcity state | 4.419 | +5.2% [-5.4%, +11.5%]; d +0.244 [+0.016, +1.699] | +4.9% [-0.2%, +7.8%]; d +0.227 [+0.012, +1.908] | skill undefined; d +1.241 [+0.097, +4.742] | -0.5% [-3.0%, +1.1%]; d -0.021 [-0.113, +0.022] | -0.1% [-0.5%, +0.3%]; d -0.003 [-0.024, +0.007] |
+| (s3+FOMC/IORB) (s3) with the FOMC and IORB terms | 4.447 | +4.6% [-2.4%, +10.0%]; d +0.216 [+0.010, +1.442] | +4.3% [+1.2%, +6.5%]; d +0.199 [+0.008, +1.561] | skill undefined; d +1.213 [+0.100, +4.597] | -1.1% [-5.9%, +1.4%]; d -0.049 [-0.250, +0.015] | -0.7% [-4.7%, +0.7%]; d -0.031 [-0.327, +0.005] |
 
 **settlement** (944 days)
 
@@ -483,10 +483,10 @@ On #1194's reading of the #1145 record (scored on the earlier pressure-day label
 | B1 | 3.629 | | | | | |
 | B1' (#960) | 3.600 | | | | | |
 | B2 | 3.969 | | | | | |
-| (a) base: #941 mad 20, floor 0.5 | 3.552 | +2.1% [-0.6%, +4.6%]; d +0.078 [+0.008, +0.317] | +1.3% [-0.2%, +3.8%]; d +0.048 [-0.019, +0.345] | undefined |  |  |
-| (s3) (s1) with a Huber fit and a heavier ridge; the H5 candidate | 3.614 | +0.4% [-1.7%, +2.3%]; d +0.016 [-0.040, +0.106] | -0.4% [-3.4%, +3.4%]; d -0.014 [-0.073, +0.078] | undefined | -1.7% [-5.4%, +1.7%]; d -0.062 [-0.238, -0.011] |  |
-| (s3+state) (s3) and each term times the scarcity state | 3.643 | -0.4% [-3.3%, +2.6%]; d -0.014 [-0.082, +0.060] | -1.2% [-5.7%, +4.6%]; d -0.043 [-0.125, +0.048] | undefined | -2.6% [-9.7%, +3.1%]; d -0.091 [-0.357, -0.007] | -0.8% [-6.5%, +0.7%]; d -0.029 [-0.303, +0.004] |
-| (s3+FOMC/IORB) (s3) with the FOMC and IORB terms | 3.631 | -0.0% [-2.6%, +2.6%]; d -0.001 [-0.065, +0.073] | -0.9% [-4.7%, +4.4%]; d -0.031 [-0.103, +0.052] | undefined | -2.2% [-8.7%, +1.8%]; d -0.079 [-0.343, -0.008] | -0.5% [-1.8%, +0.3%]; d -0.017 [-0.081, +0.007] |
+| (a) base: #941 mad 20, floor 0.5 | 3.552 | +2.1% [-0.6%, +4.6%]; d +0.078 [+0.008, +0.317] | +1.3% [-0.2%, +3.8%]; d +0.048 [-0.019, +0.345] | skill undefined; d +0.417 [+0.098, +1.033] |  |  |
+| (s3) (s1) with a Huber fit and a heavier ridge; the H5 candidate | 3.614 | +0.4% [-1.7%, +2.3%]; d +0.016 [-0.040, +0.106] | -0.4% [-3.4%, +3.4%]; d -0.014 [-0.073, +0.078] | skill undefined; d +0.355 [+0.094, +0.883] | -1.7% [-5.4%, +1.7%]; d -0.062 [-0.238, -0.011] |  |
+| (s3+state) (s3) and each term times the scarcity state | 3.643 | -0.4% [-3.3%, +2.6%]; d -0.014 [-0.082, +0.060] | -1.2% [-5.7%, +4.6%]; d -0.043 [-0.125, +0.048] | skill undefined; d +0.326 [+0.088, +0.807] | -2.6% [-9.7%, +3.1%]; d -0.091 [-0.357, -0.007] | -0.8% [-6.5%, +0.7%]; d -0.029 [-0.303, +0.004] |
+| (s3+FOMC/IORB) (s3) with the FOMC and IORB terms | 3.631 | -0.0% [-2.6%, +2.6%]; d -0.001 [-0.065, +0.073] | -0.9% [-4.7%, +4.4%]; d -0.031 [-0.103, +0.052] | skill undefined; d +0.338 [+0.091, +0.845] | -2.2% [-8.7%, +1.8%]; d -0.079 [-0.343, -0.008] | -0.5% [-1.8%, +0.3%]; d -0.017 [-0.081, +0.007] |
 
 **iorb_window** (78 days)
 
@@ -496,9 +496,9 @@ On #1194's reading of the #1145 record (scored on the earlier pressure-day label
 | B1' (#960) | 1.193 | | | | | |
 | B2 | 2.185 | | | | | |
 | (a) base: #941 mad 20, floor 0.5 | 1.592 | undefined | undefined | undefined |  |  |
-| (s3) (s1) with a Huber fit and a heavier ridge; the H5 candidate | 1.448 | undefined | undefined | undefined | undefined |  |
-| (s3+state) (s3) and each term times the scarcity state | 1.445 | undefined | undefined | undefined | undefined | undefined |
-| (s3+FOMC/IORB) (s3) with the FOMC and IORB terms | 1.425 | undefined | undefined | undefined | undefined | undefined |
+| (s3) (s1) with a Huber fit and a heavier ridge; the H5 candidate | 1.448 | skill undefined; d +2.833 [+0.103, +41.665] | skill undefined; d -0.255 [-2.121, +0.219] | skill undefined; d +0.737 [-0.272, +3.283] | skill undefined; d +0.144 [-0.069, +0.691] |  |
+| (s3+state) (s3) and each term times the scarcity state | 1.445 | skill undefined; d +2.837 [+0.109, +40.946] | skill undefined; d -0.251 [-2.103, +0.239] | skill undefined; d +0.741 [-0.283, +3.374] | skill undefined; d +0.148 [-0.081, +0.713] | undefined |
+| (s3+FOMC/IORB) (s3) with the FOMC and IORB terms | 1.425 | skill undefined; d +2.857 [+0.102, +42.131] | skill undefined; d -0.231 [-1.909, +0.222] | skill undefined; d +0.760 [-0.235, +3.381] | skill undefined; d +0.168 [-0.036, +0.777] | skill undefined; d +0.024 [-0.001, +0.185] |
 
 **dom_19_23** (305 days)
 
@@ -551,13 +551,13 @@ On #1194's reading of the #1145 record (scored on the earlier pressure-day label
 ## Reading under the declared rules (the mean-d bound, with the skill interval's reading beside it)
 
 - **(s3) (s1) with a Huber fit and a heavier ridge; the H5 candidate** against (a), grid CRPS: all decision days: gain; 2018-19: undecided; 2020: undecided; 2021-23: gain; 2024: gain; 2025-26: gain; calendar_days: gain; dom_19_23: gain; fomc_day: undecided; iorb_window: undecided; month_end: undecided; ordinary: gain; post_month_end_window: undecided; quarter_end: undecided; settlement: gain; tax_date: undecided.
-- **(s3) (s1) with a Huber fit and a heavier ridge; the H5 candidate** against (a), upper-tail twCRPS: all decision days: gain; 2018-19: gain (skill interval: undecided); 2020: undecided; 2021-23: gain; 2024: gain (skill interval: undecided); 2025-26: gain; calendar_days: gain; dom_19_23: gain; fomc_day: loss (skill interval: undecided); iorb_window: undecided; month_end: undecided; ordinary: gain; post_month_end_window: loss (skill interval: undecided); quarter_end: undecided; settlement: gain (skill interval: undecided); tax_date: undecided.
+- **(s3) (s1) with a Huber fit and a heavier ridge; the H5 candidate** against (a), upper-tail twCRPS: all decision days: gain; 2018-19: gain (skill interval: undecided); 2020: undecided; 2021-23: gain; 2024: gain (skill interval: undecided); 2025-26: gain; calendar_days: gain; dom_19_23: gain; fomc_day: loss (skill interval: undecided); iorb_window: undecided (skill interval: skill undefined); month_end: undecided; ordinary: gain; post_month_end_window: loss (skill interval: undecided); quarter_end: **no reading** (mean-d bound not computed: a resampled difference has no long-run variance; it cannot be studentized); settlement: gain (skill interval: undecided); tax_date: undecided.
 - **(s3+state) (s3) and each term times the scarcity state** against (a), grid CRPS: all decision days: gain; 2018-19: undecided; 2020: undecided; 2021-23: gain; 2024: gain; 2025-26: gain; calendar_days: gain; dom_19_23: gain; fomc_day: undecided; iorb_window: undecided; month_end: undecided; ordinary: gain; post_month_end_window: undecided; quarter_end: undecided; settlement: gain; tax_date: undecided.
 - **(s3+state) (s3) and each term times the scarcity state** against (s3), grid CRPS: all decision days: undecided; 2018-19: undecided; 2020: undecided; 2021-23: gain; 2024: undecided; 2025-26: loss; calendar_days: undecided; dom_19_23: loss; fomc_day: undecided; iorb_window: undecided; month_end: undecided; ordinary: gain; post_month_end_window: loss; quarter_end: undecided; settlement: undecided; tax_date: undecided.
-- **(s3+state) (s3) and each term times the scarcity state** against (s3), upper-tail twCRPS: all decision days: undecided; 2018-19: undecided; 2020: undecided; 2021-23: gain; 2024: undecided; 2025-26: loss; calendar_days: undecided; dom_19_23: undecided; fomc_day: undecided; iorb_window: undecided; month_end: undecided; ordinary: gain; post_month_end_window: loss; quarter_end: undecided; settlement: undecided; tax_date: undecided.
+- **(s3+state) (s3) and each term times the scarcity state** against (s3), upper-tail twCRPS: all decision days: undecided; 2018-19: undecided; 2020: undecided; 2021-23: gain; 2024: undecided; 2025-26: loss; calendar_days: undecided; dom_19_23: undecided; fomc_day: undecided; iorb_window: **no reading** (mean-d bound not computed: a resampled difference has no long-run variance; it cannot be studentized); month_end: undecided; ordinary: gain; post_month_end_window: loss; quarter_end: **no reading** (mean-d bound not computed: a resampled difference has no long-run variance; it cannot be studentized); settlement: undecided; tax_date: undecided.
 - **(s3+FOMC/IORB) (s3) with the FOMC and IORB terms** against (a), grid CRPS: all decision days: gain; 2018-19: undecided; 2020: undecided; 2021-23: gain; 2024: gain; 2025-26: gain; calendar_days: gain; dom_19_23: gain; fomc_day: undecided; iorb_window: undecided; month_end: undecided; ordinary: gain; post_month_end_window: undecided; quarter_end: undecided; settlement: gain; tax_date: undecided.
 - **(s3+FOMC/IORB) (s3) with the FOMC and IORB terms** against (s3), grid CRPS: all decision days: undecided; 2018-19: undecided; 2020: undecided; 2021-23: undecided; 2024: undecided; 2025-26: undecided; calendar_days: undecided; dom_19_23: undecided; fomc_day: undecided; iorb_window: gain (skill interval: undecided); month_end: gain; ordinary: undecided; post_month_end_window: undecided; quarter_end: undecided; settlement: loss; tax_date: undecided.
-- **(s3+FOMC/IORB) (s3) with the FOMC and IORB terms** against (s3), upper-tail twCRPS: all decision days: undecided; 2018-19: undecided; 2020: undecided; 2021-23: loss; 2024: undecided; 2025-26: undecided; calendar_days: undecided; dom_19_23: undecided; fomc_day: undecided; iorb_window: undecided; month_end: undecided (skill interval: gain); ordinary: loss; post_month_end_window: undecided; quarter_end: undecided; settlement: undecided; tax_date: undecided.
+- **(s3+FOMC/IORB) (s3) with the FOMC and IORB terms** against (s3), upper-tail twCRPS: all decision days: undecided; 2018-19: undecided; 2020: undecided; 2021-23: loss; 2024: undecided; 2025-26: undecided; calendar_days: undecided; dom_19_23: undecided; fomc_day: undecided; iorb_window: undecided (skill interval: skill undefined); month_end: undecided (skill interval: gain); ordinary: loss; post_month_end_window: undecided; quarter_end: **no reading** (mean-d bound not computed: a resampled difference has no long-run variance; it cannot be studentized); settlement: undecided; tax_date: undecided.
 
 - (s3+state) (s3) and each term times the scarcity state against (s3) isolates the scarcity state times each term: grid CRPS -0.5% [-1.5%, +0.2%]; d -0.007 [-0.023, +0.003]; twCRPS -0.5% [-2.3%, +0.7%]; d -0.004 [-0.017, +0.005].
 - (s3+FOMC/IORB) (s3) with the FOMC and IORB terms against (s3) isolates the FOMC and IORB terms: grid CRPS -0.2% [-0.8%, +0.1%]; d -0.003 [-0.013, +0.001]; twCRPS -0.1% [-0.6%, +0.2%]; d -0.001 [-0.005, +0.002].

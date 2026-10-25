@@ -24041,33 +24041,82 @@
       "m1_episode_k3": {
        "B1": {
         "benchmark_mean": 3.6907289805097423,
-        "candidate_mean": 2.477519696587479,
+        "candidate_mean": 2.4775196965874784,
         "days": 29,
-        "undefined": "a resampled skill has no long-run variance; it cannot be studentized"
+        "difference": 1.2132092839222637,
+        "difference_interval": [
+         0.011272728616310568,
+         5.951061242769137
+        ],
+        "dm_p_value": 0.055366770782938834,
+        "dm_statistic": 1.5949047308244155,
+        "skill": 0.3287180636478765,
+        "skill_interval": [
+         0.0544771484270864,
+         0.5186754621998403
+        ]
        },
        "B1p": {
         "benchmark_mean": 3.628420119940027,
-        "candidate_mean": 2.477519696587479,
+        "candidate_mean": 2.4775196965874784,
         "days": 29,
-        "undefined": "a resampled skill has no long-run variance; it cannot be studentized"
+        "difference": 1.1509004233525486,
+        "difference_interval": [
+         -0.003963751428875728,
+         5.559925136929882
+        ],
+        "dm_p_value": 0.057778809503832296,
+        "dm_statistic": 1.5736965535132763,
+        "skill": 0.31719050862598885,
+        "skill_interval": [
+         0.03248265624083457,
+         0.5101752645777629
+        ]
        },
        "B2": {
         "benchmark_mean": 6.224054092953524,
-        "candidate_mean": 2.477519696587479,
+        "candidate_mean": 2.4775196965874797,
         "days": 29,
-        "undefined": "a resampled skill has no long-run variance; it cannot be studentized"
+        "difference": 3.746534396366044,
+        "difference_interval": [
+         0.061739564847270945,
+         46.702700090341416
+        ],
+        "dm_p_value": 0.059049010092251386,
+        "dm_statistic": 1.562806902443708,
+        "skill": null,
+        "skill_interval": null,
+        "skill_undefined": "a resampled benchmark scores zero; skill is undefined"
        },
        "mr_cal_a_base": {
         "benchmark_mean": 3.3500392316766505,
         "candidate_mean": 2.477519696587479,
         "days": 29,
-        "undefined": "a resampled skill has no long-run variance; it cannot be studentized"
+        "difference": 0.8725195350891716,
+        "difference_interval": [
+         -0.051575045294052324,
+         4.05506467384484
+        ],
+        "dm_p_value": 0.06982393022056876,
+        "dm_statistic": 1.4771036308245389,
+        "skill": null,
+        "skill_interval": null,
+        "skill_undefined": "a resampled skill has no long-run variance; it cannot be studentized"
        },
        "sc_s3_robust": {
         "benchmark_mean": 2.4751802377425913,
-        "candidate_mean": 2.477519696587479,
+        "candidate_mean": 2.4775196965874784,
         "days": 29,
-        "undefined": "a resampled skill has no long-run variance; it cannot be studentized"
+        "difference": -0.002339458844887257,
+        "difference_interval": [
+         -0.011130230647500532,
+         0.007123703187741793
+        ],
+        "dm_p_value": 0.6509690601182203,
+        "dm_statistic": -0.3879380490596145,
+        "skill": null,
+        "skill_interval": null,
+        "skill_undefined": "a resampled skill has no long-run variance; it cannot be studentized"
        }
       },
       "m1_episode_k5": {
@@ -24075,147 +24124,376 @@
         "benchmark_mean": 3.6907289805097423,
         "candidate_mean": 2.4578863304317684,
         "days": 29,
-        "undefined": "a resampled skill has no long-run variance; it cannot be studentized"
+        "difference": 1.2328426500779741,
+        "difference_interval": [
+         0.024326634822778193,
+         6.168240065341508
+        ],
+        "dm_p_value": 0.05310189798452203,
+        "dm_statistic": 1.615493827460852,
+        "skill": 0.33403770815696715,
+        "skill_interval": [
+         0.08183950917184368,
+         0.5230659748239397
+        ]
        },
        "B1p": {
         "benchmark_mean": 3.628420119940027,
-        "candidate_mean": 2.4578863304317684,
+        "candidate_mean": 2.457886330431768,
         "days": 29,
-        "undefined": "a resampled skill has no long-run variance; it cannot be studentized"
+        "difference": 1.170533789508259,
+        "difference_interval": [
+         0.011026159438710437,
+         5.775468510947443
+        ],
+        "dm_p_value": 0.055194279712472594,
+        "dm_statistic": 1.5964491084319998,
+        "skill": 0.3226015044607366,
+        "skill_interval": [
+         0.058289575765018364,
+         0.5123378697886768
+        ]
        },
        "B2": {
         "benchmark_mean": 6.224054092953524,
-        "candidate_mean": 2.4578863304317684,
+        "candidate_mean": 2.4578863304317697,
         "days": 29,
-        "undefined": "a resampled skill has no long-run variance; it cannot be studentized"
+        "difference": 3.766167762521754,
+        "difference_interval": [
+         0.06210149090048178,
+         46.89689954461955
+        ],
+        "dm_p_value": 0.059349817726159104,
+        "dm_statistic": 1.5602549894234838,
+        "skill": null,
+        "skill_interval": null,
+        "skill_undefined": "a resampled benchmark scores zero; skill is undefined"
        },
        "mr_cal_a_base": {
         "benchmark_mean": 3.3500392316766505,
-        "candidate_mean": 2.4578863304317684,
+        "candidate_mean": 2.457886330431769,
         "days": 29,
-        "undefined": "a resampled skill has no long-run variance; it cannot be studentized"
+        "difference": 0.8921529012448817,
+        "difference_interval": [
+         -0.027355603623048674,
+         4.231233683616097
+        ],
+        "dm_p_value": 0.06606785268231663,
+        "dm_statistic": 1.5057330918094474,
+        "skill": null,
+        "skill_interval": null,
+        "skill_undefined": "a resampled skill has no long-run variance; it cannot be studentized"
        },
        "sc_s3_robust": {
         "benchmark_mean": 2.4751802377425913,
         "candidate_mean": 2.4578863304317684,
         "days": 29,
-        "undefined": "a resampled skill has no long-run variance; it cannot be studentized"
+        "difference": 0.017293907310823108,
+        "difference_interval": [
+         -0.012411933757279406,
+         0.13582818286804135
+        ],
+        "dm_p_value": 0.18814976347112689,
+        "dm_statistic": 0.8847350871779804,
+        "skill": null,
+        "skill_interval": null,
+        "skill_undefined": "a resampled skill has no long-run variance; it cannot be studentized"
        }
       },
       "m2_markov": {
        "B1": {
         "benchmark_mean": 3.6907289805097423,
-        "candidate_mean": 2.619615108379496,
+        "candidate_mean": 2.6196151083794956,
         "days": 29,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": 1.0711138721302467,
+        "difference_interval": [
+         -0.0342034404332352,
+         5.052208329814823
+        ],
+        "dm_p_value": 0.06686396731447664,
+        "dm_statistic": 1.4995618557046497,
+        "skill": 0.2902174279896083,
+        "skill_interval": [
+         -0.024960830667118405,
+         0.4934251344722298
+        ]
        },
        "B1p": {
         "benchmark_mean": 3.628420119940027,
-        "candidate_mean": 2.619615108379496,
+        "candidate_mean": 2.619615108379495,
         "days": 29,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": 1.0088050115605318,
+        "difference_interval": [
+         -0.05838647936884844,
+         4.708765191291921
+        ],
+        "dm_p_value": 0.07157607094695007,
+        "dm_statistic": 1.464153025117249,
+        "skill": 0.27802872275363916,
+        "skill_interval": [
+         -0.05001476454870524,
+         0.4862724600320544
+        ]
        },
        "B2": {
         "benchmark_mean": 6.224054092953524,
-        "candidate_mean": 2.619615108379496,
+        "candidate_mean": 2.6196151083794965,
         "days": 29,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": 3.6044389845740272,
+        "difference_interval": [
+         0.10331801616286196,
+         45.59225109320857
+        ],
+        "dm_p_value": 0.05918713788973107,
+        "dm_statistic": 1.5616338271799894,
+        "skill": null,
+        "skill_interval": null,
+        "skill_undefined": "a resampled benchmark scores zero; skill is undefined"
        },
        "mr_cal_a_base": {
         "benchmark_mean": 3.3500392316766505,
         "candidate_mean": 2.619615108379496,
         "days": 29,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": 0.7304241232971547,
+        "difference_interval": [
+         -0.09929458640878741,
+         3.3225569818110863
+        ],
+        "dm_p_value": 0.09025465736760108,
+        "dm_statistic": 1.3391885015834084,
+        "skill": 0.21803449833976632,
+        "skill_interval": [
+         -0.10900477637911768,
+         0.4130108592106565
+        ]
        },
        "sc_s3_robust": {
         "benchmark_mean": 2.4751802377425913,
-        "candidate_mean": 2.619615108379496,
+        "candidate_mean": 2.6196151083794956,
         "days": 29,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": -0.14443487063690413,
+        "difference_interval": [
+         -0.9288429810435277,
+         0.015718510970852306
+        ],
+        "dm_p_value": 0.931384566790728,
+        "dm_statistic": -1.4861824572073585,
+        "skill": null,
+        "skill_interval": null,
+        "skill_undefined": "a resampled skill has no long-run variance; it cannot be studentized"
        }
       },
       "m3_markov_calendar": {
        "B1": {
         "benchmark_mean": 3.6907289805097423,
-        "candidate_mean": 2.453926094166127,
+        "candidate_mean": 2.4539260941661274,
         "days": 29,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": 1.2368028863436151,
+        "difference_interval": [
+         0.008910975591669645,
+         6.107672472388186
+        ],
+        "dm_p_value": 0.05332109005853103,
+        "dm_statistic": 1.6134711780290851,
+        "skill": 0.33511073093554405,
+        "skill_interval": [
+         0.05383561278564114,
+         0.5240450193780637
+        ]
        },
        "B1p": {
         "benchmark_mean": 3.628420119940027,
-        "candidate_mean": 2.453926094166127,
+        "candidate_mean": 2.4539260941661265,
         "days": 29,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": 1.1744940257739003,
+        "difference_interval": [
+         -0.005115674686668292,
+         5.617757216829955
+        ],
+        "dm_p_value": 0.0556131119147657,
+        "dm_statistic": 1.5927057196745553,
+        "skill": 0.32369295366858264,
+        "skill_interval": [
+         0.03172829854210518,
+         0.5148350321447093
+        ]
        },
        "B2": {
         "benchmark_mean": 6.224054092953524,
         "candidate_mean": 2.453926094166127,
         "days": 29,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": 3.770127998787397,
+        "difference_interval": [
+         0.08590959049077629,
+         45.368691738700676
+        ],
+        "dm_p_value": 0.058110481139539094,
+        "dm_statistic": 1.5708350760739926,
+        "skill": null,
+        "skill_interval": null,
+        "skill_undefined": "a resampled benchmark scores zero; skill is undefined"
        },
        "mr_cal_a_base": {
         "benchmark_mean": 3.3500392316766505,
-        "candidate_mean": 2.453926094166127,
+        "candidate_mean": 2.4539260941661274,
         "days": 29,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": 0.8961131375105233,
+        "difference_interval": [
+         -0.04583588723904497,
+         4.173038635875871
+        ],
+        "dm_p_value": 0.06628491700970818,
+        "dm_statistic": 1.5040447916217534,
+        "skill": null,
+        "skill_interval": null,
+        "skill_undefined": "a resampled skill has no long-run variance; it cannot be studentized"
        },
        "sc_s3_robust": {
         "benchmark_mean": 2.4751802377425913,
         "candidate_mean": 2.453926094166127,
         "days": 29,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": 0.02125414357646438,
+        "difference_interval": [
+         -7.162324945773901e-05,
+         0.07385246881265517
+        ],
+        "dm_p_value": 0.05878215763466432,
+        "dm_statistic": 1.565079305465958,
+        "skill": null,
+        "skill_interval": null,
+        "skill_undefined": "a resampled skill has no long-run variance; it cannot be studentized"
        }
       },
       "mr_cal_a_base": {
        "B1": {
         "benchmark_mean": 3.6907289805097423,
-        "candidate_mean": 3.3500392316766505,
+        "candidate_mean": 3.35003923167665,
         "days": 29,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": 0.34068974883309217,
+        "difference_interval": [
+         0.04079074449551495,
+         1.6391206561134544
+        ],
+        "dm_p_value": 0.030610504272714945,
+        "dm_statistic": 1.8718958883777401,
+        "skill": 0.09230960892339433,
+        "skill_interval": [
+         -0.0033237141340277526,
+         0.1357449355699409
+        ]
        },
        "B1p": {
         "benchmark_mean": 3.628420119940027,
-        "candidate_mean": 3.3500392316766505,
+        "candidate_mean": 3.35003923167665,
         "days": 29,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": 0.2783808882633771,
+        "difference_interval": [
+         0.024483371988716862,
+         1.1860314569532222
+        ],
+        "dm_p_value": 0.04094046311946231,
+        "dm_statistic": 1.7398752455351671,
+        "skill": 0.07672234169729451,
+        "skill_interval": [
+         -0.048323288962173985,
+         0.1255350871977386
+        ]
        },
        "B2": {
         "benchmark_mean": 6.224054092953524,
-        "candidate_mean": 3.3500392316766505,
+        "candidate_mean": 3.350039231676651,
         "days": 29,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": 2.874014861276873,
+        "difference_interval": [
+         -0.18044429215245028,
+         45.541888583410184
+        ],
+        "dm_p_value": 0.0958466362489484,
+        "dm_statistic": 1.305586327216142,
+        "skill": null,
+        "skill_interval": null,
+        "skill_undefined": "a resampled benchmark scores zero; skill is undefined"
        },
        "sc_s3_robust": {
         "benchmark_mean": 2.4751802377425913,
-        "candidate_mean": 3.3500392316766505,
+        "candidate_mean": 3.35003923167665,
         "days": 29,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": -0.8748589939340586,
+        "difference_interval": [
+         -4.027153422284539,
+         0.04713248730747366
+        ],
+        "dm_p_value": 0.931807941480179,
+        "dm_statistic": -1.4893922163171263,
+        "skill": null,
+        "skill_interval": null,
+        "skill_undefined": "a resampled skill has no long-run variance; it cannot be studentized"
        }
       },
       "sc_s3_robust": {
        "B1": {
         "benchmark_mean": 3.6907289805097423,
-        "candidate_mean": 2.4751802377425913,
+        "candidate_mean": 2.4751802377425918,
         "days": 29,
-        "undefined": "a resampled skill has no long-run variance; it cannot be studentized"
+        "difference": 1.2155487427671507,
+        "difference_interval": [
+         0.01363514172510194,
+         5.9371238437293465
+        ],
+        "dm_p_value": 0.054298344150231825,
+        "dm_statistic": 1.6045326738691692,
+        "skill": 0.3293519381093288,
+        "skill_interval": [
+         0.051541311332312434,
+         0.5122020694794421
+        ]
        },
        "B1p": {
         "benchmark_mean": 3.628420119940027,
         "candidate_mean": 2.4751802377425913,
         "days": 29,
-        "undefined": "a resampled skill has no long-run variance; it cannot be studentized"
+        "difference": 1.1532398821974357,
+        "difference_interval": [
+         0.0002830442752912443,
+         5.535749237238132
+        ],
+        "dm_p_value": 0.05665313798796123,
+        "dm_statistic": 1.5835055794520403,
+        "skill": 0.31783526826449665,
+        "skill_interval": [
+         0.02816006464958898,
+         0.5030166694565597
+        ]
        },
        "B2": {
         "benchmark_mean": 6.224054092953524,
-        "candidate_mean": 2.4751802377425913,
+        "candidate_mean": 2.4751802377425935,
         "days": 29,
-        "undefined": "a resampled skill has no long-run variance; it cannot be studentized"
+        "difference": 3.74887385521093,
+        "difference_interval": [
+         0.07336804365343763,
+         45.89864078487935
+        ],
+        "dm_p_value": 0.058850870018875456,
+        "dm_statistic": 1.5644934072210201,
+        "skill": null,
+        "skill_interval": null,
+        "skill_undefined": "a resampled benchmark scores zero; skill is undefined"
        },
        "mr_cal_a_base": {
         "benchmark_mean": 3.3500392316766505,
-        "candidate_mean": 2.4751802377425913,
+        "candidate_mean": 2.4751802377425918,
         "days": 29,
-        "undefined": "a resampled skill has no long-run variance; it cannot be studentized"
+        "difference": 0.8748589939340586,
+        "difference_interval": [
+         -0.04713248730747366,
+         4.027153422284545
+        ],
+        "dm_p_value": 0.06819205851982102,
+        "dm_statistic": 1.4893922163171263,
+        "skill": null,
+        "skill_interval": null,
+        "skill_undefined": "a resampled skill has no long-run variance; it cannot be studentized"
        }
       }
      }
@@ -25482,127 +25760,339 @@
         "benchmark_mean": 4.662240102589153,
         "candidate_mean": 4.424356567237497,
         "days": 89,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": 0.23788353535165513,
+        "difference_interval": [
+         0.016235619346268854,
+         1.4537555140823186
+        ],
+        "dm_p_value": 0.04362572627258765,
+        "dm_statistic": 1.7100779883174,
+        "skill": 0.05102344154681086,
+        "skill_interval": [
+         -0.08053206324306815,
+         0.1301699575056542
+        ]
        },
        "B1p": {
         "benchmark_mean": 4.645884035173423,
         "candidate_mean": 4.424356567237497,
         "days": 89,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": 0.22152746793592537,
+        "difference_interval": [
+         0.009299553908847236,
+         1.565909037064747
+        ],
+        "dm_p_value": 0.0632069620223017,
+        "dm_statistic": 1.5283973030147846,
+        "skill": 0.04768252204720735,
+        "skill_interval": [
+         -0.016238780265462875,
+         0.0887228638158645
+        ]
        },
        "B2": {
         "benchmark_mean": 5.659997132388861,
-        "candidate_mean": 4.424356567237497,
+        "candidate_mean": 4.424356567237498,
         "days": 89,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": 1.235640565151363,
+        "difference_interval": [
+         0.08413058905336834,
+         4.603309894310707
+        ],
+        "dm_p_value": 0.02181294601387851,
+        "dm_statistic": 2.017667593512614,
+        "skill": null,
+        "skill_interval": null,
+        "skill_undefined": "a resampled benchmark scores zero; skill is undefined"
        },
        "mr_cal_a_base": {
         "benchmark_mean": 4.401201052677896,
         "candidate_mean": 4.424356567237497,
         "days": 89,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": -0.023155514559601516,
+        "difference_interval": [
+         -0.10535585370311511,
+         0.017976265173633623
+        ],
+        "dm_p_value": 0.7652361760526487,
+        "dm_statistic": -0.7232478142358494,
+        "skill": -0.005261180819156767,
+        "skill_interval": [
+         -0.022592348355611365,
+         0.006596345566640449
+        ]
        },
        "sc_s3_robust": {
         "benchmark_mean": 4.415688298746115,
-        "candidate_mean": 4.424356567237497,
+        "candidate_mean": 4.4243565672374965,
         "days": 89,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": -0.008668268491381572,
+        "difference_interval": [
+         -0.07317431546000663,
+         0.003872749162020116
+        ],
+        "dm_p_value": 0.7924837740031268,
+        "dm_statistic": -0.8150696343235941,
+        "skill": -0.0019630616802918414,
+        "skill_interval": [
+         -0.004657022583214102,
+         0.0004117981006292147
+        ]
        }
       },
       "m1_episode_k5": {
        "B1": {
         "benchmark_mean": 4.662240102589153,
-        "candidate_mean": 4.429003197624542,
+        "candidate_mean": 4.429003197624541,
         "days": 89,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": 0.23323690496461125,
+        "difference_interval": [
+         0.01600442835568605,
+         1.423740145024309
+        ],
+        "dm_p_value": 0.04293225580899196,
+        "dm_statistic": 1.7176278801906413,
+        "skill": 0.05002678966170881,
+        "skill_interval": [
+         -0.07726376273390526,
+         0.13083423581347986
+        ]
        },
        "B1p": {
         "benchmark_mean": 4.645884035173423,
-        "candidate_mean": 4.429003197624542,
+        "candidate_mean": 4.429003197624541,
         "days": 89,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": 0.21688083754888154,
+        "difference_interval": [
+         0.01026806636443095,
+         1.5110332387345795
+        ],
+        "dm_p_value": 0.06244170562225915,
+        "dm_statistic": 1.5345947166923526,
+        "skill": 0.04668236139923061,
+        "skill_interval": [
+         -0.01532191246929892,
+         0.08847862916195005
+        ]
        },
        "B2": {
         "benchmark_mean": 5.659997132388861,
         "candidate_mean": 4.429003197624542,
         "days": 89,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": 1.2309939347643195,
+        "difference_interval": [
+         0.08423976077330453,
+         4.569676884996884
+        ],
+        "dm_p_value": 0.021737760237559356,
+        "dm_statistic": 2.019112571832754,
+        "skill": null,
+        "skill_interval": null,
+        "skill_undefined": "a resampled benchmark scores zero; skill is undefined"
        },
        "mr_cal_a_base": {
         "benchmark_mean": 4.401201052677896,
-        "candidate_mean": 4.429003197624542,
+        "candidate_mean": 4.429003197624541,
         "days": 89,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": -0.027802144946645357,
+        "difference_interval": [
+         -0.1147469106241493,
+         0.013475733398453659
+        ],
+        "dm_p_value": 0.8075710525921722,
+        "dm_statistic": -0.8689803205525793,
+        "skill": -0.0063169449915788855,
+        "skill_interval": [
+         -0.02389777493577411,
+         0.005633449966291222
+        ]
        },
        "sc_s3_robust": {
         "benchmark_mean": 4.415688298746115,
-        "candidate_mean": 4.429003197624542,
+        "candidate_mean": 4.4290031976245405,
         "days": 89,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": -0.013314898878425411,
+        "difference_interval": [
+         -0.11963284095686828,
+         0.0034664038079986782
+        ],
+        "dm_p_value": 0.8266227158589263,
+        "dm_statistic": -0.9409030035627395,
+        "skill": -0.0030153620404334987,
+        "skill_interval": [
+         -0.005527967965892699,
+         -0.0010796006847590496
+        ]
        }
       },
       "m2_markov": {
        "B1": {
         "benchmark_mean": 4.662240102589153,
-        "candidate_mean": 4.504566433429804,
+        "candidate_mean": 4.504566433429805,
         "days": 89,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": 0.157673669159348,
+        "difference_interval": [
+         0.02022426452791304,
+         0.7747708690316842
+        ],
+        "dm_p_value": 0.03051022548507798,
+        "dm_statistic": 1.873347236662377,
+        "skill": 0.03381929409250817,
+        "skill_interval": [
+         -0.05281855352546347,
+         0.10532647907921272
+        ]
        },
        "B1p": {
         "benchmark_mean": 4.645884035173423,
-        "candidate_mean": 4.504566433429804,
+        "candidate_mean": 4.504566433429805,
         "days": 89,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": 0.14131760174361827,
+        "difference_interval": [
+         0.0190774736647938,
+         0.7544494499862475
+        ],
+        "dm_p_value": 0.04311602087015376,
+        "dm_statistic": 1.715617672782148,
+        "skill": 0.030417806530193155,
+        "skill_interval": [
+         -0.009705883993067505,
+         0.06186849346875156
+        ]
        },
        "B2": {
         "benchmark_mean": 5.659997132388861,
-        "candidate_mean": 4.504566433429804,
+        "candidate_mean": 4.504566433429806,
         "days": 89,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": 1.1554306989590553,
+        "difference_interval": [
+         0.10025650324637114,
+         4.20797203520619
+        ],
+        "dm_p_value": 0.021333167046633905,
+        "dm_statistic": 2.0269616570643514,
+        "skill": null,
+        "skill_interval": null,
+        "skill_undefined": "a resampled benchmark scores zero; skill is undefined"
        },
        "mr_cal_a_base": {
         "benchmark_mean": 4.401201052677896,
-        "candidate_mean": 4.504566433429804,
+        "candidate_mean": 4.504566433429805,
         "days": 89,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": -0.10336538075190856,
+        "difference_interval": [
+         -0.8161399753133023,
+         0.013137555779468069
+        ],
+        "dm_p_value": 0.9010658332867161,
+        "dm_statistic": -1.2876485426856852,
+        "skill": -0.023485721173545623,
+        "skill_interval": [
+         -0.06731974510221672,
+         -0.001662215839405748
+        ]
        },
        "sc_s3_robust": {
         "benchmark_mean": 4.415688298746115,
         "candidate_mean": 4.504566433429804,
         "days": 89,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": -0.08887813468368863,
+        "difference_interval": [
+         -1.0194207575637926,
+         0.014701246315345987
+        ],
+        "dm_p_value": 0.881521106071252,
+        "dm_statistic": -1.1826250306378185,
+        "skill": -0.020127809906538598,
+        "skill_interval": [
+         -0.033978616717942445,
+         -0.011031623668342873
+        ]
        }
       },
       "m3_markov_calendar": {
        "B1": {
         "benchmark_mean": 4.662240102589153,
-        "candidate_mean": 4.55196265698657,
+        "candidate_mean": 4.5519626569865705,
         "days": 89,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": 0.11027744560258229,
+        "difference_interval": [
+         0.011526907641992934,
+         0.4444908457467634
+        ],
+        "dm_p_value": 0.040343010542408964,
+        "dm_statistic": 1.7467194140371691,
+        "skill": 0.02365331754178431,
+        "skill_interval": [
+         -0.06059055744841291,
+         0.09454311576979653
+        ]
        },
        "B1p": {
         "benchmark_mean": 4.645884035173423,
-        "candidate_mean": 4.55196265698657,
+        "candidate_mean": 4.5519626569865705,
         "days": 89,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": 0.09392137818685259,
+        "difference_interval": [
+         0.013216684471488577,
+         0.36240162529064385
+        ],
+        "dm_p_value": 0.02764545044446165,
+        "dm_statistic": 1.916583224487238,
+        "skill": 0.02021604014990156,
+        "skill_interval": [
+         -0.017006518977642902,
+         0.05432884902828499
+        ]
        },
        "B2": {
         "benchmark_mean": 5.659997132388861,
-        "candidate_mean": 4.55196265698657,
+        "candidate_mean": 4.551962656986571,
         "days": 89,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": 1.10803447540229,
+        "difference_interval": [
+         0.10573221955355216,
+         4.036853680060705
+        ],
+        "dm_p_value": 0.020937963198423448,
+        "dm_statistic": 2.0347510727286484,
+        "skill": null,
+        "skill_interval": null,
+        "skill_undefined": "a resampled benchmark scores zero; skill is undefined"
        },
        "mr_cal_a_base": {
         "benchmark_mean": 4.401201052677896,
-        "candidate_mean": 4.55196265698657,
+        "candidate_mean": 4.5519626569865705,
         "days": 89,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": -0.15076160430867436,
+        "difference_interval": [
+         -1.7265101889553849,
+         0.009253115965548148
+        ],
+        "dm_p_value": 0.9116257136361098,
+        "dm_statistic": -1.350834128997571,
+        "skill": -0.034254650606552944,
+        "skill_interval": [
+         -0.07633023482010748,
+         -0.010646840173819897
+        ]
        },
        "sc_s3_robust": {
         "benchmark_mean": 4.415688298746115,
         "candidate_mean": 4.55196265698657,
         "days": 89,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": -0.13627435824045436,
+        "difference_interval": [
+         -2.0227252961015427,
+         0.012263617666533638
+        ],
+        "dm_p_value": 0.8883763890762666,
+        "dm_statistic": -1.217938822307482,
+        "skill": -0.030861408011781766,
+        "skill_interval": [
+         -0.04552548182080947,
+         -0.020248114789814274
+        ]
        }
       },
       "mr_cal_a_base": {
@@ -25610,51 +26100,135 @@
         "benchmark_mean": 4.662240102589153,
         "candidate_mean": 4.401201052677896,
         "days": 89,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": 0.2610390499112567,
+        "difference_interval": [
+         0.026751833558256694,
+         1.7238405969016806
+        ],
+        "dm_p_value": 0.03339508961936,
+        "dm_statistic": 1.833083333524528,
+        "skill": 0.055990048596229504,
+        "skill_interval": [
+         -0.11531043276939798,
+         0.15967579819919098
+        ]
        },
        "B1p": {
         "benchmark_mean": 4.645884035173423,
         "candidate_mean": 4.401201052677896,
         "days": 89,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": 0.24468298249552697,
+        "difference_interval": [
+         0.017144466225293503,
+         2.2750199818823087
+        ],
+        "dm_p_value": 0.051934706938230546,
+        "dm_statistic": 1.626377313631858,
+        "skill": 0.05266661428547546,
+        "skill_interval": [
+         -0.020997744760875514,
+         0.11816020303187358
+        ]
        },
        "B2": {
         "benchmark_mean": 5.659997132388861,
-        "candidate_mean": 4.401201052677896,
+        "candidate_mean": 4.401201052677897,
         "days": 89,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": 1.2587960797109643,
+        "difference_interval": [
+         0.08961951788583611,
+         4.768921846962266
+        ],
+        "dm_p_value": 0.021327265101516057,
+        "dm_statistic": 2.027077082445639,
+        "skill": null,
+        "skill_interval": null,
+        "skill_undefined": "a resampled benchmark scores zero; skill is undefined"
        },
        "sc_s3_robust": {
         "benchmark_mean": 4.415688298746115,
-        "candidate_mean": 4.401201052677896,
+        "candidate_mean": 4.401201052677895,
         "days": 89,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": 0.01448724606821995,
+        "difference_interval": [
+         -0.027430139580597066,
+         0.08904569110320518
+        ],
+        "dm_p_value": 0.33185283753093464,
+        "dm_statistic": 0.4348026585050421,
+        "skill": 0.003280857951937814,
+        "skill_interval": [
+         -0.012049647073311638,
+         0.02301200926186414
+        ]
        }
       },
       "sc_s3_robust": {
        "B1": {
         "benchmark_mean": 4.662240102589153,
-        "candidate_mean": 4.415688298746115,
+        "candidate_mean": 4.415688298746116,
         "days": 89,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": 0.2465518038430368,
+        "difference_interval": [
+         0.017299059588018473,
+         1.55734819888095
+        ],
+        "dm_p_value": 0.04547113814073245,
+        "dm_statistic": 1.6904480120979815,
+        "skill": 0.052882691242374116,
+        "skill_interval": [
+         -0.07152845825115368,
+         0.1274862921410959
+        ]
        },
        "B1p": {
         "benchmark_mean": 4.645884035173423,
-        "candidate_mean": 4.415688298746115,
+        "candidate_mean": 4.415688298746116,
         "days": 89,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": 0.23019573642730695,
+        "difference_interval": [
+         0.010994496097434192,
+         1.7479518538505436
+        ],
+        "dm_p_value": 0.06641147888194987,
+        "dm_statistic": 1.5030623838431494,
+        "skill": 0.049548317324436646,
+        "skill_interval": [
+         -0.010423204296918238,
+         0.08654173287001143
+        ]
        },
        "B2": {
         "benchmark_mean": 5.659997132388861,
-        "candidate_mean": 4.415688298746115,
+        "candidate_mean": 4.415688298746117,
         "days": 89,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": 1.2443088336427444,
+        "difference_interval": [
+         0.08692742296982647,
+         4.672943852465066
+        ],
+        "dm_p_value": 0.02239773802865519,
+        "dm_statistic": 2.006569927500686,
+        "skill": null,
+        "skill_interval": null,
+        "skill_undefined": "a resampled benchmark scores zero; skill is undefined"
        },
        "mr_cal_a_base": {
         "benchmark_mean": 4.401201052677896,
-        "candidate_mean": 4.415688298746115,
+        "candidate_mean": 4.415688298746116,
         "days": 89,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": -0.01448724606821995,
+        "difference_interval": [
+         -0.08904569110320516,
+         0.0274301395805971
+        ],
+        "dm_p_value": 0.6681471624690654,
+        "dm_statistic": -0.4348026585050421,
+        "skill": -0.0032916574123341247,
+        "skill_interval": [
+         -0.02355067196585248,
+         0.010066108558772028
+        ]
        }
       }
      }
@@ -32162,181 +32736,477 @@
       "m1_episode_k3": {
        "B1": {
         "benchmark_mean": 0.280454740869564,
-        "candidate_mean": 0.17784466198914012,
+        "candidate_mean": 0.1778446619891402,
         "days": 250,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": 0.10261007888042381,
+        "difference_interval": [
+         0.007006886946032298,
+         1.107705302496586
+        ],
+        "dm_p_value": 0.08269289456645779,
+        "dm_statistic": 1.3871835863481878,
+        "skill": 0.3658703666847496,
+        "skill_interval": [
+         0.16821125223994854,
+         0.9435615054603547
+        ]
        },
        "B1p": {
         "benchmark_mean": 0.20756561739130344,
-        "candidate_mean": 0.17784466198914012,
+        "candidate_mean": 0.17784466198914017,
         "days": 250,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": 0.02972095540216327,
+        "difference_interval": [
+         -0.002143746127252436,
+         0.3571726503287732
+        ],
+        "dm_p_value": 0.1253386598687669,
+        "dm_statistic": 1.1487057847179571,
+        "skill": 0.1431882398236179,
+        "skill_interval": [
+         0.005993285108517599,
+         0.41381969573970606
+        ]
        },
        "B2": {
         "benchmark_mean": 0.2039999999999992,
-        "candidate_mean": 0.17784466198914012,
+        "candidate_mean": 0.17784466198914017,
         "days": 250,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": 0.02615533801085904,
+        "difference_interval": [
+         -0.0076941244653039136,
+         0.5879372077983313
+        ],
+        "dm_p_value": 0.17778799893973396,
+        "dm_statistic": 0.9238277631148067,
+        "skill": null,
+        "skill_interval": null,
+        "skill_undefined": "a resampled benchmark scores zero; skill is undefined"
        },
        "mr_cal_a_base": {
         "benchmark_mean": 0.18359269836616976,
-        "candidate_mean": 0.17784466198914012,
+        "candidate_mean": 0.17784466198914017,
         "days": 250,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": 0.005748036377029575,
+        "difference_interval": [
+         0.00056251496822372,
+         0.025150460551450985
+        ],
+        "dm_p_value": 0.14515136899491943,
+        "dm_statistic": 1.0574577263013178,
+        "skill": 0.03130863279521771,
+        "skill_interval": [
+         -0.1400871390402614,
+         0.08817530687220025
+        ]
        },
        "sc_s3_robust": {
         "benchmark_mean": 0.17415538848456635,
-        "candidate_mean": 0.17784466198914012,
+        "candidate_mean": 0.17784466198914017,
         "days": 250,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": -0.0036892735045738144,
+        "difference_interval": [
+         -0.03582434449359674,
+         0.00020314243641850584
+        ],
+        "dm_p_value": 0.8767921387032689,
+        "dm_statistic": -1.1590992720256366,
+        "skill": -0.021183803364779367,
+        "skill_interval": [
+         -0.061077941448192424,
+         0.049627678567230694
+        ]
        }
       },
       "m1_episode_k5": {
        "B1": {
         "benchmark_mean": 0.280454740869564,
-        "candidate_mean": 0.17564194926079746,
+        "candidate_mean": 0.17564194926079751,
         "days": 250,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": 0.10481279160876651,
+        "difference_interval": [
+         0.007798564988328607,
+         1.0433097740556982
+        ],
+        "dm_p_value": 0.0812152793981531,
+        "dm_statistic": 1.3969435110763526,
+        "skill": 0.3737244422532819,
+        "skill_interval": [
+         0.18349907465701248,
+         0.919000929941401
+        ]
        },
        "B1p": {
         "benchmark_mean": 0.20756561739130344,
         "candidate_mean": 0.17564194926079746,
         "days": 250,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": 0.03192366813050598,
+        "difference_interval": [
+         -0.002196508341716065,
+         0.41012422819646244
+        ],
+        "dm_p_value": 0.12399369911658598,
+        "dm_statistic": 1.155251628108969,
+        "skill": 0.15380036699586605,
+        "skill_interval": [
+         0.004821821917970426,
+         0.4311271472801941
+        ]
        },
        "B2": {
         "benchmark_mean": 0.2039999999999992,
         "candidate_mean": 0.17564194926079746,
         "days": 250,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": 0.02835805073920175,
+        "difference_interval": [
+         -0.007427428898965159,
+         0.6252321879891506
+        ],
+        "dm_p_value": 0.1718523685840081,
+        "dm_statistic": 0.9468705679171125,
+        "skill": null,
+        "skill_interval": null,
+        "skill_undefined": "a resampled benchmark scores zero; skill is undefined"
        },
        "mr_cal_a_base": {
         "benchmark_mean": 0.18359269836616976,
-        "candidate_mean": 0.17564194926079746,
+        "candidate_mean": 0.1756419492607975,
         "days": 250,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": 0.007950749105372286,
+        "difference_interval": [
+         0.0016463326546832992,
+         0.04219192659728471
+        ],
+        "dm_p_value": 0.09770440192983165,
+        "dm_statistic": 1.2947432814747473,
+        "skill": 0.0433064559545542,
+        "skill_interval": [
+         -0.0903906827632186,
+         0.11149536748564001
+        ]
        },
        "sc_s3_robust": {
         "benchmark_mean": 0.17415538848456635,
         "candidate_mean": 0.17564194926079746,
         "days": 250,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": -0.0014865607762311025,
+        "difference_interval": [
+         -0.006619681724632599,
+         0.0007253077667972851
+        ],
+        "dm_p_value": 0.8177814412386631,
+        "dm_statistic": -0.9069426652401144,
+        "skill": -0.008535829922729273,
+        "skill_interval": [
+         -0.02990467077066382,
+         0.020645610349158725
+        ]
        }
       },
       "m2_markov": {
        "B1": {
         "benchmark_mean": 0.280454740869564,
-        "candidate_mean": 0.1777853380407352,
+        "candidate_mean": 0.17778533804073526,
         "days": 250,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": 0.10266940282882873,
+        "difference_interval": [
+         0.009439967621993686,
+         1.2320855386950649
+        ],
+        "dm_p_value": 0.07739353556331052,
+        "dm_statistic": 1.422824382961631,
+        "skill": 0.3660818943922898,
+        "skill_interval": [
+         0.15792656347388417,
+         0.9643537043759279
+        ]
        },
        "B1p": {
         "benchmark_mean": 0.20756561739130344,
         "candidate_mean": 0.1777853380407352,
         "days": 250,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": 0.029780279350568227,
+        "difference_interval": [
+         -0.0007222199296653756,
+         0.31497800066696524
+        ],
+        "dm_p_value": 0.11584672384012962,
+        "dm_statistic": 1.1960079731032194,
+        "skill": 0.14347404798949115,
+        "skill_interval": [
+         -0.021158791004833505,
+         0.46274803827445654
+        ]
        },
        "B2": {
         "benchmark_mean": 0.2039999999999992,
         "candidate_mean": 0.1777853380407352,
         "days": 250,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": 0.026214661959263988,
+        "difference_interval": [
+         -0.007243744567675257,
+         0.8238450368656205
+        ],
+        "dm_p_value": 0.1707226338130985,
+        "dm_statistic": 0.9513134768966321,
+        "skill": null,
+        "skill_interval": null,
+        "skill_undefined": "a resampled benchmark scores zero; skill is undefined"
        },
        "mr_cal_a_base": {
         "benchmark_mean": 0.18359269836616976,
-        "candidate_mean": 0.1777853380407352,
+        "candidate_mean": 0.17778533804073524,
         "days": 250,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": 0.005807360325434526,
+        "difference_interval": [
+         -0.00018199175045819846,
+         0.01571538793538945
+        ],
+        "dm_p_value": 0.13991140040592154,
+        "dm_statistic": 1.0807174896254064,
+        "skill": 0.031631760833167405,
+        "skill_interval": [
+         -0.30029924473754455,
+         0.10682623785030161
+        ]
        },
        "sc_s3_robust": {
         "benchmark_mean": 0.17415538848456635,
         "candidate_mean": 0.1777853380407352,
         "days": 250,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": -0.003629949556168862,
+        "difference_interval": [
+         -0.05968462421091128,
+         0.0017252236783408363
+        ],
+        "dm_p_value": 0.7994477731145635,
+        "dm_statistic": -0.8396503606364583,
+        "skill": -0.02084316533502234,
+        "skill_interval": [
+         -0.1200487081916999,
+         0.006143333644163765
+        ]
        }
       },
       "m3_markov_calendar": {
        "B1": {
         "benchmark_mean": 0.280454740869564,
-        "candidate_mean": 0.1792603302331757,
+        "candidate_mean": 0.17926033023317572,
         "days": 250,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": 0.1011944106363883,
+        "difference_interval": [
+         0.007744281742246631,
+         1.4066484764011347
+        ],
+        "dm_p_value": 0.08043483539312946,
+        "dm_statistic": 1.4021526396049389,
+        "skill": 0.36082260660893073,
+        "skill_interval": [
+         0.12490238822675645,
+         0.9996382680087371
+        ]
        },
        "B1p": {
         "benchmark_mean": 0.20756561739130344,
-        "candidate_mean": 0.1792603302331757,
+        "candidate_mean": 0.17926033023317567,
         "days": 250,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": 0.02830528715812778,
+        "difference_interval": [
+         0.00016594846918220954,
+         0.2933028180042087
+        ],
+        "dm_p_value": 0.10871511232832254,
+        "dm_statistic": 1.233390186195653,
+        "skill": 0.13636789904739643,
+        "skill_interval": [
+         0.022422348333083736,
+         0.36888406114695116
+        ]
        },
        "B2": {
         "benchmark_mean": 0.2039999999999992,
-        "candidate_mean": 0.1792603302331757,
+        "candidate_mean": 0.17926033023317567,
         "days": 250,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": 0.02473966976682354,
+        "difference_interval": [
+         -0.005967240295119865,
+         0.6806473997372113
+        ],
+        "dm_p_value": 0.16738697747101017,
+        "dm_statistic": 0.964542612868208,
+        "skill": null,
+        "skill_interval": null,
+        "skill_undefined": "a resampled benchmark scores zero; skill is undefined"
        },
        "mr_cal_a_base": {
         "benchmark_mean": 0.18359269836616976,
-        "candidate_mean": 0.1792603302331757,
+        "candidate_mean": 0.17926033023317567,
         "days": 250,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": 0.00433236813299408,
+        "difference_interval": [
+         -0.005035498498025919,
+         0.011147642393597668
+        ],
+        "dm_p_value": 0.23172105524907305,
+        "dm_statistic": 0.7331907266569531,
+        "skill": 0.023597714786855576,
+        "skill_interval": [
+         -0.2869512062716592,
+         0.07910315923146662
+        ]
        },
        "sc_s3_robust": {
         "benchmark_mean": 0.17415538848456635,
-        "candidate_mean": 0.1792603302331757,
+        "candidate_mean": 0.17926033023317567,
         "days": 250,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": -0.00510494174860931,
+        "difference_interval": [
+         -0.09620267957314123,
+         0.0022838713353564603
+        ],
+        "dm_p_value": 0.7879081154215488,
+        "dm_statistic": -0.7991839291421738,
+        "skill": -0.029312568465613167,
+        "skill_interval": [
+         -0.16513969024412378,
+         0.023632623455095075
+        ]
        }
       },
       "mr_cal_a_base": {
        "B1": {
         "benchmark_mean": 0.280454740869564,
-        "candidate_mean": 0.18359269836616976,
+        "candidate_mean": 0.18359269836616982,
         "days": 250,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": 0.09686204250339421,
+        "difference_interval": [
+         0.003474536794257188,
+         1.0183104677665609
+        ],
+        "dm_p_value": 0.09175938525724181,
+        "dm_statistic": 1.329998484841928,
+        "skill": 0.3453749514202134,
+        "skill_interval": [
+         0.15694056232401948,
+         1.0966880746777996
+        ]
        },
        "B1p": {
         "benchmark_mean": 0.20756561739130344,
-        "candidate_mean": 0.18359269836616976,
+        "candidate_mean": 0.18359269836616973,
         "days": 250,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": 0.0239729190251337,
+        "difference_interval": [
+         -0.004652639171138482,
+         0.30019585245848995
+        ],
+        "dm_p_value": 0.15333147876642061,
+        "dm_statistic": 1.0222492262520597,
+        "skill": 0.11549561688697155,
+        "skill_interval": [
+         -0.041659122805784154,
+         0.2729943054416568
+        ]
        },
        "B2": {
         "benchmark_mean": 0.2039999999999992,
-        "candidate_mean": 0.18359269836616976,
+        "candidate_mean": 0.18359269836616973,
         "days": 250,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": 0.020407301633829467,
+        "difference_interval": [
+         -0.010561119045027753,
+         0.37457300060497684
+        ],
+        "dm_p_value": 0.21016016873211518,
+        "dm_statistic": 0.8058656184712308,
+        "skill": null,
+        "skill_interval": null,
+        "skill_undefined": "a resampled benchmark scores zero; skill is undefined"
        },
        "sc_s3_robust": {
         "benchmark_mean": 0.17415538848456635,
-        "candidate_mean": 0.18359269836616976,
+        "candidate_mean": 0.18359269836616973,
         "days": 250,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": -0.009437309881603387,
+        "difference_interval": [
+         -0.0670215547215184,
+         -0.0020294618131168002
+        ],
+        "dm_p_value": 0.9174405479664981,
+        "dm_statistic": -1.3880595777288816,
+        "skill": -0.05418902029804103,
+        "skill_interval": [
+         -0.17942171862906614,
+         0.11737304332283939
+        ]
        }
       },
       "sc_s3_robust": {
        "B1": {
         "benchmark_mean": 0.280454740869564,
-        "candidate_mean": 0.17415538848456635,
+        "candidate_mean": 0.17415538848456646,
         "days": 250,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": 0.10629935238499756,
+        "difference_interval": [
+         0.008854315857221379,
+         0.9984669148726351
+        ],
+        "dm_p_value": 0.07787582430435525,
+        "dm_statistic": 1.4195056576191625,
+        "skill": 0.37902497941525637,
+        "skill_interval": [
+         0.19761956130397443,
+         0.8881544125833226
+        ]
        },
        "B1p": {
         "benchmark_mean": 0.20756561739130344,
         "candidate_mean": 0.17415538848456635,
         "days": 250,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": 0.03341022890673709,
+        "difference_interval": [
+         -0.0021748802140690443,
+         0.4224460866102331
+        ],
+        "dm_p_value": 0.12269909399770595,
+        "dm_statistic": 1.161599493326021,
+        "skill": 0.1609622505241415,
+        "skill_interval": [
+         -0.017821797346873558,
+         0.4538200112482439
+        ]
        },
        "B2": {
         "benchmark_mean": 0.2039999999999992,
         "candidate_mean": 0.17415538848456635,
         "days": 250,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": 0.029844611515432853,
+        "difference_interval": [
+         -0.007786746973753592,
+         0.8130351641338057
+        ],
+        "dm_p_value": 0.16897892870941267,
+        "dm_statistic": 0.9582080526974001,
+        "skill": null,
+        "skill_interval": null,
+        "skill_undefined": "a resampled benchmark scores zero; skill is undefined"
        },
        "mr_cal_a_base": {
         "benchmark_mean": 0.18359269836616976,
-        "candidate_mean": 0.17415538848456635,
+        "candidate_mean": 0.17415538848456638,
         "days": 250,
-        "undefined": "a resampled benchmark scores zero; skill is undefined"
+        "difference": 0.009437309881603387,
+        "difference_interval": [
+         0.002029461813116801,
+         0.0670215547215185
+        ],
+        "dm_p_value": 0.0825594520335019,
+        "dm_statistic": 1.3880595777288816,
+        "skill": 0.051403514222450035,
+        "skill_interval": [
+         -0.1658777915976749,
+         0.1592668452579553
+        ]
        }
       }
      }
