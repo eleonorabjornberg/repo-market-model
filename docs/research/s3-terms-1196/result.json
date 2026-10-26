@@ -1,4 +1,5 @@
 {
+ "superseded": "Superseded on main by #1253 (finding #1243); kept as the record of what was run on aab1f1b0. Re-scored on 6dd127ed; see docs/research/s3-terms-1243-result.md. 26 October 2026.",
  "arms": [
   {
    "interact": false,
