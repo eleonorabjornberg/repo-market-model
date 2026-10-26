@@ -401,8 +401,8 @@ def render(r: dict) -> str:
                                               f"({', '.join(counts['after_last_scored_day'])}) and " if counts["after_last_scored_day"] else "")
         + f"{counts['in_column']} are in the column the model reads (a note is in it only if it was announced before the decision instant "
         "of the panel day before it takes effect)"
-        + (f"; the others, {', '.join(counts['announced_after_the_decision'])}, were announced after that instant (the Sunday cut of "
-           "2020-03-16, announced after the Friday decision) and no decision sees them" if counts["announced_after_the_decision"] else "")
+        + (f"; {', '.join(counts['announced_after_the_decision'])} was announced after that instant (the Sunday cut of 2020-03-16 was "
+           "announced after the Friday decision) and no decision sees it" if counts["announced_after_the_decision"] else "")
         + ". The technical indicator rests on a handful of days; its estimated effect is read with that in mind.", "",
         "**What kind of look this is.** A further look at 2018-2025 after (s3) was chosen on the same days. The arm is one declared variant "
         "and **counts toward the variant count**. A gain here is evidence for a question, with the selection noted, not a result.", "",
