@@ -1,9 +1,8 @@
-"""B2 with a minimum pool and a declared fallback chain (#1155; H5 step 2, benchmarks). A draft, inert until Eleonora merges it.
+"""B2 with a minimum pool and a declared fallback chain (#1155; H5 step 2, benchmarks). In force since #1198 on her `GO #1155`.
 
-`docs/decisions/drafts/b2-thin-pool.md` drafts the rule; `IN_FORCE` is the switch and is `False` until the record sits in
-`docs/decisions/b2-thin-pool.md`. This module does not touch `protocol_benchmarks.b2_forecast`, the B2 the protocol scores:
-it is a second function that a study, and later the protocol, may call. While the record is a draft nothing published or
-scored moves.
+`docs/decisions/b2-thin-pool.md` is the rule; `IN_FORCE` is the switch and is `True` exactly when that record sits there.
+`protocol_benchmarks.b2_forecast`, the B2 the protocol scores, calls `b2_fallback_forecast` with `POOL_MIN` while it is on;
+the B2 before the rule is `protocol_benchmarks.b2_forecast_no_minimum`. No published record moves (scoring protocol §13).
 
 B2 (`docs/decisions/scoring-protocol.md` section 4) is the trailing year's spreads on days of the target's type. Under the
 month-end turn definition (`turn_days`, #1135) the types are `year_end` (about two days in the window), `quarter_end_turn`
@@ -12,12 +11,12 @@ of two to six values are interpolations of them, with 1% and 99% at the sample's
 band covered 0.50 on quarter-ends, #762), and the first year-end of a panel has no earlier year-end, so B2 refuses it.
 
 **The rule drafted.** A target's chain is its own type followed by the wider types of `CHAINS`; the pool is the first step of
-the chain with at least `pool_min` rows in the window, and every day of the window if none has. `POOL_MIN` is 10. Why: it is
-below the smallest pool a type that recurs every month or two has in a window (`tax_date`, 10 to 13; `turn`, 12 to 16), so the
-fallback touches only the two types the turn definition made thin, `year_end` (1 to 2) and `quarter_end_turn` (4 to 6), and
-leaves the rest as B2 is. B1' (`b1_calendar`, #960) uses 30, `spread_mr_variants.POOL_MIN`; at 30 every type but `ordinary` falls
+the chain with at least `pool_min` rows in the window, and every day of the window if none has. `POOL_MIN` is 4. Why: it is
+at or below the smallest pool of every type but `year_end` (`quarter_end_turn`, 4 to 6; `tax_date`, 10 to 13; `turn`, 12 to 16
+in a window), so the fallback touches only `year_end` (1 to 2 rows), which reads the `quarter_end_turn` rows, and leaves the
+rest as B2 is. B1' (`b1_calendar`, #960) uses 30, `spread_mr_variants.POOL_MIN`; at 30 every type but `ordinary` falls
 to every day, and B2 stops being a calendar climatology. No number is statistically derived (no pool of a year reaches the
-tails of a 23-level grid); the choice, and the alternatives 20 and 30, are marked questions to her.
+tails of a 23-level grid); the choice, and the alternatives, were hers: she ruled 4 on 24 October 2026.
 
 The type of a row is a function of its date and the holiday table, and every row counted or sampled is at or before the
 anchor, the last public row (`protocol_benchmarks._anchor`); `protocol_benchmarks._require_public` restates it for the rows
@@ -37,13 +36,13 @@ from .scoring_protocol import HORIZONS, ProtocolError
 
 ROOT = Path(__file__).resolve().parents[2]
 
-#: Whether the record of #1155 is in force. A draft (`docs/decisions/drafts/b2-thin-pool.md`) until Eleonora merges it into
-#: `docs/decisions/b2-thin-pool.md`; the PR that moves it there flips this to `True` (`tests/test_b2_pool_1155.py` fails if
-#: the two disagree). Nothing reads this switch yet: `protocol_benchmarks.b2_forecast` is unchanged either way.
-IN_FORCE = False
+#: Whether the record of #1155 is in force: `docs/decisions/b2-thin-pool.md` (moved from the draft by #1198 on her `GO #1155`).
+#: `tests/test_b2_pool_1155.py` fails if the record and this switch disagree. `protocol_benchmarks.b2_forecast` reads it.
+IN_FORCE = True
 
 #: The pool floor: fewer rows than this in the trailing year, and the next step of the chain is read (see the module text).
-POOL_MIN = 10
+#: Her ruling of 24 October 2026 on question 1: 4.
+POOL_MIN = 4
 
 #: The pool of "every day of the window", the end of every chain.
 ALL_DAYS = "all_days"
