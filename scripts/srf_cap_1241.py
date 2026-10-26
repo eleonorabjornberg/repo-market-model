@@ -288,10 +288,14 @@ def _block_task(job):
         entry = {"block": block, "days": len(ordered)}
         if split == "pooled":
             at = max(1, round(block))
-            test = sp.paired_tests([({x: series[reference][x] for x in ordered}, {x: series[candidate][x] for x in ordered})],
-                                   seed=SEED, draws=_STATE["draws"], block_length=float(at))[0]
             entry["at_block"] = at
-            entry["row"] = s761.paired_row(test)
+            try:
+                test = sp.paired_tests([({x: series[reference][x] for x in ordered}, {x: series[candidate][x] for x in ordered})],
+                                       seed=SEED, draws=_STATE["draws"], block_length=float(at))[0]
+                entry["row"] = s761.paired_row(test)
+            except sp.ProtocolError as error:
+                # a cap that moves a few days only leaves resamples with no variance (the first full run died here); say so, never drop it
+                entry["undefined"] = str(error)
         out[reference] = entry
     return (split, label, metric, candidate), out
 
@@ -751,6 +755,8 @@ def render(r: dict) -> str:
                 cells.append("n/a" if not e else f"{e['block']:.1f}")
                 if col == "pooled" and e and "row" in e:
                     at = f"block {e['at_block']}: {_fmt(e['row'])}"
+                elif col == "pooled" and e and "undefined" in e:
+                    at = f"block {e['at_block']}: undefined ({e['undefined']})"
             out.append(f"| {LABELS[name]} | " + " | ".join(cells) + f" | {at} |")
         out.append("")
     names = list(r["q95"])

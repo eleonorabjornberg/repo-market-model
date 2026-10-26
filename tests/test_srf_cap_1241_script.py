@@ -85,6 +85,42 @@ class PlanTests(unittest.TestCase):
         self.assertTrue(script._identical(series, "cap", [d1]))
 
 
+class BlockTaskTests(unittest.TestCase):
+
+    def test_a_cap_that_moves_a_few_days_leaves_a_block_row_that_says_it_is_undefined_not_a_crash(self):
+        """The first full run died here: with a few days changed, a resample at the Politis-White block has no long-run variance and
+        `paired_tests` raised `ProtocolError` out of the worker pool."""
+
+        days = [date(2022, 1, 3) + timedelta(days=i) for i in range(300)]
+        s3 = {d: 1.0 + 0.01 * (i % 7) for i, d in enumerate(days)}
+        cap = dict(s3)
+        for d in days[100:103]:
+            cap[d] = s3[d] + 0.5
+        saved = dict(script._STATE)
+        try:
+            script._STATE.update(series={("decision", "grid_crps"): {"B1": s3, "srf_cap_m0": cap, script.S3: s3}}, draws=200, reps=5)
+            ident, out = script._block_task(("pooled", "all decision days", "decision", "grid_crps", "srf_cap_m0", tuple(days)))
+        finally:
+            script._STATE.clear()
+            script._STATE.update(saved)
+        self.assertEqual(ident, ("pooled", "all decision days", "grid_crps", "srf_cap_m0"))
+        entry = out[script.S3]
+        self.assertIn("at_block", entry)
+        self.assertTrue("row" in entry or "undefined" in entry)
+
+    def test_a_group_the_cap_leaves_unchanged_has_no_block_entry(self):
+        days = [date(2022, 1, 3) + timedelta(days=i) for i in range(30)]
+        s3 = {d: 1.0 + 0.01 * i for i, d in enumerate(days)}
+        saved = dict(script._STATE)
+        try:
+            script._STATE.update(series={("decision", "grid_crps"): {"srf_cap_m0": dict(s3), script.S3: s3}}, draws=20, reps=5)
+            _ident, out = script._block_task(("pooled", "all decision days", "decision", "grid_crps", "srf_cap_m0", tuple(days)))
+        finally:
+            script._STATE.clear()
+            script._STATE.update(saved)
+        self.assertEqual(out, {script.S3: None})
+
+
 class DeclarationTests(unittest.TestCase):
 
     def test_the_declaration_names_the_arms_and_the_primary_the_script_has(self):
