@@ -620,9 +620,10 @@ def render(r: dict) -> str:
         tw, gr = row["upper_tail_twcrps"], row["grid_crps"]
         out.append(
             f"| {row['group']} | {row['days']} | {LABELS[row['arm']]} | {tw['mean']:.3f} | {_fmt(tw['vs_a'])}: {_bold(reading_words(tw['vs_a']))} "
-            f"| {'' if tw['vs_s3'] is None else _fmt(tw['vs_s3']) + ': **' + reading_words(tw['vs_s3']) + '**'} | {gr['mean']:.3f} "
+            f"| {'' if tw['vs_s3'] is None else _fmt(tw['vs_s3']) + ': ' + _bold(reading_words(tw['vs_s3']))} | {gr['mean']:.3f} "
             f"| {_fmt(gr['vs_a'])}: {_bold(reading_words(gr['vs_a']))} "
-            f"| {'' if gr['vs_s3'] is None else _fmt(gr['vs_s3']) + ': **' + reading_words(gr['vs_s3']) + '**'} |")
+            f"| {'' if gr['vs_s3'] is None else _fmt(gr['vs_s3']) + ': ' + _bold(reading_words(gr['vs_s3']))} |")
+    out.append("")
     out += ["## Calendar-day types beside ordinary days", "",
             "For every calendar target-day type (the groups overlap) the reading of each arm against (s3) and against (a) on the grid CRPS "
             "and the upper-tail twCRPS, with **the same arm's reading on ordinary days printed beside it**: an arm that gains on a calendar "
