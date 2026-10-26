@@ -52,7 +52,7 @@ def _row(day: str, fill: str) -> dict:
 class TheEstablishedRows(unittest.TestCase):
     def test_a_back_filled_row_keeps_only_the_admitted_series(self):
         module = _module()
-        admitted = {name: datetime(2018, 5, 17) for name in ("tgcr", "bgcr", "sofr")}
+        admitted = {name: datetime(2018, 5, 17) for name in ("tgcr", "bgcr", "sofr", "iorb")}
         with tempfile.TemporaryDirectory() as tmp:
             source, target = Path(tmp) / "ext.csv", Path(tmp) / "est.csv"
             with source.open("w", newline="", encoding="utf-8") as handle:
@@ -132,7 +132,7 @@ class ThePostingGuard(unittest.TestCase):
 
 
 class TheAdmittedGuard(unittest.TestCase):
-    ADMITTED = {name: datetime(2018, 5, 17) for name in ("tgcr", "bgcr", "sofr")}
+    ADMITTED = {name: datetime(2018, 5, 17) for name in ("tgcr", "bgcr", "sofr", "iorb")}
 
     def test_an_extended_panel_with_an_unadmitted_back_filled_column_is_refused(self):
         module = _module()
@@ -152,7 +152,7 @@ class TheAdmittedGuard(unittest.TestCase):
         module = _module()
         rows = [_Row(date(2018, 3, 29), {"sofr": 1.5, "iorb": 1.7, "tga": None}),
                 _Row(date(2018, 4, 3), {"sofr": 1.5, "iorb": 1.7, "sofr_volume": 9.0, "tga": 1.0})]
-        self.assertEqual(module.series_carried(["spread_bps", "tga"], rows), ("sofr",))
+        self.assertEqual(module.series_carried(["spread_bps", "tga"], rows), ("iorb", "sofr"))
         # The SOFR volume is a series of its own (#887): a fit that read it would need it admitted.
         carried = [_Row(date(2018, 3, 29), {"sofr": 1.5, "sofr_volume": 9.0})]
         self.assertEqual(module.series_carried(["sofr_volume"], carried), ("sofr_volume",))
