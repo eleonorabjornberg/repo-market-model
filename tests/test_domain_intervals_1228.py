@@ -12,7 +12,7 @@ aligned series and take the mean over the resampled days that belong to the grou
 * on a synthetic AR(1) series with group days 60 apart, the coverage of the domain one-sided bound against the known mean is
   measured beside the current subsequence interval's coverage (`spread_mr_variants_761.run_pairs`).
 
-Mutation (recorded, guard: a resample with no day of the group must not be dropped): in `evaluation_splits.domain_estimates`,
+Mutation (recorded, guard: a resample with no day of the group must not be dropped): in `domain_intervals.domain_estimates`,
 replacing the `if drawn == 0:` branch that records the group as unavailable by `continue` (drop the resample) made
 `test_a_resample_without_a_group_day_raises_and_the_split_is_unavailable` fail with `AssertionError: MetricError not raised`.
 """
@@ -27,7 +27,8 @@ from datetime import date, timedelta
 from pathlib import Path
 
 from repo_model import scoring_protocol as sp
-from repo_model.evaluation_splits import domain_estimates, domain_interval, split_summary
+from repo_model.domain_intervals import domain_estimates, domain_interval
+from repo_model.evaluation_splits import split_summary
 from repo_model.metrics import MetricError
 
 ROOT = Path(__file__).resolve().parent.parent

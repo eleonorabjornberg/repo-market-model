@@ -271,7 +271,7 @@ def render(r: dict) -> str:
         "blocks of mean length 10 are drawn over its positions, and the mean difference is studentized by a lag-10 HAC standard error on "
         "that short series. For quarter-ends, whose days are about three months apart, one block joins days years apart.", "",
         "**Domain.** The whole aligned target-day series of `d = benchmark - candidate` is resampled with the same stationary bootstrap, "
-        "block, seed and draws as the pooled test (`evaluation_splits.domain_estimates`); the statistic is the mean of `d` over the "
+        "block, seed and draws as the pooled test (`domain_intervals.domain_estimates`); the statistic is the mean of `d` over the "
         "resampled days that belong to the group; the interval is the 90% percentile interval of that statistic. The point estimate "
         "is the group mean in both. A resample that draws no day of a group would make the row unavailable, with the reason; none did "
         "here unless a row below says `undefined`.", "",

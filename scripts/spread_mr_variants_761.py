@@ -48,7 +48,8 @@ from repo_model import protocol_benchmarks as pb, scoring_protocol as sp  # noqa
 from repo_model import spread_mean_reversion as smr, spread_mr_variants as var  # noqa: E402
 from repo_model.baseline import panel_sha256  # noqa: E402
 from repo_model.data import load_daily_panel  # noqa: E402
-from repo_model.evaluation_splits import domain_estimates, load_split_declaration  # noqa: E402
+from repo_model.domain_intervals import domain_estimates
+from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
 from repo_model.metrics import _quantile  # noqa: E402
 from repo_model.splits import SplitError  # noqa: E402
 
@@ -168,7 +169,7 @@ def domain_rows(cells: Mapping[object, Tuple[Mapping[date, float], Mapping[date,
 
     A day-type group is not contiguous (quarter-ends are about three months apart), so `run_pairs` on the group's own days joins days
     that were months apart into one block. Here each cell is `(benchmark scores, candidate scores, the group's days)`; the whole
-    aligned series `all_days` is resampled with the pooled test's block, seed and draws (`evaluation_splits.domain_estimates`), and
+    aligned series `all_days` is resampled with the pooled test's block, seed and draws (`domain_intervals.domain_estimates`), and
     the statistic is the mean of `d = benchmark - candidate` over the resampled days that belong to the group. The row carries the
     group mean as `difference` and the percentile interval at `level` as `difference_interval` (its lower end is the one-sided 95%
     bound), like `paired_row`, without skill; `method` says "domain". A group some resample draws no day of reads `undefined` with
