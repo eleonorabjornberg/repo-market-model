@@ -167,6 +167,42 @@ def published_records():
     return emit_visual.run_records(ROOT)
 
 
+class CompanionLinkTests(unittest.TestCase):
+    """The page links the companion projects once in "Start here" and once in the footer (#1240); plain.html once.
+
+    Link only: the page quotes nothing from the other projects.
+    """
+
+    LIQUIDITY = "https://eleonorabjornberg.github.io/repo-market-liquidity/"
+    SPILLOVERS = "https://eleonorabjornberg.github.io/repo-market-spillovers/findings.html"
+
+    @classmethod
+    def setUpClass(cls):
+        built_outputs.ensure()
+        cls.page = (ROOT / emit_visual.PAGE).read_text(encoding="utf-8")
+        cls.plain = (ROOT / "site/plain.html").read_text(encoding="utf-8")
+
+    def _region(self, text, start, end):
+        a = text.index(start)
+        return text[a:text.index(end, a)]
+
+    def test_each_link_once_in_start_here_and_once_in_the_footer(self):
+        start = self._region(self.page, 'id="companion-start"', "</div>")
+        foot = self._region(self.page, "<footer>", "</footer>")
+        for name, region in (("start here", start), ("footer", foot)):
+            for url in (self.LIQUIDITY, self.SPILLOVERS):
+                with self.subTest(place=name, url=url):
+                    self.assertEqual(region.count(f'href="{url}"'), 1)
+        self.assertIn("Phase 3: repo-market-liquidity (its own results page)", start)
+        self.assertIn("repo-market-spillovers: does repo stress spread to wider markets? (findings)", start)
+        for url in (self.LIQUIDITY, self.SPILLOVERS):
+            self.assertEqual(self.page.count(f'href="{url}"'), 2)
+
+    def test_the_plain_page_links_them_once(self):
+        for url in (self.LIQUIDITY, self.SPILLOVERS):
+            self.assertEqual(self.plain.count(f'href="{url}"'), 1)
+
+
 class ModelChapterTests(unittest.TestCase):
     """Chapters 5 to 7 (#118): every figure comes from a published record in docs/runs/."""
 
