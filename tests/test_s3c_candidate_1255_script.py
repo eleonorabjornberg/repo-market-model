@@ -108,20 +108,28 @@ class CandidateForecastTests(unittest.TestCase):
         self.s3c = script.s3c_forecasts(self.frame, self.reg, self.s3)
 
     def test_a_cell_before_full_allotment_is_s3s_and_a_cell_at_it_is_clipped_at_the_line(self):
-        d = date(2025, 12, 4)  # targets 5, 8, 9, 10 December and 11 December: the fifth is the first at full allotment
-        self.assertEqual([self.frame.target(d, h) for h in sp.HORIZONS][-1], date(2025, 12, 11))
-        for h in (1, 2, 3, 4):
+        d = date(2025, 12, 10)  # the day the removal of the limit is announced, at 14:00: known to the decision at 16:00
+        self.assertEqual(self.frame.target(d, 1), date(2025, 12, 11))
+        for h in sp.HORIZONS:
+            self.assertEqual(self.s3c[d][h], [min(q, 10.0) for q in Q])  # 3.75 - 3.65 = 10 bp
+        d = date(2025, 12, 3)
+        self.assertEqual(self.frame.target(d, 5), date(2025, 12, 10))
+        for h in sp.HORIZONS:
             self.assertEqual(self.s3c[d][h], Q)
-        self.assertEqual(self.s3c[d][5], [min(q, 10.0) for q in Q])  # 3.75 - 3.65 = 10 bp
+
+    def test_a_target_at_full_allotment_whose_decision_is_before_the_announcement_is_not_capped(self):
+        d = date(2025, 12, 4)  # the fifth target is 2025-12-11, but the removal is announced on 2025-12-10: the decision cannot know it
+        self.assertEqual(self.frame.target(d, 5), date(2025, 12, 11))
+        self.assertEqual(self.s3c[d][5], Q)
 
     def test_the_input_is_not_changed(self):
-        self.assertEqual(self.s3[date(2025, 12, 4)][5], Q)
+        self.assertEqual(self.s3[date(2025, 12, 10)][1], Q)
 
     def test_the_binding_counts(self):
         bind = script.binding(self.frame, self.reg, self.s3, self.s3c)
         n = len(self.frame.days)
         self.assertEqual(bind["all"]["cells"], 5 * n)
-        at = sum(1 for d in self.frame.days for h in sp.HORIZONS if self.frame.target(d, h) >= date(2025, 12, 11))
+        at = sum(1 for d in self.frame.days for h in sp.HORIZONS if d >= date(2025, 12, 10))
         self.assertEqual(bind["all"]["at_full_allotment"], at)
         self.assertEqual(bind["all"]["moved"], at)  # Q reaches 20 bp, above the 10 bp line, in every cell
         self.assertEqual(bind["all"]["moves_q95"], at)
@@ -151,14 +159,10 @@ class BeforeFullAllotmentTests(unittest.TestCase):
 
     def test_a_cell_at_full_allotment_may_differ(self):
         script.before_full_allotment(self.frame, self.s3, self.s3c)  # does not raise although cells at the line are clipped
-        self.assertNotEqual(self.s3[date(2025, 12, 4)][5], self.s3c[date(2025, 12, 4)][5])
+        self.assertNotEqual(self.s3[date(2025, 12, 10)][1], self.s3c[date(2025, 12, 10)][1])
 
 
 class PageTests(unittest.TestCase):
-
-    def record(self):
-        row = {"skill": 0.01, "difference_interval": [0.001, 0.02], "difference": 0.01, "skill_interval": [0.001, 0.02]}
-        return {"declaration": "metadata/s3c_candidate_1255.json", "panel_sha256": "x" * 64, "draws": 10, "seed": 1255, "windows": {}}
 
     def test_the_questions_are_marked_numbered_and_carry_a_default(self):
         text = "\n".join(script.question({}))
