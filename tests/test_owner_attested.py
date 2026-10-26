@@ -373,6 +373,50 @@ class CheckTests(unittest.TestCase):
             oa.check(base, head, self._fetch({GO_RELAY["id"]: GO_RELAY}), cited={151})
 
 
+class CommentReuseTests(unittest.TestCase):
+    """Each binding change needs a fresh `GO #<n>` comment (#1225, finding #1212).
+
+    An added entry may not cite a `comment_id` the base registry already holds, nor one another added entry
+    holds. Entries already on the base are grandfathered: only added entries are looked at.
+
+    Recorded mutation (26 October 2026), on the re-use guard: in `check`, the line
+    `reused = sorted(...)` replaced by `reused = [] and sorted(...)`: `test_an_added_entry_reusing_a_base_comment_is_refused`
+    failed with `AssertionError: NotOwnerAttested not raised`.
+    """
+
+    @staticmethod
+    def _fetch(comment_id):
+        return _owner_go()
+
+    def test_an_added_entry_reusing_a_base_comment_is_refused(self):
+        base = _tree(**{REGISTRY: _registry(_entry())})
+        head = _tree(**{REGISTRY: _registry(_entry(), _entry(kind="live-pin"))})
+        with self.assertRaisesRegex(oa.NotOwnerAttested, "already in the registry"):
+            oa.check(base, head, self._fetch, cited={63})
+
+    def test_two_added_entries_sharing_a_comment_are_refused(self):
+        base = _tree(**{REGISTRY: _registry()})
+        head = _tree(**{REGISTRY: _registry(_entry(), _entry(kind="live-pin"))})
+        with self.assertRaisesRegex(oa.NotOwnerAttested, "already in the registry"):
+            oa.check(base, head, self._fetch, cited={63})
+
+    def test_a_fresh_comment_passes(self):
+        base = _tree(**{REGISTRY: _registry(_entry(comment_id=1))})
+        head = _tree(**{REGISTRY: _registry(_entry(comment_id=1), _entry())})
+        verified = oa.check(base, head, self._fetch, cited={63})
+        self.assertEqual([c["id"] for c in verified], [OWNER["id"]])
+
+    def test_the_tracked_registry_as_its_own_base_passes(self):
+        tree = _tree(**{REGISTRY: _real(REGISTRY)})
+        self.assertEqual(oa.check(tree, tree, lambda i: self.fail("fetched")), [])
+
+    def test_existing_reuses_are_grandfathered(self):
+        ids = [e["comment_id"] for e in oa.load_registry(_real(REGISTRY))]
+        self.assertGreater(len(ids) - len(set(ids)), 0, "the registry holds a grandfathered re-use")
+        tree = _tree(**{REGISTRY: _real(REGISTRY)})
+        self.assertEqual(oa.check(tree, tree, lambda i: self.fail("fetched")), [])
+
+
 class PathKindTests(unittest.TestCase):
     """#944 (ruling on PR #943): CLAUDE.md, `.claude/` and a registration are binding by their path.
 
