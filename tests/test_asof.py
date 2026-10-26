@@ -219,8 +219,8 @@ class PerFieldReadTests(unittest.TestCase):
 class WeeklyObservationAgeTests(unittest.TestCase):
     """A carried weekly cell is aged from its observation, not from its row (#267).
 
-    `reserve_balances` is the H.4.1's Wednesday level, carried on every panel
-    row until the next print. The row read is the latest whose declared instant
+    `reserve_balances` is the H.4.1's average over the week ending Wednesday,
+    carried on every panel row until the next print. The row read is the latest whose declared instant
     (row date + 5 calendar days, 16:30) is at or before the decision; the
     observation behind it was declared earlier, so the cell is older than the
     row says.

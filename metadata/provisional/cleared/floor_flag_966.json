@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/floor_flag_966.json",
+  "script": "scripts/floor_flag_966.py",
+  "pairing": "none",
+  "why": "the floor flag as a pool selector on B1, #686's mean reversion and #941's scaled mean reversion: no gradient-boosted fit and no calendar column trained or read as an input (the flag is a trailing SOFR-to-floor median; the day types only split the report); a development study whose figures are provisional under the calendar-first rule as #941's are, and the classification is Eleonora's (the pull request asks)"
+}

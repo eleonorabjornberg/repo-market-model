@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/calendar_mr_1115.json",
+  "script": "scripts/calendar_mr_1115.py",
+  "pairing": "direct",
+  "why": "scaled mean reversion with additive calendar, scheduled and FOMC terms read from the target row on direct pairs (repo_model.spread_mr_calendar, guarded by one_step_guard with no allow-list entry); no gradient-boosted fit is called"
+}

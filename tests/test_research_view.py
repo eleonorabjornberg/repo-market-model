@@ -157,7 +157,12 @@ class Standings(unittest.TestCase):
         return json.loads((ROOT / (rel or self.SCORE)).read_text(encoding="utf-8"))
 
     def best(self):
-        return PAGE[at('id="best-performer"'):at('id="hypotheses"')]
+        """The standings as the page renders them when no candidate record exists (#1152 keeps this fallback)."""
+        with tempfile.TemporaryDirectory() as tmp:
+            for rel in (self.STEP4, self.SCORE, self.DECLARATION):
+                (Path(tmp) / rel).parent.mkdir(parents=True, exist_ok=True)
+                (Path(tmp) / rel).write_bytes((ROOT / rel).read_bytes())
+            return research_view.standings_html(research_view.standings(tmp))
 
     def leader(self):
         block = self.best()
@@ -171,6 +176,7 @@ class Standings(unittest.TestCase):
         block = self.best()
         self.assertNotIn("The development leader.</span> <span class=\"rs-nm\">", block)
         self.assertIn(name, self.leader())
+        self.assertNotIn(research_view.NOT_MEASURED + "</span>: no committed record", block)
 
     def test_it_sets_the_candidate_against_all_three_and_names_no_single_leader(self):
         leader = self.leader()
@@ -235,6 +241,202 @@ class Standings(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             self.assertIsNone(research_view.standings(tmp))
             self.assertIn(research_view.NOT_MEASURED, research_view.standings_html(None))
+
+
+class CandidateStandings(unittest.TestCase):
+    """#1152, #1173: the page names the H5 candidate from `docs/research/h5-candidate.json`, not from the step 4 record.
+
+    Eleonora ruled (22 October 2026, #1115) that #941's scaled mean reversion, `spread_mr_fhs_mad20_f0.5`, replaces
+    `gbm_funding`, and (23 October 2026, #1151, option 2) that (s3) of #1145, `sc_s3_robust`, replaces that. The
+    standings read the candidate from that small committed record, score it from #1145's `result.json` (beside B1,
+    B1', B2, the replaced (a) and spread_mr_ctx), show the mean-d interval and read it as the protocol does (#1009),
+    carry Lens C's caveat, and fall back to the step 4 record only when the file is absent.
+
+    Recorded mutation: in `scripts/research_view.py`, `standings`, replace `if (root / CANDIDATE).exists():` with
+    `if False:` (the step 4 record names the candidate whatever the file holds) and run
+    `PYTHONPATH=src:tests python3 -m unittest test_research_view.CandidateStandings`:
+    `test_the_page_names_the_record_candidate_not_the_step4_one` failed with AssertionError.
+    """
+
+    CANDIDATE = "docs/research/h5-candidate.json"
+    STEP4 = "docs/pivot/evidence/h5-step4/score.json"
+
+    def record(self):
+        return json.loads((ROOT / self.CANDIDATE).read_text(encoding="utf-8"))
+
+    def scores(self):
+        return json.loads((ROOT / self.record()["scores"]["record"]).read_text(encoding="utf-8"))
+
+    def best(self):
+        return PAGE[at('id="best-performer"'):at('id="hypotheses"')]
+
+    def block(self):
+        text = self.best()
+        start = text.find("The development standings")
+        self.assertGreaterEqual(start, 0)
+        end = text.find('<aside class="rs-q">', start)
+        return text[start:end]
+
+    def copy_tree(self, tmp, skip=()):
+        for rel in (self.CANDIDATE, self.STEP4, "docs/pivot/evidence/b1-calendar-960/score.json",
+                    "metadata/b1_calendar_960.json", self.record()["scores"]["record"]):
+            if rel in skip:
+                continue
+            (Path(tmp) / rel).parent.mkdir(parents=True, exist_ok=True)
+            (Path(tmp) / rel).write_bytes((ROOT / rel).read_bytes())
+
+    def test_the_record_names_the_ruled_candidate_and_its_evidence(self):
+        rec = self.record()
+        self.assertEqual(rec["scores"]["model"], "sc_s3_robust")
+        self.assertEqual(rec["candidate"], "sc_s3_robust")
+        self.assertEqual(rec["replaces"], "spread_mr_fhs_mad20_f0.5")
+        self.assertEqual(rec["date"], "2026-10-23")
+        self.assertEqual(rec["scores"]["record"], "docs/research/state-calendar-1145/result.json")
+        self.assertTrue(rec["ruling"].startswith("https://github.com/eleonorabjornberg/repo-market-model/issues/1151#issuecomment-"))
+        self.assertEqual({e["issue"] for e in rec["evidence"]}, {1145, 1115, 1141})
+        for e in rec["evidence"]:
+            self.assertTrue((ROOT / e["page"]).is_file(), e["page"])
+            self.assertTrue((ROOT / e["record"]).is_file(), e["record"])
+        self.assertIn(rec["scores"]["model"], self.scores()["models"])
+
+    def test_the_page_names_the_record_candidate_not_the_step4_one(self):
+        step4 = json.loads((ROOT / self.STEP4).read_text(encoding="utf-8"))["best_candidate"]
+        self.assertEqual(step4, "gbm_funding")
+        block = self.block()
+        self.assertIn(self.record()["candidate"], block)
+        self.assertNotIn("names <b>gbm_funding</b> as its best candidate", block)
+        for e in self.record()["evidence"]:
+            self.assertIn(e["page"], block)
+            self.assertIn(e["mean_d_page"], block)  # #1194: each evidence page is linked beside its reading on the mean-d bound
+        self.assertNotRegex(block, r"(?<![&\w])#\d+")
+        self.assertIn(self.record()["ruling"], block)
+        self.assertIn("2026-10-23", block)
+
+    def test_it_is_scored_beside_all_five_and_labelled(self):
+        block = self.block()
+        for model in ("B1", "B1&prime;", "B2", "spread_mr_fhs_mad20_f0.5", "spread_mr_ctx"):
+            self.assertIn(f'<th scope="row">{model}</th>', block)
+        self.assertNotIn('<th scope="row">gbm_funding</th>', block)
+        self.assertIn("gbm_funding", block)  # said once: its walks were not supplied
+        self.assertIn(research_view.DEV_LABEL, block)
+        self.assertNotIn(research_view.PROVISIONAL_LABEL, block)  # it reads the calendar at the target day
+        self.assertNotRegex(block, r"(?i)\bleads\b|\bbeats B1\b|\bregistered candidate\b")
+
+    def test_it_shows_the_mean_d_interval_and_reads_its_bound(self):
+        grid = self.scores()["groups"]["pooled"]["all decision days"]["grid_crps"]
+        pair = grid["vs"]["sc_s3_robust"]["B1_prime"]
+        lo, hi = pair["difference_interval"]
+        self.assertGreater(lo, 0)
+        block = self.block()
+        self.assertIn(f"{pair['difference']:+.2f}", block)
+        self.assertIn(f"{lo:+.2f}", block)
+        self.assertIn(f"{hi:+.2f}", block)
+        self.assertIn("better", block)
+        self.assertIn("ruling on which interval is read", block)
+
+    def test_it_shows_the_skill_over_the_replaced_candidate_with_its_interval(self):
+        pair = self.scores()["groups"]["pooled"]["all decision days"]["grid_crps"]["vs"]["sc_s3_robust"]["mr_cal_a_base"]
+        lo, hi = pair["skill_interval"]
+        self.assertEqual((f"{100 * pair['skill']:+.1f}%", f"{100 * lo:+.1f}%", f"{100 * hi:+.1f}%"),
+                         ("+4.3%", "+1.8%", "+6.4%"))
+        self.assertIn("+4.3% [+1.8%, +6.4%]", self.block())
+
+    def test_the_provisional_mark_follows_the_record(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.copy_tree(tmp)
+            path = Path(tmp) / self.CANDIDATE
+            doc = json.loads(path.read_text(encoding="utf-8"))
+            self.assertFalse(doc["provisional"])
+            doc["provisional"] = True
+            path.write_text(json.dumps(doc), encoding="utf-8")
+            self.assertIn(research_view.PROVISIONAL_LABEL, research_view.standings_html(research_view.standings(tmp)))
+
+    def test_a_reading_follows_the_bound_on_mean_d(self):
+        read = research_view.read_mean_d
+        self.assertEqual(read([0.1, 0.5]), "better")
+        self.assertEqual(read([-0.5, -0.1]), "worse")
+        self.assertEqual(read([-0.1, 0.5]), "no difference")
+        self.assertEqual(read(None), research_view.NOT_MEASURED)
+
+    def test_it_carries_lens_cs_caveat(self):
+        block = self.block()
+        self.assertIn("Lens C", block)
+        self.assertIn("B1 stays the protocol", block)
+        self.assertRegex(block, r"(?i)by regime")
+        self.assertRegex(block, r"(?i)by (target-day|day) type")
+        for regime in self.scores()["groups"]["regime"]:
+            self.assertIn(f"<th scope=\"row\">{regime}</th>", block)
+        for kind in self.scores()["groups"]["target_day_type"]:
+            self.assertIn(f"<th scope=\"row\">{kind}</th>", block)
+
+    def test_every_number_is_in_the_record(self):
+        scores = self.scores()
+        allowed = set()
+
+        def add(x):
+            if isinstance(x, (list, tuple)):
+                for v in x:
+                    add(v)
+            elif isinstance(x, float):
+                allowed.update({f"{x:.2f}", f"{x:+.2f}", f"{100 * x:.1f}", f"{100 * x:+.1f}"})
+            elif isinstance(x, int) and not isinstance(x, bool):
+                allowed.add(str(x))
+
+        def walk(group):
+            add(group["days"])
+            grid = group["grid_crps"]
+            add(list(grid["means"].values()))
+            for per in grid["vs"].values():
+                for pair in per.values():
+                    add([pair["difference"], pair["difference_interval"], pair["skill"], pair["skill_interval"]])
+
+        walk(scores["groups"]["pooled"]["all decision days"])
+        for kind in ("regime", "target_day_type"):
+            for group in scores["groups"][kind].values():
+                walk(group)
+        text = re.sub(r"<code>.*?</code>|<a [^>]*>|<th scope=\"row\">.*?</th>", " ", self.block())
+        text = re.sub(r"<[^>]+>", " ", text)
+        text = re.sub(r"#\d+|\d{4}-\d{2}(?:-\d{2})?|B1(?:&prime;)?|B2|mad20|f0\.5|v1|(?<![\d.])\d+%", " ", text)
+        text = text.replace("\u2212", "-").replace("&minus;", "-")
+        found = re.findall(r"(?<![\w.])[+-]?\d+(?:\.\d+)?", text)
+        self.assertTrue(found)
+        for number in found:
+            self.assertIn(number, allowed, f"{number} is on the page and in no committed record")
+
+    def test_it_reads_the_records_not_a_constant(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.copy_tree(tmp)
+            score = Path(tmp) / self.record()["scores"]["record"]
+            doc = json.loads(score.read_text(encoding="utf-8"))
+            doc["groups"]["pooled"]["all decision days"]["grid_crps"]["means"]["B1"] = 9.87
+            score.write_text(json.dumps(doc), encoding="utf-8")
+            st = research_view.standings(tmp)
+            self.assertEqual(st["candidate"], self.record()["candidate"])
+            self.assertIn("9.87", research_view.standings_html(st))
+
+    def test_it_falls_back_to_the_step4_record_when_the_file_is_absent(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.copy_tree(tmp, skip=(self.CANDIDATE,))
+            st = research_view.standings(tmp)
+            self.assertEqual(st["candidate"], "gbm_funding")
+
+    def test_a_record_naming_an_unscored_model_is_refused_not_guessed(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self.copy_tree(tmp)
+            path = Path(tmp) / self.CANDIDATE
+            doc = json.loads(path.read_text(encoding="utf-8"))
+            doc["scores"]["model"] = "no_such_model"
+            path.write_text(json.dumps(doc), encoding="utf-8")
+            self.assertIsNone(research_view.standings(tmp))
+
+    def test_the_page_says_development_not_a_verdict_and_nothing_is_registered(self):
+        block = self.block()
+        self.assertIn("Nothing is registered", block)
+        self.assertIn(research_view.esc(research_view.DEV_LABEL), block)
+
+    def test_the_candidate_file_is_a_page_input(self):
+        self.assertIn(self.CANDIDATE, research_view.INPUTS)
+        self.assertIn("docs/research/state-calendar-1145/result.json", research_view.INPUTS)
 
 
 class Sources(unittest.TestCase):

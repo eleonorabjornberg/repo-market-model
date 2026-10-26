@@ -225,8 +225,8 @@ What each input is, as of 16:00 on D:
 | `sofr_p25`, `sofr_p75`, `sofr_volume` | `nyfed_sofr` | day D−1's, final at 15:00 on D (lag: one business day) |
 | `spread_bps` | SOFR less IORB | IORB is available at 16:15 on its own date, after the decision, so the newest row with both is D−1's |
 | `tbill_4w`, `tbill_13w` | `treasury_bill_rates` | quote date available at 16:30 on its own date, so D−1's |
-| `reserve_balances` | `WRESBAL`, weekly (Wednesday level) | dated on a Wednesday and public five calendar days later at 16:30: the newest is 6 to 12 days old |
-| `tga` | `WTREGEN`, weekly (Wednesday level) | the same five-calendar-day lag, so 6 to 12 days old |
+| `reserve_balances` | `WRESBAL`, weekly (the average over the week ending Wednesday) | dated on a Wednesday and public five calendar days later at 16:30: the newest is 6 to 12 days old |
+| `tga` | `WTREGEN`, weekly (the average over the week ending Wednesday) | the same five-calendar-day lag, so 6 to 12 days old |
 | `treasury_settlement` (h = 1 only) | `treasury_auctions`, scheduled availability | the settlement of D+1, announced the day before at 15:00; the aggregate of bills, coupons and SOMA add-ons |
 
 | Driver | Status | Which inputs carry it, and how | What is absent |

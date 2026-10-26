@@ -222,8 +222,14 @@ jobs:
       - name: Write the day's record
         id: record
         run: |
+          # A failed fetch is tried again, at most four times and not after 23:30 ET (#1148): the
+          # 21 October record was lost to two FRED fetch failures. Nothing is written to live-log
+          # before the whole build has passed, and the work directory is emptied between tries. A
+          # failure at any later step fails at once. The retry is main's; the pinned code is unchanged.
           cd pinned
-          PYTHONPATH=src ../venv/bin/python -B scripts/live_record.py run --date "$DAY" \
+          PYTHONPATH=src "$PY" -B ../main/scripts/live_retry.py --status ../status.json --work-dir ../work \
+            --attempts 4 --wait 120 --stop-after 23:30 -- \
+            env PYTHONPATH=src ../venv/bin/python -B scripts/live_record.py run --date "$DAY" \
             --out-dir ../live-log --work-dir ../work --pinned-sha "$PIN" \
             --status ../status.json --workflow-run "$RUN_URL"
 
