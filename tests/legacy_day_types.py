@@ -12,21 +12,19 @@ them by setting this module's two functions as its own `setUpModule` and `tearDo
 The in-force reading is tested in `test_month_end_turn_1135.py`, `test_b2_pool_1155.py` and `test_turn_day_labels_959.py`.
 """
 
-from unittest import mock
+from repo_model import turn_days
 
-from repo_model import b2_pool, turn_days
-
-_patchers = []
+_readings = []
 
 
 def setUpModule():
-    # B2's thin-pool fallback (#1155, #1198) is chained over the turn labels, so the legacy reading is plain B2 as well
-    for target in (turn_days, b2_pool):
-        patcher = mock.patch.object(target, "IN_FORCE", False)
-        patcher.start()
-        _patchers.append(patcher)
+    # `turn_days.legacy_reading` (#1206) turns off both switches: B2's thin-pool fallback (#1155, #1198) is chained over the
+    # turn labels, so the legacy reading is plain B2 as well
+    reading = turn_days.legacy_reading()
+    reading.__enter__()
+    _readings.append(reading)
 
 
 def tearDownModule():
-    while _patchers:
-        _patchers.pop().stop()
+    while _readings:
+        _readings.pop().__exit__(None, None, None)

@@ -33,6 +33,7 @@ Stdlib only.
 
 from __future__ import annotations
 
+import math
 import statistics
 from dataclasses import dataclass
 from datetime import date, time
@@ -42,6 +43,7 @@ from . import protocol_benchmarks as pb
 from . import spread_mean_reversion as smr
 from . import spread_mr_calendar as cal
 from . import spread_mr_fhs as fhs
+from . import turn_days
 from .data import DailyObservation
 from .evaluation_splits import SplitDeclaration
 from .one_step_guard import guard_one_step_fit
@@ -83,6 +85,9 @@ class StateArm:
     ridge: Optional[float] = None
     #: The settlement terms enter as `size / SIZE_UNIT * state` instead of as 0/1 flags (#1172, (r3)).
     sized: bool = False
+    #: Huber's threshold on a calendar target row, as a multiple of the ordinary threshold (#1226): `None` treats it as any row,
+    #: `FULL_WEIGHT` never downweights it, `CALENDAR_K` gives it its own, wider, threshold. Needs `robust`.
+    calendar_k: Optional[float] = None
 
 
 def ridge_of(arm: StateArm) -> float:
@@ -115,7 +120,39 @@ S3_STATE = StateArm("sc_s3_state", "(s3+state) (s3) and each term times the scar
 S3_CAL = StateArm("sc_s3_fomc_iorb", "(s3+FOMC/IORB) (s3) with the FOMC and IORB terms", cal.ALL_TERMS, False, True)
 #: (s3) and the two arms that add to it.
 S3_TERMS: Tuple[StateArm, ...] = (ARMS[2], S3_STATE, S3_CAL)
-ALL_ARMS: Mapping[str, StateArm] = {arm.name: arm for arm in ARMS + (R1, R2, R3, S3_STATE, S3_CAL)}
+
+#: The arms of #1226 (`metadata/s3_huber_calendar_1226.json`): (s3) with its Huber downweighting kept off the calendar target rows.
+#: (s3-hw1) never downweights a calendar row; (s3-hw2) gives those rows a Huber threshold `CALENDAR_K` times the ordinary one. The
+#: terms, the ridge of 5, the direct pairs and the turn record are (s3)'s.
+FULL_WEIGHT = math.inf
+CALENDAR_K = 2.0
+HW1 = StateArm("sc_s3_hw1", "(s3-hw1) (s3) with calendar target rows at full weight in the Huber fit", cal.NO_FOMC_IORB, False, True,
+               calendar_k=FULL_WEIGHT)
+HW2 = StateArm("sc_s3_hw2", "(s3-hw2) (s3) with the calendar rows' Huber threshold at 2 times the ordinary one", cal.NO_FOMC_IORB,
+               False, True, calendar_k=CALENDAR_K)
+#: (s3) and the two arms that change how it weights the calendar rows.
+HW_ARMS: Tuple[StateArm, ...] = (ARMS[2], HW1, HW2)
+#: The target-row types whose rows are calendar rows: the turn types of the record in force (`turn_days.turn_label`) and the types
+#: of the directive's list. `dom_19_23` and `post_month_end_window` are terms of the fit but too broad to name a calendar row.
+CALENDAR_ROW_TERMS: Tuple[str, ...] = (
+    "month_end", "quarter_end", "tax_date", "settlement_coupon", "settlement_bill", "fomc_day", "iorb_window")
+ALL_ARMS: Mapping[str, StateArm] = {arm.name: arm for arm in ARMS + (R1, R2, R3, S3_STATE, S3_CAL, HW1, HW2)}
+
+
+def calendar_row(table: cal.TermTable, dates: Sequence[date], row: int, anchor: int) -> bool:
+    """Whether training row `row` (a pair's target) carries a calendar type, read from that row alone.
+
+    The type is the row's own turn label (`turn_days`) or one of `CALENDAR_ROW_TERMS` as `TermTable.day_types` reads it. A training
+    pair's target is on or before the decision's anchor, so the row is already public; a later row is refused.
+
+    Raises:
+        LookAheadError: `row` is after `anchor`.
+    """
+
+    if row > anchor:
+        raise LookAheadError(f"the type of row {row} ({dates[row]}) is read for a training pair, but the anchor is row {anchor}")
+    flags = table.day_types(row)
+    return any(flags[name] for name in CALENDAR_ROW_TERMS) or turn_days.turn_label(dates[row]) is not None
 
 
 # -- the state, as a decision could read it ----------------------------------------------------------------------------------
@@ -221,6 +258,8 @@ class StatePair(NamedTuple):
     sizes: Mapping[str, float] = {}
     origin: int = -1
     target: int = -1
+    #: Whether the pair's target row carries a calendar type (`calendar_row`); read only by an arm with a `calendar_k` (#1226).
+    calendar: bool = False
 
 
 def regressor(name: str, flags: Mapping[str, int], sizes: Mapping[str, float], state: Optional[float], sized: bool) -> float:
@@ -242,16 +281,25 @@ def solve_weighted(rows: Sequence[Sequence[float]], y: Sequence[float], weights:
     return cal.solve_ridge([[v * r for v in row] for row, r in zip(rows, root)], [v * r for v, r in zip(y, root)], ridge)
 
 
-def huber(rows: Sequence[Sequence[float]], y: Sequence[float], ridge: float) -> Tuple[List[float], int]:
-    """The Huber fit by iteratively re-weighted least squares, and the number of iterations it took."""
+def huber(
+    rows: Sequence[Sequence[float]], y: Sequence[float], ridge: float, multipliers: Optional[Sequence[float]] = None
+) -> Tuple[List[float], int]:
+    """The Huber fit by iteratively re-weighted least squares, and the number of iterations it took.
 
+    `multipliers` (one per row, default 1) scale each row's threshold, `HUBER_K` robust standard deviations of all the current
+    residuals: a row with `math.inf` is never downweighted (#1226).
+    """
+
+    if multipliers is not None and len(multipliers) != len(rows):
+        raise ValueError("huber needs one multiplier per row")
     b = cal.solve_ridge(rows, y, ridge)
     for iteration in range(1, MAX_ITERATIONS + 1):
         residual = [target - sum(c * v for c, v in zip(b, row)) for row, target in zip(rows, y)]
         centre = statistics.median(residual)
         sigma = max(1.4826 * statistics.median([abs(r - centre) for r in residual]), 1e-6)
         cut = HUBER_K * sigma
-        weights = [1.0 if abs(r) <= cut else cut / abs(r) for r in residual]
+        cuts = [cut] * len(residual) if multipliers is None else [cut * m for m in multipliers]
+        weights = [1.0 if abs(r) <= c else c / abs(r) for r, c in zip(residual, cuts)]
         new = solve_weighted(rows, y, weights, ridge)
         done = max(abs(a - c) for a, c in zip(new, b)) < TOLERANCE
         b = new
@@ -278,6 +326,8 @@ class StateEstimate:
     origins: Tuple[int, ...] = ()
     targets: Tuple[int, ...] = ()
     residuals: Tuple[float, ...] = ()
+    #: The pairs whose target row is a calendar row (set only for an arm with a `calendar_k`, #1226).
+    calendar_pairs: int = 0
 
 
 def _entering(
@@ -303,6 +353,7 @@ def fit_state_terms(
     min_flagged: int = MIN_FLAGGED,
     ridge: Optional[float] = None,
     sized: bool = False,
+    calendar_k: Optional[float] = None,
 ) -> StateEstimate:
     """The term effects, in standardised units, and the pool of one arm at one lead.
 
@@ -311,6 +362,9 @@ def fit_state_terms(
     `ROBUST_RIDGE` for a robust fit, when `None`). With `sized` the settlement terms are `size / SIZE_UNIT * state`, and enter when
     at least `min_flagged` pairs have a positive such column. The intercept is dropped, so the pool, the quantiles of the residual
     after the terms, keeps the ordinary-day centre.
+
+    With `calendar_k` the Huber threshold of a pair whose `calendar` is set is `calendar_k` times the ordinary one (`FULL_WEIGHT`:
+    never downweighted); it needs `robust`.
 
     `regressors` are the panel columns the terms read (for `one_step_guard`). `training_pairs` is required, and `'direct'` is the
     only value this fit trains on.
@@ -322,6 +376,8 @@ def fit_state_terms(
 
     if training_pairs != "direct":
         raise ValueError(f"fit_state_terms trains on direct pairs only, got training_pairs={training_pairs!r}")
+    if calendar_k is not None and not robust:
+        raise ValueError("a calendar threshold is a setting of the Huber fit; the arm is not robust")
     if not pairs:
         raise smr.InsufficientHistory("no training pair to estimate the state-scaled calendar terms on")
     penalty = (ridge if ridge is not None else (ROBUST_RIDGE if robust else RIDGE))
@@ -339,7 +395,8 @@ def fit_state_terms(
                 row += [float(p.flags[name]) * s for name in active]
             design.append(row)
         if robust:
-            coefficients, iterations = huber(design, target, penalty)
+            multipliers = None if calendar_k is None else [calendar_k if p.calendar else 1.0 for p in pairs]
+            coefficients, iterations = huber(design, target, penalty, multipliers)
         else:
             coefficients = cal.solve_ridge(design, target, penalty)
         effect = dict(zip(active, coefficients[1 : 1 + len(active)]))
@@ -356,6 +413,7 @@ def fit_state_terms(
         active, effect, slope, counts, pb.empirical_quantiles(sorted(pool)), len(pairs),
         sum(1 for p in pairs if p.state is None), iterations, sized,
         tuple(p.origin for p in pairs), tuple(p.target for p in pairs), tuple(pool),
+        sum(1 for p in pairs if p.calendar),
     )
 
 
@@ -418,6 +476,7 @@ def refit(
     pb._require_public(read, anchor, dates, f"the scale of {variant.name} for {dates[decision_index]}")
     reader = fhs.ScaleReader(spreads, variant)
     out: Dict[str, Dict[int, StateEstimate]] = {}
+    typed: Dict[int, bool] = {}
     for arm in arms:
         if arm.sized and sizes is None:
             raise ValueError(f"{arm.name} reads the settlement sizes and needs the size table")
@@ -433,12 +492,16 @@ def refit(
                 flags_row = target if training_pairs == "direct" else origin
                 state = level(pair_state(states, dates, origin, lag, decision_index)) if (arm.interact or arm.sized) else None
                 size = sizes.sizes_at(h, flags_row) if arm.sized else {}
-                pairs.append(StatePair(raw, scale, table.flags_at(h, flags_row), state, size, origin, target))
+                if arm.calendar_k is not None and target not in typed:
+                    typed[target] = calendar_row(table, dates, target, anchor)
+                pairs.append(StatePair(raw, scale, table.flags_at(h, flags_row), state, size, origin, target,
+                                       typed.get(target, False) if arm.calendar_k is not None else False))
             if not pairs:
                 raise smr.InsufficientHistory(f"{dates[decision_index]}: no training pair of lead {h} has a scale")
             per_lead[h] = fit_state_terms(
                 pairs, regressors=cal.regressors_of(arm, h), terms=arm.location, interact=arm.interact, robust=arm.robust,
                 training_pairs=training_pairs, ridge=arm.ridge, sized=arm.sized,
+                calendar_k=arm.calendar_k,
             )
         out[arm.name] = per_lead
     return out

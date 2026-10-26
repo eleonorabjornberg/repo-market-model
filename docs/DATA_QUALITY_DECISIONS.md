@@ -853,3 +853,15 @@ It is judged per operation, in every era, by `ingest._is_small_value_exercise`. 
 **Still open for her (marked questions in the PR for #938):** how "single rate" reads on Full Allotment operations that state no rate (default: they count as one rate); the ruling comment's count of 31 against the 32 the wording catches; 13:29 releases (caught); a $10 mn accompanying line (not caught, not under $10 mn). The default applies if she has not answered by the next 5 pm batch; it changes nothing the project claims.
 
 **What the draft did not do at #872.** `ingest.TEST_TRADE_MAX` and `_is_test_trade` stay as #802 left them; the `fed_repo_*` columns of the published panel are unchanged (the published panel digest is unchanged by #938 too); the columns stay off `FEATURE_FIELDS` and out of every published declaration. The ruling's effect is shown as a fourth column in the evidence, computed by operation id in `scripts/repo_test_trades_872.py` (`_rule_ruling`): longest gap of `fed_repo_days_since_positive` in 2024, 2025 and 2026 is 134, 62 and 27 days under it, against 50, 32 and 17 under the rule in force.
+
+## What `srf_total_accepted` counts today (#936)
+
+This section restates rules already in force above; it decides nothing new. The `limitation` text of `nyfed_srf` in `metadata/sources.json` was written before them and is left byte-identical, because the frozen final-test declarations hash that file (Eleonora's ruling of 26 October 2026 on the pull request for #936). Where the registry text and this section differ, this section describes what `ingest._nyfed_srf_rows` computes.
+
+`srf_total_accepted` is `totalAmtAccepted` summed over the overnight `Repo` operations of an `operationDate`, from 2021-07-29, in USD billions. Before it is summed, `ingest._effective_taken` reads each operation:
+
+* A Desk test is not take-up and is dropped: an operation whose `note` names a small value exercise, whose `operationId` ends in " 99", or whose `operationLimit` is at most $250 million (a normal operation's limit is $500 billion). The two term repos since the inception were such tests (#933).
+* A test trade adds nothing: an operation that accepted at most $7 million and a whole number of millions counts as zero (#802).
+* The afternoon pattern adds nothing: a note-free operation released at 13:29 to 13:30 whose main line is $90 to 130 million, with every other line under $10 million (#938, ruled option (C)).
+
+An operation that happened keeps its date as a row, at zero. Recount from the tracked snapshots (`tests/fixtures/snapshots/srf_inputs/nyfed_srf`, read by `ingest._nyfed_srf_rows`): from 2021-07-29 to 2025-12-31 the take-up is above zero on 71 operation days and at least 0.1 billion on 35, out of 1,104 operation days. The registry text still says 397 and 58. The test `NyFedSrfAdapterTests.test_the_data_quality_page_states_the_srf_rule_and_the_recounted_days` recounts these from the snapshots.

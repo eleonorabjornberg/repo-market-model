@@ -258,6 +258,47 @@ class WeeklyObservationAgeTests(unittest.TestCase):
         return rule(["sofr_volume"])
 
 
+class ObservationOrderTests(unittest.TestCase):
+    """A group mixing a weekly and a daily field has one observation instant (#1060, finding #1052).
+
+    `_observation_available` returned at the first field that was not weekly,
+    so the same group aged by the Wednesday print when the weekly field came
+    first and by its own row when the daily field did. The group's instant is
+    the latest over its fields, whichever order they are listed in.
+
+    Mutation: restore the first-field return in `_observation_available`
+    (`return available` at the first field that is not weekly, else the
+    Wednesday-aged instant) -> `AssertionError: datetime.datetime(2026, 1, 20,
+    16, 30) != datetime.datetime(2026, 1, 19, 16, 30)` in
+    `test_the_group_is_the_latest_over_its_fields`. (The two field orders
+    already agreed under the old code, which returned the group's own instant
+    either way; the defect was that it was not the latest over the fields.)
+    """
+
+    WEEKLY = ("fred_macro_latest_vintage", "WRESBAL")
+    DAILY = ("nyfed_sofr", "SOFR_volume")
+
+    def setUp(self):
+        self.rule = rule(["reserve_balances", "sofr_volume"])
+        self.row = index_of(date(2026, 1, 15))  # a Thursday, one day after the print
+
+    def instant(self, fields):
+        available = self.rule.availability(DATES, fields, self.row)
+        return self.rule._observation_available(DATES, fields, self.row, available)
+
+    def test_the_order_of_the_fields_does_not_matter(self):
+        self.assertEqual(
+            self.instant((self.WEEKLY, self.DAILY)),
+            self.instant((self.DAILY, self.WEEKLY)),
+        )
+
+    def test_the_group_is_the_latest_over_its_fields(self):
+        mixed = self.instant((self.WEEKLY, self.DAILY))
+        self.assertEqual(
+            mixed, max(self.instant((self.WEEKLY,)), self.instant((self.DAILY,)))
+        )
+
+
 class ObservationTests(unittest.TestCase):
     FEATURES = PerFieldReadTests.FEATURES
 

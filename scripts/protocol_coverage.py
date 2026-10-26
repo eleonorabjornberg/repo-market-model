@@ -461,6 +461,10 @@ def power(args):
                           "noise": args.noise, "power": out}, sort_keys=True), flush=True)
 
 
+from repo_model import turn_days  # noqa: E402
+
+
+@turn_days.with_legacy_flag
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     commands = parser.add_subparsers(dest="command", required=True)
