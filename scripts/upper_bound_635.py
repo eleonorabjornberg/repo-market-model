@@ -1080,6 +1080,10 @@ def report_command(args) -> int:
 # -- main ------------------------------------------------------------------------------------------------------------
 
 
+from repo_model import turn_days  # noqa: E402
+
+
+@turn_days.with_legacy_flag
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     sub = parser.add_subparsers(dest="command", required=True)
