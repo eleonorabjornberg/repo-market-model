@@ -53,7 +53,11 @@ class DeclarationTests(unittest.TestCase):
         self.assertEqual(script.FIRST_TARGET, date(2026, 1, 2))
         self.assertEqual(script.TABLE_FIRST.isoformat(), "2025-12-12")
         self.assertEqual(declaration["limits"]["arms"], 0)
-        self.assertEqual(declaration["amendments"], [])
+        # One amendment, made at review: the `arms` block the declarations test reads. It adds no arm and no number.
+        self.assertEqual(len(declaration["amendments"]), 1)
+        self.assertIn("`arms` block", declaration["amendments"][0]["added"])
+        self.assertEqual(len(declaration["arms"]), 5)
+        self.assertIn(script.S3, [a["name"] for a in declaration["arms"]])
         self.assertIn("seed 1222", declaration["report"]["3_scores"]["paired"])
         self.assertEqual(script.SEED, 1222)
         self.assertEqual(declaration["report"]["1_calibration_in_the_large"]["minimum"].count("3 pressure days"), 1)
