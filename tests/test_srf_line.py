@@ -178,7 +178,7 @@ class AvailabilityDeclarationTests(unittest.TestCase):
 
     def test_the_declared_block_conforms_and_states_the_decision_instant_the_module_reads(self):
         declared = json.loads(self.DECLARATION.read_text(encoding="utf-8"))
-        block = declared["availability"]["scheduled_availability"]
+        block = declared["srf_line"]["availability"]["scheduled_availability"]
         self.assertEqual(asof.validate_scheduled_availability("srf_line", block), [])
         self.assertEqual((block["days"], block["available_time"], block["unit"]), (1, srf_line.DECISION_TIME.strftime("%H:%M"), "business_days"))
         self.assertEqual(block["fields"], ["srf_line_bps"])

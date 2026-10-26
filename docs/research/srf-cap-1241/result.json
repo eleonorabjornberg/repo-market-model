@@ -7394,7 +7394,15 @@
         "benchmark_mean": 3.613468593965878,
         "candidate_mean": 3.6131162795628855,
         "days": 44,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 44,
+         "interval": [
+          -0.00013093790655928993,
+          0.0009666604418597123
+         ],
+         "mean_d": 0.000352314402991852
+        }
        }
       },
       "srf_cap_m10": {
@@ -7510,7 +7518,15 @@
         "benchmark_mean": 3.613468593965878,
         "candidate_mean": 3.6134041520716456,
         "days": 44,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 44,
+         "interval": [
+          0.0,
+          0.0001447049240341023
+         ],
+         "mean_d": 6.444189423214382e-05
+        }
        }
       }
      }
@@ -7623,7 +7639,15 @@
         "benchmark_mean": 2.1416864756206393,
         "candidate_mean": 2.1413341612176473,
         "days": 44,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 44,
+         "interval": [
+          -0.0001309379065591688,
+          0.0009666604418596922
+         ],
+         "mean_d": 0.00035231440299196304
+        }
        }
       },
       "srf_cap_m10": {
@@ -7727,7 +7751,15 @@
         "benchmark_mean": 2.1416864756206393,
         "candidate_mean": 2.141622033726407,
         "days": 44,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 44,
+         "interval": [
+          0.0,
+          0.0001447049240340367
+         ],
+         "mean_d": 6.444189423211859e-05
+        }
        }
       }
      }
@@ -7855,7 +7887,15 @@
         "benchmark_mean": 5.173196928292003,
         "candidate_mean": 5.164446245227183,
         "days": 89,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 89,
+         "interval": [
+          -0.0013256674855356557,
+          0.023277832156438107
+         ],
+         "mean_d": 0.0087506830648221
+        }
        }
       },
       "srf_cap_m10": {
@@ -7914,7 +7954,15 @@
         "benchmark_mean": 5.173196928292003,
         "candidate_mean": 5.171187552965448,
         "days": 89,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 89,
+         "interval": [
+          0.0,
+          0.005090865090621289
+         ],
+         "mean_d": 0.002009375326556027
+        }
        }
       },
       "srf_cap_m5": {
@@ -7973,7 +8021,15 @@
         "benchmark_mean": 5.173196928292003,
         "candidate_mean": 5.168799936984186,
         "days": 89,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 89,
+         "interval": [
+          0.0,
+          0.010980552879452777
+         ],
+         "mean_d": 0.004396991307817645
+        }
        }
       }
      }
@@ -8094,7 +8150,15 @@
         "benchmark_mean": 4.415227831513489,
         "candidate_mean": 4.4064771484486664,
         "days": 89,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 89,
+         "interval": [
+          -0.001325667485535669,
+          0.023277832156438052
+         ],
+         "mean_d": 0.008750683064822082
+        }
        }
       },
       "srf_cap_m10": {
@@ -8151,7 +8215,15 @@
         "benchmark_mean": 4.415227831513489,
         "candidate_mean": 4.413218456186933,
         "days": 89,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 89,
+         "interval": [
+          0.0,
+          0.005090865090621256
+         ],
+         "mean_d": 0.0020093753265560026
+        }
        }
       },
       "srf_cap_m5": {
@@ -8208,7 +8280,15 @@
         "benchmark_mean": 4.415227831513489,
         "candidate_mean": 4.410830840205671,
         "days": 89,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 89,
+         "interval": [
+          0.0,
+          0.010980552879452729
+         ],
+         "mean_d": 0.004396991307817622
+        }
        }
       }
      }
@@ -8336,7 +8416,15 @@
         "benchmark_mean": 1.7756956514424458,
         "candidate_mean": 2.0678319269083985,
         "days": 120,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 120,
+         "interval": [
+          -0.7148005302217667,
+          0.0006888349506876982
+         ],
+         "mean_d": -0.29213627546595267
+        }
        }
       },
       "srf_cap_m10": {
@@ -8395,7 +8483,15 @@
         "benchmark_mean": 1.7756956514424458,
         "candidate_mean": 1.8255214193723128,
         "days": 120,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 120,
+         "interval": [
+          -0.1292196615806704,
+          0.00010442778160259328
+         ],
+         "mean_d": -0.04982576792986758
+        }
        }
       },
       "srf_cap_m5": {
@@ -8454,7 +8550,15 @@
         "benchmark_mean": 1.7756956514424458,
         "candidate_mean": 1.9266862962127396,
         "days": 120,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 120,
+         "interval": [
+          -0.364034303240657,
+          0.0002603877682797369
+         ],
+         "mean_d": -0.15099064477029434
+        }
        }
       }
      }
@@ -8579,7 +8683,15 @@
         "benchmark_mean": 1.0332401541603173,
         "candidate_mean": 1.3253764296262698,
         "days": 120,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 120,
+         "interval": [
+          -0.7148005302217667,
+          0.0006888349506877007
+         ],
+         "mean_d": -0.2921362754659527
+        }
        }
       },
       "srf_cap_m10": {
@@ -8638,7 +8750,15 @@
         "benchmark_mean": 1.0332401541603173,
         "candidate_mean": 1.0830659220901848,
         "days": 120,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 120,
+         "interval": [
+          -0.12921966158067041,
+          0.00010442778160259422
+         ],
+         "mean_d": -0.049825767929867586
+        }
        }
       },
       "srf_cap_m5": {
@@ -8697,7 +8817,15 @@
         "benchmark_mean": 1.0332401541603173,
         "candidate_mean": 1.184230798930612,
         "days": 120,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 120,
+         "interval": [
+          -0.364034303240657,
+          0.0002603877682797409
+         ],
+         "mean_d": -0.15099064477029436
+        }
        }
       }
      }
@@ -10258,7 +10386,15 @@
         "benchmark_mean": 1.115440215607867,
         "candidate_mean": 1.1154790946848785,
         "days": 250,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 250,
+         "interval": [
+          -0.0006251564772586837,
+          0.0005049151260240881
+         ],
+         "mean_d": -3.8879077011516384e-05
+        }
        }
       },
       "srf_cap_m10": {
@@ -10317,7 +10453,15 @@
         "benchmark_mean": 1.115440215607867,
         "candidate_mean": 1.115380325083892,
         "days": 250,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 250,
+         "interval": [
+          0.0,
+          0.0001760448864056965
+         ],
+         "mean_d": 5.989052397510797e-05
+        }
        }
       },
       "srf_cap_m5": {
@@ -10376,7 +10520,15 @@
         "benchmark_mean": 1.115440215607867,
         "candidate_mean": 1.1152727502369035,
         "days": 250,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 250,
+         "interval": [
+          0.0,
+          0.00048738205351823354
+         ],
+         "mean_d": 0.00016746537096381609
+        }
        }
       }
      }
@@ -10497,7 +10649,15 @@
         "benchmark_mean": 0.1750921277810133,
         "candidate_mean": 0.17513100685802482,
         "days": 250,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 250,
+         "interval": [
+          -0.0006251564772586803,
+          0.0005049151260240859
+         ],
+         "mean_d": -3.887907701149407e-05
+        }
        }
       },
       "srf_cap_m10": {
@@ -10554,7 +10714,15 @@
         "benchmark_mean": 0.1750921277810133,
         "candidate_mean": 0.1750322372570382,
         "days": 250,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 250,
+         "interval": [
+          0.0,
+          0.0001760448864057045
+         ],
+         "mean_d": 5.989052397511063e-05
+        }
        }
       },
       "srf_cap_m5": {
@@ -10611,7 +10779,15 @@
         "benchmark_mean": 0.1750921277810133,
         "candidate_mean": 0.17492466241004945,
         "days": 250,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 250,
+         "interval": [
+          0.0,
+          0.0004873820535182539
+         ],
+         "mean_d": 0.00016746537096382492
+        }
        }
       }
      }
@@ -11851,7 +12027,15 @@
         "benchmark_mean": 1.148158700054653,
         "candidate_mean": 1.1441073355665539,
         "days": 305,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 305,
+         "interval": [
+          0.0002463630054909288,
+          0.009992936785967393
+         ],
+         "mean_d": 0.004051364488098512
+        }
        }
       },
       "srf_cap_m10": {
@@ -11910,7 +12094,15 @@
         "benchmark_mean": 1.148158700054653,
         "candidate_mean": 1.147364693925567,
         "days": 305,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 305,
+         "interval": [
+          2.7946752157584263e-05,
+          0.0020296010613397764
+         ],
+         "mean_d": 0.0007940061290857293
+        }
        }
       },
       "srf_cap_m5": {
@@ -11969,7 +12161,15 @@
         "benchmark_mean": 1.148158700054653,
         "candidate_mean": 1.1464279652965348,
         "days": 305,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 305,
+         "interval": [
+          9.515073808519868e-05,
+          0.004369689079007876
+         ],
+         "mean_d": 0.0017307347581181863
+        }
        }
       }
      }
@@ -12094,7 +12294,15 @@
         "benchmark_mean": 0.4149513433385731,
         "candidate_mean": 0.41089997885047463,
         "days": 305,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 305,
+         "interval": [
+          0.00024636300549092655,
+          0.0099929367859674
+         ],
+         "mean_d": 0.004051364488098511
+        }
        }
       },
       "srf_cap_m10": {
@@ -12153,7 +12361,15 @@
         "benchmark_mean": 0.4149513433385731,
         "candidate_mean": 0.41415733720948733,
         "days": 305,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 305,
+         "interval": [
+          2.7946752157581047e-05,
+          0.00202960106133979
+         ],
+         "mean_d": 0.0007940061290857315
+        }
        }
       },
       "srf_cap_m5": {
@@ -12212,7 +12428,15 @@
         "benchmark_mean": 0.4149513433385731,
         "candidate_mean": 0.4132206085804549,
         "days": 305,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 305,
+         "interval": [
+          9.515073808519883e-05,
+          0.004369689079007874
+         ],
+         "mean_d": 0.0017307347581181868
+        }
        }
       }
      }
@@ -12340,7 +12564,15 @@
         "benchmark_mean": 4.470681316732571,
         "candidate_mean": 4.485196968968194,
         "days": 118,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 118,
+         "interval": [
+          -0.04377723331469843,
+          0.0036348395020136654
+         ],
+         "mean_d": -0.014515652235622404
+        }
        }
       },
       "srf_cap_m10": {
@@ -12399,7 +12631,15 @@
         "benchmark_mean": 4.470681316732571,
         "candidate_mean": 4.4687994914842655,
         "days": 118,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 118,
+         "interval": [
+          0.0,
+          0.004673806484375793
+         ],
+         "mean_d": 0.001881825248305282
+        }
        }
       },
       "srf_cap_m5": {
@@ -12458,7 +12698,15 @@
         "benchmark_mean": 4.470681316732571,
         "candidate_mean": 4.46858713901032,
         "days": 118,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 118,
+         "interval": [
+          -0.0007996169454243613,
+          0.005930737788731037
+         ],
+         "mean_d": 0.002094177722250834
+        }
        }
       }
      }
@@ -12583,7 +12831,15 @@
         "benchmark_mean": 3.6137211819484913,
         "candidate_mean": 3.628236834184114,
         "days": 118,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 118,
+         "interval": [
+          -0.04377723331469844,
+          0.0036348395020136537
+         ],
+         "mean_d": -0.014515652235622407
+        }
        }
       },
       "srf_cap_m10": {
@@ -12642,7 +12898,15 @@
         "benchmark_mean": 3.6137211819484913,
         "candidate_mean": 3.6118393567001856,
         "days": 118,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 118,
+         "interval": [
+          0.0,
+          0.004673806484375735
+         ],
+         "mean_d": 0.0018818252483052548
+        }
        }
       },
       "srf_cap_m5": {
@@ -12701,7 +12965,15 @@
         "benchmark_mean": 3.6137211819484913,
         "candidate_mean": 3.6116270042262397,
         "days": 118,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 118,
+         "interval": [
+          -0.0007996169454243761,
+          0.0059307377887309965
+         ],
+         "mean_d": 0.002094177722250822
+        }
        }
       }
      }
@@ -12829,7 +13101,15 @@
         "benchmark_mean": 2.197220198519861,
         "candidate_mean": 2.4682188234500404,
         "days": 78,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 78,
+         "interval": [
+          -0.7022474516492765,
+          0.007825378684192858
+         ],
+         "mean_d": -0.2709986249301788
+        }
        }
       },
       "srf_cap_m10": {
@@ -12888,7 +13168,15 @@
         "benchmark_mean": 2.197220198519861,
         "candidate_mean": 2.252106278392372,
         "days": 78,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 78,
+         "interval": [
+          -0.15385889872806688,
+          0.0015633433285521987
+         ],
+         "mean_d": -0.05488607987251122
+        }
        }
       },
       "srf_cap_m5": {
@@ -12947,7 +13235,15 @@
         "benchmark_mean": 2.197220198519861,
         "candidate_mean": 2.3232135264636917,
         "days": 78,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 78,
+         "interval": [
+          -0.3324882705252712,
+          0.00485937946581905
+         ],
+         "mean_d": -0.12599332794383064
+        }
        }
       }
      }
@@ -13060,7 +13356,15 @@
         "benchmark_mean": 1.4463934136773926,
         "candidate_mean": 1.7173920386075714,
         "days": 78,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 78,
+         "interval": [
+          -0.7022474516492765,
+          0.007825378684192854
+         ],
+         "mean_d": -0.27099862493017884
+        }
        }
       },
       "srf_cap_m10": {
@@ -13113,7 +13417,15 @@
         "benchmark_mean": 1.4463934136773926,
         "candidate_mean": 1.501279493549904,
         "days": 78,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 78,
+         "interval": [
+          -0.15385889872806696,
+          0.0015633433285522007
+         ],
+         "mean_d": -0.05488607987251125
+        }
        }
       },
       "srf_cap_m5": {
@@ -13166,7 +13478,15 @@
         "benchmark_mean": 1.4463934136773926,
         "candidate_mean": 1.5723867416212234,
         "days": 78,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 78,
+         "interval": [
+          -0.33248827052527147,
+          0.004859379465819047
+         ],
+         "mean_d": -0.12599332794383072
+        }
        }
       }
      }
@@ -13294,7 +13614,15 @@
         "benchmark_mean": 2.34123735271721,
         "candidate_mean": 2.5282363589206462,
         "days": 180,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 180,
+         "interval": [
+          -0.5046324774081383,
+          0.001350232939655108
+         ],
+         "mean_d": -0.18699900620343568
+        }
        }
       },
       "srf_cap_m10": {
@@ -13353,7 +13681,15 @@
         "benchmark_mean": 2.34123735271721,
         "candidate_mean": 2.3663378479661024,
         "days": 180,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 180,
+         "interval": [
+          -0.07104165542405855,
+          0.0002598873260577983
+         ],
+         "mean_d": -0.025100495248891994
+        }
        }
       },
       "srf_cap_m5": {
@@ -13412,7 +13748,15 @@
         "benchmark_mean": 2.34123735271721,
         "candidate_mean": 2.4210919604618444,
         "days": 180,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 180,
+         "interval": [
+          -0.21151540902071098,
+          0.0007022194542118947
+         ],
+         "mean_d": -0.07985460774463364
+        }
        }
       }
      }
@@ -13537,7 +13881,15 @@
         "benchmark_mean": 1.4398492431231407,
         "candidate_mean": 1.6268482493265761,
         "days": 180,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 180,
+         "interval": [
+          -0.5046324774081384,
+          0.0013502329396551035
+         ],
+         "mean_d": -0.18699900620343574
+        }
        }
       },
       "srf_cap_m10": {
@@ -13596,7 +13948,15 @@
         "benchmark_mean": 1.4398492431231407,
         "candidate_mean": 1.4649497383720327,
         "days": 180,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 180,
+         "interval": [
+          -0.07104165542405862,
+          0.0002598873260578035
+         ],
+         "mean_d": -0.025100495248892015
+        }
        }
       },
       "srf_cap_m5": {
@@ -13655,7 +14015,15 @@
         "benchmark_mean": 1.4398492431231407,
         "candidate_mean": 1.5197038508677743,
         "days": 180,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 180,
+         "interval": [
+          -0.211515409020711,
+          0.0007022194542118826
+         ],
+         "mean_d": -0.07985460774463367
+        }
        }
       }
      }
@@ -13853,7 +14221,15 @@
         "benchmark_mean": 1.1212563327155414,
         "candidate_mean": 1.1197653911519354,
         "days": 507,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 507,
+         "interval": [
+          8.101230847478978e-05,
+          0.0035994262521054153
+         ],
+         "mean_d": 0.001490941563606958
+        }
        }
       },
       "srf_cap_m5": {
@@ -13912,7 +14288,15 @@
         "benchmark_mean": 1.1212563327155414,
         "candidate_mean": 1.1178134433116085,
         "days": 507,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 507,
+         "interval": [
+          0.00023034905979663975,
+          0.008424934423765839
+         ],
+         "mean_d": 0.003442889403934315
+        }
        }
       }
      }
@@ -14107,7 +14491,15 @@
         "benchmark_mean": 0.41511346406256044,
         "candidate_mean": 0.4136225224989535,
         "days": 507,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 507,
+         "interval": [
+          8.1012308474791e-05,
+          0.003599426252105416
+         ],
+         "mean_d": 0.0014909415636069582
+        }
        }
       },
       "srf_cap_m5": {
@@ -14166,7 +14558,15 @@
         "benchmark_mean": 0.41511346406256044,
         "candidate_mean": 0.41167057465862605,
         "days": 507,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 507,
+         "interval": [
+          0.00023034905979664203,
+          0.00842493442376585
+         ],
+         "mean_d": 0.0034428894039343193
+        }
        }
       }
      }
@@ -14294,7 +14694,15 @@
         "benchmark_mean": 2.0438864046600864,
         "candidate_mean": 2.0531617507851645,
         "days": 267,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 267,
+         "interval": [
+          -0.043666241186765875,
+          0.019415881000574974
+         ],
+         "mean_d": -0.009275346125078441
+        }
        }
       },
       "srf_cap_m10": {
@@ -14353,7 +14761,15 @@
         "benchmark_mean": 2.0438864046600864,
         "candidate_mean": 2.0439828574367134,
         "days": 267,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 267,
+         "interval": [
+          -0.003928281555995824,
+          0.003520274886557951
+         ],
+         "mean_d": -9.645277662761853e-05
+        }
        }
       },
       "srf_cap_m5": {
@@ -14412,7 +14828,15 @@
         "benchmark_mean": 2.0438864046600864,
         "candidate_mean": 2.0516734814539745,
         "days": 267,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 267,
+         "interval": [
+          -0.027492565981635613,
+          0.006935325303750798
+         ],
+         "mean_d": -0.007787076793889016
+        }
        }
       }
      }
@@ -14537,7 +14961,15 @@
         "benchmark_mean": 1.126301017598768,
         "candidate_mean": 1.1355763637238458,
         "days": 267,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 267,
+         "interval": [
+          -0.04366624118676587,
+          0.01941588100057498
+         ],
+         "mean_d": -0.009275346125078425
+        }
        }
       },
       "srf_cap_m10": {
@@ -14596,7 +15028,15 @@
         "benchmark_mean": 1.126301017598768,
         "candidate_mean": 1.1263974703753952,
         "days": 267,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 267,
+         "interval": [
+          -0.003928281555995801,
+          0.0035202748865579623
+         ],
+         "mean_d": -9.645277662759899e-05
+        }
        }
       },
       "srf_cap_m5": {
@@ -14655,7 +15095,15 @@
         "benchmark_mean": 1.126301017598768,
         "candidate_mean": 1.1340880943926566,
         "days": 267,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 267,
+         "interval": [
+          -0.027492565981635634,
+          0.00693532530375079
+         ],
+         "mean_d": -0.007787076793889027
+        }
        }
       }
      }
@@ -14783,7 +15231,15 @@
         "benchmark_mean": 5.105217271137494,
         "candidate_mean": 5.444032404049689,
         "days": 30,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 30,
+         "interval": [
+          -0.6830504873511519,
+          0.0031934264425929728
+         ],
+         "mean_d": -0.3388151329121947
+        }
        }
       },
       "srf_cap_m10": {
@@ -14842,7 +15298,15 @@
         "benchmark_mean": 5.105217271137494,
         "candidate_mean": 5.129246377135194,
         "days": 30,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 30,
+         "interval": [
+          -0.04876608250491053,
+          0.00035393525475488905
+         ],
+         "mean_d": -0.024029105997700376
+        }
        }
       },
       "srf_cap_m5": {
@@ -14901,7 +15365,15 @@
         "benchmark_mean": 5.105217271137494,
         "candidate_mean": 5.28154572858929,
         "days": 30,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 30,
+         "interval": [
+          -0.35447568607673063,
+          0.0009806960326088335
+         ],
+         "mean_d": -0.1763284574517946
+        }
        }
       }
      }
@@ -15026,7 +15498,15 @@
         "benchmark_mean": 3.85062560760037,
         "candidate_mean": 4.189440740512564,
         "days": 30,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 30,
+         "interval": [
+          -0.6830504873511519,
+          0.0031934264425929728
+         ],
+         "mean_d": -0.3388151329121947
+        }
        }
       },
       "srf_cap_m10": {
@@ -15085,7 +15565,15 @@
         "benchmark_mean": 3.85062560760037,
         "candidate_mean": 3.87465471359807,
         "days": 30,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 30,
+         "interval": [
+          -0.04876608250491053,
+          0.0003539352547549187
+         ],
+         "mean_d": -0.024029105997700348
+        }
        }
       },
       "srf_cap_m5": {
@@ -15144,7 +15632,15 @@
         "benchmark_mean": 3.85062560760037,
         "candidate_mean": 4.0269540650521645,
         "days": 30,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 30,
+         "interval": [
+          -0.3544756860767307,
+          0.0009806960326088335
+         ],
+         "mean_d": -0.1763284574517946
+        }
        }
       }
      }
@@ -15827,7 +16323,15 @@
         "benchmark_mean": 5.173196928292003,
         "candidate_mean": 5.164446245227183,
         "days": 89,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 89,
+         "interval": [
+          -0.0013256674855356557,
+          0.023277832156438107
+         ],
+         "mean_d": 0.0087506830648221
+        }
        }
       },
       "srf_cap_m10": {
@@ -15886,7 +16390,15 @@
         "benchmark_mean": 5.173196928292003,
         "candidate_mean": 5.171187552965448,
         "days": 89,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 89,
+         "interval": [
+          0.0,
+          0.005090865090621289
+         ],
+         "mean_d": 0.002009375326556027
+        }
        }
       },
       "srf_cap_m5": {
@@ -15945,7 +16457,15 @@
         "benchmark_mean": 5.173196928292003,
         "candidate_mean": 5.168799936984186,
         "days": 89,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 89,
+         "interval": [
+          0.0,
+          0.010980552879452777
+         ],
+         "mean_d": 0.004396991307817645
+        }
        }
       }
      }
@@ -16066,7 +16586,15 @@
         "benchmark_mean": 4.415227831513489,
         "candidate_mean": 4.4064771484486664,
         "days": 89,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 89,
+         "interval": [
+          -0.001325667485535669,
+          0.023277832156438052
+         ],
+         "mean_d": 0.008750683064822082
+        }
        }
       },
       "srf_cap_m10": {
@@ -16123,7 +16651,15 @@
         "benchmark_mean": 4.415227831513489,
         "candidate_mean": 4.413218456186933,
         "days": 89,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 89,
+         "interval": [
+          0.0,
+          0.005090865090621256
+         ],
+         "mean_d": 0.0020093753265560026
+        }
        }
       },
       "srf_cap_m5": {
@@ -16180,7 +16716,15 @@
         "benchmark_mean": 4.415227831513489,
         "candidate_mean": 4.410830840205671,
         "days": 89,
-        "undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+        "undefined": "a resampled difference has no long-run variance; it cannot be studentized",
+        "unstudentized": {
+         "days": 89,
+         "interval": [
+          0.0,
+          0.010980552879452729
+         ],
+         "mean_d": 0.004396991307817622
+        }
        }
       }
      }
