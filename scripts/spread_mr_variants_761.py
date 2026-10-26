@@ -27,6 +27,7 @@ import argparse
 import importlib.util
 import json
 import multiprocessing
+import random
 import sys
 from datetime import date
 from pathlib import Path
@@ -49,7 +50,7 @@ from repo_model import spread_mean_reversion as smr, spread_mr_variants as var  
 from repo_model.baseline import panel_sha256  # noqa: E402
 from repo_model.data import load_daily_panel  # noqa: E402
 from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
-from repo_model.metrics import _quantile  # noqa: E402
+from repo_model.metrics import _quantile, stationary_bootstrap_indices  # noqa: E402
 from repo_model.splits import SplitError  # noqa: E402
 
 s686 = _load("spread_mean_reversion_686")
@@ -124,6 +125,54 @@ def mean_d_row(test: sp.PairedTest, reason: str) -> dict:
     }
 
 
+def mean_d_dropping_row(pair: Tuple[Mapping[date, float], Mapping[date, float]], reason: str, seed: int, draws: int) -> dict:
+    """The mean-d bound with the no-variance resamples dropped and counted (#1239; her ruling of 26 October 2026, #1236).
+
+    Read off the same seed and the same draws as `scoring_protocol.paired_tests` (`random.Random(seed)`, one
+    `stationary_bootstrap_indices` call per draw, mean block `sp.BLOCK_LENGTH`), so a draw means what it means there. A
+    resample whose long-run variance is not positive is left out of the t-draws and counted in `dropped_resamples`; the bound is
+    taken from the rest, beside the draws made (`draws`). Nothing in `scoring_protocol` changes. Raises `sp.ProtocolError`, as the
+    scorer does, when the series itself has no long-run variance or has too few days, and when every resample is dropped.
+    """
+
+    benchmark, candidate = pair
+    days = sorted(benchmark)
+    n = len(days)
+    if n <= sp.HAC_LAG:
+        raise sp.ProtocolError(f"{n} days cannot carry a lag-{sp.HAC_LAG} long-run variance")
+    bench = [benchmark[d] for d in days]
+    diff = [b - candidate[d] for b, d in zip(bench, days)]
+    mean = sum(diff) / n
+    variance = sp._long_run_variance(diff, sp.HAC_LAG)
+    if variance <= 0.0:
+        raise sp.ProtocolError("the daily difference has no long-run variance; it cannot be studentized")
+    se = (variance / n) ** 0.5
+    rng = random.Random(seed)
+    kept: List[float] = []
+    for _ in range(draws):
+        resample = [diff[i] for i in stationary_bootstrap_indices(n, sp.BLOCK_LENGTH, rng)]
+        resampled_variance = sp._long_run_variance(resample, sp.HAC_LAG)
+        if resampled_variance > 0.0:
+            kept.append((sum(resample) / n - mean) / (resampled_variance / n) ** 0.5)
+    if not kept:
+        raise sp.ProtocolError(f"every one of the {draws} resamples has no long-run variance; it cannot be studentized")
+    statistic = mean / se
+    return {
+        "days": n,
+        "benchmark_mean": sum(bench) / n,
+        "candidate_mean": sum(candidate[d] for d in days) / n,
+        "difference": mean,
+        "difference_interval": studentized_interval(mean, se, sorted(kept)),
+        "skill": None,
+        "skill_interval": None,
+        "skill_undefined": reason,
+        "dm_statistic": statistic,
+        "dm_p_value": 1.0 - sp._NORMAL.cdf(statistic),
+        "dropped_resamples": draws - len(kept),
+        "draws": draws,
+    }
+
+
 def run_pairs(benchmarks: Mapping[str, Mapping[date, float]], candidate: Mapping[date, float], days: Sequence[date],
               seed: int = SEED, draws: int = sp.DRAWS, mean_d_fallback: bool = False) -> Dict[str, dict]:
     """Each benchmark's paired test against the candidate on `days`, on one resample stream.
@@ -131,7 +180,9 @@ def run_pairs(benchmarks: Mapping[str, Mapping[date, float]], candidate: Mapping
     When the joint call raises: with `mean_d_fallback` False every pair is `undefined`, as before. With it True (#1215) each
     pair is retried alone on the same seed (a pair's draws do not depend on the others), with skill; a pair whose skill is
     undefined is retried with `with_skill=False` and keeps its mean-d bound (`skill_interval` None, `skill_undefined` the
-    reason). A pair stays `undefined` only when the mean-d bound itself cannot be computed.
+    reason). A pair whose mean-d bound fails because a resample has no long-run variance is read once more from the same seed
+    and draws with those resamples dropped (#1239): the row keeps `dropped_resamples` and `draws` beside the bound. A pair stays
+    `undefined` only when the series has no long-run variance or every resample has none, with the reason.
     """
 
     names = list(benchmarks)
@@ -157,6 +208,11 @@ def run_pairs(benchmarks: Mapping[str, Mapping[date, float]], candidate: Mapping
                 skill_reason = str(why)
             try:
                 out[n] = mean_d_row(sp.paired_tests([pair], seed=seed, draws=draws, with_skill=False, inner_draws=0)[0], skill_reason)
+                continue
+            except sp.ProtocolError:
+                pass
+            try:
+                out[n] = mean_d_dropping_row(pair, skill_reason, seed, draws)
             except sp.ProtocolError as why:
                 out[n] = undefined(n, why)
         return out
@@ -175,11 +231,18 @@ def pct(x: Optional[float], signed: bool = True) -> str:
     return "n/a" if x is None else format(100.0 * x, "+.1f" if signed else ".1f") + "%"
 
 
+def dropped_text(row: dict) -> str:
+    """` (k of D resamples dropped)` beside a bound read with the no-variance resamples dropped (#1239); empty otherwise."""
+
+    return f" ({row['dropped_resamples']} of {row['draws']} resamples dropped)" if "dropped_resamples" in row else ""
+
+
 def diff_text(row: dict, places: int = 3) -> str:
     if "undefined" in row:
         return "undefined"
     lo, hi = row["difference_interval"]
-    return f"{row['difference']:+.{places}f} [{lo:+.{places}f}, {hi:+.{places}f}]"
+    text = f"{row['difference']:+.{places}f} [{lo:+.{places}f}, {hi:+.{places}f}]"
+    return text + dropped_text(row)
 
 
 def excludes_zero(row: dict) -> bool:

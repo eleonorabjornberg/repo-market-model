@@ -1,0 +1,301 @@
+{
+ "issue": 1239,
+ "ruling": "26 October 2026, ledger item 57 on #1116, option 1 on finding #1236",
+ "studies": {
+  "1196": {
+   "baseline": "re-score without this change",
+   "committed_vs_baseline": {
+    "first_other": [
+     "day_type_counts/month_end",
+     "day_type_counts/post_month_end_window",
+     "day_type_counts/quarter_end",
+     "day_type_counts/settlement",
+     "groups/lead/h=1/days"
+    ],
+    "other_differences": 1174,
+    "rows_with_a_bound_moved": 509
+   },
+   "defined_without_dropping": [],
+   "draws": 10000,
+   "gained": [
+    {
+     "days": 78,
+     "difference": 2.6787103234477407,
+     "difference_interval": [
+      -0.0805981451758746,
+      100.12192482799415
+     ],
+     "draws": 10000,
+     "dropped_resamples": 1,
+     "path": "groups/target_day_type/iorb_window/upper_tail_twcrps/vs/mr_cal_a_base/B1",
+     "was": "a resampled difference has no long-run variance; it cannot be studentized"
+    },
+    {
+     "days": 78,
+     "difference": -0.39794622616206865,
+     "difference_interval": [
+      -3.362362613437151,
+      0.005000086471674325
+     ],
+     "draws": 10000,
+     "dropped_resamples": 1,
+     "path": "groups/target_day_type/iorb_window/upper_tail_twcrps/vs/mr_cal_a_base/B1_prime",
+     "was": "a resampled difference has no long-run variance; it cannot be studentized"
+    },
+    {
+     "days": 78,
+     "difference": 0.4240223022660254,
+     "difference_interval": [
+      -0.3289463520163048,
+      1.811502087376416
+     ],
+     "draws": 10000,
+     "dropped_resamples": 1,
+     "path": "groups/target_day_type/iorb_window/upper_tail_twcrps/vs/mr_cal_a_base/B2",
+     "was": "a resampled difference has no long-run variance; it cannot be studentized"
+    },
+    {
+     "days": 78,
+     "difference": 0.003943751656465788,
+     "difference_interval": [
+      -0.015014858494876614,
+      0.03460594039443441
+     ],
+     "draws": 10000,
+     "dropped_resamples": 1,
+     "path": "groups/target_day_type/iorb_window/upper_tail_twcrps/vs/sc_s3_state/sc_s3_robust",
+     "was": "a resampled difference has no long-run variance; it cannot be studentized"
+    }
+   ],
+   "moved_with_bound": [],
+   "no_reading_before": 4,
+   "other_differences": [],
+   "panel_sha256": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+   "rows": 724,
+   "rows_with_a_bound_before": 720,
+   "seed": 1196,
+   "still_no_reading": [],
+   "unchanged_with_bound": 720
+  },
+  "1226": {
+   "baseline": "committed",
+   "defined_without_dropping": [],
+   "draws": 10000,
+   "gained": [
+    {
+     "days": 78,
+     "difference": 2.6787103234477407,
+     "difference_interval": [
+      -0.06245107727931343,
+      98.81409764333888
+     ],
+     "draws": 10000,
+     "dropped_resamples": 2,
+     "path": "groups/target_day_type/iorb_window/upper_tail_twcrps/vs/mr_cal_a_base/B1",
+     "was": "a resampled difference has no long-run variance; it cannot be studentized"
+    },
+    {
+     "days": 78,
+     "difference": -0.39794622616206865,
+     "difference_interval": [
+      -3.318600296996036,
+      0.016044461626203377
+     ],
+     "draws": 10000,
+     "dropped_resamples": 2,
+     "path": "groups/target_day_type/iorb_window/upper_tail_twcrps/vs/mr_cal_a_base/B1_prime",
+     "was": "a resampled difference has no long-run variance; it cannot be studentized"
+    },
+    {
+     "days": 78,
+     "difference": 0.4240223022660254,
+     "difference_interval": [
+      -0.32282846745206645,
+      1.8072646127232246
+     ],
+     "draws": 10000,
+     "dropped_resamples": 2,
+     "path": "groups/target_day_type/iorb_window/upper_tail_twcrps/vs/mr_cal_a_base/B2",
+     "was": "a resampled difference has no long-run variance; it cannot be studentized"
+    },
+    {
+     "days": 78,
+     "difference": 2.8374489997399244,
+     "difference_interval": [
+      0.15580032493279328,
+      37.58686781225837
+     ],
+     "draws": 10000,
+     "dropped_resamples": 1,
+     "path": "groups/target_day_type/iorb_window/upper_tail_twcrps/vs/sc_s3_hw1/B1",
+     "was": "a resampled difference has no long-run variance; it cannot be studentized"
+    },
+    {
+     "days": 78,
+     "difference": -0.23920754986988493,
+     "difference_interval": [
+      -2.004785412151009,
+      0.2733422391186915
+     ],
+     "draws": 10000,
+     "dropped_resamples": 1,
+     "path": "groups/target_day_type/iorb_window/upper_tail_twcrps/vs/sc_s3_hw1/B1_prime",
+     "was": "a resampled difference has no long-run variance; it cannot be studentized"
+    },
+    {
+     "days": 78,
+     "difference": 0.5827609785582091,
+     "difference_interval": [
+      -0.37514149292468857,
+      2.9126621033941045
+     ],
+     "draws": 10000,
+     "dropped_resamples": 1,
+     "path": "groups/target_day_type/iorb_window/upper_tail_twcrps/vs/sc_s3_hw1/B2",
+     "was": "a resampled difference has no long-run variance; it cannot be studentized"
+    },
+    {
+     "days": 78,
+     "difference": 0.1587386762921837,
+     "difference_interval": [
+      -0.10319288046410474,
+      0.7240775750956139
+     ],
+     "draws": 10000,
+     "dropped_resamples": 3,
+     "path": "groups/target_day_type/iorb_window/upper_tail_twcrps/vs/sc_s3_hw1/mr_cal_a_base",
+     "was": "a resampled difference has no long-run variance; it cannot be studentized"
+    },
+    {
+     "days": 78,
+     "difference": 0.014425211633594864,
+     "difference_interval": [
+      -0.04046809822639205,
+      0.078974022457213
+     ],
+     "draws": 10000,
+     "dropped_resamples": 3,
+     "path": "groups/target_day_type/iorb_window/upper_tail_twcrps/vs/sc_s3_hw1/sc_s3_robust",
+     "was": "a resampled difference has no long-run variance; it cannot be studentized"
+    },
+    {
+     "days": 78,
+     "difference": 2.818930531145795,
+     "difference_interval": [
+      0.14146156682219546,
+      38.86904783603682
+     ],
+     "draws": 10000,
+     "dropped_resamples": 1,
+     "path": "groups/target_day_type/iorb_window/upper_tail_twcrps/vs/sc_s3_hw2/B1",
+     "was": "a resampled difference has no long-run variance; it cannot be studentized"
+    },
+    {
+     "days": 78,
+     "difference": -0.2577260184640151,
+     "difference_interval": [
+      -2.155690240679316,
+      0.24705752176386786
+     ],
+     "draws": 10000,
+     "dropped_resamples": 1,
+     "path": "groups/target_day_type/iorb_window/upper_tail_twcrps/vs/sc_s3_hw2/B1_prime",
+     "was": "a resampled difference has no long-run variance; it cannot be studentized"
+    },
+    {
+     "days": 78,
+     "difference": 0.564242509964079,
+     "difference_interval": [
+      -0.38424991654417495,
+      2.758081014073834
+     ],
+     "draws": 10000,
+     "dropped_resamples": 1,
+     "path": "groups/target_day_type/iorb_window/upper_tail_twcrps/vs/sc_s3_hw2/B2",
+     "was": "a resampled difference has no long-run variance; it cannot be studentized"
+    },
+    {
+     "days": 78,
+     "difference": 0.1402202076980536,
+     "difference_interval": [
+      -0.10612196792893686,
+      0.6771919864404572
+     ],
+     "draws": 10000,
+     "dropped_resamples": 3,
+     "path": "groups/target_day_type/iorb_window/upper_tail_twcrps/vs/sc_s3_hw2/mr_cal_a_base",
+     "was": "a resampled difference has no long-run variance; it cannot be studentized"
+    },
+    {
+     "days": 78,
+     "difference": -0.004093256960535179,
+     "difference_interval": [
+      -0.05736801580864587,
+      0.03229499338910162
+     ],
+     "draws": 10000,
+     "dropped_resamples": 3,
+     "path": "groups/target_day_type/iorb_window/upper_tail_twcrps/vs/sc_s3_hw2/sc_s3_robust",
+     "was": "a resampled difference has no long-run variance; it cannot be studentized"
+    },
+    {
+     "days": 78,
+     "difference": 2.823023788106329,
+     "difference_interval": [
+      0.1241349621545087,
+      41.174520528661525
+     ],
+     "draws": 10000,
+     "dropped_resamples": 1,
+     "path": "groups/target_day_type/iorb_window/upper_tail_twcrps/vs/sc_s3_robust/B1",
+     "was": "a resampled difference has no long-run variance; it cannot be studentized"
+    },
+    {
+     "days": 78,
+     "difference": -0.2536327615034797,
+     "difference_interval": [
+      -2.1456043614454523,
+      0.21859309373532632
+     ],
+     "draws": 10000,
+     "dropped_resamples": 1,
+     "path": "groups/target_day_type/iorb_window/upper_tail_twcrps/vs/sc_s3_robust/B1_prime",
+     "was": "a resampled difference has no long-run variance; it cannot be studentized"
+    },
+    {
+     "days": 78,
+     "difference": 0.5683357669246142,
+     "difference_interval": [
+      -0.35176455030480824,
+      2.696168118241406
+     ],
+     "draws": 10000,
+     "dropped_resamples": 1,
+     "path": "groups/target_day_type/iorb_window/upper_tail_twcrps/vs/sc_s3_robust/B2",
+     "was": "a resampled difference has no long-run variance; it cannot be studentized"
+    },
+    {
+     "days": 78,
+     "difference": 0.14431346465858885,
+     "difference_interval": [
+      -0.07367976189988401,
+      0.6893818334468131
+     ],
+     "draws": 10000,
+     "dropped_resamples": 3,
+     "path": "groups/target_day_type/iorb_window/upper_tail_twcrps/vs/sc_s3_robust/mr_cal_a_base",
+     "was": "a resampled difference has no long-run variance; it cannot be studentized"
+    }
+   ],
+   "moved_with_bound": [],
+   "no_reading_before": 17,
+   "other_differences": [],
+   "panel_sha256": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+   "rows": 724,
+   "rows_with_a_bound_before": 707,
+   "seed": 1226,
+   "still_no_reading": [],
+   "unchanged_with_bound": 707
+  }
+ }
+}
