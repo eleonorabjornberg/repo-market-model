@@ -423,6 +423,13 @@ details.terms{margin-top:72px}
   <div class="prose"><p>New to this market? Short views, in order.</p></div>
   <nav aria-label="Start here">{{newcomer_nav}}</nav>
 
+  <div class="prose" id="companion-start"><p>Companion projects</p>
+  <ul>
+    <li><a href="https://eleonorabjornberg.github.io/repo-market-liquidity/">Phase 3: repo-market-liquidity (its own results page)</a></li>
+    <li><a href="https://eleonorabjornberg.github.io/repo-market-spillovers/findings.html">repo-market-spillovers: does repo stress spread to wider markets? (findings)</a>. That project builds on this model's published daily panel.</li>
+  </ul>
+  </div>
+
 <section id="n1" aria-labelledby="n1-title">
   <h2 id="n1-title"><span class="n">N1</span>What is pressure?</h2>
   <p class="prose lede">From {{n1_first}} to {{n1_last}}, {{dfn_sofr}} closed more than +{{pressure_bp}} {{dfn_bp}} above {{dfn_iorb}}, the Fed's rate on bank {{dfn_reserves}}, on {{n1_pressure_of}} business days counted here. {{n1_clusters}}</p>
@@ -889,7 +896,12 @@ details.terms{margin-top:72px}
 <footer>
   <p>Built from {{n_rows}} business days, {{first_day}} to {{last_day}}. Panel SHA-256 <code>{{sha}}</code>, commit <code>{{commit}}</code>. Every number is computed by <code>scripts/emit_visual.py</code> from the panel and the run records; none is typed by hand.</p>
   <p>The same results in plain words, for a reader with no finance background, are on <a href="plain.html">the plain-language results page</a>; its figures are generated from the same run records.</p>
-  <p>Academic and portfolio work; not investment advice.</p>
+  <div id="companion-footer"><p>Companion projects:</p>
+<ul>
+    <li><a href="https://eleonorabjornberg.github.io/repo-market-liquidity/">Phase 3: repo-market-liquidity (its own results page)</a></li>
+    <li><a href="https://eleonorabjornberg.github.io/repo-market-spillovers/findings.html">repo-market-spillovers: does repo stress spread to wider markets? (findings)</a>. That project builds on this model's published daily panel.</li>
+  </ul></div>
+<p>Academic and portfolio work; not investment advice.</p>
 </footer>
 </div>
 
