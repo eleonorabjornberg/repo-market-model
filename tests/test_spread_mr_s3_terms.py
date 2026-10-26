@@ -78,7 +78,7 @@ class DeclaredArmsTests(unittest.TestCase):
         self.assertEqual([(sc.ridge_of(a), a.robust, a.interact, a.sized) for a in sc.ARMS],
                          [(1.0, False, False, False), (1.0, False, True, False), (5.0, True, False, False), (1.0, False, False, False)])
         self.assertEqual([a.name for a in sc.DECOMPOSITION], ["sc_s1_standardised", "sc_r1_ridge5", "sc_r2_huber", "sc_s3_robust", "sc_r3_size"])
-        self.assertEqual(len(sc.ALL_ARMS), 9)
+        self.assertEqual(len(sc.ALL_ARMS), 10)  # the nine of #1145, #1172 and #1196, and (s3+IORBs) of #1227
 
 
 class RobustInteractionTests(unittest.TestCase):
