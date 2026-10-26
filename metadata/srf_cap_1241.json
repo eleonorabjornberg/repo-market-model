@@ -1,0 +1,86 @@
+{
+ "status": "declared by the pull request that closes #1241 before any score was computed; a development study, never a verdict. Nothing is published: (s3) stays the H5 candidate, no arm joins any published declaration, `gbm_funding`'s declaration and `scripts/final_test_preregistration.py` do not change, no day after 2025-12-31 is scored, no lockbox day is scored, and no record in docs/runs/ is edited. Whether a cap becomes part of the candidate is Eleonora's decision on the page's evidence. Amendments made after a number was computed would be listed in `amendments`; there are none.",
+ "issue": 1241,
+ "ledger": "item 58 on #1116",
+ "ruling": "Eleonora, 26 October 2026, about 1:40 pm ET, chat, relayed: \"I want the avenue for the upper tail pursued\". Build: a day-by-day SRF line (the minimum bid less IORB, in bp) read from metadata/policy_events.json, not hard-coded; its availability declaration and a leakage test with a recorded mutation; one arm, (s3)'s quantiles capped at the line plus a declared margin, with margins of 0, 5 and 10 bp declared up front as three arms and the primary named before scoring. Measure: the realised exceedances of the line, how often (s3)'s upper quantile levels sit above it, and each cap arm against (s3), paired, on grid CRPS over h = 1-5 and on upper-tail twCRPS, with B1, B1' and B2 for context. Do not change (s3), a published record, a declaration already merged or a threshold.",
+ "hypothesis": "H5 (primary goal): the SOFR - IORB spread distribution in bp. Step 3 (the candidate's upper tail). Development tier",
+ "target": "spread_bps at the scored day, in basis points, as a 23-quantile distribution at each lead h = 1..5 (scoring_protocol.GRID)",
+ "base": {
+  "name": "(s3) of #1145: sc_s3_robust, the H5 candidate, unchanged; (a) is walked beside it only because the walk produces it and is not scored",
+  "module": "repo_model.spread_mr_state_calendar (#1145), unchanged. The walk is (s3)'s own: calendar terms at the target day on direct pairs (training_pairs = 'direct'), so the fitter is not calendar-blind and needs no provisional-register entry and no ONE_STEP_ALLOW_LIST entry. The cap is a transform of (s3)'s forecast quantiles after the walk; it fits nothing",
+  "pairs": "direct"
+ },
+ "srf_line": {
+  "definition": "line(T) = 100 * (rate_percent of the `standing_repo` entry in force on T less rate_percent of the `iorb_rate` entry in force on T), in bp, read from metadata/policy_events.json by repo_model.srf_line.srf_line_bps. The entry in force is the one with the latest effective date on or before T (then the latest announcement). The facility's minimum bid rate is the register's `standing_repo` rate. No +10 bp is written anywhere in the code: tests/test_srf_line.py checks that the line equals the register's own IORB + 10 bp wherever the register says the minimum bid is at the top of the range, IORB 15 bp over the bottom, in a 25 bp range",
+  "before_the_facility": "no line: the facility was established on 2021-07-28 and is effective 2021-07-29 (`standing_repo-20210728`); a target day before 2021-07-29 has no line and its forecast is unchanged by every cap arm",
+  "information_set": "the line a forecast could use for target day T is the line from the entries announced at or before the decision instant (16:00 America/New_York on the decision day, the published records' decision time) that are effective on or before T. A change announced at an FOMC meeting after that instant is not known; a change already announced and scheduled for T is, the same rule the scheduled IORB follows (announced_iorb, `scheduled_availability`). Each entry read passes policy_events.require_announced, which raises LookAheadError for an entry announced after the instant. The realised exceedance table (measure 1) is an ex post description and reads the line in force on the day itself (as of 23:59:59 on T)",
+  "registry": "metadata/sources.json is not edited: it is pinned by digests in declarations already merged (`inputs.metadata_sha256`), and a new source there is a registry change that is Eleonora's. The declaration of availability is the block below, in the shape `scheduled_availability` has in the registry (validated by asof.validate_scheduled_availability); `srf_line_bps` is not a panel column and adds nothing to the panel",
+  "availability": {
+   "source": "srf_line",
+   "provider": "Board of Governors of the Federal Reserve System (FOMC implementation notes; metadata/policy_events.json, ids standing_repo-* and iorb-*)",
+   "scheduled_availability": {
+    "basis": "announced_before_ref_date",
+    "unit": "business_days",
+    "days": 1,
+    "available_time": "16:00",
+    "timezone": "America/New_York",
+    "fields": ["srf_line_bps"],
+    "evidence": "Keyed on the announcement time. The value for target day T is computed by repo_model.srf_line.srf_line_bps from the register entries whose announcement instant (the implementation note's stated release time, America/New_York; 14:00 for every entry used) is at or before 16:00 on the decision day, and which are effective on or before T, so it is public at that instant by construction. Every standing_repo and iorb_rate entry carries its announced_date, announced_time and a primary source URL read at the source (`read_at_source`). tests/test_srf_line.py perturbs every entry announced after a decision instant and requires the line unchanged, and pins the weekend case: a cut announced on a Sunday evening is not read by the Friday decision.",
+    "note": "A decision on day D forecasts T = D + h for h = 1..5; the declaration is the earliest claim, one business day before T, and a lead h > 1 is declared at the same instant of D, so the line for T is never read later than the first lead's. 16:00 is the published records' decision time."
+   }
+  }
+ },
+ "arms": [
+  {"name": "sc_s3_robust", "role": "(s3) of #1145, the H5 candidate; the comparator of every cap arm", "margin_bp": null},
+  {"name": "srf_cap_m0", "role": "(s3) capped at the line", "margin_bp": 0.0},
+  {"name": "srf_cap_m5", "role": "(s3) capped at the line plus 5 bp", "margin_bp": 5.0},
+  {"name": "srf_cap_m10", "role": "(s3) capped at the line plus 10 bp", "margin_bp": 10.0}
+ ],
+ "primary": {
+  "arm": "srf_cap_m0",
+  "why": "it is the cap as `docs/decisions/pressure-probability.md` names it (the minimum bid as the administered rate above the spread) and has no free parameter; the margins of 5 and 10 bp are sensitivity arms, declared so that a reading of the primary is not chosen from three after they are scored. The primary is named here, before any score, and the page leads with it",
+  "not_chosen_on_data": "no cap, margin or line was tried before this declaration"
+ },
+ "cap": {
+  "rule": "for every decision day D, lead h and quantile level p with T = D + h business days: q'_p = min(q_p, line(T) + margin) when line(T) exists, else q'_p = q_p. This is the reading of \"every level above the SRF line plus a declared margin set to that line\" in which a value above the ceiling is set to the ceiling (line plus margin). The other reading (a value above the ceiling set to the line itself, for a margin above 0) would put a quantile below a lower level that stays under the ceiling and so break the order, against the directive's \"the cap is monotone, so the quantiles stay ordered\"; at margin 0 the two readings coincide",
+  "monotone": "min(q, c) is non-decreasing in q, so the capped quantiles are ordered whenever (s3)'s are; tested",
+  "unchanged": "(s3), the forecasts before the facility, and every quantile at or below the ceiling"
+ },
+ "measures": {
+  "1_realised": "on the target days of the scored decisions that are on or after 2021-07-29 (the SRF-regime days), how often SOFR - IORB closed above the line: a day counts as above when its spread, read on whole basis points, is strictly above the line (docs/decisions/pressure-probability.md, ruling of 2 October 2026 on #155; repo_model.onset.whole_bp). Reported: the count, the share with a 90% stationary-bootstrap percentile interval over the days in date order (mean block 10 days, 2,000 resamples, seed 1241), the largest exceedances with their dates, and the 99th percentile of the spread less the line (linear interpolation between order statistics, type 7), pooled, by regime (2021-23, 2024, 2025-26; the abundant 2021-23 and the scarce 2025-26 regimes are the two the directive names) and by pressure-day type (the turn record in force, turn_days.reporting_day_type)",
+  "2_forecast": "on the (decision day, lead) cells whose target day has a line, how often each of (s3)'s quantile levels from 0.50 up sits strictly above the line (q > line), by lead h = 1..5 and over all leads, pooled, by regime and by pressure-day type of the target day. Intervals (stationary bootstrap over the cells in date order, mean block 10 cells per lead and 50 over all leads, 2,000 resamples, seed 1241) for the levels 0.75, 0.90, 0.95, 0.975 and 0.99; the other levels are point shares in result.json. Beside it, how often each cap arm changes the forecast (the 0.99 level binds) and (the 0.95 level binds)",
+  "3_score": "each cap arm against (s3), paired, on grid CRPS (23 levels) averaged over leads 1..5 (primary) and upper-tail twCRPS (weight 1{z > 0 bp}, key secondary), by scoring_protocol.paired_tests, the studentized stationary bootstrap (ruling 1), mean block 10 business days, 10,000 draws, seed 1241, two-sided 90% interval (the lower end is the one-sided 95% bound); both the skill interval and the studentized interval on mean d (bp) are reported for every tested row. Against B1, B1' (#960) and B2 as well, for context. Splits: pooled over all decision days; the SRF-regime target days (target days with a line); by regime of the target day; by pressure-day type of the target day (turn record in force); by calendar target-day type (month_end, quarter_end, tax_date, settlement, fomc_day, iorb_window, dom_19_23, post_month_end_window, ordinary, calendar_days); by lead. A group in which a cap arm's score equals (s3)'s on every day (a group wholly before the facility) is listed as identical and not tested; a group of fewer than 20 days is listed and not tested"
+ },
+ "scoring": {
+  "scorer": "repo_model.scoring_protocol (#655), the development tier: no verdict, no registration",
+  "days": "decision days with a forecast of (s3) and the benchmarks whose five targets fall on or before 2025-12-31; no day after 2025-12-31 is read; the scored days pass lockbox.require_unlocked",
+  "outcomes": "the panel's spread_bps at the target day",
+  "reading": "a reading is taken from the mean-d bound (Eleonora's ruling on #1009, 20 October 2026): a cap arm is read better than (s3) when the lower end of the 90% interval of mean d is above zero, worse when the upper end is below zero, otherwise undecided. The reading the skill interval alone would give is listed beside it when it differs. Lens C's caveat (the lag-10 HAC standard error is understated about 2x after 2020) is stated on the page",
+  "day_type_intervals": "the intervals of a pressure-day-type or calendar-target-day-type group keep the current method (the days of a type, scattered, resampled in date order as if consecutive), which #1221 questions; the page labels them so",
+  "pressure_day_types": "the pressure-day type of a target day is turn_days.reporting_day_type (the month-end turn record in force since #1161, as every scoring entry point on main does); B2 reads the thin-pool record in force since #1198; (s3) and B2 therefore score differently from the pages scored on earlier labels (`--legacy-day-types` reproduces those)"
+ },
+ "reading_rules": [
+  "A cap arm's gain over (s3) is read as present on a split when the 90% interval of mean d excludes zero on the positive side, and as a loss when it excludes zero on the negative side; otherwise as undecided. A point estimate alone is not read. The skill interval's reading is listed beside it where it differs.",
+  "A pooled figure is never read without the SRF-regime days, the regime and the pressure-day-type splits beside it; a gain pooled and a loss in a regime or on a day type is reported as mixed.",
+  "The pooled score includes the decision days whose targets are before the facility, which the cap does not change; the SRF-regime row is the one whose days the cap can move.",
+  "Lens C's caveat is stated on the page: the lag-10 HAC standard error is understated about 2x after 2020, so an interval that excludes zero after 2020 is narrower than it should be.",
+  "The page says this is a look at 2021-2025 aimed at the upper tail, after (s3) was chosen on those days; a gain is evidence for a question, with the selection noted. The primary arm is the one declared; the other two are sensitivity, and the page says which reading is the primary's.",
+  "The page says that the realised exceedances are of the line in force on the day, and that the days after the SRF rate was passed by SOFR are the days the cap would cost.",
+  "Nothing in this study is a verdict, and the page says so. A kill applies only to a result that is not provisional; (s3) reads the calendar at the target day on direct pairs, so the class is not provisional. The issue declares no kill rule.",
+  "The page ends with a marked question for Eleonora with numbered options and a default: nothing is adopted and no claim changes."
+ ],
+ "questions": [
+  "Whether a cap becomes part of the H5 candidate is Eleonora's, made after the page.",
+  "Whether the SRF line should be registered as a source in metadata/sources.json (a registry change that moves digests pinned in merged declarations) is Eleonora's; this study declares the availability in its own declaration instead."
+ ],
+ "limits": {
+  "last_day": "2025-12-31",
+  "arms": 3,
+  "gbm_funding_declaration": "unchanged",
+  "preregistration": "scripts/final_test_preregistration.py is not touched; test_final_test_freeze and test_live_score_freeze are run before the push",
+  "allow_list": "repo_model.one_step_guard.ONE_STEP_ALLOW_LIST is not changed",
+  "gbm_funding": "not compared: the issue asks for B1, B1' and B2 for context; the gbm walks are Eleonora's Mac"
+ },
+ "long_run": "cloud; the walk of (s3) is minutes and the paired tests and bootstrap intervals are the longer part (well under two hours on 4 cores)",
+ "amendments": []
+}
