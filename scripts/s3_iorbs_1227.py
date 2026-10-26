@@ -23,6 +23,9 @@ The arms read no scarcity state, so none is built. The walks take minutes; the p
     PYTHONPATH=src python3 scripts/s3_iorbs_1227.py page \\
         --score docs/research/s3-iorbs-1227/result.json --output docs/research/s3-iorbs-1227-result.md
 
+The run is scored under the day types and the B2 record in force (a run with `--legacy-day-types` reads the earlier ones, as every
+study script that walks B2 does since #1206); the declared run omits the flag.
+
 Stdlib only.
 """
 
@@ -552,6 +555,10 @@ def page(args) -> int:
     return 0
 
 
+from repo_model import turn_days  # noqa: E402
+
+
+@turn_days.with_legacy_flag
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = parser.add_subparsers(dest="command", required=True)
