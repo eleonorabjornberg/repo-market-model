@@ -60,7 +60,7 @@ class DeclarationTests(unittest.TestCase):
         self.assertEqual(declaration["limits"]["arms"], 1)
         self.assertEqual(declaration["limits"]["last_day"], script.LAST_DAY.isoformat())
         self.assertEqual(declaration["scoring"]["paired"].count("seed 1227"), 1)
-        self.assertEqual(declaration["amendments"], [])
+        self.assertEqual([a["number"] for a in declaration["amendments"]], [1])
 
     def test_the_six_technical_changes_the_declaration_lists_are_the_tables(self):
         declaration = json.loads(script.DECLARATION.read_text(encoding="utf-8"))
@@ -79,9 +79,10 @@ class CountsTests(unittest.TestCase):
 
         counts = script.iorb_counts(base.ANNOUNCEMENTS, sc.IorbTable(base.PANEL, base.ANNOUNCEMENTS), base.PANEL, script.load_split_declaration(script.c.SPLITS))
         self.assertEqual((counts["changes"], counts["technical"]), (29, 6))
-        self.assertIn("2020-03-16", counts["not_in_column"])
-        self.assertEqual(counts["in_column"] + len(counts["not_in_column"]), 29)
-        self.assertEqual(sum(v["changes"] for v in counts["by_regime"].values()), 29)
+        self.assertEqual(counts["announced_after_the_decision"], ["2020-03-16"])
+        self.assertEqual(counts["after_last_scored_day"], ["2026-09-17"])  # the table runs past the last scored day
+        self.assertEqual(counts["in_column"] + len(counts["announced_after_the_decision"]) + len(counts["after_last_scored_day"]), 29)
+        self.assertEqual(sum(v["changes"] for v in counts["by_regime"].values()), 28)
         self.assertEqual(sum(v["technical"] for v in counts["by_regime"].values()), 6)
         self.assertGreaterEqual(counts["by_regime"]["2018-19"]["technical"], 3)  # "most of the six fall in 2018-19"
 
@@ -107,15 +108,16 @@ class CommittedRecordTests(unittest.TestCase):
         self.assertIn(record["panel_sha256"], json.dumps(manifest))
         self.assertEqual((record["iorb"]["changes"], record["iorb"]["technical"]), (29, 6))
 
-    def test_arm_a_and_s3_reproduce_the_figures_of_1196_on_the_same_days(self):
-        """(a) and (s3) are the same code on the same panel and days as #1196's run, so their pooled means agree with its record."""
+    def test_the_benchmarks_forecast_more_days_than_on_1196s_page_because_of_the_thin_pool_record_of_1198(self):
+        """#1196's page was scored before #1198 put the B2 thin-pool record in force: B2 then refused the year-end days of 2018. Every day
+        #1196 dropped for the benchmarks and that is not a panel-start day is now scored, so (a) and (s3) are not the figures of that
+        page (the declaration's amendment 1)."""
 
-        other = ROOT / "docs" / "research" / "s3-terms-1196" / "result.json"
-        mine = json.loads(self.RECORD.read_text(encoding="utf-8"))["groups"]["pooled"]["all decision days"]
-        theirs = json.loads(other.read_text(encoding="utf-8"))["groups"]["pooled"]["all decision days"]
-        for metric in script.METRIC_NAMES:
-            for name in (sc.ARM_A, script.S3, "B1", "B1_prime", "B2"):
-                self.assertAlmostEqual(mine[metric]["means"][name], theirs[metric]["means"][name], places=9, msg=(metric, name))
+        other = json.loads((ROOT / "docs" / "research" / "s3-terms-1196" / "result.json").read_text(encoding="utf-8"))["notes"]
+        mine = json.loads(self.RECORD.read_text(encoding="utf-8"))["notes"]
+        self.assertLess(set(mine["benchmark_missing"]), set(other["benchmark_missing"]))
+        self.assertGreater(mine["scored_decision_days"], other["scored_decision_days"])
+        self.assertEqual((mine["first"], mine["last"], mine["refits"]), (other["first"], other["last"], other["refits"]))
 
 
 class EndToEndTests(unittest.TestCase):

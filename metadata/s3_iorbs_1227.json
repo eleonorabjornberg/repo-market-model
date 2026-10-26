@@ -70,7 +70,7 @@
   "reading": "a reading is taken from the mean-d bound (Eleonora's ruling on #1009, 20 October 2026): the arm is read better than a reference when the lower end of the 90% interval of mean d is above zero, worse when the upper end is below zero, otherwise undecided. A row whose bound was not computed reads 'no reading' (#1215). The reading the skill interval alone would give is listed beside it when it differs. Lens C's caveat (the lag-10 HAC standard error is understated about 2x after 2020) is stated on the page",
   "min_days": "a group of fewer than 20 days is listed and not tested",
   "iorb_window_rows": "the target-day type iorb_window is named in the tables like every other type (78 days in 2018-2025 under #1196's count). Beside it, the window days are split by the kind of change they carry (technical or not) and by regime, with the mean score of (a), (s3) and (s3+IORBs) on each; these small groups are listed and not tested",
-  "pressure_day_types": "the benchmarks (B2's pools) and the mean-reversion level read the pressure-day types of the month-end turn record in force since #1161 (repo_model.turn_days.IN_FORCE is True), as every scoring entry point on main does; (a) and (s3) therefore score as on the page of #1196, whose figures they reproduce except where the arm set changes a refit day",
+  "pressure_day_types": "the benchmarks (B2's pools) and the mean-reversion level read the pressure-day types of the month-end turn record in force since #1161 (repo_model.turn_days.IN_FORCE is True), as every scoring entry point on main does; (a) and (s3) therefore score on the benchmark days main now has them, not as on the page of #1196 (see amendment 1)",
   "not_scored": "the calibration of the q95 and the bands (the 2026 development days and the calibration check are #1229), the Politis-White block (not in the ruling) and gbm_funding"
  },
  "splits": {
@@ -103,5 +103,12 @@
   "allow_list": "repo_model.one_step_guard.ONE_STEP_ALLOW_LIST is not changed"
  },
  "long_run": "cloud, under two hours (about 40 minutes on 4 cores for #1196's three arms and the larger set of tests; this study has one arm, no calibration and no Politis-White block)",
- "amendments": []
+ "amendments": [
+  {
+   "number": 1,
+   "what": "The sentence of scoring.pressure_day_types that said (a) and (s3) reproduce #1196's figures was replaced by the one above: they score on the benchmark days main now has, so they are not the figures of #1196's page.",
+   "why": "The first run of the scoring script scored more decision days than #1196's page, and (a), (s3) and the benchmarks have higher means on it. The cause is #1198, merged after #1196: it put the B2 thin-pool record in force, so B2 now forecasts the year-end days of 2018 that it refused when #1196 was scored (the dropped days are listed in `notes.benchmark_missing` of both records). The sentence was a description of the comparator, not a choice.",
+   "made": "after the first result file was written and read (its counts of the IORB changes then also gained two fields, which the page uses); before the page was generated. No arm, term, test, split, seed, reading rule or day range changes, and the script's code that decides a score is unchanged."
+  }
+ ]
 }

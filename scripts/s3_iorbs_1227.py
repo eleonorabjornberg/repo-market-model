@@ -180,27 +180,29 @@ def run_jobs(jobs, workers: int):
 
 
 def iorb_counts(announcements, iorb: sc.IorbTable, panel, splits) -> dict:
-    """The IORB changes of the announcement table: how many, how many technical, by regime of the day they take effect, and how many
-    the column shows a decision (a note announced after the decision instant is never in it)."""
+    """The IORB changes of the announcement table: how many, how many technical, by regime of the day they take effect (through the
+    last scored day), and how many the column shows a decision. A change is not in the column when it takes effect after the last
+    scored day, or when its note was announced after the decision instant of the panel day before it (the Sunday cut of 2020-03-16)."""
 
     changes = [a for a in announcements if a.kind == "change"]
     out: dict = {
         "changes": len(changes), "technical": sum(1 for a in changes if sc.technical(a.change_bps)),
         "technical_dates": [a.effective.isoformat() for a in changes if sc.technical(a.change_bps)],
-        "by_regime": {}, "not_in_column": [], "in_column": 0, "technical_in_column": 0,
+        "by_regime": {}, "after_last_scored_day": [], "announced_after_the_decision": [], "in_column": 0, "technical_in_column": 0,
     }
+    shown = {panel[i].date for i, value in enumerate(iorb.changes) if value != 0.0}
     for a in changes:
-        regime = splits.regime(a.effective) if a.effective >= panel[0].date else "before the panel"
-        entry = out["by_regime"].setdefault(regime, {"changes": 0, "technical": 0})
+        if a.effective > LAST_DAY:
+            out["after_last_scored_day"].append(a.effective.isoformat())
+            continue
+        entry = out["by_regime"].setdefault(splits.regime(a.effective), {"changes": 0, "technical": 0})
         entry["changes"] += 1
         entry["technical"] += int(sc.technical(a.change_bps))
-    shown = {panel[i].date: value for i, value in enumerate(iorb.changes) if value != 0.0}
-    for a in changes:
         if a.effective in shown:
             out["in_column"] += 1
             out["technical_in_column"] += int(sc.technical(a.change_bps))
         else:
-            out["not_in_column"].append(a.effective.isoformat())
+            out["announced_after_the_decision"].append(a.effective.isoformat())
     return out
 
 
@@ -395,10 +397,13 @@ def render(r: dict) -> str:
         f"**The count is small.** There are {counts['changes']} IORB changes in the announcement table, {counts['technical']} of them "
         "technical (not a multiple of 25 bp, by `setup_diagnostic.is_technical`), "
         + ("and the technical ones fall in " + ", ".join(f"{k} ({v})" for k, v in sorted(tech_regimes.items())) if tech_regimes else "")
-        + f". The column the model reads shows {counts['in_column']} of the {counts['changes']} to a decision "
-        f"({counts['technical_in_column']} technical): a note is in it only if it was announced before the decision instant"
-        + (f", so the change of {', '.join(counts['not_in_column'])} is not (an announcement on the Sunday after the Friday decision)"
-           if counts["not_in_column"] else "") + ". The technical indicator rests on a handful of days; its estimated effect is read with that in mind.", "",
+        + f". Of the {counts['changes']}, " + (f"{len(counts['after_last_scored_day'])} takes effect after the last scored day "
+                                              f"({', '.join(counts['after_last_scored_day'])}) and " if counts["after_last_scored_day"] else "")
+        + f"{counts['in_column']} are in the column the model reads (a note is in it only if it was announced before the decision instant "
+        "of the panel day before it takes effect)"
+        + (f"; the others, {', '.join(counts['announced_after_the_decision'])}, were announced after that instant (the Sunday cut of "
+           "2020-03-16, announced after the Friday decision) and no decision sees them" if counts["announced_after_the_decision"] else "")
+        + ". The technical indicator rests on a handful of days; its estimated effect is read with that in mind.", "",
         "**What kind of look this is.** A further look at 2018-2025 after (s3) was chosen on the same days. The arm is one declared variant "
         "and **counts toward the variant count**. A gain here is evidence for a question, with the selection noted, not a result.", "",
         f"Panel digest `{r['panel_sha256'][:8]}…`. Studentized stationary bootstrap (ruling 1), mean block {sp.BLOCK_LENGTH} business days, "
