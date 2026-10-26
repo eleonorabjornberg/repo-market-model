@@ -4,7 +4,7 @@
 
 **What kind of look this is.** The Standing Repo Facility's minimum bid rate is an administered rate above the spread (`docs/decisions/pressure-probability.md`), and no H5 model reads it. If it caps repo rates, the upper quantiles of (s3) may be too wide in the facility's regime, which costs grid CRPS and upper-tail twCRPS. This is a look at 2021-2025 after (s3) was chosen on those days, aimed at the upper tail; a gain is evidence for a question, with the selection noted. Whether a cap becomes part of the candidate is Eleonora's decision on this page.
 
-Panel digest `4ddc3882…`. Studentized stationary bootstrap (ruling 1), mean block 10 business days, 10,000 draws, seed 1241, two-sided 90% interval (the lower end is the one-sided 95% bound). Skill is `mean(d) / mean(S(benchmark))` with `d = S(benchmark) - S(candidate)`, positive favours the candidate. **Every row shows the skill interval and, beside it, the studentized interval on mean d (bp); a reading (gain, loss, undecided) is taken from the mean-d bound** (her ruling on #1009, 20 October 2026). **Caveat (Lens C, #958):** the lag-10 HAC standard error that studentizes the bound is understated about 2x after 2020, so an interval that excludes zero is narrower than it should be. The intervals of a pressure-day-type or calendar-day-type group keep the current method (the days of a type, scattered, resampled in date order as if consecutive), which #1221 questions. **Where a cap changes only a few days of a group, the studentized bound cannot be computed** (a resample has no long-run variance): the cell reads "undefined", no reading is taken, and the unstudentized percentile interval of mean d (the same stationary bootstrap, mean block 10, not the protocol's interval) is shown beside it so the direction is visible. **The two scores move by the same amount here**: a cap changes a forecast only above the line, which is above 0 bp, where the weight of the upper-tail twCRPS is 1, so mean d on grid CRPS and on twCRPS is the same number in every group and the two readings agree; the tables show both because the protocol names both. Scored decision days: 1,855 (2018-07-19 to 2025-12-23); the fit is renewed 89 times. The pressure-day types are the month-end turn record in force (#1161) and B2 reads the thin-pool record in force (#1198), so (s3) and B2 are not the figures of pages scored on earlier labels.
+Panel digest `4ddc3882…`. Studentized stationary bootstrap (ruling 1), mean block 10 business days, 10,000 draws, seed 1241, two-sided 90% interval (the lower end is the one-sided 95% bound). Skill is `mean(d) / mean(S(benchmark))` with `d = S(benchmark) - S(candidate)`, positive favours the candidate. **Every row shows the skill interval and, beside it, the studentized interval on mean d (bp); a reading (gain, loss, undecided) is taken from the mean-d bound** (her ruling on #1009, 20 October 2026). **Caveat (Lens C, #958):** the lag-10 HAC standard error that studentizes the bound is understated about 2x after 2020, so an interval that excludes zero is narrower than it should be. The intervals of a pressure-day-type or calendar-day-type group keep the current method (the days of a type, scattered, resampled in date order as if consecutive), which #1221 questions. **Where a cap changes only a few days of a group, some resamples have no long-run variance:** they are dropped from the studentized draws and counted beside the bound ("k of D resamples dropped", #1239, her ruling on #1236), and the bound is read from the rest. A lower end of the interval that is very large and negative in such a group is the studentization of a few days, not a measure of size. A cell reads "undefined" only when the series itself, or every resample, has no long-run variance; then no reading is taken and the unstudentized percentile interval of mean d (the same stationary bootstrap, mean block 10, not the protocol's interval) is shown beside it so the direction is visible. **The two scores move by the same amount here**: a cap changes a forecast only above the line, which is above 0 bp, where the weight of the upper-tail twCRPS is 1, so mean d on grid CRPS and on twCRPS is the same number in every group and the two readings agree; the tables show both because the protocol names both. Scored decision days: 1,855 (2018-07-19 to 2025-12-23); the fit is renewed 89 times. The pressure-day types are the month-end turn record in force (#1161) and B2 reads the thin-pool record in force (#1198), so (s3) and B2 are not the figures of pages scored on earlier labels.
 
 **The line.** `repo_model.srf_line` reads the minimum bid rate less the IORB, in bp, from `metadata/policy_events.json`, as public at the decision instant (16:00 on the decision day): an entry announced after it is not known, and one announced and scheduled for the target day is. Nothing writes +10 bp into the code. Before the facility (effective 2021-07-29) there is no line and every cap arm equals (s3). The line on the scored target days:
 
@@ -20,12 +20,12 @@ It had to show (1) how often SOFR - IORB closed above the line, (2) how often (s
 
 | arm | split | grid CRPS vs (s3) | twCRPS vs (s3) | regimes, grid CRPS (gain / loss / undecided / identical) |
 |---|---|---|---|---|
-| cap at the line (margin 0 bp; the primary) | all decision days (1855 days) | -0.6% [-3.9%, +0.1%]; d -0.010 [-0.066, +0.002]: **undecided** | -1.2% [-7.1%, +0.2%]; d -0.010 [-0.066, +0.002]: **undecided** | 0 / 1 / 0 / 3 / 1 no reading |
-| cap at the line (margin 0 bp; the primary) | SRF-regime target days (1104 days) | -2.2% [-9.7%, -0.0%]; d -0.025 [-0.116, +0.000]: **undecided (skill interval: loss)** | -9.7% [-33.5%, -0.8%]; d -0.025 [-0.116, +0.000]: **undecided (skill interval: loss)** | 0 / 1 / 0 / 3 / 1 no reading |
-| cap at the line + 5 bp | all decision days (1855 days) | -0.2% [-1.5%, +0.1%]; d -0.004 [-0.026, +0.001]: **undecided** | -0.4% [-2.8%, +0.1%]; d -0.004 [-0.026, +0.001]: **undecided** | 0 / 1 / 0 / 3 / 1 no reading |
-| cap at the line + 5 bp | SRF-regime target days (1104 days) | -0.8% [-4.8%, +0.0%]; d -0.010 [-0.055, +0.000]: **undecided** | -3.8% [-17.8%, -0.2%]; d -0.010 [-0.055, +0.000]: **undecided (skill interval: loss)** | 0 / 1 / 0 / 3 / 1 no reading |
-| cap at the line + 10 bp | all decision days (1855 days) | -0.0% [-0.5%, +0.1%]; d -0.001 [-0.009, +0.001]: **undecided** | -0.1% [-0.9%, +0.1%]; d -0.001 [-0.009, +0.001]: **undecided** | 0 / 0 / 1 / 3 / 1 no reading |
-| cap at the line + 10 bp | SRF-regime target days (1104 days) | -0.1% [-1.3%, +0.2%]; d -0.002 [-0.014, +0.002]: **undecided** | -0.7% [-5.3%, +0.8%]; d -0.002 [-0.014, +0.002]: **undecided** | 0 / 0 / 1 / 3 / 1 no reading |
+| cap at the line (margin 0 bp; the primary) | all decision days (1855 days) | -0.6% [-3.9%, +0.1%]; d -0.010 [-0.066, +0.002]: **undecided** | -1.2% [-7.1%, +0.2%]; d -0.010 [-0.066, +0.002]: **undecided** | 0 / 1 / 1 / 3 |
+| cap at the line (margin 0 bp; the primary) | SRF-regime target days (1104 days) | -2.2% [-9.7%, -0.0%]; d -0.025 [-0.116, +0.000]: **undecided (skill interval: loss)** | -9.7% [-33.5%, -0.8%]; d -0.025 [-0.116, +0.000]: **undecided (skill interval: loss)** | 0 / 1 / 1 / 3 |
+| cap at the line + 5 bp | all decision days (1855 days) | -0.2% [-1.5%, +0.1%]; d -0.004 [-0.026, +0.001]: **undecided** | -0.4% [-2.8%, +0.1%]; d -0.004 [-0.026, +0.001]: **undecided** | 0 / 1 / 1 / 3 |
+| cap at the line + 5 bp | SRF-regime target days (1104 days) | -0.8% [-4.8%, +0.0%]; d -0.010 [-0.055, +0.000]: **undecided** | -3.8% [-17.8%, -0.2%]; d -0.010 [-0.055, +0.000]: **undecided (skill interval: loss)** | 0 / 1 / 1 / 3 |
+| cap at the line + 10 bp | all decision days (1855 days) | -0.0% [-0.5%, +0.1%]; d -0.001 [-0.009, +0.001]: **undecided** | -0.1% [-0.9%, +0.1%]; d -0.001 [-0.009, +0.001]: **undecided** | 0 / 0 / 2 / 3 |
+| cap at the line + 10 bp | SRF-regime target days (1104 days) | -0.1% [-1.3%, +0.2%]; d -0.002 [-0.014, +0.002]: **undecided** | -0.7% [-5.3%, +0.8%]; d -0.002 [-0.014, +0.002]: **undecided** | 0 / 0 / 2 / 3 |
 
 ## 1. Realised: how often SOFR - IORB closed above the line
 
@@ -246,9 +246,9 @@ How often each cap arm changes the forecast, as the share of the same cells in w
 | B1' (#960) | 1.376 | | | | |
 | B2 | 1.353 | | | | |
 | (s3) the H5 candidate | 1.115 |  | +30.9% [+24.4%, +40.4%]; d +0.498 [+0.260, +1.145] | +18.9% [+10.2%, +31.0%]; d +0.261 [+0.096, +0.676] | +17.5% [+4.7%, +27.7%]; d +0.237 [+0.047, +0.465] |
-| cap at the line (margin 0 bp; the primary) | 1.115 | undefined (studentized bound not computed); unstudentized d -0.000 [-0.001, +0.001] | +30.8% [+24.4%, +40.5%]; d +0.498 [+0.260, +1.145] | +18.9% [+10.2%, +31.0%]; d +0.261 [+0.096, +0.676] | +17.5% [+4.7%, +27.7%]; d +0.237 [+0.047, +0.465] |
-| cap at the line + 5 bp | 1.115 | undefined (studentized bound not computed); unstudentized d +0.000 [+0.000, +0.000] | +30.9% [+24.4%, +40.5%]; d +0.498 [+0.260, +1.146] | +19.0% [+10.2%, +31.0%]; d +0.261 [+0.096, +0.677] | +17.5% [+4.8%, +27.7%]; d +0.237 [+0.047, +0.465] |
-| cap at the line + 10 bp | 1.115 | undefined (studentized bound not computed); unstudentized d +0.000 [+0.000, +0.000] | +30.9% [+24.4%, +40.4%]; d +0.498 [+0.260, +1.145] | +19.0% [+10.2%, +31.0%]; d +0.261 [+0.096, +0.677] | +17.5% [+4.7%, +27.7%]; d +0.237 [+0.047, +0.465] |
+| cap at the line (margin 0 bp; the primary) | 1.115 | skill undefined; d -0.000 [-0.002, +0.000] (4 of 10000 resamples dropped) | +30.8% [+24.4%, +40.5%]; d +0.498 [+0.260, +1.145] | +18.9% [+10.2%, +31.0%]; d +0.261 [+0.096, +0.676] | +17.5% [+4.7%, +27.7%]; d +0.237 [+0.047, +0.465] |
+| cap at the line + 5 bp | 1.115 | skill undefined; d +0.000 [-0.000, +0.007] (588 of 10000 resamples dropped) | +30.9% [+24.4%, +40.5%]; d +0.498 [+0.260, +1.146] | +19.0% [+10.2%, +31.0%]; d +0.261 [+0.096, +0.677] | +17.5% [+4.8%, +27.7%]; d +0.237 [+0.047, +0.465] |
+| cap at the line + 10 bp | 1.115 | skill undefined; d +0.000 [-0.000, +0.000] (2872 of 10000 resamples dropped) | +30.9% [+24.4%, +40.4%]; d +0.498 [+0.260, +1.145] | +19.0% [+10.2%, +31.0%]; d +0.261 [+0.096, +0.677] | +17.5% [+4.7%, +27.7%]; d +0.237 [+0.047, +0.465] |
 
 **2025-26** (249 days)
 
@@ -308,9 +308,9 @@ How often each cap arm changes the forecast, as the share of the same cells in w
 | B1' (#960) | 0.208 | | | | |
 | B2 | 0.186 | | | | |
 | (s3) the H5 candidate | 0.175 |  | +37.6% [+20.1%, +87.6%]; d +0.105 [+0.011, +1.020] | +15.6% [-3.3%, +44.4%]; d +0.032 [-0.003, +0.426] | skill undefined; d +0.011 [-0.007, +0.183] |
-| cap at the line (margin 0 bp; the primary) | 0.175 | undefined (studentized bound not computed); unstudentized d -0.000 [-0.001, +0.001] | +37.6% [+19.8%, +86.5%]; d +0.105 [+0.011, +1.022] | +15.6% [-2.5%, +44.7%]; d +0.032 [-0.003, +0.426] | skill undefined; d +0.011 [-0.007, +0.182] |
-| cap at the line + 5 bp | 0.175 | undefined (studentized bound not computed); unstudentized d +0.000 [+0.000, +0.000] | +37.6% [+20.1%, +87.0%]; d +0.106 [+0.011, +1.022] | +15.7% [-3.3%, +44.9%]; d +0.033 [-0.003, +0.430] | skill undefined; d +0.011 [-0.007, +0.187] |
-| cap at the line + 10 bp | 0.175 | undefined (studentized bound not computed); unstudentized d +0.000 [+0.000, +0.000] | +37.6% [+20.1%, +87.4%]; d +0.105 [+0.011, +1.021] | +15.7% [-3.3%, +44.6%]; d +0.033 [-0.003, +0.427] | skill undefined; d +0.011 [-0.007, +0.184] |
+| cap at the line (margin 0 bp; the primary) | 0.175 | skill undefined; d -0.000 [-0.002, +0.000] (4 of 10000 resamples dropped) | +37.6% [+19.8%, +86.5%]; d +0.105 [+0.011, +1.022] | +15.6% [-2.5%, +44.7%]; d +0.032 [-0.003, +0.426] | skill undefined; d +0.011 [-0.007, +0.182] |
+| cap at the line + 5 bp | 0.175 | skill undefined; d +0.000 [-0.000, +0.007] (588 of 10000 resamples dropped) | +37.6% [+20.1%, +87.0%]; d +0.106 [+0.011, +1.022] | +15.7% [-3.3%, +44.9%]; d +0.033 [-0.003, +0.430] | skill undefined; d +0.011 [-0.007, +0.187] |
+| cap at the line + 10 bp | 0.175 | skill undefined; d +0.000 [-0.000, +0.000] (2872 of 10000 resamples dropped) | +37.6% [+20.1%, +87.4%]; d +0.105 [+0.011, +1.021] | +15.7% [-3.3%, +44.6%]; d +0.033 [-0.003, +0.427] | skill undefined; d +0.011 [-0.007, +0.184] |
 
 **2025-26** (249 days)
 
@@ -346,8 +346,8 @@ How often each cap arm changes the forecast, as the share of the same cells in w
 | B1' (#960) | 4.233 | | | | |
 | B2 | 5.014 | | | | |
 | (s3) the H5 candidate | 3.613 |  | +17.1% [-6.9%, +25.1%]; d +0.747 [-0.063, +1.697] | +14.6% [-12.1%, +23.0%]; d +0.619 [-0.164, +1.455] | +27.9% [-26.3%, +51.4%]; d +1.401 [-0.572, +3.051] |
-| cap at the line (margin 0 bp; the primary) | 3.613 | undefined (studentized bound not computed); unstudentized d +0.000 [-0.000, +0.001] | +17.1% [-6.9%, +25.1%]; d +0.748 [-0.063, +1.699] | +14.6% [-12.1%, +23.0%]; d +0.620 [-0.165, +1.456] | +27.9% [-26.3%, +51.4%]; d +1.401 [-0.571, +3.051] |
-| cap at the line + 5 bp | 3.613 | undefined (studentized bound not computed); unstudentized d +0.000 [+0.000, +0.000] | +17.1% [-6.9%, +25.1%]; d +0.747 [-0.063, +1.697] | +14.6% [-12.1%, +23.0%]; d +0.619 [-0.164, +1.455] | +27.9% [-26.3%, +51.4%]; d +1.401 [-0.572, +3.051] |
+| cap at the line (margin 0 bp; the primary) | 3.613 | skill undefined; d +0.000 [-0.000, +0.002] (906 of 10000 resamples dropped) | +17.1% [-6.9%, +25.1%]; d +0.748 [-0.063, +1.699] | +14.6% [-12.1%, +23.0%]; d +0.620 [-0.165, +1.456] | +27.9% [-26.3%, +51.4%]; d +1.401 [-0.571, +3.051] |
+| cap at the line + 5 bp | 3.613 | skill undefined; d +0.000 [-0.000, +0.000] (2399 of 10000 resamples dropped) | +17.1% [-6.9%, +25.1%]; d +0.747 [-0.063, +1.697] | +14.6% [-12.1%, +23.0%]; d +0.619 [-0.164, +1.455] | +27.9% [-26.3%, +51.4%]; d +1.401 [-0.572, +3.051] |
 | cap at the line + 10 bp | 3.613 | identical | +17.1% [-6.9%, +25.1%]; d +0.747 [-0.063, +1.697] | +14.6% [-12.1%, +23.0%]; d +0.619 [-0.164, +1.455] | +27.9% [-26.3%, +51.4%]; d +1.401 [-0.572, +3.051] |
 
 **tax_date** (89 days)
@@ -358,9 +358,9 @@ How often each cap arm changes the forecast, as the share of the same cells in w
 | B1' (#960) | 5.402 | | | | |
 | B2 | 7.738 | | | | |
 | (s3) the H5 candidate | 5.173 |  | +5.9% [-1.9%, +11.3%]; d +0.323 [-0.020, +0.889] | +4.2% [+2.0%, +6.4%]; d +0.229 [-0.047, +0.873] | +33.1% [-56.1%, +57.7%]; d +2.565 [+1.386, +4.828] |
-| cap at the line (margin 0 bp; the primary) | 5.164 | undefined (studentized bound not computed); unstudentized d +0.009 [-0.001, +0.023] | +6.0% [-2.3%, +12.0%]; d +0.332 [-0.020, +0.909] | +4.4% [+1.8%, +6.7%]; d +0.238 [-0.045, +0.882] | +33.3% [-56.8%, +57.9%]; d +2.573 [+1.391, +4.829] |
-| cap at the line + 5 bp | 5.169 | undefined (studentized bound not computed); unstudentized d +0.004 [+0.000, +0.011] | +6.0% [-2.1%, +11.7%]; d +0.327 [-0.021, +0.897] | +4.3% [+1.9%, +6.6%]; d +0.234 [-0.046, +0.876] | +33.2% [-56.6%, +57.8%]; d +2.569 [+1.388, +4.830] |
-| cap at the line + 10 bp | 5.171 | undefined (studentized bound not computed); unstudentized d +0.002 [+0.000, +0.005] | +5.9% [-2.0%, +11.5%]; d +0.325 [-0.020, +0.894] | +4.3% [+2.0%, +6.5%]; d +0.231 [-0.046, +0.875] | +33.2% [-56.4%, +57.7%]; d +2.567 [+1.387, +4.829] |
+| cap at the line (margin 0 bp; the primary) | 5.164 | skill undefined; d +0.009 [-0.002, +0.321] (608 of 10000 resamples dropped) | +6.0% [-2.3%, +12.0%]; d +0.332 [-0.020, +0.909] | +4.4% [+1.8%, +6.7%]; d +0.238 [-0.045, +0.882] | +33.3% [-56.8%, +57.9%]; d +2.573 [+1.391, +4.829] |
+| cap at the line + 5 bp | 5.169 | skill undefined; d +0.004 [-0.001, +0.113] (931 of 10000 resamples dropped) | +6.0% [-2.1%, +11.7%]; d +0.327 [-0.021, +0.897] | +4.3% [+1.9%, +6.6%]; d +0.234 [-0.046, +0.876] | +33.2% [-56.6%, +57.8%]; d +2.569 [+1.388, +4.830] |
+| cap at the line + 10 bp | 5.171 | skill undefined; d +0.002 [-0.000, +0.058] (931 of 10000 resamples dropped) | +5.9% [-2.0%, +11.5%]; d +0.325 [-0.020, +0.894] | +4.3% [+2.0%, +6.5%]; d +0.231 [-0.046, +0.875] | +33.2% [-56.4%, +57.7%]; d +2.567 [+1.387, +4.829] |
 
 **turn** (120 days)
 
@@ -370,9 +370,9 @@ How often each cap arm changes the forecast, as the share of the same cells in w
 | B1' (#960) | 2.392 | | | | |
 | B2 | 3.320 | | | | |
 | (s3) the H5 candidate | 1.776 |  | +31.8% [+21.6%, +43.2%]; d +0.827 [+0.263, +1.842] | +25.8% [+16.6%, +34.8%]; d +0.616 [+0.171, +1.216] | +46.5% [+26.1%, +66.0%]; d +1.544 [+0.755, +3.602] |
-| cap at the line (margin 0 bp; the primary) | 2.068 | undefined (studentized bound not computed); unstudentized d -0.292 [-0.715, +0.001] | +20.5% [+5.0%, +30.0%]; d +0.535 [+0.213, +1.039] | +13.6% [-13.5%, +27.7%]; d +0.324 [-0.174, +0.721] | +37.7% [+22.5%, +63.9%]; d +1.252 [+0.626, +2.357] |
-| cap at the line + 5 bp | 1.927 | undefined (studentized bound not computed); unstudentized d -0.151 [-0.364, +0.000] | +26.0% [+20.5%, +32.4%]; d +0.676 [+0.270, +1.313] | +19.5% [+9.3%, +29.3%]; d +0.465 [+0.144, +0.906] | +42.0% [+25.4%, +59.2%]; d +1.393 [+0.696, +2.846] |
-| cap at the line + 10 bp | 1.826 | undefined (studentized bound not computed); unstudentized d -0.050 [-0.129, +0.000] | +29.9% [+22.4%, +37.9%]; d +0.777 [+0.258, +1.608] | +23.7% [+16.3%, +31.9%]; d +0.566 [+0.160, +1.066] | +45.0% [+25.9%, +62.9%]; d +1.495 [+0.735, +3.325] |
+| cap at the line (margin 0 bp; the primary) | 2.068 | skill undefined; d -0.292 [-9451.604, +0.049] (246 of 10000 resamples dropped) | +20.5% [+5.0%, +30.0%]; d +0.535 [+0.213, +1.039] | +13.6% [-13.5%, +27.7%]; d +0.324 [-0.174, +0.721] | +37.7% [+22.5%, +63.9%]; d +1.252 [+0.626, +2.357] |
+| cap at the line + 5 bp | 1.927 | skill undefined; d -0.151 [-171.287, +0.030] (925 of 10000 resamples dropped) | +26.0% [+20.5%, +32.4%]; d +0.676 [+0.270, +1.313] | +19.5% [+9.3%, +29.3%]; d +0.465 [+0.144, +0.906] | +42.0% [+25.4%, +59.2%]; d +1.393 [+0.696, +2.846] |
+| cap at the line + 10 bp | 1.826 | skill undefined; d -0.050 [-46.112, +0.010] (925 of 10000 resamples dropped) | +29.9% [+22.4%, +37.9%]; d +0.777 [+0.258, +1.608] | +23.7% [+16.3%, +31.9%]; d +0.566 [+0.160, +1.066] | +45.0% [+25.9%, +62.9%]; d +1.495 [+0.735, +3.325] |
 
 ### upper-tail twCRPS (weight 1{z > 0 bp}) by pressure-day type (turn record in force; target day)
 
@@ -396,8 +396,8 @@ How often each cap arm changes the forecast, as the share of the same cells in w
 | B1' (#960) | 2.629 | | | | |
 | B2 | 2.806 | | | | |
 | (s3) the H5 candidate | 2.142 |  | skill undefined; d +0.532 [+0.034, +2.811] | skill undefined; d +0.487 [+0.030, +2.570] | skill undefined; d +0.665 [-0.155, +4.604] |
-| cap at the line (margin 0 bp; the primary) | 2.141 | undefined (studentized bound not computed); unstudentized d +0.000 [-0.000, +0.001] | skill undefined; d +0.532 [+0.033, +2.812] | skill undefined; d +0.488 [+0.030, +2.572] | skill undefined; d +0.665 [-0.154, +4.612] |
-| cap at the line + 5 bp | 2.142 | undefined (studentized bound not computed); unstudentized d +0.000 [+0.000, +0.000] | skill undefined; d +0.532 [+0.034, +2.811] | skill undefined; d +0.487 [+0.030, +2.570] | skill undefined; d +0.665 [-0.154, +4.605] |
+| cap at the line (margin 0 bp; the primary) | 2.141 | skill undefined; d +0.000 [-0.000, +0.002] (906 of 10000 resamples dropped) | skill undefined; d +0.532 [+0.033, +2.812] | skill undefined; d +0.488 [+0.030, +2.572] | skill undefined; d +0.665 [-0.154, +4.612] |
+| cap at the line + 5 bp | 2.142 | skill undefined; d +0.000 [-0.000, +0.000] (2399 of 10000 resamples dropped) | skill undefined; d +0.532 [+0.034, +2.811] | skill undefined; d +0.487 [+0.030, +2.570] | skill undefined; d +0.665 [-0.154, +4.605] |
 | cap at the line + 10 bp | 2.142 | identical | skill undefined; d +0.532 [+0.034, +2.811] | skill undefined; d +0.487 [+0.030, +2.570] | skill undefined; d +0.665 [-0.155, +4.604] |
 
 **tax_date** (89 days)
@@ -408,9 +408,9 @@ How often each cap arm changes the forecast, as the share of the same cells in w
 | B1' (#960) | 4.646 | | | | |
 | B2 | 5.660 | | | | |
 | (s3) the H5 candidate | 4.415 |  | +5.3% [-6.9%, +12.5%]; d +0.247 [+0.009, +1.508] | +5.0% [-1.0%, +8.6%]; d +0.231 [+0.003, +1.684] | skill undefined; d +1.245 [+0.082, +4.519] |
-| cap at the line (margin 0 bp; the primary) | 4.406 | undefined (studentized bound not computed); unstudentized d +0.009 [-0.001, +0.023] | +5.5% [-7.4%, +13.9%]; d +0.256 [+0.011, +1.584] | +5.2% [-2.3%, +9.5%]; d +0.239 [+0.007, +1.577] | skill undefined; d +1.254 [+0.087, +4.503] |
-| cap at the line + 5 bp | 4.411 | undefined (studentized bound not computed); unstudentized d +0.004 [+0.000, +0.011] | +5.4% [-7.4%, +13.1%]; d +0.251 [+0.010, +1.518] | +5.1% [-1.7%, +9.0%]; d +0.235 [+0.006, +1.650] | skill undefined; d +1.249 [+0.084, +4.511] |
-| cap at the line + 10 bp | 4.413 | undefined (studentized bound not computed); unstudentized d +0.002 [+0.000, +0.005] | +5.3% [-7.1%, +12.8%]; d +0.249 [+0.009, +1.512] | +5.0% [-1.3%, +8.8%]; d +0.233 [+0.005, +1.649] | skill undefined; d +1.247 [+0.082, +4.514] |
+| cap at the line (margin 0 bp; the primary) | 4.406 | skill undefined; d +0.009 [-0.002, +0.321] (608 of 10000 resamples dropped) | +5.5% [-7.4%, +13.9%]; d +0.256 [+0.011, +1.584] | +5.2% [-2.3%, +9.5%]; d +0.239 [+0.007, +1.577] | skill undefined; d +1.254 [+0.087, +4.503] |
+| cap at the line + 5 bp | 4.411 | skill undefined; d +0.004 [-0.001, +0.113] (931 of 10000 resamples dropped) | +5.4% [-7.4%, +13.1%]; d +0.251 [+0.010, +1.518] | +5.1% [-1.7%, +9.0%]; d +0.235 [+0.006, +1.650] | skill undefined; d +1.249 [+0.084, +4.511] |
+| cap at the line + 10 bp | 4.413 | skill undefined; d +0.002 [-0.000, +0.058] (931 of 10000 resamples dropped) | +5.3% [-7.1%, +12.8%]; d +0.249 [+0.009, +1.512] | +5.0% [-1.3%, +8.8%]; d +0.233 [+0.005, +1.649] | skill undefined; d +1.247 [+0.082, +4.514] |
 
 **turn** (120 days)
 
@@ -420,9 +420,9 @@ How often each cap arm changes the forecast, as the share of the same cells in w
 | B1' (#960) | 1.462 | | | | |
 | B2 | 2.010 | | | | |
 | (s3) the H5 candidate | 1.033 |  | +29.0% [+9.5%, +47.8%]; d +0.422 [+0.019, +1.832] | +29.4% [+8.7%, +41.1%]; d +0.429 [+0.091, +1.080] | +48.6% [-16.4%, +85.2%]; d +0.977 [+0.251, +3.870] |
-| cap at the line (margin 0 bp; the primary) | 1.325 | undefined (studentized bound not computed); unstudentized d -0.292 [-0.715, +0.001] | +8.9% [-25.7%, +55.0%]; d +0.130 [-0.155, +0.745] | +9.4% [-52.4%, +36.7%]; d +0.137 [-0.378, +0.543] | +34.1% [+18.2%, +61.2%]; d +0.685 [+0.174, +1.942] |
-| cap at the line + 5 bp | 1.184 | undefined (studentized bound not computed); unstudentized d -0.151 [-0.364, +0.000] | +18.6% [+12.2%, +27.9%]; d +0.271 [-0.000, +1.125] | +19.0% [-2.7%, +34.8%]; d +0.278 [+0.010, +0.880] | +41.1% [+13.0%, +63.9%]; d +0.826 [+0.222, +2.710] |
-| cap at the line + 10 bp | 1.083 | undefined (studentized bound not computed); unstudentized d -0.050 [-0.129, +0.000] | +25.6% [+15.0%, +37.0%]; d +0.372 [+0.010, +1.566] | +25.9% [+12.2%, +36.3%]; d +0.379 [+0.074, +0.932] | +46.1% [-3.1%, +76.6%]; d +0.927 [+0.243, +3.462] |
+| cap at the line (margin 0 bp; the primary) | 1.325 | skill undefined; d -0.292 [-9451.604, +0.049] (246 of 10000 resamples dropped) | +8.9% [-25.7%, +55.0%]; d +0.130 [-0.155, +0.745] | +9.4% [-52.4%, +36.7%]; d +0.137 [-0.378, +0.543] | +34.1% [+18.2%, +61.2%]; d +0.685 [+0.174, +1.942] |
+| cap at the line + 5 bp | 1.184 | skill undefined; d -0.151 [-171.287, +0.030] (925 of 10000 resamples dropped) | +18.6% [+12.2%, +27.9%]; d +0.271 [-0.000, +1.125] | +19.0% [-2.7%, +34.8%]; d +0.278 [+0.010, +0.880] | +41.1% [+13.0%, +63.9%]; d +0.826 [+0.222, +2.710] |
+| cap at the line + 10 bp | 1.083 | skill undefined; d -0.050 [-46.112, +0.010] (925 of 10000 resamples dropped) | +25.6% [+15.0%, +37.0%]; d +0.372 [+0.010, +1.566] | +25.9% [+12.2%, +36.3%]; d +0.379 [+0.074, +0.932] | +46.1% [-3.1%, +76.6%]; d +0.927 [+0.243, +3.462] |
 
 ### grid CRPS (23 levels) by calendar target-day type (the groups overlap)
 
@@ -434,9 +434,9 @@ How often each cap arm changes the forecast, as the share of the same cells in w
 | B1' (#960) | 2.922 | | | | |
 | B2 | 3.645 | | | | |
 | (s3) the H5 candidate | 2.341 |  | +22.8% [+7.5%, +34.2%]; d +0.693 [+0.073, +1.472] | +19.9% [+4.8%, +30.6%]; d +0.581 [+0.036, +1.238] | +35.8% [+18.6%, +53.7%]; d +1.304 [+0.742, +2.505] |
-| cap at the line (margin 0 bp; the primary) | 2.528 | undefined (studentized bound not computed); unstudentized d -0.187 [-0.505, +0.001] | +16.7% [+4.6%, +25.4%]; d +0.506 [+0.029, +1.082] | +13.5% [+1.1%, +21.9%]; d +0.394 [-0.019, +0.869] | +30.6% [+17.2%, +43.2%]; d +1.117 [+0.668, +1.784] |
-| cap at the line + 5 bp | 2.421 | undefined (studentized bound not computed); unstudentized d -0.080 [-0.212, +0.001] | +20.2% [+5.9%, +28.8%]; d +0.613 [+0.047, +1.247] | +17.1% [+3.1%, +25.2%]; d +0.501 [+0.006, +1.033] | +33.6% [+17.7%, +47.9%]; d +1.224 [+0.721, +2.149] |
-| cap at the line + 10 bp | 2.366 | undefined (studentized bound not computed); unstudentized d -0.025 [-0.071, +0.000] | +22.0% [+6.9%, +32.3%]; d +0.668 [+0.064, +1.386] | +19.0% [+4.2%, +28.6%]; d +0.555 [+0.027, +1.161] | +35.1% [+18.2%, +51.6%]; d +1.278 [+0.733, +2.380] |
+| cap at the line (margin 0 bp; the primary) | 2.528 | skill undefined; d -0.187 [-106.467, +0.028] (69 of 10000 resamples dropped) | +16.7% [+4.6%, +25.4%]; d +0.506 [+0.029, +1.082] | +13.5% [+1.1%, +21.9%]; d +0.394 [-0.019, +0.869] | +30.6% [+17.2%, +43.2%]; d +1.117 [+0.668, +1.784] |
+| cap at the line + 5 bp | 2.421 | skill undefined; d -0.080 [-30.528, +0.013] (253 of 10000 resamples dropped) | +20.2% [+5.9%, +28.8%]; d +0.613 [+0.047, +1.247] | +17.1% [+3.1%, +25.2%]; d +0.501 [+0.006, +1.033] | +33.6% [+17.7%, +47.9%]; d +1.224 [+0.721, +2.149] |
+| cap at the line + 10 bp | 2.366 | skill undefined; d -0.025 [-7.936, +0.005] (274 of 10000 resamples dropped) | +22.0% [+6.9%, +32.3%]; d +0.668 [+0.064, +1.386] | +19.0% [+4.2%, +28.6%]; d +0.555 [+0.027, +1.161] | +35.1% [+18.2%, +51.6%]; d +1.278 [+0.733, +2.380] |
 
 **quarter_end** (30 days)
 
@@ -446,9 +446,9 @@ How often each cap arm changes the forecast, as the share of the same cells in w
 | B1' (#960) | 6.809 | | | | |
 | B2 | 7.500 | | | | |
 | (s3) the H5 candidate | 5.105 |  | +26.6% [+0.9%, +41.2%]; d +1.851 [-0.107, +5.538] | +25.0% [-2.4%, +40.1%]; d +1.704 [-0.186, +5.152] | +31.9% [+9.3%, +45.2%]; d +2.394 [+1.293, +5.099] |
-| cap at the line (margin 0 bp; the primary) | 5.444 | undefined (studentized bound not computed); unstudentized d -0.339 [-0.683, +0.003] | +21.7% [+2.9%, +29.4%]; d +1.512 [-0.097, +3.994] | +20.0% [-0.4%, +28.1%]; d +1.365 [-0.166, +3.618] | +27.4% [-1.9%, +42.4%]; d +2.055 [+0.818, +4.737] |
-| cap at the line + 5 bp | 5.282 | undefined (studentized bound not computed); unstudentized d -0.176 [-0.354, +0.001] | +24.1% [+0.7%, +34.2%]; d +1.674 [-0.097, +4.638] | +22.4% [-2.8%, +33.0%]; d +1.527 [-0.182, +4.287] | +29.6% [+4.5%, +43.3%]; d +2.218 [+1.084, +4.906] |
-| cap at the line + 10 bp | 5.129 | undefined (studentized bound not computed); unstudentized d -0.024 [-0.049, +0.000] | +26.3% [+0.8%, +40.1%]; d +1.827 [-0.107, +5.406] | +24.7% [-2.5%, +39.1%]; d +1.680 [-0.184, +5.027] | +31.6% [+8.7%, +44.9%]; d +2.370 [+1.273, +5.069] |
+| cap at the line (margin 0 bp; the primary) | 5.444 | skill undefined; d -0.339 [-54.012, +0.101] (753 of 10000 resamples dropped) | +21.7% [+2.9%, +29.4%]; d +1.512 [-0.097, +3.994] | +20.0% [-0.4%, +28.1%]; d +1.365 [-0.166, +3.618] | +27.4% [-1.9%, +42.4%]; d +2.055 [+0.818, +4.737] |
+| cap at the line + 5 bp | 5.282 | skill undefined; d -0.176 [-42.025, +0.053] (1005 of 10000 resamples dropped) | +24.1% [+0.7%, +34.2%]; d +1.674 [-0.097, +4.638] | +22.4% [-2.8%, +33.0%]; d +1.527 [-0.182, +4.287] | +29.6% [+4.5%, +43.3%]; d +2.218 [+1.084, +4.906] |
+| cap at the line + 10 bp | 5.129 | skill undefined; d -0.024 [-2.080, +0.007] (1062 of 10000 resamples dropped) | +26.3% [+0.8%, +40.1%]; d +1.827 [-0.107, +5.406] | +24.7% [-2.5%, +39.1%]; d +1.680 [-0.184, +5.027] | +31.6% [+8.7%, +44.9%]; d +2.370 [+1.273, +5.069] |
 
 **tax_date** (89 days)
 
@@ -458,9 +458,9 @@ How often each cap arm changes the forecast, as the share of the same cells in w
 | B1' (#960) | 5.402 | | | | |
 | B2 | 7.738 | | | | |
 | (s3) the H5 candidate | 5.173 |  | +5.9% [-1.9%, +11.3%]; d +0.323 [-0.020, +0.889] | +4.2% [+2.0%, +6.4%]; d +0.229 [-0.047, +0.873] | +33.1% [-56.1%, +57.7%]; d +2.565 [+1.386, +4.828] |
-| cap at the line (margin 0 bp; the primary) | 5.164 | undefined (studentized bound not computed); unstudentized d +0.009 [-0.001, +0.023] | +6.0% [-2.3%, +12.0%]; d +0.332 [-0.020, +0.909] | +4.4% [+1.8%, +6.7%]; d +0.238 [-0.045, +0.882] | +33.3% [-56.8%, +57.9%]; d +2.573 [+1.391, +4.829] |
-| cap at the line + 5 bp | 5.169 | undefined (studentized bound not computed); unstudentized d +0.004 [+0.000, +0.011] | +6.0% [-2.1%, +11.7%]; d +0.327 [-0.021, +0.897] | +4.3% [+1.9%, +6.6%]; d +0.234 [-0.046, +0.876] | +33.2% [-56.6%, +57.8%]; d +2.569 [+1.388, +4.830] |
-| cap at the line + 10 bp | 5.171 | undefined (studentized bound not computed); unstudentized d +0.002 [+0.000, +0.005] | +5.9% [-2.0%, +11.5%]; d +0.325 [-0.020, +0.894] | +4.3% [+2.0%, +6.5%]; d +0.231 [-0.046, +0.875] | +33.2% [-56.4%, +57.7%]; d +2.567 [+1.387, +4.829] |
+| cap at the line (margin 0 bp; the primary) | 5.164 | skill undefined; d +0.009 [-0.002, +0.321] (608 of 10000 resamples dropped) | +6.0% [-2.3%, +12.0%]; d +0.332 [-0.020, +0.909] | +4.4% [+1.8%, +6.7%]; d +0.238 [-0.045, +0.882] | +33.3% [-56.8%, +57.9%]; d +2.573 [+1.391, +4.829] |
+| cap at the line + 5 bp | 5.169 | skill undefined; d +0.004 [-0.001, +0.113] (931 of 10000 resamples dropped) | +6.0% [-2.1%, +11.7%]; d +0.327 [-0.021, +0.897] | +4.3% [+1.9%, +6.6%]; d +0.234 [-0.046, +0.876] | +33.2% [-56.6%, +57.8%]; d +2.569 [+1.388, +4.830] |
+| cap at the line + 10 bp | 5.171 | skill undefined; d +0.002 [-0.000, +0.058] (931 of 10000 resamples dropped) | +5.9% [-2.0%, +11.5%]; d +0.325 [-0.020, +0.894] | +4.3% [+2.0%, +6.5%]; d +0.231 [-0.046, +0.875] | +33.2% [-56.4%, +57.7%]; d +2.567 [+1.387, +4.829] |
 
 **settlement** (946 days)
 
@@ -482,9 +482,9 @@ How often each cap arm changes the forecast, as the share of the same cells in w
 | B1' (#960) | 4.426 | | | | |
 | B2 | 5.466 | | | | |
 | (s3) the H5 candidate | 4.471 |  | +2.4% [-2.5%, +6.4%]; d +0.111 [-0.049, +0.287] | -1.0% [-5.1%, +3.3%]; d -0.045 [-0.158, +0.077] | +18.2% [-18.3%, +40.7%]; d +0.995 [+0.512, +1.650] |
-| cap at the line (margin 0 bp; the primary) | 4.485 | undefined (studentized bound not computed); unstudentized d -0.015 [-0.044, +0.004] | +2.1% [-2.0%, +5.5%]; d +0.097 [-0.054, +0.260] | -1.3% [-5.7%, +3.4%]; d -0.059 [-0.169, +0.058] | +17.9% [-17.9%, +39.6%]; d +0.981 [+0.499, +1.612] |
-| cap at the line + 5 bp | 4.469 | undefined (studentized bound not computed); unstudentized d +0.002 [-0.001, +0.006] | +2.5% [-2.6%, +6.5%]; d +0.113 [-0.048, +0.291] | -1.0% [-5.1%, +3.2%]; d -0.043 [-0.156, +0.080] | +18.2% [-18.3%, +40.8%]; d +0.997 [+0.512, +1.655] |
-| cap at the line + 10 bp | 4.469 | undefined (studentized bound not computed); unstudentized d +0.002 [+0.000, +0.005] | +2.5% [-2.6%, +6.5%]; d +0.113 [-0.048, +0.291] | -1.0% [-5.1%, +3.2%]; d -0.043 [-0.157, +0.080] | +18.2% [-18.3%, +40.7%]; d +0.997 [+0.513, +1.655] |
+| cap at the line (margin 0 bp; the primary) | 4.485 | skill undefined; d -0.015 [-36.946, +0.003] (253 of 10000 resamples dropped) | +2.1% [-2.0%, +5.5%]; d +0.097 [-0.054, +0.260] | -1.3% [-5.7%, +3.4%]; d -0.059 [-0.169, +0.058] | +17.9% [-17.9%, +39.6%]; d +0.981 [+0.499, +1.612] |
+| cap at the line + 5 bp | 4.469 | skill undefined; d +0.002 [-0.000, +0.052] (934 of 10000 resamples dropped) | +2.5% [-2.6%, +6.5%]; d +0.113 [-0.048, +0.291] | -1.0% [-5.1%, +3.2%]; d -0.043 [-0.156, +0.080] | +18.2% [-18.3%, +40.8%]; d +0.997 [+0.512, +1.655] |
+| cap at the line + 10 bp | 4.469 | skill undefined; d +0.002 [-0.000, +0.127] (934 of 10000 resamples dropped) | +2.5% [-2.6%, +6.5%]; d +0.113 [-0.048, +0.291] | -1.0% [-5.1%, +3.2%]; d -0.043 [-0.157, +0.080] | +18.2% [-18.3%, +40.7%]; d +0.997 [+0.513, +1.655] |
 
 **iorb_window** (78 days)
 
@@ -494,9 +494,9 @@ How often each cap arm changes the forecast, as the share of the same cells in w
 | B1' (#960) | 1.930 | | | | |
 | B2 | 3.588 | | | | |
 | (s3) the H5 candidate | 2.197 |  | +56.9% [+32.8%, +130.0%]; d +2.900 [+0.177, +35.439] | -13.9% [-109.6%, +15.3%]; d -0.267 [-1.719, +0.238] | +38.8% [-21.6%, +65.7%]; d +1.390 [+0.231, +3.488] |
-| cap at the line (margin 0 bp; the primary) | 2.468 | undefined (studentized bound not computed); unstudentized d -0.271 [-0.702, +0.008] | +51.6% [+12.1%, +146.1%]; d +2.629 [-0.130, +39.195] | -27.9% [-79.4%, -7.8%]; d -0.538 [-2.362, -0.069] | +31.2% [-23.7%, +49.2%]; d +1.119 [+0.097, +2.319] |
-| cap at the line + 5 bp | 2.323 | undefined (studentized bound not computed); unstudentized d -0.126 [-0.332, +0.005] | +54.4% [+24.3%, +149.0%]; d +2.774 [+0.048, +43.689] | -20.4% [-92.7%, +2.2%]; d -0.393 [-2.061, +0.042] | +35.2% [-28.0%, +57.1%]; d +1.264 [+0.178, +2.886] |
-| cap at the line + 10 bp | 2.252 | undefined (studentized bound not computed); unstudentized d -0.055 [-0.154, +0.002] | +55.8% [+29.5%, +142.9%]; d +2.845 [+0.120, +38.646] | -16.7% [-113.8%, +9.0%]; d -0.322 [-2.044, +0.140] | +37.2% [-25.4%, +61.7%]; d +1.335 [+0.216, +3.213] |
+| cap at the line (margin 0 bp; the primary) | 2.468 | skill undefined; d -0.271 [-208.130, +0.059] (972 of 10000 resamples dropped) | +51.6% [+12.1%, +146.1%]; d +2.629 [-0.130, +39.195] | -27.9% [-79.4%, -7.8%]; d -0.538 [-2.362, -0.069] | +31.2% [-23.7%, +49.2%]; d +1.119 [+0.097, +2.319] |
+| cap at the line + 5 bp | 2.323 | skill undefined; d -0.126 [-143.073, +0.029] (1093 of 10000 resamples dropped) | +54.4% [+24.3%, +149.0%]; d +2.774 [+0.048, +43.689] | -20.4% [-92.7%, +2.2%]; d -0.393 [-2.061, +0.042] | +35.2% [-28.0%, +57.1%]; d +1.264 [+0.178, +2.886] |
+| cap at the line + 10 bp | 2.252 | skill undefined; d -0.055 [-269.037, +0.014] (1103 of 10000 resamples dropped) | +55.8% [+29.5%, +142.9%]; d +2.845 [+0.120, +38.646] | -16.7% [-113.8%, +9.0%]; d -0.322 [-2.044, +0.140] | +37.2% [-25.4%, +61.7%]; d +1.335 [+0.216, +3.213] |
 
 **dom_19_23** (305 days)
 
@@ -506,9 +506,9 @@ How often each cap arm changes the forecast, as the share of the same cells in w
 | B1' (#960) | 1.330 | | | | |
 | B2 | 1.930 | | | | |
 | (s3) the H5 candidate | 1.148 |  | +45.7% [+20.1%, +142.7%]; d +0.968 [+0.212, +8.863] | +13.7% [-2.0%, +36.0%]; d +0.182 [-0.007, +0.588] | +40.5% [+16.1%, +57.4%]; d +0.782 [+0.312, +1.387] |
-| cap at the line (margin 0 bp; the primary) | 1.144 | undefined (studentized bound not computed); unstudentized d +0.004 [+0.000, +0.010] | +45.9% [+20.5%, +141.3%]; d +0.972 [+0.217, +8.772] | +14.0% [-1.7%, +36.1%]; d +0.186 [-0.004, +0.593] | +40.7% [+16.0%, +57.6%]; d +0.786 [+0.315, +1.391] |
-| cap at the line + 5 bp | 1.146 | undefined (studentized bound not computed); unstudentized d +0.002 [+0.000, +0.004] | +45.8% [+20.3%, +142.1%]; d +0.970 [+0.214, +8.825] | +13.8% [-1.9%, +36.0%]; d +0.184 [-0.005, +0.589] | +40.6% [+16.1%, +57.5%]; d +0.784 [+0.314, +1.388] |
-| cap at the line + 10 bp | 1.147 | undefined (studentized bound not computed); unstudentized d +0.001 [+0.000, +0.002] | +45.8% [+20.2%, +142.4%]; d +0.969 [+0.213, +8.845] | +13.7% [-1.9%, +36.0%]; d +0.183 [-0.006, +0.588] | +40.6% [+16.1%, +57.4%]; d +0.783 [+0.313, +1.387] |
+| cap at the line (margin 0 bp; the primary) | 1.144 | skill undefined; d +0.004 [-0.000, +0.075] (79 of 10000 resamples dropped) | +45.9% [+20.5%, +141.3%]; d +0.972 [+0.217, +8.772] | +14.0% [-1.7%, +36.1%]; d +0.186 [-0.004, +0.593] | +40.7% [+16.0%, +57.6%]; d +0.786 [+0.315, +1.391] |
+| cap at the line + 5 bp | 1.146 | skill undefined; d +0.002 [-0.000, +0.030] (88 of 10000 resamples dropped) | +45.8% [+20.3%, +142.1%]; d +0.970 [+0.214, +8.825] | +13.8% [-1.9%, +36.0%]; d +0.184 [-0.005, +0.589] | +40.6% [+16.1%, +57.5%]; d +0.784 [+0.314, +1.388] |
+| cap at the line + 10 bp | 1.147 | skill undefined; d +0.001 [-0.000, +0.012] (171 of 10000 resamples dropped) | +45.8% [+20.2%, +142.4%]; d +0.969 [+0.213, +8.845] | +13.7% [-1.9%, +36.0%]; d +0.183 [-0.006, +0.588] | +40.6% [+16.1%, +57.4%]; d +0.783 [+0.313, +1.387] |
 
 **post_month_end_window** (267 days)
 
@@ -518,9 +518,9 @@ How often each cap arm changes the forecast, as the share of the same cells in w
 | B1' (#960) | 2.164 | | | | |
 | B2 | 2.906 | | | | |
 | (s3) the H5 candidate | 2.044 |  | +21.6% [+12.8%, +30.8%]; d +0.564 [+0.249, +1.296] | +5.5% [-7.5%, +14.5%]; d +0.120 [-0.100, +0.354] | +29.7% [+13.0%, +42.4%]; d +0.862 [+0.319, +1.507] |
-| cap at the line (margin 0 bp; the primary) | 2.053 | undefined (studentized bound not computed); unstudentized d -0.009 [-0.044, +0.019] | +21.3% [+12.5%, +30.6%]; d +0.554 [+0.243, +1.282] | +5.1% [-7.9%, +14.3%]; d +0.110 [-0.108, +0.345] | +29.4% [+12.9%, +41.8%]; d +0.853 [+0.314, +1.481] |
-| cap at the line + 5 bp | 2.052 | undefined (studentized bound not computed); unstudentized d -0.008 [-0.027, +0.007] | +21.3% [+12.5%, +30.6%]; d +0.556 [+0.244, +1.286] | +5.2% [-7.7%, +14.3%]; d +0.112 [-0.106, +0.347] | +29.4% [+12.9%, +41.9%]; d +0.855 [+0.314, +1.487] |
-| cap at the line + 10 bp | 2.044 | undefined (studentized bound not computed); unstudentized d -0.000 [-0.004, +0.004] | +21.6% [+12.7%, +30.9%]; d +0.564 [+0.248, +1.298] | +5.5% [-7.5%, +14.5%]; d +0.120 [-0.101, +0.354] | +29.7% [+13.1%, +42.4%]; d +0.862 [+0.319, +1.508] |
+| cap at the line (margin 0 bp; the primary) | 2.053 | skill undefined; d -0.009 [-0.642, +0.009] (5 of 10000 resamples dropped) | +21.3% [+12.5%, +30.6%]; d +0.554 [+0.243, +1.282] | +5.1% [-7.9%, +14.3%]; d +0.110 [-0.108, +0.345] | +29.4% [+12.9%, +41.8%]; d +0.853 [+0.314, +1.481] |
+| cap at the line + 5 bp | 2.052 | skill undefined; d -0.008 [-0.653, +0.003] (70 of 10000 resamples dropped) | +21.3% [+12.5%, +30.6%]; d +0.556 [+0.244, +1.286] | +5.2% [-7.7%, +14.3%]; d +0.112 [-0.106, +0.347] | +29.4% [+12.9%, +41.9%]; d +0.855 [+0.314, +1.487] |
+| cap at the line + 10 bp | 2.044 | skill undefined; d -0.000 [-0.008, +0.002] (164 of 10000 resamples dropped) | +21.6% [+12.7%, +30.9%]; d +0.564 [+0.248, +1.298] | +5.5% [-7.5%, +14.5%]; d +0.120 [-0.101, +0.354] | +29.7% [+13.1%, +42.4%]; d +0.862 [+0.319, +1.508] |
 
 **ordinary** (507 days)
 
@@ -531,8 +531,8 @@ How often each cap arm changes the forecast, as the share of the same cells in w
 | B2 | 1.726 | | | | |
 | (s3) the H5 candidate | 1.121 |  | +36.6% [+27.9%, +57.9%]; d +0.647 [+0.385, +1.514] | +15.4% [+9.8%, +21.3%]; d +0.204 [+0.117, +0.326] | +35.1% [+21.0%, +48.6%]; d +0.605 [+0.321, +1.001] |
 | cap at the line (margin 0 bp; the primary) | 1.115 | +0.6% [-0.0%, +9.9%]; d +0.007 [-0.000, +0.118] | +37.0% [+28.3%, +57.0%]; d +0.654 [+0.389, +1.498] | +15.9% [+10.2%, +21.8%]; d +0.210 [+0.121, +0.336] | +35.4% [+21.2%, +49.2%]; d +0.612 [+0.325, +1.016] |
-| cap at the line + 5 bp | 1.118 | undefined (studentized bound not computed); unstudentized d +0.003 [+0.000, +0.008] | +36.8% [+28.1%, +57.4%]; d +0.651 [+0.387, +1.506] | +15.6% [+10.0%, +21.5%]; d +0.207 [+0.119, +0.331] | +35.3% [+21.0%, +48.9%]; d +0.609 [+0.323, +1.008] |
-| cap at the line + 10 bp | 1.120 | undefined (studentized bound not computed); unstudentized d +0.001 [+0.000, +0.004] | +36.7% [+28.0%, +57.7%]; d +0.649 [+0.386, +1.509] | +15.5% [+9.9%, +21.4%]; d +0.205 [+0.118, +0.328] | +35.1% [+21.0%, +48.7%]; d +0.607 [+0.321, +1.004] |
+| cap at the line + 5 bp | 1.118 | skill undefined; d +0.003 [+0.000, +0.070] (2 of 10000 resamples dropped) | +36.8% [+28.1%, +57.4%]; d +0.651 [+0.387, +1.506] | +15.6% [+10.0%, +21.5%]; d +0.207 [+0.119, +0.331] | +35.3% [+21.0%, +48.9%]; d +0.609 [+0.323, +1.008] |
+| cap at the line + 10 bp | 1.120 | skill undefined; d +0.001 [+0.000, +0.034] (15 of 10000 resamples dropped) | +36.7% [+28.0%, +57.7%]; d +0.649 [+0.386, +1.509] | +15.5% [+9.9%, +21.4%]; d +0.205 [+0.118, +0.328] | +35.1% [+21.0%, +48.7%]; d +0.607 [+0.321, +1.004] |
 
 **calendar_days** (1352 days)
 
@@ -556,9 +556,9 @@ How often each cap arm changes the forecast, as the share of the same cells in w
 | B1' (#960) | 1.855 | | | | |
 | B2 | 2.141 | | | | |
 | (s3) the H5 candidate | 1.440 |  | +22.9% [+7.2%, +37.3%]; d +0.427 [-0.003, +1.296] | +22.4% [+7.4%, +35.8%]; d +0.415 [+0.041, +1.174] | +32.7% [+4.3%, +69.4%]; d +0.701 [+0.190, +2.336] |
-| cap at the line (margin 0 bp; the primary) | 1.627 | undefined (studentized bound not computed); unstudentized d -0.187 [-0.505, +0.001] | +12.9% [+0.9%, +21.8%]; d +0.240 [-0.052, +0.892] | +12.3% [+0.9%, +21.3%]; d +0.228 [-0.021, +0.822] | +24.0% [+9.8%, +37.6%]; d +0.514 [+0.152, +1.265] |
-| cap at the line + 5 bp | 1.520 | undefined (studentized bound not computed); unstudentized d -0.080 [-0.212, +0.001] | +18.6% [+5.8%, +26.4%]; d +0.347 [-0.023, +1.009] | +18.1% [+6.9%, +24.8%]; d +0.335 [+0.024, +0.922] | +29.0% [+5.6%, +53.3%]; d +0.621 [+0.177, +1.818] |
-| cap at the line + 10 bp | 1.465 | undefined (studentized bound not computed); unstudentized d -0.025 [-0.071, +0.000] | +21.5% [+7.3%, +33.3%]; d +0.402 [-0.010, +1.206] | +21.0% [+7.7%, +31.8%]; d +0.390 [+0.035, +1.088] | +31.6% [+4.7%, +63.4%]; d +0.676 [+0.187, +2.151] |
+| cap at the line (margin 0 bp; the primary) | 1.627 | skill undefined; d -0.187 [-106.467, +0.028] (69 of 10000 resamples dropped) | +12.9% [+0.9%, +21.8%]; d +0.240 [-0.052, +0.892] | +12.3% [+0.9%, +21.3%]; d +0.228 [-0.021, +0.822] | +24.0% [+9.8%, +37.6%]; d +0.514 [+0.152, +1.265] |
+| cap at the line + 5 bp | 1.520 | skill undefined; d -0.080 [-30.528, +0.013] (253 of 10000 resamples dropped) | +18.6% [+5.8%, +26.4%]; d +0.347 [-0.023, +1.009] | +18.1% [+6.9%, +24.8%]; d +0.335 [+0.024, +0.922] | +29.0% [+5.6%, +53.3%]; d +0.621 [+0.177, +1.818] |
+| cap at the line + 10 bp | 1.465 | skill undefined; d -0.025 [-7.936, +0.005] (274 of 10000 resamples dropped) | +21.5% [+7.3%, +33.3%]; d +0.402 [-0.010, +1.206] | +21.0% [+7.7%, +31.8%]; d +0.390 [+0.035, +1.088] | +31.6% [+4.7%, +63.4%]; d +0.676 [+0.187, +2.151] |
 
 **quarter_end** (30 days)
 
@@ -568,9 +568,9 @@ How often each cap arm changes the forecast, as the share of the same cells in w
 | B1' (#960) | 5.305 | | | | |
 | B2 | 5.560 | | | | |
 | (s3) the H5 candidate | 3.851 |  | +28.4% [+11.2%, +40.8%]; d +1.527 [-0.012, +7.336] | +27.4% [+9.6%, +40.1%]; d +1.454 [-0.008, +6.825] | +30.7% [+2.5%, +53.0%]; d +1.709 [+0.150, +11.833] |
-| cap at the line (margin 0 bp; the primary) | 4.189 | undefined (studentized bound not computed); unstudentized d -0.339 [-0.683, +0.003] | +22.1% [+14.0%, +27.3%]; d +1.188 [-0.054, +5.340] | +21.0% [+12.5%, +26.2%]; d +1.115 [-0.044, +4.840] | +24.7% [-2.1%, +73.5%]; d +1.371 [+0.014, +11.726] |
-| cap at the line + 5 bp | 4.027 | undefined (studentized bound not computed); unstudentized d -0.176 [-0.354, +0.001] | +25.1% [+12.0%, +31.6%]; d +1.350 [-0.018, +6.183] | +24.1% [+10.2%, +30.7%]; d +1.278 [-0.019, +5.663] | +27.6% [+3.4%, +56.3%]; d +1.533 [+0.093, +10.167] |
-| cap at the line + 10 bp | 3.875 | undefined (studentized bound not computed); unstudentized d -0.024 [-0.049, +0.000] | +27.9% [+11.2%, +39.2%]; d +1.503 [-0.015, +7.165] | +27.0% [+9.6%, +38.5%]; d +1.430 [-0.005, +6.657] | +30.3% [+2.7%, +52.7%]; d +1.685 [+0.141, +11.580] |
+| cap at the line (margin 0 bp; the primary) | 4.189 | skill undefined; d -0.339 [-54.012, +0.101] (753 of 10000 resamples dropped) | +22.1% [+14.0%, +27.3%]; d +1.188 [-0.054, +5.340] | +21.0% [+12.5%, +26.2%]; d +1.115 [-0.044, +4.840] | +24.7% [-2.1%, +73.5%]; d +1.371 [+0.014, +11.726] |
+| cap at the line + 5 bp | 4.027 | skill undefined; d -0.176 [-42.025, +0.053] (1005 of 10000 resamples dropped) | +25.1% [+12.0%, +31.6%]; d +1.350 [-0.018, +6.183] | +24.1% [+10.2%, +30.7%]; d +1.278 [-0.019, +5.663] | +27.6% [+3.4%, +56.3%]; d +1.533 [+0.093, +10.167] |
+| cap at the line + 10 bp | 3.875 | skill undefined; d -0.024 [-2.080, +0.007] (1062 of 10000 resamples dropped) | +27.9% [+11.2%, +39.2%]; d +1.503 [-0.015, +7.165] | +27.0% [+9.6%, +38.5%]; d +1.430 [-0.005, +6.657] | +30.3% [+2.7%, +52.7%]; d +1.685 [+0.141, +11.580] |
 
 **tax_date** (89 days)
 
@@ -580,9 +580,9 @@ How often each cap arm changes the forecast, as the share of the same cells in w
 | B1' (#960) | 4.646 | | | | |
 | B2 | 5.660 | | | | |
 | (s3) the H5 candidate | 4.415 |  | +5.3% [-6.9%, +12.5%]; d +0.247 [+0.009, +1.508] | +5.0% [-1.0%, +8.6%]; d +0.231 [+0.003, +1.684] | skill undefined; d +1.245 [+0.082, +4.519] |
-| cap at the line (margin 0 bp; the primary) | 4.406 | undefined (studentized bound not computed); unstudentized d +0.009 [-0.001, +0.023] | +5.5% [-7.4%, +13.9%]; d +0.256 [+0.011, +1.584] | +5.2% [-2.3%, +9.5%]; d +0.239 [+0.007, +1.577] | skill undefined; d +1.254 [+0.087, +4.503] |
-| cap at the line + 5 bp | 4.411 | undefined (studentized bound not computed); unstudentized d +0.004 [+0.000, +0.011] | +5.4% [-7.4%, +13.1%]; d +0.251 [+0.010, +1.518] | +5.1% [-1.7%, +9.0%]; d +0.235 [+0.006, +1.650] | skill undefined; d +1.249 [+0.084, +4.511] |
-| cap at the line + 10 bp | 4.413 | undefined (studentized bound not computed); unstudentized d +0.002 [+0.000, +0.005] | +5.3% [-7.1%, +12.8%]; d +0.249 [+0.009, +1.512] | +5.0% [-1.3%, +8.8%]; d +0.233 [+0.005, +1.649] | skill undefined; d +1.247 [+0.082, +4.514] |
+| cap at the line (margin 0 bp; the primary) | 4.406 | skill undefined; d +0.009 [-0.002, +0.321] (608 of 10000 resamples dropped) | +5.5% [-7.4%, +13.9%]; d +0.256 [+0.011, +1.584] | +5.2% [-2.3%, +9.5%]; d +0.239 [+0.007, +1.577] | skill undefined; d +1.254 [+0.087, +4.503] |
+| cap at the line + 5 bp | 4.411 | skill undefined; d +0.004 [-0.001, +0.113] (931 of 10000 resamples dropped) | +5.4% [-7.4%, +13.1%]; d +0.251 [+0.010, +1.518] | +5.1% [-1.7%, +9.0%]; d +0.235 [+0.006, +1.650] | skill undefined; d +1.249 [+0.084, +4.511] |
+| cap at the line + 10 bp | 4.413 | skill undefined; d +0.002 [-0.000, +0.058] (931 of 10000 resamples dropped) | +5.3% [-7.1%, +12.8%]; d +0.249 [+0.009, +1.512] | +5.0% [-1.3%, +8.8%]; d +0.233 [+0.005, +1.649] | skill undefined; d +1.247 [+0.082, +4.514] |
 
 **settlement** (946 days)
 
@@ -604,9 +604,9 @@ How often each cap arm changes the forecast, as the share of the same cells in w
 | B1' (#960) | 3.600 | | | | |
 | B2 | 3.969 | | | | |
 | (s3) the H5 candidate | 3.614 |  | +0.4% [-1.7%, +2.3%]; d +0.016 [-0.040, +0.108] | -0.4% [-3.5%, +3.5%]; d -0.014 [-0.073, +0.079] | +9.0% [-15.2%, +22.7%]; d +0.355 [+0.098, +0.880] |
-| cap at the line (margin 0 bp; the primary) | 3.628 | undefined (studentized bound not computed); unstudentized d -0.015 [-0.044, +0.004] | +0.0% [-2.1%, +2.4%]; d +0.001 [-0.052, +0.077] | -0.8% [-4.7%, +4.7%]; d -0.028 [-0.097, +0.064] | +8.6% [-11.4%, +20.6%]; d +0.341 [+0.090, +0.846] |
-| cap at the line + 5 bp | 3.612 | undefined (studentized bound not computed); unstudentized d +0.002 [-0.001, +0.006] | +0.5% [-1.6%, +2.4%]; d +0.018 [-0.039, +0.114] | -0.3% [-3.4%, +3.4%]; d -0.012 [-0.072, +0.082] | +9.0% [-15.9%, +23.0%]; d +0.357 [+0.099, +0.885] |
-| cap at the line + 10 bp | 3.612 | undefined (studentized bound not computed); unstudentized d +0.002 [+0.000, +0.005] | +0.5% [-1.6%, +2.3%]; d +0.018 [-0.039, +0.113] | -0.3% [-3.4%, +3.4%]; d -0.012 [-0.071, +0.081] | +9.0% [-15.7%, +23.0%]; d +0.357 [+0.099, +0.887] |
+| cap at the line (margin 0 bp; the primary) | 3.628 | skill undefined; d -0.015 [-36.946, +0.003] (253 of 10000 resamples dropped) | +0.0% [-2.1%, +2.4%]; d +0.001 [-0.052, +0.077] | -0.8% [-4.7%, +4.7%]; d -0.028 [-0.097, +0.064] | +8.6% [-11.4%, +20.6%]; d +0.341 [+0.090, +0.846] |
+| cap at the line + 5 bp | 3.612 | skill undefined; d +0.002 [-0.000, +0.052] (934 of 10000 resamples dropped) | +0.5% [-1.6%, +2.4%]; d +0.018 [-0.039, +0.114] | -0.3% [-3.4%, +3.4%]; d -0.012 [-0.072, +0.082] | +9.0% [-15.9%, +23.0%]; d +0.357 [+0.099, +0.885] |
+| cap at the line + 10 bp | 3.612 | skill undefined; d +0.002 [-0.000, +0.127] (934 of 10000 resamples dropped) | +0.5% [-1.6%, +2.3%]; d +0.018 [-0.039, +0.113] | -0.3% [-3.4%, +3.4%]; d -0.012 [-0.071, +0.081] | +9.0% [-15.7%, +23.0%]; d +0.357 [+0.099, +0.887] |
 
 **iorb_window** (78 days)
 
@@ -616,9 +616,9 @@ How often each cap arm changes the forecast, as the share of the same cells in w
 | B1' (#960) | 1.193 | | | | |
 | B2 | 2.015 | | | | |
 | (s3) the H5 candidate | 1.446 |  | skill undefined; d +2.823 [+0.098, +41.288] | skill undefined; d -0.254 [-2.107, +0.225] | skill undefined; d +0.568 [-0.327, +2.731] |
-| cap at the line (margin 0 bp; the primary) | 1.717 | undefined (studentized bound not computed); unstudentized d -0.271 [-0.702, +0.008] | skill undefined; d +2.552 [-0.221, +54.777] | skill undefined; d -0.525 [-2.865, -0.053] | skill undefined; d +0.297 [-0.383, +1.212] |
-| cap at the line + 5 bp | 1.572 | undefined (studentized bound not computed); unstudentized d -0.126 [-0.332, +0.005] | skill undefined; d +2.697 [-0.034, +72.756] | skill undefined; d -0.380 [-3.261, +0.044] | skill undefined; d +0.442 [-0.348, +1.914] |
-| cap at the line + 10 bp | 1.501 | undefined (studentized bound not computed); unstudentized d -0.055 [-0.154, +0.002] | skill undefined; d +2.768 [+0.045, +52.535] | skill undefined; d -0.309 [-3.164, +0.135] | skill undefined; d +0.513 [-0.332, +2.359] |
+| cap at the line (margin 0 bp; the primary) | 1.717 | skill undefined; d -0.271 [-208.130, +0.059] (972 of 10000 resamples dropped) | skill undefined; d +2.552 [-0.221, +54.777] | skill undefined; d -0.525 [-2.865, -0.053] | skill undefined; d +0.297 [-0.383, +1.212] |
+| cap at the line + 5 bp | 1.572 | skill undefined; d -0.126 [-143.073, +0.029] (1093 of 10000 resamples dropped) | skill undefined; d +2.697 [-0.034, +72.756] | skill undefined; d -0.380 [-3.261, +0.044] | skill undefined; d +0.442 [-0.348, +1.914] |
+| cap at the line + 10 bp | 1.501 | skill undefined; d -0.055 [-269.037, +0.014] (1103 of 10000 resamples dropped) | skill undefined; d +2.768 [+0.045, +52.535] | skill undefined; d -0.309 [-3.164, +0.135] | skill undefined; d +0.513 [-0.332, +2.359] |
 
 **dom_19_23** (305 days)
 
@@ -628,9 +628,9 @@ How often each cap arm changes the forecast, as the share of the same cells in w
 | B1' (#960) | 0.579 | | | | |
 | B2 | 0.460 | | | | |
 | (s3) the H5 candidate | 0.415 |  | +68.3% [+45.8%, +111.9%]; d +0.892 [+0.134, +9.436] | +28.3% [-13.5%, +61.1%]; d +0.164 [+0.013, +0.496] | +9.8% [-59.3%, +44.2%]; d +0.045 [-0.155, +0.202] |
-| cap at the line (margin 0 bp; the primary) | 0.411 | undefined (studentized bound not computed); unstudentized d +0.004 [+0.000, +0.010] | +68.6% [+46.9%, +109.7%]; d +0.896 [+0.138, +9.292] | +29.0% [-14.5%, +61.7%]; d +0.168 [+0.015, +0.501] | +10.7% [-60.8%, +45.1%]; d +0.049 [-0.152, +0.207] |
-| cap at the line + 5 bp | 0.413 | undefined (studentized bound not computed); unstudentized d +0.002 [+0.000, +0.004] | +68.4% [+46.2%, +111.2%]; d +0.894 [+0.135, +9.341] | +28.6% [-13.8%, +61.3%]; d +0.166 [+0.014, +0.499] | +10.2% [-59.7%, +44.5%]; d +0.047 [-0.154, +0.204] |
-| cap at the line + 10 bp | 0.414 | undefined (studentized bound not computed); unstudentized d +0.001 [+0.000, +0.002] | +68.3% [+46.0%, +111.6%]; d +0.893 [+0.134, +9.387] | +28.5% [-13.6%, +61.2%]; d +0.165 [+0.014, +0.497] | +10.0% [-59.5%, +44.3%]; d +0.046 [-0.155, +0.203] |
+| cap at the line (margin 0 bp; the primary) | 0.411 | skill undefined; d +0.004 [-0.000, +0.075] (79 of 10000 resamples dropped) | +68.6% [+46.9%, +109.7%]; d +0.896 [+0.138, +9.292] | +29.0% [-14.5%, +61.7%]; d +0.168 [+0.015, +0.501] | +10.7% [-60.8%, +45.1%]; d +0.049 [-0.152, +0.207] |
+| cap at the line + 5 bp | 0.413 | skill undefined; d +0.002 [-0.000, +0.030] (88 of 10000 resamples dropped) | +68.4% [+46.2%, +111.2%]; d +0.894 [+0.135, +9.341] | +28.6% [-13.8%, +61.3%]; d +0.166 [+0.014, +0.499] | +10.2% [-59.7%, +44.5%]; d +0.047 [-0.154, +0.204] |
+| cap at the line + 10 bp | 0.414 | skill undefined; d +0.001 [-0.000, +0.012] (171 of 10000 resamples dropped) | +68.3% [+46.0%, +111.6%]; d +0.893 [+0.134, +9.387] | +28.5% [-13.6%, +61.2%]; d +0.165 [+0.014, +0.497] | +10.0% [-59.5%, +44.3%]; d +0.046 [-0.155, +0.203] |
 
 **post_month_end_window** (267 days)
 
@@ -640,9 +640,9 @@ How often each cap arm changes the forecast, as the share of the same cells in w
 | B1' (#960) | 1.132 | | | | |
 | B2 | 1.470 | | | | |
 | (s3) the H5 candidate | 1.126 |  | +24.3% [+10.0%, +39.0%]; d +0.361 [+0.072, +1.334] | +0.5% [-29.4%, +17.8%]; d +0.006 [-0.187, +0.200] | +23.4% [+3.3%, +35.0%]; d +0.344 [+0.032, +0.780] |
-| cap at the line (margin 0 bp; the primary) | 1.136 | undefined (studentized bound not computed); unstudentized d -0.009 [-0.044, +0.019] | +23.7% [+9.9%, +39.0%]; d +0.352 [+0.067, +1.312] | -0.3% [-29.5%, +17.7%]; d -0.003 [-0.195, +0.188] | +22.8% [+2.5%, +33.9%]; d +0.335 [+0.028, +0.763] |
-| cap at the line + 5 bp | 1.134 | undefined (studentized bound not computed); unstudentized d -0.008 [-0.027, +0.007] | +23.8% [+9.9%, +38.9%]; d +0.354 [+0.068, +1.311] | -0.2% [-29.3%, +17.5%]; d -0.002 [-0.193, +0.189] | +22.9% [+2.7%, +34.1%]; d +0.336 [+0.028, +0.765] |
-| cap at the line + 10 bp | 1.126 | undefined (studentized bound not computed); unstudentized d -0.000 [-0.004, +0.004] | +24.3% [+10.0%, +39.0%]; d +0.361 [+0.071, +1.331] | +0.5% [-29.7%, +17.8%]; d +0.006 [-0.187, +0.200] | +23.4% [+3.2%, +34.9%]; d +0.344 [+0.032, +0.779] |
+| cap at the line (margin 0 bp; the primary) | 1.136 | skill undefined; d -0.009 [-0.642, +0.009] (5 of 10000 resamples dropped) | +23.7% [+9.9%, +39.0%]; d +0.352 [+0.067, +1.312] | -0.3% [-29.5%, +17.7%]; d -0.003 [-0.195, +0.188] | +22.8% [+2.5%, +33.9%]; d +0.335 [+0.028, +0.763] |
+| cap at the line + 5 bp | 1.134 | skill undefined; d -0.008 [-0.653, +0.003] (70 of 10000 resamples dropped) | +23.8% [+9.9%, +38.9%]; d +0.354 [+0.068, +1.311] | -0.2% [-29.3%, +17.5%]; d -0.002 [-0.193, +0.189] | +22.9% [+2.7%, +34.1%]; d +0.336 [+0.028, +0.765] |
+| cap at the line + 10 bp | 1.126 | skill undefined; d -0.000 [-0.008, +0.002] (164 of 10000 resamples dropped) | +24.3% [+10.0%, +39.0%]; d +0.361 [+0.071, +1.331] | +0.5% [-29.7%, +17.8%]; d +0.006 [-0.187, +0.200] | +23.4% [+3.2%, +34.9%]; d +0.344 [+0.032, +0.779] |
 
 **ordinary** (507 days)
 
@@ -653,8 +653,8 @@ How often each cap arm changes the forecast, as the share of the same cells in w
 | B2 | 0.519 | | | | |
 | (s3) the H5 candidate | 0.415 |  | +54.3% [+41.8%, +71.2%]; d +0.493 [+0.227, +1.585] | +19.8% [+6.1%, +33.1%]; d +0.103 [+0.035, +0.229] | +20.1% [+1.6%, +36.5%]; d +0.104 [+0.011, +0.245] |
 | cap at the line (margin 0 bp; the primary) | 0.408 | +1.6% [-0.2%, +20.8%]; d +0.007 [-0.000, +0.118] | +55.0% [+42.7%, +69.9%]; d +0.500 [+0.230, +1.536] | +21.1% [+6.2%, +34.6%]; d +0.109 [+0.038, +0.237] | +21.4% [+1.7%, +38.0%]; d +0.111 [+0.015, +0.256] |
-| cap at the line + 5 bp | 0.412 | undefined (studentized bound not computed); unstudentized d +0.003 [+0.000, +0.008] | +54.7% [+42.3%, +70.7%]; d +0.496 [+0.228, +1.569] | +20.5% [+6.3%, +33.8%]; d +0.106 [+0.037, +0.233] | +20.7% [+1.5%, +37.2%]; d +0.108 [+0.013, +0.250] |
-| cap at the line + 10 bp | 0.414 | undefined (studentized bound not computed); unstudentized d +0.001 [+0.000, +0.004] | +54.5% [+42.0%, +70.9%]; d +0.494 [+0.228, +1.576] | +20.1% [+6.2%, +33.4%]; d +0.104 [+0.036, +0.230] | +20.4% [+1.6%, +36.8%]; d +0.106 [+0.012, +0.247] |
+| cap at the line + 5 bp | 0.412 | skill undefined; d +0.003 [+0.000, +0.070] (2 of 10000 resamples dropped) | +54.7% [+42.3%, +70.7%]; d +0.496 [+0.228, +1.569] | +20.5% [+6.3%, +33.8%]; d +0.106 [+0.037, +0.233] | +20.7% [+1.5%, +37.2%]; d +0.108 [+0.013, +0.250] |
+| cap at the line + 10 bp | 0.414 | skill undefined; d +0.001 [+0.000, +0.034] (15 of 10000 resamples dropped) | +54.5% [+42.0%, +70.9%]; d +0.494 [+0.228, +1.576] | +20.1% [+6.2%, +33.4%]; d +0.104 [+0.036, +0.230] | +20.4% [+1.6%, +36.8%]; d +0.106 [+0.012, +0.247] |
 
 **calendar_days** (1352 days)
 

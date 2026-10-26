@@ -19,6 +19,7 @@ import json
 import sys
 import tempfile
 import unittest
+from unittest import mock
 from datetime import date, datetime, time, timedelta
 from pathlib import Path
 
@@ -146,15 +147,35 @@ class UnstudentizedTests(unittest.TestCase):
         self.assertLessEqual(out["interval"][0], out["interval"][1])
         self.assertLessEqual(out["interval"][1], 0.0 + 1e-12)
 
-    def test_an_undefined_row_against_s3_carries_the_unstudentized_interval_and_no_reading(self):
+    def test_a_row_with_no_variance_resamples_has_a_bound_and_the_dropped_count_and_no_unstudentized_part(self):
+        """#1239 (her ruling on #1236): a resample with no long-run variance is dropped and counted, so a cap that moves three days
+        has a mean-d bound, not `undefined`. The row keeps `dropped_resamples` and `draws`, takes a reading, and needs no unstudentized part."""
+
         _ident, out = script._pairs_task(("pooled", "all decision days", "decision", "grid_crps", "srf_cap_m0", tuple(self.days)))
+        row = out[script.S3]
+        self.assertNotIn("undefined", row)
+        self.assertNotIn("unstudentized", row)
+        self.assertGreater(row["dropped_resamples"], 0)
+        self.assertEqual(row["draws"], 200)
+        self.assertLess(row["difference"], 0.0)
+        text = script._fmt(row)
+        self.assertIn(f"({row['dropped_resamples']} of 200 resamples dropped)", text)
+        self.assertNotIn("studentized bound not computed", text)
+        self.assertFalse(script.verdict(row).startswith("**no reading**"))
+
+    def test_a_row_that_is_still_undefined_carries_the_unstudentized_interval_and_no_reading(self):
+        """Undefined now means the series itself, or every resample, has no long-run variance (#1239); the row keeps the unstudentized
+        interval of mean d beside it and takes no reading."""
+
+        undefined = {"undefined": "every one of the 200 resamples has no long-run variance; it cannot be studentized", "days": 300}
+        with mock.patch.object(script.s761, "run_pairs", side_effect=lambda benchmarks, *a, **k: {n: dict(undefined) for n in benchmarks}):
+            _ident, out = script._pairs_task(("pooled", "all decision days", "decision", "grid_crps", "srf_cap_m0", tuple(self.days)))
         row = out[script.S3]
         self.assertIn("undefined", row)
         self.assertIn("unstudentized", row)
         text = script._fmt(row)
         self.assertIn("unstudentized d -0.005", text)
         self.assertIn("studentized bound not computed", text)
-        self.assertNotIn("unstudentized", out["B1"] if "B1" in out else {})
         self.assertTrue(script.verdict(row).startswith("**no reading**"))
 
     def test_the_cell_of_a_defined_row_is_the_protocols_and_has_no_unstudentized_part(self):
