@@ -465,7 +465,7 @@ def score_command(args) -> int:
         raise ValueError(f"{ALIGNED}'s mean at lead 1 is {aligned_here} here and {aligned_recorded} in #931's score")
 
     def kind_of(day: date) -> str:
-        return splits.reporting_day_type(day, row_of[day].values)
+        return turn_days.reporting_day_type(splits, day, row_of[day].values)
 
     kinds = sorted({kind_of(calendar[position[d] + h]) for d in days for h in HORIZONS})
     all_names = [*names, ALIGNED]

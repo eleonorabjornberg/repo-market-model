@@ -44,7 +44,7 @@ from typing import Dict, List, Optional, Sequence, Tuple
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
-from repo_model import lockbox, protocol_benchmarks as pb, scoring_protocol as sp  # noqa: E402
+from repo_model import lockbox, protocol_benchmarks as pb, scoring_protocol as sp, turn_days  # noqa: E402
 from repo_model.data import audit_panel, load_daily_panel  # noqa: E402
 from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
 from repo_model.metrics import crps_trapezoid_from_quantiles  # noqa: E402
@@ -81,7 +81,11 @@ DECISION_TIME = "16:00:00"
 TRAILING = 252
 SCALE_LAG = 6
 MIN_CELLS = 20
-KINDS = ("month_end", "quarter_end", "tax_date", "ordinary")
+#: The pressure-day types a cell can carry: the retired two-day labels of the declared splits, and the turn labels of the record in
+#: force (#1135), which `scripts/spread_mean_reversion_686.Frame.day_type` reads since #1224. A type with fewer than `MIN_CELLS` cells in
+#: the window takes the median of all of them, so a label a run never produces changes nothing.
+KINDS = ("month_end", "quarter_end", "tax_date", "ordinary") + tuple(
+    label for label in turn_days.LABELS if label not in ("tax_date", "ordinary"))
 
 OLD_WINDOW = 60
 WINDOWS = 20_000
@@ -558,9 +562,6 @@ def check_command(_args) -> int:
         return 1
     print("ok")
     return 0
-
-
-from repo_model import turn_days  # noqa: E402
 
 
 @turn_days.with_legacy_flag

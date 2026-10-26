@@ -705,7 +705,7 @@ def score_command(args) -> int:
     row_of = {row.date: row for row in rows}
 
     def kind_of(day: date) -> str:
-        return splits.reporting_day_type(day, row_of[day].values)
+        return turn_days.reporting_day_type(splits, day, row_of[day].values)
 
     kinds = sorted({kind_of(calendar[position[d] + h]) for d in days for h in HORIZONS})
     by_type: Dict[str, dict] = {}
