@@ -1,5 +1,5 @@
 {
- "status": "declared by the pull request that closes #1229 before any score was computed; a development check, never a verdict, and no choice is made on it. Nothing is published: no model joins any published declaration, `gbm_funding`'s declaration and `scripts/final_test_preregistration.py` do not change, no lockbox day is scored, no day after 2026-09-03 is read, and no record in docs/runs/ is edited. There is no new arm. Amendments made after a number was computed would be listed in `amendments`; there are none.",
+ "status": "declared by the pull request that closes #1229 before any score was computed; a development check, never a verdict, and no choice is made on it. Nothing is published: no model joins any published declaration, `gbm_funding`'s declaration and `scripts/final_test_preregistration.py` do not change, no lockbox day is scored, no day after 2026-09-03 is read, and no record in docs/runs/ is edited. There is no new arm. Amendments made after a number was computed are listed in `amendments`; there is one, made at review (the `arms` block), which changes no choice and no number.",
  "issue": 1229,
  "avenue": 1222,
  "ruling": "Eleonora, 26 October 2026, chat, relayed on #1229: ledger item 55, option 1 on avenue #1222. No new arm, and no choice made on these days.",
@@ -13,6 +13,28 @@
   "walk": "the walk starts where #1196's does, on the first decision day with the history the base model needs, and refits every 21 decision days from there, so every refit date before 2026 is #1196's; the days from 2025-12-04 on are walked in addition. The scarcity state is not read: neither (a) nor (s3) has a state term, and every decision's state is recorded as unknown",
   "no_new_arm": "no arm, term, setting or tuning is added or changed; (s3+state) and (s3+FOMC/IORB) of #1196 are not scored here"
  },
+ "arms": [
+  {
+   "name": "sc_s3_robust",
+   "role": "(s3): the candidate, refit walk-forward as #1196 declared it"
+  },
+  {
+   "name": "spread_mr_fhs_mad20_f0.5",
+   "role": "(a): the base of (s3), the comparator; carries the provisional register's mark"
+  },
+  {
+   "name": "B1",
+   "role": "benchmark of scoring protocol v1; carries the provisional register's mark"
+  },
+  {
+   "name": "B1_prime",
+   "role": "B1' (repo_model.b1_calendar, #960), beside B1 in every table"
+  },
+  {
+   "name": "B2",
+   "role": "benchmark of scoring protocol v1; carries the provisional register's mark"
+  }
+ ],
  "scored_days": {
   "decision_days": "the decision days whose five targets all fall from 2026-01-02 to 2026-09-03 (first target on or after 2026-01-02, fifth target on or before 2026-09-03) and for which every model has a forecast",
   "first_target_day": "2026-01-02",
@@ -35,7 +57,10 @@
    "month": "the calendar month of the target day of the cell"
   },
   "3_scores": {
-   "measures": ["grid CRPS (23 levels), by lead and the mean over leads 1..5 (primary)", "upper-tail twCRPS, weight 1{z > 0 bp}, by lead and the mean over leads (key secondary)"],
+   "measures": [
+    "grid CRPS (23 levels), by lead and the mean over leads 1..5 (primary)",
+    "upper-tail twCRPS, weight 1{z > 0 bp}, by lead and the mean over leads (key secondary)"
+   ],
    "pairs": "(s3) against B1, B1', B2 and (a); (a) against B1, B1' and B2",
    "paired": "skill = mean(d) / mean(S(benchmark)) with d = S(benchmark) - S(candidate), positive favours the candidate; scoring_protocol.paired_tests, the studentized stationary bootstrap (ruling 1), mean block 10 business days, 10,000 draws, seed 1222; two-sided 90% interval, so the lower end is the one-sided 95% bound. Both the skill interval and the studentized interval on mean d (bp) are reported for every tested row",
    "reading": "a reading is taken from the mean-d bound (Eleonora's ruling on #1009, 20 October 2026): better when the lower end of the 90% interval of mean d is above zero, worse when the upper end is below zero, otherwise undecided; the skill interval's reading is listed beside it where it differs. Lens C's caveat (the lag-10 HAC standard error is understated about 2x after 2020) is stated on the page. A row whose bound was not computed reads 'no reading' with the reason (#1215)",
@@ -66,5 +91,13 @@
   "Whether the 2026 days, now checked, change what is claimed for (s3) is Eleonora's; this page makes no choice.",
   "Whether the day-type and month intervals are read once #1221 is decided is hers (#1228)."
  ],
- "amendments": []
+ "amendments": [
+  {
+   "after": "8fc3c26 (the declaration as first committed)",
+   "before": "review of the pull request; the scores were already computed",
+   "added": "the `arms` block, naming the five models scored: (s3), (a), B1, B1' and B2",
+   "why": "tests/test_model_declarations.py and emit_progress.declared_arms read a declaration's models from a `variants`, `arms` or `candidates` block; the first commit named them only in `models`",
+   "effect": "changes no choice, no model, no setting, no day and no number; `arms: 0` under `limits` still means no new arm was added, the block lists the models scored"
+  }
+ ]
 }
