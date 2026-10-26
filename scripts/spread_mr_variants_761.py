@@ -241,7 +241,7 @@ def groupings(frame, states) -> Dict[str, Tuple[str, Dict]]:
     anchors = {}
     for d in days:
         a = pb._anchor(frame.panel, frame.position[d], frame.registry, DECISION_TIME)
-        anchors[d] = frame.splits.reporting_day_type(frame.panel[a].date, frame.panel[a].values)
+        anchors[d] = turn_days.reporting_day_type(frame.splits, frame.panel[a].date, frame.panel[a].values)
     return {
         "regime": ("target", {t: frame.regime(t) for t in targets}),
         "pressure_day_type": ("target", {t: frame.day_type(t) for t in targets}),
@@ -379,7 +379,7 @@ def score(args) -> int:
     contexts = {t: var.target_context(panel, frame.position[t], splits) for t in {frame.target(d, h) for d in days for h in sp.HORIZONS}}
     # the reporting day type, a third population the risk-date reconciliation names and leaves alone
     def reporting_ordinary(t):
-        return frame.splits.reporting_day_type(t, frame.values[t]) == "ordinary"
+        return turn_days.reporting_day_type(frame.splits, t, frame.values[t]) == "ordinary"
 
     scopes = {
         "ordinary": lambda d, h, t: reporting_ordinary(t),

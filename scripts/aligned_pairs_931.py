@@ -364,7 +364,7 @@ def score_command(args) -> int:
     names = ["B1", "B2", *MODELS]
 
     def kind_of(day: date) -> str:
-        return day_type(splits.reporting_day_type(day, row_of[day].values), row_of[day].values)
+        return day_type(turn_days.reporting_day_type(splits, day, row_of[day].values), row_of[day].values)
 
     kinds = sorted({kind_of(calendar[position[d] + LEAD]) for d in days})
     jobs, shells = [], {}

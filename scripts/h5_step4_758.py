@@ -199,7 +199,7 @@ def score_command(args) -> int:
     outcome = {d: fits["spread"][p] for p, d in enumerate(target_date) if fits["spread"][p] is not None}
     ordinary_dates = {d for d, o in zip(target_date, ordinary) if o}
     regimes = [splits.regime(d) for d in target_date]
-    daytypes = [splits.reporting_day_type(d, panel[i].values) for d, i in zip(target_date, scored_rows)]
+    daytypes = [turn_days.reporting_day_type(splits, d, panel[i].values) for d, i in zip(target_date, scored_rows)]
     every = set(outcome)
     subsets: Dict[str, set] = {"pooled, all targets": every, "pooled, ordinary targets": every & ordinary_dates}
     for label in splits.regime_labels:

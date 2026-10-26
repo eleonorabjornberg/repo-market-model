@@ -62,7 +62,8 @@ def _load(name: str):
 from repo_model import announced_iorb, b1_calendar as b1c  # noqa: E402
 from repo_model import coverage_tests as ct  # noqa: E402
 from repo_model import protocol_benchmarks as pb, scoring_protocol as sp  # noqa: E402
-from repo_model import spread_mr_calendar as cal, spread_mr_regime as rg  # noqa: E402
+from repo_model import spread_mr_calendar as cal, spread_mr_regime as rg, turn_days  # noqa: E402
+from repo_model import b2_pool  # noqa: E402
 from repo_model.baseline import panel_sha256  # noqa: E402
 from repo_model.data import load_daily_panel  # noqa: E402
 from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
@@ -87,7 +88,11 @@ COMPARATORS: Tuple[str, ...] = (S3, A)
 METRICS = f1153.METRICS
 COVERAGE_METRICS = f1153.COVERAGE_METRICS
 BANDS = f1153.BANDS
-REGIME_ORDER, DAYTYPE_ORDER = f1153.REGIME_ORDER, f1153.DAYTYPE_ORDER
+REGIME_ORDER = f1153.REGIME_ORDER
+#: The day types the first page (made before #1224) split by: `SplitDeclaration.reporting_day_type`, the retired two-day month end.
+LEGACY_DAYTYPE_ORDER = tuple(f1153.DAYTYPE_ORDER)
+#: The turn day types of the record in force (`turn_days.LABELS`, the rarer first), as `frame.day_type` reads them since #1224.
+TURN_DAYTYPE_ORDER = tuple(turn_days.LABELS)
 SPLIT_TITLES, METRIC_TITLES = f1153.SPLIT_TITLES, f1153.METRIC_TITLES
 OFF_ZERO = f1153.OFF_ZERO
 #: The hit rules: coverage_tests' two deterministic ones, then the randomised tie rule of #1156.
@@ -376,7 +381,27 @@ def kill_assessment(hits: Mapping) -> dict:
 # -- the report ---------------------------------------------------------------------------------------------------------
 
 
+def day_type_reading(frame) -> dict:
+    """Which day-type reading the groups of this run were made under, from the switches and the labels the frame produced."""
+
+    seen = sorted({frame.day_type(frame.target(d, h)) for d in frame.days for h in sp.HORIZONS})
+    return {"reading": "turn_days" if turn_days.IN_FORCE else "legacy", "turn_days_in_force": turn_days.IN_FORCE,
+            "b2_pool_in_force": b2_pool.IN_FORCE, "labels": seen}
+
+
 def score(args) -> int:
+    """Walk and score; `--b2-thin-pool off` scores B2 without the thin-pool fallback of #1198, as the first page's was (#1224)."""
+
+    before = b2_pool.IN_FORCE
+    if args.b2_thin_pool == "off":
+        b2_pool.IN_FORCE = False
+    try:
+        return _score(args)
+    finally:
+        b2_pool.IN_FORCE = before
+
+
+def _score(args) -> int:
     declaration = committed_declaration()
     differ = constants_agree(declaration)
     if differ:
@@ -416,6 +441,7 @@ def score(args) -> int:
         "issue": 1182, "declaration": str(DECLARATION.relative_to(REPO)), "panel_sha256": panel_sha256(panel_path),
         "subset_from": None if args.first is None else args.first.isoformat(),
         "label": "development, not a verdict", "seed": SEED, "draws": args.draws, "reps": args.reps,
+        "day_types": day_type_reading(frame),
         "notes": notes, "models": list(models), "base": S3, "comparators": list(COMPARATORS), "arms": list(ARMS),
         "diagnostics": diagnostics, "episodes": declaration["figure"]["episodes"], "groups": {}, "skipped_groups": skipped, "politis_white": {},
         "randomised_tie_rule": ("implemented (coverage_tests.randomised_hit_sequence, draws seeded with %d); the forecast is 23 quantiles "
@@ -472,7 +498,16 @@ def reading(row: Optional[dict]) -> str:
     return "gain" if lo > 0.0 else "loss" if hi < 0.0 else "undecided"
 
 
+def daytype_order(labels) -> Tuple[str, ...]:
+    """The order a page lists the pressure-day types in: the turn types if any label is one, else the legacy ones."""
+
+    return TURN_DAYTYPE_ORDER if set(labels) & turn_days.TURN_LABELS else LEGACY_DAYTYPE_ORDER
+
+
 def _ordered(split: str, labels) -> List[str]:
+    if split == "pressure_day_type":
+        order = daytype_order(labels)
+        return [l for l in order if l in labels] + sorted(l for l in labels if l not in order)
     return f941._ordered(split, labels)
 
 
@@ -650,14 +685,14 @@ def diagnostics_section(r: dict) -> List[str]:
     return out
 
 
-def stress_section(r: dict) -> List[str]:
+def stress_section(r: dict, source: str = "docs/research/regime-spells-1182/result.json") -> List[str]:
     return ["## The filtered stress probability", "",
             "The probability of the stress state at the anchor (the last public row) of each scored decision day, from the Hamilton filter "
             "of the refit in force, for (m2) and (m3). The drawing stops at the last scored decision day: days after 2025-12-31 are not "
             "read by this study. The episodes are marked: September 2019, March 2020 (the event windows of `metadata/events.json`) and the "
             "2025 episodes the declaration lists.", "",
             "![Filtered stress probability of (m2) and (m3) over the scored decision days, with the episodes marked]"
-            "(regime-spells-1182/stress_probability.svg)", ""]
+            f"({Path(source).parent.name}/stress_probability.svg)", ""]
 
 
 def stress_figure(r: dict, episodes: Sequence[dict]) -> str:
@@ -736,6 +771,7 @@ def hit_section(r: dict) -> List[str]:
            "lower tails: below q05 / q01; a band miss: outside the band. Reporting only: no p-value is a gate. By regime and "
            "pressure-day type, the five leads together with Kupiec's p; the independence tests per regime and lead are in `result.json`.", ""]
     nominal = w1133.kinds_and_p()
+    day_types = r["groups"].get("pressure_day_type", {})
     for rule in ct.HIT_RULES:  # the randomised rule is the `above` sequence here (see the clustering section) and is in result.json
         words = "strictly beyond the quantile / outside the closed band" if rule == "above" else "at or beyond the quantile / outside the open band"
         for kind in hits["kinds"]:
@@ -751,7 +787,7 @@ def hit_section(r: dict) -> List[str]:
                                  f"{e['rate']:.3f} ({e['kupiec']['p_value']:.3f} / {e['independence']['p_value']:.3f} / {e['conditional']['p_value']:.3f})")
                 out.append(f"| {label_of(m)} | " + " | ".join(cells) + " |")
             out.append("")
-            for split, order in (("regime", REGIME_ORDER), ("pressure_day_type", DAYTYPE_ORDER)):
+            for split, order in (("regime", REGIME_ORDER), ("pressure_day_type", _ordered("pressure_day_type", day_types))):
                 out += [f"By {SPLIT_TITLES[split]}: rate (Kupiec p).", "",
                         "| | " + " | ".join(order) + " |", "|---|" + "---|" * len(order)]
                 for m in models:
@@ -790,15 +826,114 @@ def politis_white_section(r: dict) -> List[str]:
     return out
 
 
-def render(r: dict) -> str:
+def rerun_section(r: dict, first: Optional[dict]) -> List[str]:
+    """What this page is beside the first one (#1224): the day-type labels, the other changes since, and the readings that moved.
+
+    Written only for a run whose day-type groups are the turn types and for which the first score file is given.
+    """
+
+    n = r["notes"]
+    out = ["## This page beside the first one (#1224, finding #1211)", "",
+           "**The first page's day-type splits used the retired labels.** `docs/research/regime-spells-1182-result.md` was made on 24 October "
+           "2026, after the month-end turn record took force (`docs/decisions/month-end-turn.md`, #1185), and B2 on it pools by the turn types; "
+           "but its day-type groups came from `Frame.day_type`, which called `SplitDeclaration.reporting_day_type` and so split by the retired "
+           "two-day `month_end` and `quarter_end`. This page re-runs `score` with the declared settings (`metadata/regime_spells_1182.json`, "
+           "unchanged), with `Frame.day_type` reading `turn_days.reporting_day_type`: the groups are `year_end`, `quarter_end_turn`, `turn`, "
+           "`tax_date` and `ordinary`. The first page is not edited.", ""]
+    if first is None:
+        return out
+    old_n = first["notes"]["scored_decision_days"]
+    if r["day_types"]["b2_pool_in_force"]:
+        added = sorted(set(first["notes"]["benchmark_missing"]) - set(n["benchmark_missing"]))
+        out += ["Other differences from the first page, all from main since it was made:", "",
+                f"- **Scored decision days:** {n['scored_decision_days']:,} against {old_n:,}. B2's thin-pool fallback (#1198, in force on main since "
+                f"PR #1202) forecasts the days the first page dropped for want of a pool ({', '.join(added) if added else 'none'}), so these days are "
+                "scored here; every model is scored on the same days."]
+    else:
+        out += ["Everything else is the first page's. B2 is scored as there, **without** its thin-pool fallback (#1198, in force on main since PR "
+                "#1202; `score --b2-thin-pool off`), so that the only change is the day-type labels: the scored decision days are the same "
+                f"({n['scored_decision_days']:,} against {old_n:,}), and every figure that reads no day type is expected to equal the first page's."]
+    def read_no_type(group: dict) -> dict:
+        return {k: v for k, v in group.items() if k != "scaled_grid_crps"}
+
+    same = [(split, label) for split in ("pooled", "lead", "regime") for label in r["groups"].get(split, {})
+            if read_no_type(first["groups"].get(split, {}).get(label, {})) == read_no_type(r["groups"][split][label])]
+    total = sum(len(r["groups"].get(split, {})) for split in ("pooled", "lead", "regime"))
+    out += ["", f"The pooled, by-lead and by-regime groups equal the first page's in {len(same)} of {total} groups, every figure, interval and "
+            "p-value, except the scaled grid CRPS of #967: it divides each cell by the median score of the cell's pressure-day type "
+            "(`scaled_score_967.trailing_scales`), so its figures move with the labels. Its pooled means:", "",
+            "| | first page | this page |", "|---|---|---|"]
+    fm, nm = (first["groups"]["pooled"]["all decision days"]["scaled_grid_crps"]["means"],
+              r["groups"]["pooled"]["all decision days"]["scaled_grid_crps"]["means"])
+    for m in r["models"]:
+        out.append(f"| {label_of(m)} | {fm[m]:.3f} | {nm[m]:.3f} |")
+    out += [""]
+    out += ["**Day-type intervals keep the current method**, labelled as such: the studentized stationary bootstrap resamples a group's "
+            "target days in date order as if consecutive, which #1221 (ledger 54) questions and has not yet decided. Nothing about the method "
+            "changed here; the intervals of the turn-type groups carry the same caveat as those of the retired groups.", ""]
+    kill_old, kill_new = first["kill"], r["kill"]
+    out += ["", "**The pooled kill reading** (it does not read a day type):", "",
+            "| | first page | this page |", "|---|---|---|",
+            f"| kill rule met | {kill_old['met']} | {kill_new['met']} |",
+            f"| arms with a lead off 0.000 | {', '.join(label_of(m) for m in kill_old['arms_off_zero']) or 'none'} | "
+            f"{', '.join(label_of(m) for m in kill_new['arms_off_zero']) or 'none'} |",
+            f"| arms that cut the mean run by more than {kill_new['run_cut_threshold']:.0%} | "
+            f"{', '.join(label_of(m) for m in kill_old['arms_cut_runs']) or 'none'} | {', '.join(label_of(m) for m in kill_new['arms_cut_runs']) or 'none'} |"]
+    for m in [S3] + r["arms"]:
+        a, b = kill_old["models"][m]["runs"]["above"]["mean"], kill_new["models"][m]["runs"]["above"]["mean"]
+        out.append(f"| mean run, {label_of(m)} | {a:.3f} | {b:.3f} |")
+    out += ["", "**Day-type group sizes** (target days):", "", "| first page | days | this page | days |", "|---|---|---|---|"]
+    old_g, new_g = first["groups"]["pressure_day_type"], r["groups"]["pressure_day_type"]
+    old_l, new_l = _ordered("pressure_day_type", old_g), _ordered("pressure_day_type", new_g)
+    for i in range(max(len(old_l), len(new_l))):
+        left = (old_l[i], old_g[old_l[i]]["days"]) if i < len(old_l) else ("", "")
+        right = (new_l[i], new_g[new_l[i]]["days"]) if i < len(new_l) else ("", "")
+        out.append(f"| {left[0]} | {left[1]} | {right[0]} | {right[1]} |")
+    out += ["", "**The adoption table's readings** (pooled grid CRPS against (s3), the mean-d bound; regimes read as a loss; day types read as a loss):", "",
+            "| arm | pooled, first | pooled, this | regimes read as a loss, first | this | day types read as a loss, first (retired labels) | this (turn labels) |",
+            "|---|---|---|---|---|---|---|"]
+    pooled_moved, regime_moved, type_moved = [], [], []
+
+    def reads(res: dict, arm: str) -> Tuple[str, List[str], List[str]]:
+        pooled = reading(res["groups"]["pooled"]["all decision days"]["grid_crps"]["vs"][arm][S3])
+        loss = {}
+        for split in ("regime", "pressure_day_type"):
+            loss[split] = [lab for lab in _ordered(split, res["groups"].get(split, {}))
+                           if reading(res["groups"][split][lab]["grid_crps"]["vs"][arm][S3]) == "loss"]
+        return pooled, loss["regime"], loss["pressure_day_type"]
+
+    for m in r["arms"]:
+        (p0, rg0, d0), (p1, rg1, d1) = reads(first, m), reads(r, m)
+        out.append(f"| {label_of(m)} | {p0} | {p1} | {', '.join(rg0) or 'none'} | {', '.join(rg1) or 'none'} | {', '.join(d0) or 'none'} | "
+                   f"{', '.join(d1) or 'none'} |")
+        if p0 != p1:
+            pooled_moved.append(f"{label_of(m)} ({p0} to {p1})")
+        if rg0 != rg1:
+            regime_moved.append(f"{label_of(m)} ({', '.join(rg0) or 'none'} to {', '.join(rg1) or 'none'})")
+        if d0 != d1:
+            type_moved.append(f"{label_of(m)}: {', '.join(d0) or 'none'} on the retired labels, {', '.join(d1) or 'none'} on the turn labels")
+    out += ["", "**Readings that change.** "
+            f"Pooled: {'; '.join(pooled_moved) or 'none'}. Regimes read as a loss: {'; '.join(regime_moved) or 'none'}. "
+            f"Day types read as a loss: {'; '.join(type_moved) or 'none'}. The day-type groups are not the same days (the retired `month_end` "
+            "is the month's last two business days, `turn` its last business day and the next month's first; `quarter_end` is the "
+            "quarter-end calendar flag, `quarter_end_turn` the last business day of the quarter and the next), so a day-type reading that differs is a re-count on different groups, "
+            "not one reading moving; "
+            f"the groups with fewer than {MIN_GROUP_DAYS} days ({', '.join(k.split('/')[-1] for k in r['skipped_groups'] if k.startswith('pressure_day_type/')) or 'none'}) "
+            "are listed at the foot and not tested.", ""]
+    return out
+
+
+def render(r: dict, first: Optional[dict] = None, source: str = "docs/research/regime-spells-1182/result.json") -> str:
     n = r["notes"]
     pooled = r["groups"]["pooled"]["all decision days"]
+    turn = r.get("day_types", {}).get("reading") == "turn_days"
     out = [
-        "# The H5 candidate with calm and stress spells (#1182)", "",
+        "# The H5 candidate with calm and stress spells (#1182)" if not turn else
+        "# The H5 candidate with calm and stress spells, split by the turn day types (#1182 re-split, #1224)", "",
         f"**Hypothesis and step:** H5 (primary goal), step 3 (fix), the clustered misses of the scaled mean reversion, after #1153 and #1175 "
         f"(Eleonora, 24 October 2026: \"queue it\"). **{r['label'].capitalize()}**: development days to {n['last_target']}, no verdict (scoring "
         "protocol v1, #640). Any change to the candidate is Eleonora's decision. Generated by `scripts/regime_spells_1182.py page` from "
-        f"`docs/research/regime-spells-1182/result.json`, not edited by hand; declared in `{r['declaration']}` before any score.", "",
+        f"`{source}`, not edited by hand; declared in `{r['declaration']}` before any score.", "",
         f"Panel digest `{r['panel_sha256'][:8]}…`. Studentized stationary bootstrap (ruling 1), mean block {sp.BLOCK_LENGTH} business "
         f"days, {r['draws']:,} draws, seed {r['seed']}, two-sided 90% interval. Skill is `mean(d) / mean(S(comparator))` with "
         "`d = S(comparator) - S(candidate)`, positive favours the candidate; beside it the studentized interval of mean(d) itself (the "
@@ -816,10 +951,12 @@ def render(r: dict) -> str:
         "the entry to stress a logistic function of the calendar type of the day entered, read at that day. The terms, the centre and the "
         "refit cadence are (s3)'s. (a) is #941's variant, beside. The base was chosen after seeing 2018-2025. `gbm_funding` is not compared "
         "(its walks are a long run for Eleonora's Mac and the directive does not ask for it).", ""]
+    if turn:
+        out += rerun_section(r, first)
     out += kill_section(r)
     out += adoption_section(r)
     out += clustering_section(r)
-    out += stress_section(r)
+    out += stress_section(r, source)
     for metric in METRICS:
         out += [f"## {METRIC_TITLES[metric]}, mean over leads 1 to 5, pooled", ""] + HEADER + _score_rows(pooled[metric], r) + [""]
     out += ["## Skill of each arm over (s3), by lead [90%]; mean d [90%]", ""]
@@ -857,10 +994,16 @@ def render(r: dict) -> str:
     return "\n".join(out) + "\n"
 
 
+def _relative(path: str) -> str:
+    resolved = Path(path).resolve()
+    return str(resolved.relative_to(REPO)) if resolved.is_relative_to(REPO) else str(path)
+
+
 def page(args) -> int:
     r = json.loads(Path(args.score).read_text(encoding="utf-8"))
+    first = json.loads(Path(args.first_score).read_text(encoding="utf-8")) if args.first_score else None
     Path(args.output).parent.mkdir(parents=True, exist_ok=True)
-    Path(args.output).write_text(render(r), encoding="utf-8")
+    Path(args.output).write_text(render(r, first, _relative(args.score)), encoding="utf-8")
     figure = Path(args.score).parent / "stress_probability.svg"
     figure.write_text(stress_figure(r, r["episodes"]), encoding="utf-8")
     return 0
@@ -875,12 +1018,15 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     s.add_argument("--draws", type=int, default=sp.DRAWS)
     s.add_argument("--reps", type=int, default=2000, help="bootstrap resamples of a coverage interval")
     s.add_argument("--workers", type=int, default=4)
+    s.add_argument("--b2-thin-pool", choices=("on", "off"), default="on",
+                   help="B2's thin-pool fallback (#1198): `on` is main's reading; `off` is the first page's (#1224)")
     s.add_argument("--first", type=date.fromisoformat, default=None,
                    help="start the walk on this day (a subset, for the script's test only; the declared run omits it)")
     s.set_defaults(func=score)
     g = sub.add_parser("page", help="write the result page from a score file")
     g.add_argument("--score", required=True)
     g.add_argument("--output", required=True)
+    g.add_argument("--first-score", default=None, help="the first page's score file, for the section beside it (#1224)")
     g.set_defaults(func=page)
     args = parser.parse_args(argv)
     return args.func(args)

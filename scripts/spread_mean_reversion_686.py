@@ -180,7 +180,7 @@ class Frame:
         return self.splits.regime(day)
 
     def day_type(self, day: date) -> str:
-        return self.splits.reporting_day_type(day, self.values[day])
+        return turn_days.reporting_day_type(self.splits, day, self.values[day])
 
 
 def build_frame(panel, splits, registry, declaration) -> Tuple[Frame, dict, dict]:

@@ -732,7 +732,7 @@ def score_command(args) -> int:
     document["by_regime"] = by_regime
 
     def kind_of(day: date) -> str:
-        return splits.reporting_day_type(day, row_of[day].values)
+        return turn_days.reporting_day_type(splits, day, row_of[day].values)
 
     by_type = {}
     for kind in sorted({kind_of(calendar[position[d] + h]) for d in days for h in HORIZONS}):

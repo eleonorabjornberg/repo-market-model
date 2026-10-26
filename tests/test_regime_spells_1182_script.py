@@ -245,6 +245,19 @@ class SubsetRunTests(unittest.TestCase):
             self.assertTrue(all(0.0 <= v <= 1.0 for v in path[key]))
         self.assertTrue(all(v in (0, 1) for v in path["m1_episode_k3"]))
 
+    def test_the_groups_are_the_turn_types_in_force(self):
+        """#1224: `Frame.day_type` reads `turn_days.reporting_day_type`, so the day-type groups are the turn labels."""
+
+        reading = self.record["day_types"]
+        self.assertEqual(reading["reading"], "turn_days")
+        self.assertTrue(reading["turn_days_in_force"] and reading["b2_pool_in_force"])
+        groups = set(self.record["groups"]["pressure_day_type"])
+        self.assertTrue(groups <= set(script.TURN_DAYTYPE_ORDER), groups)
+        self.assertFalse(groups & {"month_end", "quarter_end"}, groups)
+        page = script.render(self.record, None, str(self.out))
+        self.assertIn("split by the turn day types", page)
+        self.assertIn("The first page's day-type splits used the retired labels", page)
+
     def test_the_page_shows_the_mean_d_bound_lens_cs_caveat_the_kill_rule_and_the_figure(self):
         page = script.render(self.record)
         self.assertIn("mean-d bound", page)
@@ -257,8 +270,77 @@ class SubsetRunTests(unittest.TestCase):
     def test_the_page_command_writes_the_figure_beside_the_record(self):
         page = Path(self.directory.name) / "page.md"
         self.assertEqual(script.main(["page", "--score", str(self.out), "--output", str(page)]), 0)
-        self.assertEqual(page.read_text(encoding="utf-8"), script.render(self.record))
+        self.assertEqual(page.read_text(encoding="utf-8"), script.render(self.record, None, str(self.out)))
         ET.fromstring((self.out.parent / "stress_probability.svg").read_text(encoding="utf-8"))
+
+
+class ThinPoolSwitchTests(unittest.TestCase):
+    """`score --b2-thin-pool off` scores B2 as the first page's was (#1224), records it, and puts the switch back."""
+
+    def test_off_is_recorded_and_restored(self):
+        import test_protocol_benchmarks as tpb
+        from repo_model import b2_pool
+
+        self.assertTrue(b2_pool.IN_FORCE)
+        with tempfile.TemporaryDirectory() as directory:
+            out = Path(directory) / "result.json"
+            code = script.main(["score", "--panel", str(tpb.published_panel()["path"]), "--output", str(out), "--first", "2025-11-03",
+                                "--draws", "50", "--reps", "10", "--workers", "2", "--b2-thin-pool", "off"])
+            self.assertEqual(code, 0)
+            record = json.loads(out.read_text(encoding="utf-8"))
+        self.assertFalse(record["day_types"]["b2_pool_in_force"])
+        self.assertTrue(record["day_types"]["turn_days_in_force"])
+        self.assertTrue(b2_pool.IN_FORCE)
+
+
+class DayTypeOrderTests(unittest.TestCase):
+
+    def test_the_turn_labels_are_listed_in_the_turn_order_and_the_retired_ones_in_theirs(self):
+        self.assertEqual(script.daytype_order({"turn", "ordinary"}), script.TURN_DAYTYPE_ORDER)
+        self.assertEqual(script.daytype_order({"quarter_end", "month_end", "ordinary"}), script.LEGACY_DAYTYPE_ORDER)
+        self.assertEqual(script._ordered("pressure_day_type", {"ordinary": 1, "year_end": 1, "turn": 1, "tax_date": 1}),
+                         ["year_end", "turn", "tax_date", "ordinary"])
+        self.assertEqual(script._ordered("pressure_day_type", {"ordinary": 1, "month_end": 1, "quarter_end": 1}),
+                         ["quarter_end", "month_end", "ordinary"])
+
+
+class ReSplitPageTests(unittest.TestCase):
+    """The page of the re-split (#1224) is what its committed record gives, beside the first page, which is not edited."""
+
+    directory = ROOT / "docs" / "research" / "regime-spells-1182-turn-types"
+    page = ROOT / "docs" / "research" / "regime-spells-1182-turn-types-result.md"
+    first = ROOT / "docs" / "research" / "regime-spells-1182" / "result.json"
+
+    def setUp(self):
+        if not (self.directory / "result.json").exists():
+            self.skipTest("the record is not committed yet")
+        self.record = json.loads((self.directory / "result.json").read_text(encoding="utf-8"))
+        self.first_record = json.loads(self.first.read_text(encoding="utf-8"))
+
+    def test_the_committed_page_is_what_the_committed_records_give(self):
+        source = "docs/research/regime-spells-1182-turn-types/result.json"
+        self.assertEqual(script.render(self.record, self.first_record, source), self.page.read_text(encoding="utf-8"))
+        self.assertEqual(script.stress_figure(self.record, self.record["episodes"]),
+                         (self.directory / "stress_probability.svg").read_text(encoding="utf-8"))
+
+    def test_the_groups_are_the_turn_types_and_the_declaration_is_the_first_pages(self):
+        self.assertEqual(self.record["day_types"]["reading"], "turn_days")
+        self.assertEqual(set(self.record["groups"]["pressure_day_type"]) - set(script.TURN_DAYTYPE_ORDER), set())
+        self.assertEqual(self.record["declaration"], self.first_record["declaration"])
+        self.assertEqual(self.record["panel_sha256"], self.first_record["panel_sha256"])
+        for key in ("seed", "draws", "reps"):
+            self.assertEqual(self.record[key], self.first_record[key], key)
+        self.assertNotIn("day_types", self.first_record)
+
+    def test_the_pooled_kill_reading_is_the_first_pages(self):
+        for key in ("met", "arms_off_zero", "arms_cut_runs"):
+            self.assertEqual(self.record["kill"][key], self.first_record["kill"][key], key)
+
+    def test_the_page_names_what_the_first_page_got_wrong(self):
+        text = self.page.read_text(encoding="utf-8")
+        self.assertIn("The first page's day-type splits used the retired labels", text)
+        self.assertIn("#1221", text)
+        self.assertIn("Readings that change.", text)
 
 
 class PageTests(unittest.TestCase):

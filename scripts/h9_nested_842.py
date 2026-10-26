@@ -372,7 +372,7 @@ def score_command(args) -> int:
     }
     # decision-day attributes
     state = as_of_state(args.panel, days)
-    kinds = {(d, h): splits.reporting_day_type(calendar[position[d] + h], row_of[calendar[position[d] + h]].values) for d in days for h in HORIZONS}
+    kinds = {(d, h): turn_days.reporting_day_type(splits, calendar[position[d] + h], row_of[calendar[position[d] + h]].values) for d in days for h in HORIZONS}
     always = lambda d, h: True
     groups: Dict[str, Tuple[List[date], object]] = {"pooled": (list(days), always)}
     for label in splits.regime_labels:
