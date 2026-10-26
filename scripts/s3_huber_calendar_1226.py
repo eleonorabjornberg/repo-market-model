@@ -577,8 +577,8 @@ def render(r: dict) -> str:
         "so a row carrying only one of them is ordinary for the weights. The type is read from the target row alone, after the fact, "
         "for a row on or before the anchor (the training pairs); the forecast reads nothing new. The robust scale, the terms, the ridge "
         "of 5, direct pairs and the 21-day refit are (s3)'s. The benchmarks and the mean-reversion level read the pressure-day types of "
-        "the month-end turn record in force since #1161, so (a) and (s3) are not the figures of the #1145 and #1172 pages, which were "
-        "scored on the earlier labels; the arms are compared with each other here. The scaled score of #967 is not scored: its pool "
+        "the month-end turn record in force since #1161, and B2 reads the thin-pool record in force since #1198, so (a), (s3) and B2 are not the "
+        "figures of the #1145, #1172 and #1196 pages, which were scored on earlier readings (`--legacy-day-types` reproduces those); the arms are compared with each other here. The scaled score of #967 is not scored: its pool "
         "needs B2 on days the in-force record cannot forecast.", "",
         "**Day-type intervals.** The by-day-type intervals on this page use the current method: the days of a type, scattered across "
         "the sample, are resampled in date order as if consecutive. #1221 questions that method and #1228 measures a domain estimate "
@@ -822,6 +822,10 @@ def page(args) -> int:
     return 0
 
 
+from repo_model import turn_days  # noqa: E402
+
+
+@turn_days.with_legacy_flag
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = parser.add_subparsers(dest="command", required=True)
