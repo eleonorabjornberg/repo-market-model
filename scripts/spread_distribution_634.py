@@ -1034,6 +1034,10 @@ def add_score_commands(sub) -> None:
     report.set_defaults(func=report_command)
 
 
+from repo_model import turn_days  # noqa: E402
+
+
+@turn_days.with_legacy_flag
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = parser.add_subparsers(dest="command", required=True)

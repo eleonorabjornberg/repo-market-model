@@ -39,7 +39,8 @@ phrase, which by the "GO" convention is always `GO #<issue>`. The registry is
 append-only. CI (`tests.yml`, job `owner-attested`) runs `check` on every pull
 request: each binding kind changed needs an entry ADDED by that change, of that kind, for an issue the change
 cites (its branch `directive/N-...`, a `Closes #N` line or a `GO #N` phrase in the pull request or commit message),
-and every added entry is fetched from the REST API and must be owner-attested. An entry already on the base, or for
+and every added entry is fetched from the REST API and must be owner-attested, on a comment no earlier entry
+cites (#1225; entries already in the registry are grandfathered). An entry already on the base, or for
 an issue the change does not cite, covers nothing (#1188). A pull request is checked on its own range (`--merge-ref`
 drops the main that the event's merge ref picks up); a push range is checked merge by merge.
 
@@ -351,6 +352,16 @@ def check(read_base, read_head, fetch_comment, changed_paths=None, cited=None) -
             f"entries added: {have}). Append an entry of that kind to {REGISTRY} citing Eleonora's own "
             f"'GO #N' comment, and cite #N in the pull request (branch directive/N-, 'Closes #N' or 'GO #N') "
             f"(rule: {RULE})"
+        )
+    held = {entry["comment_id"] for entry in load_registry(read_base(REGISTRY))}
+    reused = sorted(
+        {e["comment_id"] for i, e in enumerate(added)
+         if e["comment_id"] in held or any(o["comment_id"] == e["comment_id"] for o in added[:i])}
+    )
+    if reused:
+        raise NotOwnerAttested(
+            f"comment {', '.join(map(str, reused))} is already in the registry (or cited twice by this change): "
+            f"each binding change needs a fresh 'GO #N' comment from Eleonora (#1225)"
         )
     verified = []
     for entry in added:
