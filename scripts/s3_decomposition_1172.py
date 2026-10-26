@@ -544,7 +544,7 @@ def _fmt(row: Optional[dict]) -> str:
     if "undefined" in row:
         return "undefined"
     lo, hi = row["difference_interval"]
-    return f"{s761.skill_text(row)}; d {row['difference']:+.3f} [{lo:+.3f}, {hi:+.3f}]"
+    return f"{s761.skill_text(row)}; d {row['difference']:+.3f} [{lo:+.3f}, {hi:+.3f}]{s761.dropped_text(row)}"
 
 
 def model_table(r: dict, cell: dict) -> List[str]:

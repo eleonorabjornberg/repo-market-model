@@ -111,6 +111,13 @@
       "comment_id": 6343612016,
       "phrase": "GO #1083",
       "what": "re-pin the final test's declaration and CRPS checksums in docs/decisions/final-test-preregistration.md after the corrected _observation_available in src/repo_model/asof.py (#1060, PR #1083), as her ruling of 21 October 2026 on #1083 says"
+    },
+    {
+      "kind": "decisions",
+      "issue": 1230,
+      "comment_id": 6422567581,
+      "phrase": "GO #1230",
+      "what": "admit IOER/IORB on back-filled 2014-18 rows as training history only (#1231): the back-fill amendment to docs/decisions/information-set.md, items 1 and 4, and the backfill guard, as her 26 October ruling on #1223 (ledger item 56) says"
     }
   ],
   "rule": "docs/decisions/drafts/owner-attestation.md",
