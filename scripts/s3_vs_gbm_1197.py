@@ -89,6 +89,13 @@ DECLARATION = d1145.DECLARATION
 reading, skill_reading = mdr.verdict_words, mdr.skill_words
 
 
+def bold_reading(row: dict) -> str:
+    """The reading in bold for a table cell; "no reading" (#1215) already carries its own bold."""
+
+    words = reading(row)
+    return words if words.startswith("**") else f"**{words}**"
+
+
 # -- the walks -------------------------------------------------------------------------------------------------------
 
 
@@ -311,7 +318,7 @@ def comparison_table(r: dict, metric: str, candidate: str, reference: str) -> Li
         means = entry[metric]["means"]
         title = label if split in ("pooled", "regime") else f"{label} ({split.replace('_', ' ')})" if split != "lead" else f"{label} (lead)"
         out.append(f"| {title} | {entry['days']} | {means[candidate]:.3f} | {means[reference]:.3f} | {fmt(row)} | "
-                   f"{skill_reading(row)} | **{reading(row)}** |")
+                   f"{skill_reading(row)} | {bold_reading(row)} |")
     out.append("")
     return out
 
@@ -321,11 +328,11 @@ def skill_text(row: Optional[dict]) -> str:
 
 
 def regime_tally(r: dict, metric: str, candidate: str, reference: str) -> Dict[str, int]:
-    count = {"gain": 0, "loss": 0, "undecided": 0}
+    count = {"gain": 0, "loss": 0, "undecided": 0, "no reading": 0}
     for label in REGIMES:
         row = get_row(r, "regime", label, metric, candidate, reference)
         if row is not None:
-            count[reading(row)] += 1
+            count["no reading" if "undefined" in row else reading(row)] += 1
     return count
 
 
@@ -378,7 +385,7 @@ def render(r: dict) -> str:
         for cand, ref in COMPARISONS:
             row = get_row(r, "pooled", "all decision days", metric, cand, ref)
             out.append(f"| {LABELS[cand]} against {LABELS[ref]} | {r['groups']['pooled']['all decision days']['days']} | {fmt(row)} | "
-                       f"{skill_reading(row) if row else 'n/a'} | **{reading(row) if row else 'n/a'}** |")
+                       f"{skill_reading(row) if row else 'n/a'} | {bold_reading(row) if row else '**n/a**'} |")
         out.append("")
         means = r["groups"]["pooled"]["all decision days"][metric]["means"]
         out += ["Mean score, lower is better: " + "; ".join(f"{LABELS[m]} {means[m]:.3f}" for m in SCORED) + ".", ""]
@@ -390,7 +397,7 @@ def render(r: dict) -> str:
         for cand, ref in head:
             tally = regime_tally(r, metric, cand, ref)
             out += comparison_table(r, metric, cand, ref)
-            out += [f"Regimes read on the mean-d bound: {tally['gain']} gain, {tally['loss']} loss, {tally['undecided']} undecided.", ""]
+            out += [f"Regimes read on the mean-d bound: {tally['gain']} gain, {tally['loss']} loss, {tally['undecided']} undecided, {tally['no reading']} no reading.", ""]
     out += ["### Against the benchmarks, pooled and by regime", ""]
     for metric in METRICS:
         out += [f"**{METRIC_TITLES[metric]}**", ""]
@@ -492,7 +499,7 @@ def log_entry(r: dict, when: str) -> str:
     for metric in ("grid_crps",):
         for cand, ref in HEADLINE:
             tally = regime_tally(r, metric, cand, ref)
-            regimes.append(f"{LABELS[cand]} against {LABELS[ref]}: {tally['gain']} gain, {tally['loss']} loss, {tally['undecided']} undecided")
+            regimes.append(f"{LABELS[cand]} against {LABELS[ref]}: {tally['gain']} gain, {tally['loss']} loss, {tally['undecided']} undecided, {tally['no reading']} no reading")
     means = r["groups"]["pooled"][pooled]["grid_crps"]["means"]
     return "\n".join([
         f"### {when} [H5] step 3 · eleonorabjornberg/repo-market-model#1197",

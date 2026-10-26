@@ -73,7 +73,10 @@ class GuardTests(unittest.TestCase):
         row = {"skill": 0.01, "skill_interval": [0.001, 0.02], "difference": 0.01, "difference_interval": [-0.002, 0.02]}
         self.assertEqual(script.reading(row), "undecided")  # the mean-d bound crosses zero
         self.assertEqual(script.skill_reading(row), "gain")
-        self.assertEqual(script.reading({"undefined": "no variance"}), "undecided")
+        undefined = {"undefined": "no variance"}
+        self.assertTrue(script.reading(undefined).startswith("**no reading**"))  # #1215's words, not "undecided"
+        self.assertEqual(script.bold_reading(undefined), script.reading(undefined))  # not bolded twice
+        self.assertEqual(script.bold_reading(row), "**undecided**")
 
     def test_the_comparisons_are_the_ones_the_directive_names(self):
         self.assertEqual(script.HEADLINE, [(script.S3, script.GBM), (script.A, script.GBM), (script.S3, script.A)])
