@@ -79,6 +79,7 @@ class DeclaredArmsTests(unittest.TestCase):
                          [(1.0, False, False, False), (1.0, False, True, False), (5.0, True, False, False), (1.0, False, False, False)])
         self.assertEqual([a.name for a in sc.DECOMPOSITION], ["sc_s1_standardised", "sc_r1_ridge5", "sc_r2_huber", "sc_s3_robust", "sc_r3_size"])
         self.assertTrue({a.name for a in sc.ARMS + sc.DECOMPOSITION + sc.S3_TERMS} <= set(sc.ALL_ARMS))  # #1226 adds two more
+        self.assertIn(sc.S3_IORBS, sc.ALL_ARMS.values())  # (s3+IORBs) of #1227
 
 
 class RobustInteractionTests(unittest.TestCase):
