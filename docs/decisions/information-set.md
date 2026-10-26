@@ -80,6 +80,11 @@ when the feature set was fixed; re-scoring them belongs with next-version resear
 
 ## Amendment: back-filled repo-rate history is training history only (#374, #430)
 
+**Draft change from #1230, for Eleonora to review. Not in force until she has merged it.** The pull request that
+closes #1230 amends items 1 and 4 below: it admits IOER/IORB on back-filled rows as training history only (her
+ruling of 26 October 2026), and corrects item 1's line on the SOFR volume to her ruling of 19 October 2026 on #742.
+The rest of this amendment is in force as it stands.
+
 The snapshot and the guard are merged. **Posting instant established: 2018-05-17** (the start of that day, New York
 time) for TGCR, BGCR and SOFR, by her ruling of 13 October 2026 on PR #661 (#633); the source is
 `metadata/backfill_posting.json`. The amendment is in force from the merge of the pull request that closes #734.
@@ -97,10 +102,15 @@ are in `docs/pivot/backfilled-history-result.md`.
    13 October 2026: 2018-05-17, by her ruling on PR #661, with its evidence in #781 and
    `docs/pivot/posting-dates-due-diligence.md`. The series admitted, each from that date, are listed in
    `metadata/backfill_posting.json` (`admitted`) and here:
-   <!-- backfill-admitted: bgcr@2018-05-17, sofr@2018-05-17, tgcr@2018-05-17 -->
-   That is TGCR, BGCR and SOFR from 2018-05-17, by her ruling of 14 October 2026 on #742, and no other series.
-   The workbook's volumes are not admitted by this record. Whether IORB and the SOFR volume are admitted is
-   still her open question on #742; both are left out of the list.
+   <!-- backfill-admitted: bgcr@2018-05-17, iorb@2018-05-17, sofr@2018-05-17, tgcr@2018-05-17 -->
+   That is TGCR, BGCR and SOFR from 2018-05-17, by her ruling of 14 October 2026 on #742, and IOER/IORB from
+   the same date, by her ruling of 26 October 2026 (ledger item 56 on #1223, option 1; directive #1230), and no
+   other series. IOER/IORB on a back-filled row is admitted as training history only, on the same terms as the
+   back-filled SOFR: it is never an as-of input at a scored decision instant (item 2), and a model trained on it
+   stays a scratch measurement until a later decision (item 3). It is a series like the others:
+   `repo_model.backfill.require_series_admitted` checks a fit that reads it, and a fit that reads it outside
+   training history raises `LookAheadError`. The workbook's volumes are not admitted by this record, the SOFR
+   volume among them (her ruling of 19 October 2026 on #742).
 2. **It is never an as-of input at a scored decision instant.** No scored day is a back-filled day, and
    no scored forecast is conditioned on a back-filled row (its feature date is a published day).
    `repo_model.backfill.require_training_only` raises `LookAheadError` for a backtest in which either
@@ -113,8 +123,8 @@ are in `docs/pivot/backfilled-history-result.md`.
    scarcity state are not in the admitted list of item 1, so each is blank on a back-filled row, and a fit
    that reads one of them on those rows raises `LookAheadError`
    (`repo_model.backfill.require_series_admitted`). Only the calendar columns, which are functions of the
-   date, are filled there (and IORB, which the code treats as no series: item 1's open question); they use the workbook's own publication days as the business-day schedule,
-   because the market holiday table begins on 2018-01-01.
+   date, and the admitted series of item 1 (IORB among them) are filled there; the calendar columns use the workbook's own
+   publication days as the business-day schedule, because the market holiday table begins on 2018-01-01.
 
 ## Amendment: the scarcity state reads each leg at its own latest public row (#571, #586)
 

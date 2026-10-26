@@ -544,7 +544,7 @@ def _fmt(row: Optional[dict]) -> str:
     if "undefined" in row:
         return "undefined"
     lo, hi = row["difference_interval"]
-    return f"{s761.skill_text(row)}; d {row['difference']:+.3f} [{lo:+.3f}, {hi:+.3f}]"
+    return f"{s761.skill_text(row)}; d {row['difference']:+.3f} [{lo:+.3f}, {hi:+.3f}]{s761.dropped_text(row)}"
 
 
 def model_table(r: dict, cell: dict) -> List[str]:
@@ -672,19 +672,22 @@ def render(r: dict) -> str:
     for label, entry in r["groups"].get("scaled", {}).items():
         out += [f"**{label}** ({entry['days']} days)", ""] + model_table(r, entry[SCALED]) + [""]
     out += ["## Reading under the declared rules (the mean-d bound, with the skill interval's reading beside it)", ""]
-    for name in ARMS:
-        if name == A:
-            continue
-        for reference in ([A] if name == S3 else [A, S3]):
-            parts = []
-            for split in ("pooled", "regime", "target_day_type"):
-                for label, entry in r["groups"].get(split, {}).items():
-                    row = entry["grid_crps"]["vs"].get(name, {}).get(reference)
-                    word = verdict(row)
-                    other = skill_verdict(row)
-                    parts.append(f"{label}: {word}" + ("" if word == other else f" (skill interval: {other})"))
-            out.append(f"- **{LABELS[name]}** against {LABELS[reference] if reference == A else '(s3)'}, grid CRPS: " + "; ".join(parts) + ".")
-    out.append("")
+    for metric, metric_name in (("grid_crps", "grid CRPS"), ("upper_tail_twcrps", "upper-tail twCRPS")):
+        if metric != "grid_crps":
+            out += ["The same readings on the key secondary score, upper-tail twCRPS (#1194; the lines above read grid CRPS only):", ""]
+        for name in ARMS:
+            if name == A:
+                continue
+            for reference in ([A] if name == S3 else [A, S3]):
+                parts = []
+                for split in ("pooled", "regime", "target_day_type"):
+                    for label, entry in r["groups"].get(split, {}).items():
+                        row = entry[metric]["vs"].get(name, {}).get(reference)
+                        word = verdict(row)
+                        other = skill_verdict(row)
+                        parts.append(f"{label}: {word}" + ("" if word == other else f" (skill interval: {other})"))
+                out.append(f"- **{LABELS[name]}** against {LABELS[reference] if reference == A else '(s3)'}, {metric_name}: " + "; ".join(parts) + ".")
+        out.append("")
     for name in (R1, R2, S3, R3, V4):
         other, what = ISOLATES[name]
         row = pooled["grid_crps"]["vs"][name].get(other)
@@ -851,6 +854,10 @@ def page(args) -> int:
     return 0
 
 
+from repo_model import turn_days  # noqa: E402
+
+
+@turn_days.with_legacy_flag
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = parser.add_subparsers(dest="command", required=True)

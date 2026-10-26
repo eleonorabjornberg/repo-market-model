@@ -18,8 +18,11 @@ it. Stdlib only.
 
 from __future__ import annotations
 
+import contextlib
+import functools
+import sys
 from datetime import date
-from typing import Mapping, Optional, Tuple
+from typing import Callable, Iterator, Mapping, Optional, Sequence, Tuple
 
 from . import data
 from .evaluation_splits import SplitDeclaration
@@ -38,6 +41,50 @@ ORDINARY = "ordinary"
 LABELS: Tuple[str, ...] = (YEAR_END, QUARTER_END_TURN, TURN, TAX_DATE, ORDINARY)
 #: The labels that are turn days.
 TURN_LABELS = frozenset({TURN, QUARTER_END_TURN, YEAR_END})
+
+
+#: The flag a study script takes to run under `legacy_reading()` (#1206).
+LEGACY_FLAG = "--legacy-day-types"
+
+
+@contextlib.contextmanager
+def legacy_reading() -> Iterator[None]:
+    """Run the body under the day-type reading that pages made before #1185 (2026-10-24, 1:36 pm ET) were made under (#1206).
+
+    Turns off both `turn_days.IN_FORCE` (the labels `month_end` and `quarter_end` come back in place of `turn`,
+    `quarter_end_turn` and `year_end`) and `b2_pool.IN_FORCE` (B2 is plain B2 again, without its thin-pool fallback), and puts
+    both back as it found them, also when the body raises. It does not reach a process that is spawned inside the body (a
+    `spawn` pool re-imports the modules with the record in force); a `fork` pool inherits it.
+    """
+
+    from . import b2_pool  # b2_pool imports this module
+
+    turn_before, pool_before = IN_FORCE, b2_pool.IN_FORCE
+    globals()["IN_FORCE"] = False
+    b2_pool.IN_FORCE = False
+    try:
+        yield
+    finally:
+        globals()["IN_FORCE"] = turn_before
+        b2_pool.IN_FORCE = pool_before
+
+
+def with_legacy_flag(main: Callable[[Optional[Sequence[str]]], int]) -> Callable[[Optional[Sequence[str]]], int]:
+    """Decorate a script's `main(argv)` so that `--legacy-day-types` in `argv` runs it under `legacy_reading()`.
+
+    The flag is taken off the list before the script's own parser sees it, so no sub-command declares it. A run without it is
+    the script as it stands on main: a new measurement under the day types in force, not a reproduction of an older page.
+    """
+
+    @functools.wraps(main)
+    def wrapper(argv: Optional[Sequence[str]] = None) -> int:
+        args = list(sys.argv[1:] if argv is None else argv)
+        if LEGACY_FLAG not in args:
+            return main(args if argv is not None else None)
+        with legacy_reading():
+            return main([a for a in args if a != LEGACY_FLAG])
+
+    return wrapper
 
 
 def in_force() -> bool:

@@ -97,6 +97,27 @@
       "comment_id": 6354007213,
       "phrase": "GO #1135",
       "what": "put the approved record in force (#1161): move docs/decisions/drafts/month-end-turn.md to docs/decisions/month-end-turn.md with its status line in force, and set turn_days.IN_FORCE True, as the record's 'Putting it in force' section says"
+    },
+    {
+      "kind": "decisions",
+      "issue": 1155,
+      "comment_id": 6387463494,
+      "phrase": "GO #1155",
+      "what": "put the approved record in force (#1198): move docs/decisions/drafts/b2-thin-pool.md to docs/decisions/b2-thin-pool.md with its status line in force and her answers (minimum pool 4), set b2_pool.POOL_MIN 4 and IN_FORCE True, and wire b2_pool into protocol_benchmarks.b2_forecast, as the record's 'Putting it in force' section says"
+    },
+    {
+      "kind": "decisions",
+      "issue": 1083,
+      "comment_id": 6343612016,
+      "phrase": "GO #1083",
+      "what": "re-pin the final test's declaration and CRPS checksums in docs/decisions/final-test-preregistration.md after the corrected _observation_available in src/repo_model/asof.py (#1060, PR #1083), as her ruling of 21 October 2026 on #1083 says"
+    },
+    {
+      "kind": "decisions",
+      "issue": 1230,
+      "comment_id": 6422567581,
+      "phrase": "GO #1230",
+      "what": "admit IOER/IORB on back-filled 2014-18 rows as training history only (#1231): the back-fill amendment to docs/decisions/information-set.md, items 1 and 4, and the backfill guard, as her 26 October ruling on #1223 (ledger item 56) says"
     }
   ],
   "rule": "docs/decisions/drafts/owner-attestation.md",

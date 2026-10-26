@@ -492,7 +492,36 @@ LABELS = {"B1": "B1", B1P: "B1' (#960)", "B2": "B2", CTX: "spread_mr_ctx (#761)"
 LABELS.update({a.name: a.role for a in sc.ARMS})
 METRIC_TITLES = {"grid_crps": "grid CRPS (23 levels)", "upper_tail_twcrps": "upper-tail twCRPS (weight 1{z > 0 bp})",
                  SCALED: "scaled grid CRPS (#967)"}
-verdict = c.verdict
+
+
+def verdict(row: Optional[dict]) -> str:
+    """The reading of one row under her ruling on #1009 (#1194): a gain when the lower end of the 90% studentized interval of mean d is
+    above zero, a loss when its upper end is below zero, else undecided. The skill interval is shown beside it and does not decide.
+    The declaration (`metadata/state_calendar_1145.json`) stays as written before scoring; only this reading and the new page carry the rule."""
+
+    if row is None or "undefined" in row:
+        return "undecided"
+    lo, hi = row["difference_interval"]
+    return "gain" if lo > 0.0 else "loss" if hi < 0.0 else "undecided"
+
+
+def skill_verdict(row: Optional[dict]) -> str:
+    """The reading the first page was written with (before #1194): the skill interval. Kept so that page can be regenerated."""
+
+    return c.verdict(row)
+
+
+READERS = {"mean_d": verdict, "skill": skill_verdict}
+READING_RULE = (
+    "A gain (loss) is read when the lower (upper) end of the 90% studentized interval on the mean difference d is above (below) zero, with "
+    "d = S(reference) - S(arm), positive favouring the arm; otherwise undecided. The interval is the pair of one-sided 95% bounds, the "
+    "studentized bound on mean d that the protocol's verdict reads (her ruling on #1009, directive #1194); the skill interval in the "
+    "tables is shown beside it and is not the reading. Both intervals for every paired row are on "
+    "`docs/research/state-calendar-1145-mean-d-1194-result.md`.")
+CAVEAT = (
+    "**Caveat (Lens C of the five-lens review, #958).** The lag-10 HAC standard error that studentizes the mean-d bound is understated "
+    "about 2× after 2020, so the bound is optimistic there: an interval that excludes zero is narrower than it should be. A reading here "
+    "is evidence for a question, not a verdict.")
 
 
 def _fmt(row: Optional[dict]) -> str:
@@ -517,18 +546,18 @@ def model_table(r: dict, cell: dict) -> List[str]:
     return out
 
 
-def tally(r: dict, arm: str, metric: str = "grid_crps") -> Dict[str, int]:
+def tally(r: dict, arm: str, metric: str = "grid_crps", reading: str = "mean_d") -> Dict[str, int]:
     """The number of regimes (by target day) in which the arm's skill over (a) is read as a gain, a loss and undecided."""
 
     count = {"gain": 0, "loss": 0, "undecided": 0}
     for label in REGIMES:
         entry = r["groups"].get("regime", {}).get(label)
         if entry is not None:
-            count[verdict(entry[metric]["vs"].get(arm, {}).get(A))] += 1
+            count[READERS[reading](entry[metric]["vs"].get(arm, {}).get(A))] += 1
     return count
 
 
-def render(r: dict) -> str:
+def render(r: dict, reading: str = "mean_d") -> str:
     n = r["notes"]
     out = [
         "# State-scaled calendar effects on scaled mean reversion (#1145)", "",
@@ -557,13 +586,14 @@ def render(r: dict) -> str:
                 "[+3.3%, +10.1%].", ""]
     out += ["## Does an arm beat (a)?", "",
             "Skill of each arm over (a), pooled, with the 90% interval; the regimes (by target day) read as gain / loss / undecided under the "
-            "declared rule (the interval excludes zero); and the reading on ordinary days and on the calendar days. Beating (a) is "
+            + ("declared rule (the interval excludes zero)" if reading == "skill" else
+               "ruling on #1009 (the studentized bound on mean d excludes zero)") + "; and the reading on ordinary days and on the calendar days. Beating (a) is "
             "Eleonora's reading of this page.", "",
             "| arm | grid CRPS vs (a) | twCRPS vs (a) | regimes, grid CRPS (gain / loss / undecided) | ordinary days | calendar days | vs B1' pooled | vs B2 pooled |",
             "|---|---|---|---|---|---|---|---|"]
     pooled = r["groups"]["pooled"]["all decision days"]
     for arm in sc.ARMS:
-        t = tally(r, arm.name)
+        t = tally(r, arm.name, reading=reading)
         ordv = r["groups"].get("target_day_type", {}).get(ORDINARY, {}).get("grid_crps", {}).get("vs", {}).get(arm.name, {}).get(A)
         calv = r["groups"].get("target_day_type", {}).get("calendar_days", {}).get("grid_crps", {}).get("vs", {}).get(arm.name, {}).get(A)
         out.append(
@@ -594,12 +624,13 @@ def render(r: dict) -> str:
             "decision days). By the regime of the decision day.", ""]
     for label, entry in r["groups"].get("scaled", {}).items():
         out += [f"**{label}** ({entry['days']} days)", ""] + model_table(r, entry[SCALED]) + [""]
-    out += ["## Reading under the declared rules", ""]
+    out += ["## Reading under the declared rules", ""] if reading == "skill" else [
+        "## Reading under the ruling on #1009", "", READING_RULE, "", CAVEAT, ""]
     for name in (S1, S2, S3, S4):
         parts = []
         for split in ("pooled", "regime", "target_day_type"):
             for label, entry in r["groups"].get(split, {}).items():
-                parts.append(f"{label}: {verdict(entry['grid_crps']['vs'].get(name, {}).get(A))}")
+                parts.append(f"{label}: {READERS[reading](entry['grid_crps']['vs'].get(name, {}).get(A))}")
         out.append(f"- **{LABELS[name]}**, grid CRPS against (a): " + "; ".join(parts) + ".")
     out.append("")
     for name, other, what in ((S2, S1, "the state"), (S3, S1, "the robust estimator"), (S4, S1, "the FOMC and IORB terms")):
@@ -731,10 +762,14 @@ def question(r: dict) -> List[str]:
 def page(args) -> int:
     r = json.loads(Path(args.score).read_text(encoding="utf-8"))
     Path(args.output).parent.mkdir(parents=True, exist_ok=True)
-    Path(args.output).write_text(render(r), encoding="utf-8")
+    Path(args.output).write_text(render(r, args.reading), encoding="utf-8")
     return 0
 
 
+from repo_model import turn_days  # noqa: E402
+
+
+@turn_days.with_legacy_flag
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = parser.add_subparsers(dest="command", required=True)
@@ -751,6 +786,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     g = sub.add_parser("page", help="write the result page from a score file")
     g.add_argument("--score", required=True)
     g.add_argument("--output", required=True)
+    g.add_argument("--reading", choices=sorted(READERS), default="mean_d",
+                   help="mean_d reads the studentized bound on mean d (#1009, the default); skill reproduces the first page")
     g.set_defaults(func=page)
     args = parser.parse_args(argv)
     return args.func(args)

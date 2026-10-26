@@ -538,7 +538,10 @@ def candidate_standings_html(st):
         mark = ""
         caveat = ('The candidate reads the calendar at the target day on direct pairs, so its figures are not provisional '
                   'on that account; it was chosen after seeing the development days, so they are optimistic for it. ')
-    links = ", ".join(f'<a href="{BLOB}{esc(e["page"])}">{esc(EVIDENCE_NAMES.get(e["issue"], "the study"))}</a>' for e in st["evidence"])
+    links = ", ".join(
+        f'<a href="{BLOB}{esc(e["page"])}">{esc(EVIDENCE_NAMES.get(e["issue"], "the study"))}</a>'
+        + (f' (<a href="{BLOB}{esc(e["mean_d_page"])}">read on the mean-d bound</a>)' if e.get("mean_d_page") else "")
+        for e in st["evidence"])
     return (
         '<p><span class="runin">The development standings.</span> '
         f'The H5 candidate is <b>{name}</b>, {esc(st["description"] or "the scaled mean reversion of the volatility-scaling study")}. '

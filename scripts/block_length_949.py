@@ -183,7 +183,7 @@ def series(published: Path, walks: Path):
         out[b]["avg"] = {d: averaged[b][d] - averaged["gbm_funding"][d] for d in days if d in averaged[b] and d in averaged["gbm_funding"]}
     meta = {
         "regime": {d: splits.regime(d) for d in days},
-        "kind": {d: splits.reporting_day_type(d, row_of[d].values) for d in days},
+        "kind": {d: turn_days.reporting_day_type(splits, d, row_of[d].values) for d in days},
         "regimes": list(splits.regime_labels),
         "missing": {"days": len(filled.missing_days), "share": filled.missing_share},
         "days": days,
@@ -366,6 +366,10 @@ def check_command(_args) -> int:
     return 0
 
 
+from repo_model import turn_days  # noqa: E402
+
+
+@turn_days.with_legacy_flag
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = parser.add_subparsers(dest="command", required=True)

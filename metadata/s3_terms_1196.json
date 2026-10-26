@@ -1,0 +1,157 @@
+{
+ "status": "declared by the pull request that closes #1196 before any score was computed; a development study, never a verdict. Nothing is published: no arm or term joins any published declaration, `gbm_funding`'s declaration and `scripts/final_test_preregistration.py` do not change, no day after 2025-12-31 is scored, no lockbox day is scored, and no record in docs/runs/ is edited. Whether an arm replaces (s3) as the H5 candidate is Eleonora's decision on the page's evidence. Amendments made after a number was computed would be listed in `amendments`; there are none.",
+ "issue": 1196,
+ "avenue": 1189,
+ "ruling": "Eleonora, 24 October 2026, relayed: queue it after #1194. Base: (s3) of #1145 (the candidate); comparators (s3) and (a). Arms, declared before any score, calendar at the target day on direct pairs: (s3+state) (s3) with each term times the as-of scarcity state, as (s2), Huber fit, ridge 5; (s3+FOMC/IORB) (s3) with `fomc_day` and `iorb_window`, as (s4), Huber fit, ridge 5. Score as #1145: grid CRPS over h = 1-5 and upper-tail twCRPS, studentized bootstrap block 10 (Politis-White beside), B1 with B1' beside, B2, by regime and target-day type with FOMC and IORB days named; read on the mean-d bound with the skill interval beside and Lens C's caveat; the page says this is a further look at 2018-2025 after (s3) was chosen on it, aimed at (s3)'s 2020 and FOMC-day upper-tail losses (#1187). Adoption: an arm replaces (s3) only if it beats it; her decision. Development data, not a verdict. Cloud, about 40 minutes.",
+ "hypothesis": "H5 (primary goal): the SOFR - IORB spread distribution in bp. Step 3 (calendar first; refocus). Development tier",
+ "target": "spread_bps at the scored day, in basis points, as a 23-quantile distribution at each lead h = 1..5 (scoring_protocol.GRID)",
+ "base": {
+  "name": "(s3) of #1145: sc_s3_robust, the H5 candidate; comparator (a): spread_mr_fhs_mad20_f0.5 (#941)",
+  "module": "repo_model.spread_mr_state_calendar (#1145), unchanged for (a) and (s3); the two arms of this study are two new StateArm constants (S3_STATE, S3_CAL) of the same module, which add no estimator: they are flags on fit_state_terms. tests/test_spread_mr_s3_terms.py pins that (s3+state) is (s3) with the interaction and nothing else, that (s3+FOMC/IORB) is (s3) with the terms of (s4) and nothing else, and that the arms of #1145 and #1172 are unchanged",
+  "formula": "q_p(t+h) = level + phi^k * (last - level) + scale(anchor) * (shift_h(T) + z_h,p), shift_h(T) = sum_j beta_j x_j(T) in scale units, z_h,p the 23 empirical quantiles of the standardised residual left after the terms; scale(r) = max(0.5, 1.4826 * median of the 20 absolute daily changes ending at r); phi, level, the two-year training window, the minimum of 60 pairs and the refit every 21 decision days are the base model's",
+  "pairs": "direct (training_pairs = 'direct'), every term read at the target day. The estimation routine is decorated with repo_model.one_step_guard.guard_one_step_fit: on direct pairs it needs no allow-list entry. No entry is added to one_step_guard.ONE_STEP_ALLOW_LIST"
+ },
+ "terms": {
+  "definition": "#1145's and #1115's, unchanged (metadata/state_calendar_1145.json, `terms`): month_end, quarter_end, tax_date, settlement_coupon, settlement_bill, dom_19_23 and post_month_end_window in (s3) and in (s3+state); the same seven plus fomc_day and iorb_window in (s3+FOMC/IORB). Each is a 0/1 flag of the target row, read at the target day on direct pairs; a scheduled field is read only where asof rule 2 admits it (settlements at lead 1 only; the IORB window at leads 1 to 3, absent at leads 4 and 5)",
+  "min_flagged": "a term enters a lead's fit only if at least 3 of that lead's training pairs carry its flag; otherwise its effect is 0 at that refit and lead (#1115's rule)"
+ },
+ "state": {
+  "definition": "the reserve-scarcity state of #115 as the own-leg read of #586 (repo_model.scarcity.own_leg_states, run under scarcity.measurement_declaration on the measurement panel built from tracked fixtures only: the published panel's inputs, the Desk's operation results and the H.8 first prints): 0 abundant to 3 scarce, each of its three legs read at its latest row public at the decision instant. It is a slow variable of the decision, not of the target day, and the same state is used at every lead of a decision",
+  "keyed_by": "the DECISION day: states[d] is what a decision on day d could read. The grid of own_leg_states at horizon 1 is keyed by the scored day, which is the next panel day, so states[panel[i].date] = grid[panel[i + 1].date]. A training pair with origin o and lag L (the anchor lag) is trained on states[date[o + L]], the state of the decision it stands for; a forecast reads states[date[D]] of its own decision day D. spread_mr_state_calendar.read_state raises LookAheadError for any later day",
+  "grid": "minimum_history 20 (the earliest the legs allow, 2018-05-04), horizon 1, end 2025-12-31; the lockbox is checked by the fold grid before anything is read",
+  "interaction_variable": "s = state / 3, so 0 on the floor and 1 when scarce; the four-level form of #128, used as is, with no cut-point of this study's own",
+  "unknown": "a pair or a decision whose state is unknown has s = 0 for the interaction columns (the term's main effect still applies); the count of such pairs is kept in each estimate"
+ },
+ "arms": [
+  {
+   "name": "mr_cal_a_base",
+   "role": "(a) base: #941 mad 20, floor 0.5; the comparator",
+   "location_terms": [],
+   "interact": false,
+   "ridge": null,
+   "robust": false
+  },
+  {
+   "name": "sc_s3_robust",
+   "role": "(s3) (s1) with a Huber fit and a heavier ridge; the H5 candidate; the comparator",
+   "location_terms": [
+    "month_end",
+    "quarter_end",
+    "tax_date",
+    "settlement_coupon",
+    "settlement_bill",
+    "dom_19_23",
+    "post_month_end_window"
+   ],
+   "interact": false,
+   "ridge": 5.0,
+   "robust": true
+  },
+  {
+   "name": "sc_s3_state",
+   "role": "(s3+state) (s3) and each term times the scarcity state",
+   "location_terms": [
+    "month_end",
+    "quarter_end",
+    "tax_date",
+    "settlement_coupon",
+    "settlement_bill",
+    "dom_19_23",
+    "post_month_end_window"
+   ],
+   "interact": true,
+   "ridge": 5.0,
+   "robust": true
+  },
+  {
+   "name": "sc_s3_fomc_iorb",
+   "role": "(s3+FOMC/IORB) (s3) with the FOMC and IORB terms",
+   "location_terms": [
+    "month_end",
+    "quarter_end",
+    "tax_date",
+    "settlement_coupon",
+    "settlement_bill",
+    "dom_19_23",
+    "iorb_window",
+    "fomc_day",
+    "post_month_end_window"
+   ],
+   "interact": false,
+   "ridge": 5.0,
+   "robust": true
+  }
+ ],
+ "estimation": {
+  "units": "the target of every fit is y_i = r_i / scale(o_i), the standardised residual of pair i (as arm (a) defines the raw residual r_i); an effect is a number of scale units and the effect in bp on a forecast is that number times the term's regressor times scale(anchor) of the decision, read afresh each day",
+  "s3": "#1145's, unchanged: Huber iteratively re-weighted least squares (start from the ridge least-squares fit; sigma = max(1.4826 * median |r - median(r)|, 1e-6), threshold 1.345 sigma, weights 1 where |r| <= c and c / |r| beyond, a weighted ridge fit, at most 50 passes, stop when no coefficient moves by 1e-8), ridge 5.0 pseudo-days on every term coefficient and none on the intercept; the intercept is dropped; the pool is the 23 empirical quantiles of the unweighted z_i = y_i - sum_j beta_j x_ij",
+  "s3_state": "(s3) with, for every term of (s3), a second column x_j * s_i (s_i the state level of the pair's decision day, state / 3, 0 where unknown): the design is [1, x_1 .. x_p, x_1 s .. x_p s], fitted by the same Huber iteration with the same ridge of 5.0 on every term and state-slope coefficient; the pool is z_i = y_i - sum_j (beta_j + gamma_j s_i) x_ij; the forecast shift is sum_j (beta_j + gamma_j s) x_j(T) with s the state of the forecast's decision day, the same at every lead. This is (s2) with (s3)'s fit",
+  "s3_fomc_iorb": "(s3) with fomc_day and iorb_window added to the seven terms: the same Huber iteration and ridge of 5.0. This is (s4) with (s3)'s fit. The Huber threshold is relative to the current residuals, so an outlier rate-change day (2019, 2020) is down-weighted, not removed from the pool",
+  "refit": "every 21 decision days with the base fit, as the base model, #1145 and #1153 do; between refits the effects, the pools and the factors are kept and last, level, k, the anchor, scale(anchor), the flags and sizes of T and the state of the decision day are read afresh",
+  "isolation": "(s3+state) against (s3) isolates the state interaction on the robust fit; (s3+FOMC/IORB) against (s3) isolates the two terms on the robust fit. Neither is compared with (s2) or (s4) of #1145 here: those lost or were undecided on the least-squares fit and are not rerun"
+ },
+ "references": {
+  "benchmarks": "B1, B1' (repo_model.b1_calendar, #960; reported beside B1 in every table, B1 stays the protocol's benchmark) and B2 of scoring protocol v1",
+  "pairs": "each arm against (a), (s3), B1, B1' and B2; (s3) against (a), B1, B1' and B2",
+  "gbm": "gbm_funding (#634), read from its walks only when supplied (`--walks`, the same files as #1145). The walks are a long run that stays on Eleonora's Mac (`needs-mac`) and is not run first: without them those rows are absent and the page says so"
+ },
+ "scoring": {
+  "scorer": "repo_model.scoring_protocol (#655), the development tier: no verdict, no registration",
+  "days": "decision days with a forecast of every arm and the benchmarks, whose five targets fall on or before 2025-12-31; no day after 2025-12-31 is read; the scored days pass lockbox.require_unlocked",
+  "outcomes": "the panel's spread_bps at the target day",
+  "measures": [
+   "grid CRPS (23 levels), by lead and the mean over leads 1..5 (primary)",
+   "upper-tail twCRPS, weight 1{z > 0 bp}, by lead and the mean over leads (key secondary)"
+  ],
+  "paired": "skill = mean(d) / mean(S(benchmark)) with d = S(benchmark) - S(candidate), positive favours the candidate; scoring_protocol.paired_tests, the studentized stationary bootstrap (ruling 1), mean block 10 business days, 10,000 draws, seed 1196; two-sided 90% interval, so the lower end is the one-sided 95% bound. Both the skill interval and the studentized interval on mean d (bp) are reported for every tested row",
+  "reading": "a reading is taken from the mean-d bound (Eleonora's ruling on #1009, 20 October 2026): an arm is read better than a reference when the lower end of the 90% interval of mean d is above zero, worse when the upper end is below zero, otherwise undecided. The reading the skill interval alone would give is listed beside it when it differs. Lens C's caveat (the lag-10 HAC standard error is understated about 2x after 2020) is stated on the page",
+  "politis_white": "beside the block of 10, the Politis-White automatic block length (scripts/block_length_949.py politis_white, with the Patton-Politis-White correction) of the paired loss differential of each arm against (a) and, for (s3+state) and (s3+FOMC/IORB), against (s3), pooled and within each regime, and the pooled interval at that block length (rounded to a whole number of days). Reported, never substituted for the protocol's 10",
+  "min_days": "a group of fewer than 20 days is listed and not tested",
+  "calibration": {
+   "measure": "the share of (decision day, lead) cells whose outcome is above the model's q95 (y > q) and, beside it, at or above it (y >= q), the two hit rules of Eleonora's open question #993, with the 90% stationary-bootstrap percentile interval over cells (mean block 50 cells, 2,000 resamples, seed 1196), for each arm, (a), B1, B1', B2 and, when walks are supplied, gbm_funding; pooled, by regime and by target day type. The nominal rate is 0.05. The band coverage of the 23-level quantiles is read the same way: the share of cells whose outcome falls in the central 50% band (q25 to q75) and the central 90% band (q05 to q95), with the same interval, under both hit rules (inside the closed band, and inside the open band)"
+  },
+  "aimed": "the page has a section for the two splits (s3) loses on the upper tail on the mean-d bound (#1187; #1194): the 2020 regime (251 days) and the FOMC target days (118 days), with the IORB-window target days beside them, giving for (s3) and each arm the mean score and the reading against (a) and against (s3) on the upper-tail twCRPS and on the grid CRPS",
+  "pressure_day_types": "the benchmarks (B2's pools) and the mean-reversion level read the pressure-day types of the month-end turn record in force since #1161 (repo_model.turn_days.IN_FORCE is True), as every scoring entry point on main does; (a) and (s3) therefore score differently from the pages of #1145 and #1172, which were scored on the earlier labels. The arms are compared with each other and with the benchmarks in this run"
+ },
+ "splits": {
+  "regime": "SplitDeclaration.regime of the target day (metadata/evaluation_splits.json): 2018-19, 2020, 2021-23, 2024, 2025-26 (the scaled score by the regime of the decision day)",
+  "target_day_type": "by the target day: month_end, quarter_end, tax_date, settlement (coupon or bill settling), fomc_day, iorb_window, dom_19_23, post_month_end_window, ordinary, and calendar_days (any of them). The groups overlap; ordinary is a day with none of the flags. The flags of the day type are the ex-post readings at lead 1",
+  "lead": "h = 1..5",
+  "unit": "every split is on the target day: a target day's score is the mean over the leads that forecast it and it belongs to the group of its own date; a group's days are tested as a subsequence, as in #761"
+ },
+ "term_effects": {
+  "table": "per term and arm, by regime: the effect in bp in force on the flagged target days, the mean over the leads that forecast the day of scale(anchor) * beta_j * x_j at the refit the forecast used (x_j the flag; with the state slope gamma_j of (s3+state) the effect is scale(anchor) * (beta_j + gamma_j * s) x_j; 0 where the term was absent), then the mean over the regime's flagged days, with the 90% stationary-bootstrap percentile interval over those days in date order (mean block 10 flagged days, 2,000 resamples, seed 1196; no interval under 5 days). The same in scale units.",
+  "realised": "beside them, the mean over the same flagged target days of the outcome less arm (a)'s median forecast: what arm (a) missed on those days",
+  "state_slopes": "for (s3+state): per term and lead, the mean over the refits of the state slope gamma_j (scale units per unit of the state level) and the number of refits in which the term entered"
+ },
+ "adoption": "An arm replaces (s3) as the H5 candidate only if it beats it; that is Eleonora's decision on this page's evidence. The page tabulates the pooled skill over (s3) with its intervals, the regimes read as gain, loss and undecided on the mean-d bound, and the reading on ordinary and calendar days, and names no threshold of its own. Nothing in this study is a verdict.",
+ "reading_rules": [
+  "An arm's gain over a reference is read as present on a split when the 90% interval of mean d excludes zero on the positive side, and as a loss when it excludes zero on the negative side; otherwise as undecided. A point estimate alone is not read. The skill interval's reading is listed beside it where it differs.",
+  "A pooled figure is never read without the regime and target-day-type splits beside it; a gain pooled and a loss in 2018-19, 2021-23 or on ordinary days is reported as mixed.",
+  "(s3+state) and (s3+FOMC/IORB) against (s3) isolate the state interaction and the FOMC and IORB terms on the robust fit.",
+  "Lens C's caveat is stated on the page: the lag-10 HAC standard error is understated about 2x after 2020, so an interval that excludes zero after 2020 is narrower than it should be.",
+  "The page says this is a further look at 2018-2025 after (s3) was chosen on it, aimed at (s3)'s 2020 and FOMC-day upper-tail losses (#1187); a gain is evidence for a question, with the selection noted.",
+  "Nothing in this study is a verdict, and the page says so. A kill applies only to a result that is not provisional; these arms read the calendar at the target day on direct pairs, so their class is not provisional. The issue declares no kill rule.",
+  "The page ends with a marked question for Eleonora with numbered options and a default: nothing is adopted and no claim changes."
+ ],
+ "questions": [
+  "Whether an arm replaces (s3) as the H5 candidate is Eleonora's.",
+  "The choices that are #1145's own and stay open to her review: the state mapping (state / 3), the ridge of 5, Huber's threshold, and the FOMC and IORB terms as #1115 defined them. No value was tried other than those; the ridge on a state slope is the same 5.0 as on a term (not tuned)."
+ ],
+ "limits": {
+  "last_day": "2025-12-31",
+  "arms": 3,
+  "gbm_funding_declaration": "unchanged",
+  "preregistration": "scripts/final_test_preregistration.py is not touched",
+  "allow_list": "repo_model.one_step_guard.ONE_STEP_ALLOW_LIST is not changed"
+ },
+ "long_run": "cloud, about 40 minutes on 4 cores as #1145 (the walks are minutes; the paired tests and bootstrap intervals are the long part). The gbm_funding comparison is a long run on Eleonora's Mac and is not run first",
+ "amendments": [
+  {
+   "number": 1,
+   "what": "The scaled score of #967 is removed from the scoring: the declaration as first committed listed it beside the raw score, as #1145 and #1172 do.",
+   "why": "The first run of the scoring script walked the arms and then stopped in scaled_score_967.build_pool with ProtocolError: B2 has no quarter_end_turn day in the year before 2018-06-29 to forecast 2018-07-02 from. Under the month-end turn record in force since #1161, B2 cannot forecast the pool's first days. The ruling for #1196 does not list the scaled score.",
+   "made": "before any score was written or read: that run stopped before it wrote result.json, and nothing it computed was seen. The scoring script, its test and the page drop the scaled score; no other choice changes."
+  }
+ ]
+}

@@ -42,11 +42,17 @@ SPLIT_TITLES = {"pooled": "all decision days", "regime": "regime", "pressure_day
                 "target_day_type": "target-day type", "lead": "lead"}
 
 
+def no_reading(row: dict) -> str:
+    """The words for a row whose mean-d bound was not computed (#1215): not "undecided", which says the bound straddles zero."""
+
+    return f"**no reading** (mean-d bound not computed: {row['undefined']})"
+
+
 def verdict_words(row: dict) -> str:
     """The reading of one tested row: the studentized bound on mean d (the verdict's), not the skill interval."""
 
     if "undefined" in row:
-        return "undecided"
+        return no_reading(row)
     low, high = row["difference_interval"]
     return "gain" if low > 0.0 else "loss" if high < 0.0 else "undecided"
 
@@ -56,6 +62,8 @@ def skill_words(row: dict) -> str:
 
     if "undefined" in row:
         return "undecided"
+    if row["skill_interval"] is None:
+        return "skill undefined"
     low, high = row["skill_interval"]
     return "gain" if low > 0.0 else "loss" if high < 0.0 else "undecided"
 
@@ -76,7 +84,8 @@ def collect(record: dict) -> List[dict]:
             reading, before = verdict_words(node), skill_words(node)
             section, group, pair = describe(path)
             rows.append({"section": section, "group": group, "pair": pair, "days": node.get("days"), "row": node,
-                         "reading": reading, "skill_reading": before, "changed": reading != before})
+                         "reading": reading, "skill_reading": before,
+                         "changed": before != "skill undefined" and reading != before})
             return
         for key, child in node.items():
             walk(child, path + [key])
@@ -111,7 +120,8 @@ def num(value: float) -> str:
 
 def cells(r: dict) -> str:
     t = r["row"]
-    return (f"{pct(t['skill'])} {interval(t['skill_interval'], 100)} | {num(t['difference'])} "
+    skill = "skill undefined" if t["skill_interval"] is None else f"{pct(t['skill'])} {interval(t['skill_interval'], 100)}"
+    return (f"{skill} | {num(t['difference'])} "
             f"[{num(t['difference_interval'][0])}, {num(t['difference_interval'][1])}]")
 
 

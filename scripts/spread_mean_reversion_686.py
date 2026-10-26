@@ -180,7 +180,7 @@ class Frame:
         return self.splits.regime(day)
 
     def day_type(self, day: date) -> str:
-        return self.splits.reporting_day_type(day, self.values[day])
+        return turn_days.reporting_day_type(self.splits, day, self.values[day])
 
 
 def build_frame(panel, splits, registry, declaration) -> Tuple[Frame, dict, dict]:
@@ -692,6 +692,10 @@ def page(args) -> int:
     return 0
 
 
+from repo_model import turn_days  # noqa: E402
+
+
+@turn_days.with_legacy_flag
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = parser.add_subparsers(dest="command", required=True)

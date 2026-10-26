@@ -310,6 +310,7 @@ only when she makes them herself on GitHub (`docs/decisions/drafts/owner-attesta
 | `docs/decisions/final-test-preregistration.md` | Decision: the final test, pre-registered | Status: in force: merged in PR #216, 3 October 2026 (#150). |
 | `docs/decisions/live-scoring-declaration.md` | Decision: how the live record is scored | Status: in force: merged in PR #286, 6 October 2026 (#276). |
 | `docs/decisions/always-flag-blocks.md` | Decision (draft): a flag from an always-flag block is not a warning in tier 1, and is still a false alarm | Status: DRAFT, for Eleonora's own attested action. |
+| `docs/decisions/b2-thin-pool.md` | B2's thin-pool fallback: a minimum pool of 4 (#1155) | Status: in force. |
 | `docs/decisions/calendar-columns.md` | Decision: the calendar columns | Status: decided and declared; the columns build. |
 | `docs/decisions/fomc-calendar.md` | Decision (draft): the FOMC meeting calendar as columns read at the target day | Status: DRAFT for Eleonora's review (#1038). |
 | `docs/decisions/fomc-point-in-time.md` | Decision: what a cancelled FOMC meeting contributes, and when it stops | Status: decided, and prospective. |

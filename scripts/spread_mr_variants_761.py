@@ -27,6 +27,7 @@ import argparse
 import importlib.util
 import json
 import multiprocessing
+import random
 import sys
 from datetime import date
 from pathlib import Path
@@ -48,8 +49,9 @@ from repo_model import protocol_benchmarks as pb, scoring_protocol as sp  # noqa
 from repo_model import spread_mean_reversion as smr, spread_mr_variants as var  # noqa: E402
 from repo_model.baseline import panel_sha256  # noqa: E402
 from repo_model.data import load_daily_panel  # noqa: E402
+from repo_model.domain_intervals import domain_estimates
 from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
-from repo_model.metrics import _quantile  # noqa: E402
+from repo_model.metrics import _quantile, stationary_bootstrap_indices  # noqa: E402
 from repo_model.splits import SplitError  # noqa: E402
 
 s686 = _load("spread_mean_reversion_686")
@@ -107,9 +109,82 @@ def paired_row(test: sp.PairedTest) -> dict:
     }
 
 
+def mean_d_row(test: sp.PairedTest, reason: str) -> dict:
+    """A paired test made without skill (#1215): the mean-d bound alone, with the reason skill is undefined."""
+
+    return {
+        "days": test.n,
+        "benchmark_mean": test.benchmark_mean,
+        "candidate_mean": test.benchmark_mean - test.mean_difference,
+        "difference": test.mean_difference,
+        "difference_interval": studentized_interval(test.mean_difference, test.standard_error, test.t_draws),
+        "skill": None,
+        "skill_interval": None,
+        "skill_undefined": reason,
+        "dm_statistic": None if test.dm_statistic != test.dm_statistic else test.dm_statistic,
+        "dm_p_value": None if test.dm_p_value != test.dm_p_value else test.dm_p_value,
+    }
+
+
+def mean_d_dropping_row(pair: Tuple[Mapping[date, float], Mapping[date, float]], reason: str, seed: int, draws: int) -> dict:
+    """The mean-d bound with the no-variance resamples dropped and counted (#1239; her ruling of 26 October 2026, #1236).
+
+    Read off the same seed and the same draws as `scoring_protocol.paired_tests` (`random.Random(seed)`, one
+    `stationary_bootstrap_indices` call per draw, mean block `sp.BLOCK_LENGTH`), so a draw means what it means there. A
+    resample whose long-run variance is not positive is left out of the t-draws and counted in `dropped_resamples`; the bound is
+    taken from the rest, beside the draws made (`draws`). Nothing in `scoring_protocol` changes. Raises `sp.ProtocolError`, as the
+    scorer does, when the series itself has no long-run variance or has too few days, and when every resample is dropped.
+    """
+
+    benchmark, candidate = pair
+    days = sorted(benchmark)
+    n = len(days)
+    if n <= sp.HAC_LAG:
+        raise sp.ProtocolError(f"{n} days cannot carry a lag-{sp.HAC_LAG} long-run variance")
+    bench = [benchmark[d] for d in days]
+    diff = [b - candidate[d] for b, d in zip(bench, days)]
+    mean = sum(diff) / n
+    variance = sp._long_run_variance(diff, sp.HAC_LAG)
+    if variance <= 0.0:
+        raise sp.ProtocolError("the daily difference has no long-run variance; it cannot be studentized")
+    se = (variance / n) ** 0.5
+    rng = random.Random(seed)
+    kept: List[float] = []
+    for _ in range(draws):
+        resample = [diff[i] for i in stationary_bootstrap_indices(n, sp.BLOCK_LENGTH, rng)]
+        resampled_variance = sp._long_run_variance(resample, sp.HAC_LAG)
+        if resampled_variance > 0.0:
+            kept.append((sum(resample) / n - mean) / (resampled_variance / n) ** 0.5)
+    if not kept:
+        raise sp.ProtocolError(f"every one of the {draws} resamples has no long-run variance; it cannot be studentized")
+    statistic = mean / se
+    return {
+        "days": n,
+        "benchmark_mean": sum(bench) / n,
+        "candidate_mean": sum(candidate[d] for d in days) / n,
+        "difference": mean,
+        "difference_interval": studentized_interval(mean, se, sorted(kept)),
+        "skill": None,
+        "skill_interval": None,
+        "skill_undefined": reason,
+        "dm_statistic": statistic,
+        "dm_p_value": 1.0 - sp._NORMAL.cdf(statistic),
+        "dropped_resamples": draws - len(kept),
+        "draws": draws,
+    }
+
+
 def run_pairs(benchmarks: Mapping[str, Mapping[date, float]], candidate: Mapping[date, float], days: Sequence[date],
-              seed: int = SEED, draws: int = sp.DRAWS) -> Dict[str, dict]:
-    """Each benchmark's paired test against the candidate on `days`, on one resample stream."""
+              seed: int = SEED, draws: int = sp.DRAWS, mean_d_fallback: bool = False) -> Dict[str, dict]:
+    """Each benchmark's paired test against the candidate on `days`, on one resample stream.
+
+    When the joint call raises: with `mean_d_fallback` False every pair is `undefined`, as before. With it True (#1215) each
+    pair is retried alone on the same seed (a pair's draws do not depend on the others), with skill; a pair whose skill is
+    undefined is retried with `with_skill=False` and keeps its mean-d bound (`skill_interval` None, `skill_undefined` the
+    reason). A pair whose mean-d bound fails because a resample has no long-run variance is read once more from the same seed
+    and draws with those resamples dropped (#1239): the row keeps `dropped_resamples` and `draws` beside the bound. A pair stays
+    `undefined` only when the series has no long-run variance or every resample has none, with the reason.
+    """
 
     names = list(benchmarks)
     pairs = [({d: benchmarks[n][d] for d in days}, {d: candidate[d] for d in days}) for n in names]
@@ -118,14 +193,87 @@ def run_pairs(benchmarks: Mapping[str, Mapping[date, float]], candidate: Mapping
     except sp.ProtocolError as error:
         # Undefined where a benchmark scores zero on a resample, or a resample has no long-run variance (a group in
         # which two forecasts score alike on nearly every day). Said so, with the means, instead of a number.
-        return {n: {"undefined": str(error), "days": len(days),
+        def undefined(n: str, why: Exception) -> dict:
+            return {"undefined": str(why), "days": len(days),
                     "benchmark_mean": sum(benchmarks[n][d] for d in days) / len(days),
-                    "candidate_mean": sum(candidate[d] for d in days) / len(days)} for n in names}
+                    "candidate_mean": sum(candidate[d] for d in days) / len(days)}
+
+        if not mean_d_fallback:
+            return {n: undefined(n, error) for n in names}
+        out: Dict[str, dict] = {}
+        for n, pair in zip(names, pairs):
+            try:
+                out[n] = paired_row(sp.paired_tests([pair], seed=seed, draws=draws)[0])
+                continue
+            except sp.ProtocolError as why:
+                skill_reason = str(why)
+            try:
+                out[n] = mean_d_row(sp.paired_tests([pair], seed=seed, draws=draws, with_skill=False, inner_draws=0)[0], skill_reason)
+                continue
+            except sp.ProtocolError:
+                pass
+            try:
+                out[n] = mean_d_dropping_row(pair, skill_reason, seed, draws)
+            except sp.ProtocolError as why:
+                out[n] = undefined(n, why)
+        return out
+
+
+def domain_rows(cells: Mapping[object, Tuple[Mapping[date, float], Mapping[date, float], Sequence[date]]], all_days: Sequence[date],
+                seed: int = SEED, draws: int = sp.DRAWS, block_length: float = sp.BLOCK_LENGTH, level: float = 0.90) -> Dict[object, dict]:
+    """The domain estimate of each group's mean paired difference (#1228), on one stream of whole-series resamples.
+
+    A day-type group is not contiguous (quarter-ends are about three months apart), so `run_pairs` on the group's own days joins days
+    that were months apart into one block. Here each cell is `(benchmark scores, candidate scores, the group's days)`; the whole
+    aligned series `all_days` is resampled with the pooled test's block, seed and draws (`domain_intervals.domain_estimates`), and
+    the statistic is the mean of `d = benchmark - candidate` over the resampled days that belong to the group. The row carries the
+    group mean as `difference` and the percentile interval at `level` as `difference_interval` (its lower end is the one-sided 95%
+    bound), like `paired_row`, without skill; `method` says "domain". A group some resample draws no day of reads `undefined` with
+    the reason, as `run_pairs` does, and its means.
+
+    Raises:
+        ValueError: if a group day is not among `all_days`, or a score is missing on a day of `all_days`.
+    """
+
+    days = sorted(all_days)
+    position = {day: i for i, day in enumerate(days)}
+    prepared, series = {}, {}
+    for key, (benchmark, candidate, group) in cells.items():
+        missing = [day for day in group if day not in position]
+        if missing:
+            raise ValueError(f"cell {key!r}: {len(missing)} group days ({missing[0]} first) are not among the {len(days)} aligned days")
+        series[key] = [benchmark[day] - candidate[day] for day in days]
+        prepared[key] = (series[key], [position[day] for day in group])
+    done = domain_estimates(prepared, len(days), block_length=block_length, seed=seed, replications=draws, level=level)
+    out: Dict[object, dict] = {}
+    for key, (benchmark, candidate, group) in cells.items():
+        entry = done[key]
+        row = {"days": entry["count"], "method": "domain",
+               "benchmark_mean": sum(benchmark[d] for d in group) / len(group) if group else None,
+               "candidate_mean": sum(candidate[d] for d in group) / len(group) if group else None}
+        if "interval" in entry:
+            row["difference"] = entry["mean"]
+            row["difference_interval"] = [entry["interval"]["lower"], entry["interval"]["upper"]]
+        else:
+            row["undefined"] = entry.get("interval_unavailable", "the group has no day")
+        out[key] = row
+    return out
+
+
+def run_domain(benchmarks: Mapping[str, Mapping[date, float]], candidate: Mapping[date, float], days: Sequence[date],
+               all_days: Sequence[date], seed: int = SEED, draws: int = sp.DRAWS, block_length: float = sp.BLOCK_LENGTH,
+               level: float = 0.90) -> Dict[str, dict]:
+    """`run_pairs` for a non-contiguous group `days`: the domain estimate on whole-series resamples (`domain_rows`)."""
+
+    return domain_rows({n: (benchmarks[n], candidate, days) for n in benchmarks}, all_days, seed=seed, draws=draws,
+                       block_length=block_length, level=level)
 
 
 def skill_text(row: dict) -> str:
     if "undefined" in row:
         return "undefined"
+    if row["skill_interval"] is None:
+        return "skill undefined"
     lo, hi = row["skill_interval"]
     return f"{pct(row['skill'])} [{pct(lo)}, {pct(hi)}]"
 
@@ -134,15 +282,22 @@ def pct(x: Optional[float], signed: bool = True) -> str:
     return "n/a" if x is None else format(100.0 * x, "+.1f" if signed else ".1f") + "%"
 
 
+def dropped_text(row: dict) -> str:
+    """` (k of D resamples dropped)` beside a bound read with the no-variance resamples dropped (#1239); empty otherwise."""
+
+    return f" ({row['dropped_resamples']} of {row['draws']} resamples dropped)" if "dropped_resamples" in row else ""
+
+
 def diff_text(row: dict, places: int = 3) -> str:
     if "undefined" in row:
         return "undefined"
     lo, hi = row["difference_interval"]
-    return f"{row['difference']:+.{places}f} [{lo:+.{places}f}, {hi:+.{places}f}]"
+    text = f"{row['difference']:+.{places}f} [{lo:+.{places}f}, {hi:+.{places}f}]"
+    return text + dropped_text(row)
 
 
 def excludes_zero(row: dict) -> bool:
-    return "undefined" not in row and (row["skill_interval"][0] > 0.0 or row["skill_interval"][1] < 0.0)
+    return "undefined" not in row and row["skill_interval"] is not None and (row["skill_interval"][0] > 0.0 or row["skill_interval"][1] < 0.0)
 
 
 # -- the frame -----------------------------------------------------------------------------------------------------
@@ -200,7 +355,7 @@ def groupings(frame, states) -> Dict[str, Tuple[str, Dict]]:
     anchors = {}
     for d in days:
         a = pb._anchor(frame.panel, frame.position[d], frame.registry, DECISION_TIME)
-        anchors[d] = frame.splits.reporting_day_type(frame.panel[a].date, frame.panel[a].values)
+        anchors[d] = turn_days.reporting_day_type(frame.splits, frame.panel[a].date, frame.panel[a].values)
     return {
         "regime": ("target", {t: frame.regime(t) for t in targets}),
         "pressure_day_type": ("target", {t: frame.day_type(t) for t in targets}),
@@ -338,7 +493,7 @@ def score(args) -> int:
     contexts = {t: var.target_context(panel, frame.position[t], splits) for t in {frame.target(d, h) for d in days for h in sp.HORIZONS}}
     # the reporting day type, a third population the risk-date reconciliation names and leaves alone
     def reporting_ordinary(t):
-        return frame.splits.reporting_day_type(t, frame.values[t]) == "ordinary"
+        return turn_days.reporting_day_type(frame.splits, t, frame.values[t]) == "ordinary"
 
     scopes = {
         "ordinary": lambda d, h, t: reporting_ordinary(t),
@@ -478,7 +633,7 @@ def loses(r: dict, name: str) -> List[str]:
     for split in ("regime", "pressure_day_type", "context", "anchor_day_type", "scarcity_state"):
         for label in _ordered(split, r["groups"].get(split, {})):
             row = r["groups"][split][label]["grid_crps"]["vs"][name][REFERENCE]
-            if "undefined" in row or row["skill"] >= 0.0:
+            if "undefined" in row or row["skill"] is None or row["skill"] >= 0.0:
                 continue
             tag = "" if not excludes_zero(row) else ", interval excludes 0"
             out.append(f"{label} ({split.replace('_', ' ')}) {pct(row['skill'])} [{pct(row['skill_interval'][0])}, {pct(row['skill_interval'][1])}]{tag}")
@@ -516,6 +671,10 @@ def page(args) -> int:
     return 0
 
 
+from repo_model import turn_days  # noqa: E402
+
+
+@turn_days.with_legacy_flag
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = parser.add_subparsers(dest="command", required=True)

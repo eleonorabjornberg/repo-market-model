@@ -2,6 +2,8 @@
 
 **Hypothesis and step:** H1 (regime splits), applied to the ordinary-day result of H5 step 3 (#844, corrected by #934). **Development data only: this is not a verdict** (scoring protocol v1, #640). On Eleonora's ruling on #1011 (20 October 2026): #934 restated on the five regimes of `metadata/evaluation_splits.json`, with the three-regime table kept beside it. **No pooled gain is claimed.**
 
+**provisional: calendar not read at the target day.** The rows that carry the figures here are the models of #934, whose result is row 10 of the provisional register (`docs/research/provisional-calendar-register.md`, class b): the figures below restate #934's cells on the five regimes and stay provisional until #934 is re-run on direct pairs. The register marks this; no figure here is edited (#1169).
+
 Nothing new is modelled: the rows, the reference, the outcome and the ordinary-day definition (`risk_dates.NON_ORDINARY`, read at the target day) are #844's. Each cell is the paired AUROC difference from persistence-logistic on ordinary target days with its 90% stationary-bootstrap percentile interval (block 10, 2000 replications; the interval #934 used, so the two tables compare). Above zero is better than persistence-logistic. `n/a`: fewer than 3 pressure days. `†`: no interval. No day after 2025-12-31 is read: the regime labelled 2025-26 holds the days of 2025, and the declared 2027 regime holds none.
 
 **Ruling recorded (Eleonora, 22 October 2026, comment 6340379028 on PR #1103):** read these AUROC differences on the protocol's studentized one-sided bound as well, beside #934's percentile interval. Each five-regime cell below carries both: the percentile interval, which compares with #934's table, and the studentized one-sided 95% lower bound of the scoring protocol (section 5). The studentization is over target days, the unit the bootstrap resamples (one decision per day), in date order within the cell: the standard error is the Newey-West (Bartlett) one at the protocol's lag 10, of the day-level influence series of the AUROC difference (DeLong placement values, so that the AUROC difference is, to first order, the mean of that series, as `mean(d)` is for a CRPS difference); each resample's difference is divided by its own such standard error, and the bound is the point value less the 95th percentile of those t-draws times the observed standard error. Decision days would be the same days here: a lead's forecasts are scored on their target days. The resamples are the percentile interval's own (same seed, block 10). The bound is one-sided at 5%, the level of each tail of the 90% percentile interval, and a cell with no percentile interval shows no bound.
@@ -14,41 +16,41 @@ Regimes: 2018-19 (2018-01-01 to 2019-12-31), 2020 (2020-01-01 to 2020-12-31), 20
 
 | lead | 2018-19 | 2020 | 2021-23 | 2024 | 2025-26 |
 |---|---|---|---|---|---|
-| 1 | +0.077 [+0.020, +0.142] (61 pressure days); studentized bound: pending the re-score | -0.041† (3 pressure days) | n/a (0 pressure days) | n/a (2 pressure days) | +0.015 [+0.000, +0.041] (15 pressure days); studentized bound: pending the re-score |
-| 2 | +0.095 [+0.017, +0.174] (61 pressure days); studentized bound: pending the re-score | -0.125† (3 pressure days) | n/a (0 pressure days) | n/a (2 pressure days) | +0.037 [+0.011, +0.088] (15 pressure days); studentized bound: pending the re-score |
-| 3 | +0.076 [-0.003, +0.162] (61 pressure days); studentized bound: pending the re-score | -0.099† (3 pressure days) | n/a (0 pressure days) | n/a (2 pressure days) | +0.038 [+0.008, +0.090] (16 pressure days); studentized bound: pending the re-score |
-| 4 | +0.075 [-0.017, +0.159] (61 pressure days); studentized bound: pending the re-score | -0.149† (3 pressure days) | n/a (0 pressure days) | n/a (2 pressure days) | +0.033 [+0.001, +0.094] (16 pressure days); studentized bound: pending the re-score |
-| 5 | +0.075 [-0.019, +0.169] (61 pressure days); studentized bound: pending the re-score | -0.176† (3 pressure days) | n/a (0 pressure days) | n/a (2 pressure days) | +0.026 [-0.006, +0.083] (16 pressure days); studentized bound: pending the re-score |
+| 1 | +0.077 [+0.020, +0.142] (61 pressure days); studentized lower bound +0.025 | -0.041† (3 pressure days) | n/a (0 pressure days) | n/a (2 pressure days) | +0.015 [+0.000, +0.041] (15 pressure days); studentized lower bound -0.001 |
+| 2 | +0.095 [+0.017, +0.174] (61 pressure days); studentized lower bound +0.025 | -0.125† (3 pressure days) | n/a (0 pressure days) | n/a (2 pressure days) | +0.037 [+0.011, +0.088] (15 pressure days); studentized lower bound +0.002 |
+| 3 | +0.076 [-0.003, +0.162] (61 pressure days); studentized lower bound +0.002 | -0.099† (3 pressure days) | n/a (0 pressure days) | n/a (2 pressure days) | +0.038 [+0.008, +0.090] (16 pressure days); studentized lower bound +0.002 |
+| 4 | +0.075 [-0.017, +0.159] (61 pressure days); studentized lower bound -0.007 | -0.149† (3 pressure days) | n/a (0 pressure days) | n/a (2 pressure days) | +0.033 [+0.001, +0.094] (16 pressure days); studentized lower bound -0.008 |
+| 5 | +0.075 [-0.019, +0.169] (61 pressure days); studentized lower bound -0.014 | -0.176† (3 pressure days) | n/a (0 pressure days) | n/a (2 pressure days) | +0.026 [-0.006, +0.083] (16 pressure days); studentized lower bound -0.016 |
 
 ### (i) context-pooled residuals (#761)
 
 | lead | 2018-19 | 2020 | 2021-23 | 2024 | 2025-26 |
 |---|---|---|---|---|---|
-| 1 | +0.083 [+0.027, +0.150] (61 pressure days); studentized bound: pending the re-score | -0.152† (3 pressure days) | n/a (0 pressure days) | n/a (2 pressure days) | +0.017 [+0.003, +0.047] (15 pressure days); studentized bound: pending the re-score |
-| 2 | +0.109 [+0.034, +0.193] (61 pressure days); studentized bound: pending the re-score | -0.232† (3 pressure days) | n/a (0 pressure days) | n/a (2 pressure days) | +0.035 [+0.009, +0.092] (15 pressure days); studentized bound: pending the re-score |
-| 3 | +0.078 [-0.001, +0.166] (61 pressure days); studentized bound: pending the re-score | -0.161† (3 pressure days) | n/a (0 pressure days) | n/a (2 pressure days) | +0.031 [+0.003, +0.079] (16 pressure days); studentized bound: pending the re-score |
-| 4 | +0.076 [-0.017, +0.165] (61 pressure days); studentized bound: pending the re-score | -0.293† (3 pressure days) | n/a (0 pressure days) | n/a (2 pressure days) | +0.023 [-0.006, +0.082] (16 pressure days); studentized bound: pending the re-score |
-| 5 | +0.082 [-0.013, +0.177] (61 pressure days); studentized bound: pending the re-score | -0.288† (3 pressure days) | n/a (0 pressure days) | n/a (2 pressure days) | +0.020 [-0.009, +0.073] (16 pressure days); studentized bound: pending the re-score |
+| 1 | +0.083 [+0.027, +0.150] (61 pressure days); studentized lower bound +0.031 | -0.152† (3 pressure days) | n/a (0 pressure days) | n/a (2 pressure days) | +0.017 [+0.003, +0.047] (15 pressure days); studentized lower bound -0.002 |
+| 2 | +0.109 [+0.034, +0.193] (61 pressure days); studentized lower bound +0.037 | -0.232† (3 pressure days) | n/a (0 pressure days) | n/a (2 pressure days) | +0.035 [+0.009, +0.092] (15 pressure days); studentized lower bound -0.001 |
+| 3 | +0.078 [-0.001, +0.166] (61 pressure days); studentized lower bound +0.000 | -0.161† (3 pressure days) | n/a (0 pressure days) | n/a (2 pressure days) | +0.031 [+0.003, +0.079] (16 pressure days); studentized lower bound -0.005 |
+| 4 | +0.076 [-0.017, +0.165] (61 pressure days); studentized lower bound -0.009 | -0.293† (3 pressure days) | n/a (0 pressure days) | n/a (2 pressure days) | +0.023 [-0.006, +0.082] (16 pressure days); studentized lower bound -0.018 |
+| 5 | +0.082 [-0.013, +0.177] (61 pressure days); studentized lower bound -0.009 | -0.288† (3 pressure days) | n/a (0 pressure days) | n/a (2 pressure days) | +0.020 [-0.009, +0.073] (16 pressure days); studentized lower bound -0.020 |
 
 ### (c) two-part (#634)
 
 | lead | 2018-19 | 2020 | 2021-23 | 2024 | 2025-26 |
 |---|---|---|---|---|---|
-| 1 | -0.009 [-0.075, +0.056] (61 pressure days); studentized bound: pending the re-score | -0.285† (3 pressure days) | n/a (0 pressure days) | n/a (2 pressure days) | +0.003 [-0.019, +0.045] (15 pressure days); studentized bound: pending the re-score |
-| 2 | +0.011 [-0.095, +0.119] (61 pressure days); studentized bound: pending the re-score | -0.201† (3 pressure days) | n/a (0 pressure days) | n/a (2 pressure days) | +0.011 [-0.012, +0.063] (15 pressure days); studentized bound: pending the re-score |
-| 3 | -0.024 [-0.119, +0.074] (61 pressure days); studentized bound: pending the re-score | -0.202† (3 pressure days) | n/a (0 pressure days) | n/a (2 pressure days) | +0.008 [-0.020, +0.071] (16 pressure days); studentized bound: pending the re-score |
-| 4 | -0.067 [-0.136, +0.009] (61 pressure days); studentized bound: pending the re-score | -0.117† (3 pressure days) | n/a (0 pressure days) | n/a (2 pressure days) | +0.020 [-0.007, +0.075] (16 pressure days); studentized bound: pending the re-score |
-| 5 | -0.061 [-0.145, +0.015] (61 pressure days); studentized bound: pending the re-score | -0.196† (3 pressure days) | n/a (0 pressure days) | n/a (2 pressure days) | -0.065 [-0.171, +0.019] (16 pressure days); studentized bound: pending the re-score |
+| 1 | -0.009 [-0.075, +0.056] (61 pressure days); studentized lower bound -0.077 | -0.285† (3 pressure days) | n/a (0 pressure days) | n/a (2 pressure days) | +0.003 [-0.019, +0.045] (15 pressure days); studentized lower bound -0.032 |
+| 2 | +0.011 [-0.095, +0.119] (61 pressure days); studentized lower bound -0.147 | -0.201† (3 pressure days) | n/a (0 pressure days) | n/a (2 pressure days) | +0.011 [-0.012, +0.063] (15 pressure days); studentized lower bound -0.030 |
+| 3 | -0.024 [-0.119, +0.074] (61 pressure days); studentized lower bound -0.155 | -0.202† (3 pressure days) | n/a (0 pressure days) | n/a (2 pressure days) | +0.008 [-0.020, +0.071] (16 pressure days); studentized lower bound -0.041 |
+| 4 | -0.067 [-0.136, +0.009] (61 pressure days); studentized lower bound -0.150 | -0.117† (3 pressure days) | n/a (0 pressure days) | n/a (2 pressure days) | +0.020 [-0.007, +0.075] (16 pressure days); studentized lower bound -0.026 |
+| 5 | -0.061 [-0.145, +0.015] (61 pressure days); studentized lower bound -0.168 | -0.196† (3 pressure days) | n/a (0 pressure days) | n/a (2 pressure days) | -0.065 [-0.171, +0.019] (16 pressure days); studentized lower bound -0.419 |
 
 ### gbm_funding (#634)
 
 | lead | 2018-19 | 2020 | 2021-23 | 2024 | 2025-26 |
 |---|---|---|---|---|---|
-| 1 | +0.031 [-0.027, +0.090] (61 pressure days); studentized bound: pending the re-score | +0.072† (3 pressure days) | n/a (0 pressure days) | n/a (2 pressure days) | -0.011 [-0.032, +0.020] (15 pressure days); studentized bound: pending the re-score |
-| 2 | +0.078 [+0.003, +0.155] (61 pressure days); studentized bound: pending the re-score | +0.040† (3 pressure days) | n/a (0 pressure days) | n/a (2 pressure days) | -0.010 [-0.043, +0.037] (15 pressure days); studentized bound: pending the re-score |
-| 3 | +0.075 [-0.006, +0.164] (61 pressure days); studentized bound: pending the re-score | -0.038† (3 pressure days) | n/a (0 pressure days) | n/a (2 pressure days) | -0.004 [-0.031, +0.040] (16 pressure days); studentized bound: pending the re-score |
-| 4 | +0.063 [-0.012, +0.141] (61 pressure days); studentized bound: pending the re-score | -0.091† (3 pressure days) | n/a (0 pressure days) | n/a (2 pressure days) | -0.010 [-0.034, +0.025] (16 pressure days); studentized bound: pending the re-score |
-| 5 | +0.068 [-0.031, +0.161] (61 pressure days); studentized bound: pending the re-score | +0.042† (3 pressure days) | n/a (0 pressure days) | n/a (2 pressure days) | -0.026 [-0.051, +0.007] (16 pressure days); studentized bound: pending the re-score |
+| 1 | +0.031 [-0.027, +0.090] (61 pressure days); studentized lower bound -0.021 | +0.072† (3 pressure days) | n/a (0 pressure days) | n/a (2 pressure days) | -0.011 [-0.032, +0.020] (15 pressure days); studentized lower bound -0.058 |
+| 2 | +0.078 [+0.003, +0.155] (61 pressure days); studentized lower bound +0.007 | +0.040† (3 pressure days) | n/a (0 pressure days) | n/a (2 pressure days) | -0.010 [-0.043, +0.037] (15 pressure days); studentized lower bound -0.082 |
+| 3 | +0.075 [-0.006, +0.164] (61 pressure days); studentized lower bound -0.001 | -0.038† (3 pressure days) | n/a (0 pressure days) | n/a (2 pressure days) | -0.004 [-0.031, +0.040] (16 pressure days); studentized lower bound -0.070 |
+| 4 | +0.063 [-0.012, +0.141] (61 pressure days); studentized lower bound -0.002 | -0.091† (3 pressure days) | n/a (0 pressure days) | n/a (2 pressure days) | -0.010 [-0.034, +0.025] (16 pressure days); studentized lower bound -0.072 |
+| 5 | +0.068 [-0.031, +0.161] (61 pressure days); studentized lower bound -0.014 | +0.042† (3 pressure days) | n/a (0 pressure days) | n/a (2 pressure days) | -0.026 [-0.051, +0.007] (16 pressure days); studentized lower bound -0.090 |
 
 ### Tally of regime-by-lead cells (five regimes, development)
 
@@ -57,10 +59,10 @@ Regimes: 2018-19 (2018-01-01 to 2019-12-31), 2020 (2020-01-01 to 2020-12-31), 20
 - **(c) two-part (#634)**: of 10 regime-by-lead cells with at least 3 pressure days and an interval, above zero in 0, covers zero in 10, below zero in 0.
 - **gbm_funding (#634)**: of 10 regime-by-lead cells with at least 3 pressure days and an interval, above zero in 1, covers zero in 9, below zero in 0.
 
-- **mean reversion (#686)**: studentized bounds pending the re-score.
-- **(i) context-pooled residuals (#761)**: studentized bounds pending the re-score.
-- **(c) two-part (#634)**: studentized bounds pending the re-score.
-- **gbm_funding (#634)**: studentized bounds pending the re-score.
+- **mean reversion (#686)**: the studentized one-sided lower bound is above zero in 5 of 10 cells that have one.
+- **(i) context-pooled residuals (#761)**: the studentized one-sided lower bound is above zero in 3 of 10 cells that have one.
+- **(c) two-part (#634)**: the studentized one-sided lower bound is above zero in 0 of 10 cells that have one.
+- **gbm_funding (#634)**: the studentized one-sided lower bound is above zero in 1 of 10 cells that have one.
 
 These lines count cells; they set no threshold.
 

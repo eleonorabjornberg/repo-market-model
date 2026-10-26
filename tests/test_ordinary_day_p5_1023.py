@@ -205,3 +205,40 @@ class CommittedPageTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ProvisionalMarkAndStudentizedColumnTests(unittest.TestCase):
+    """#1169: the page is marked provisional under the register, and the studentized column is complete once re-scored.
+
+    Recorded mutation (the page's provisional mark, a staleness-class guard on what the page claims): deleting the
+    `PROVISIONAL_NOTE` paragraph from `render` in scripts/ordinary_day_p5_1023.py made
+    `test_the_page_is_marked_provisional_under_the_register` fail with AssertionError (the page no longer contained
+    "provisional: calendar not read at the target day").
+    """
+
+    RESULT = ROOT / "docs" / "research" / "ordinary-day-p5-1023" / "result.json"
+    CELLS = ROOT / "docs" / "research" / "ordinary-day-p5-1023" / "cells.json"
+
+    def test_the_page_is_marked_provisional_under_the_register(self):
+        result = json.loads(self.RESULT.read_text(encoding="utf-8"))
+        three = json.loads(SCORE_934.read_text(encoding="utf-8"))
+        self.assertIn("provisional: calendar not read at the target day", script.render(result, three))
+        page = (ROOT / "docs" / "research" / "ordinary-day-p5-1023-result.md").read_text(encoding="utf-8")
+        self.assertIn("provisional: calendar not read at the target day", page)
+        self.assertIn("docs/research/provisional-calendar-register.md", page)
+        self.assertIn("#934", page.split("## Five declared regimes")[0])
+
+    def test_every_five_regime_cell_with_an_interval_carries_the_studentized_bound_once_rescored(self):
+        if not self.CELLS.exists():
+            self.skipTest("the Mac re-score (needs-mac on #1169) has not been committed: no cells.json yet")
+        result = json.loads(self.RESULT.read_text(encoding="utf-8"))
+        missing = []
+        for definition in result["definitions"].values():
+            for lead, cells in definition.items():
+                for regime, cell in cells.items():
+                    for name in script.base.MODEL_ROWS:  # the page's model rows; neither the reference nor the raw-spread diagnostic
+                        entry = cell["rows"][name].get("auroc_minus_reference")
+                        if entry is not None and entry.get("interval") is not None and "studentized" not in entry:
+                            missing.append((lead, regime, name))
+        self.assertEqual(missing, [])
+

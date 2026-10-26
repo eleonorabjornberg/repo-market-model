@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/s3_huber_calendar_1226.json",
+  "script": "scripts/s3_huber_calendar_1226.py",
+  "pairing": "direct",
+  "why": "(s3) of #1145 with calendar target rows kept out of its Huber downweighting: (s3), (s3-hw1) and (s3-hw2) read the calendar columns at the target day on direct pairs (training_pairs = direct; the estimation routine is guarded by one_step_guard with no allow-list entry); the type of a training row is read from that row alone and refused after the anchor; no gradient-boosted fit is called, and the gbm_funding walks are read as a comparison only when supplied (a Mac run), so the arms are not provisional; the arm (a) and the benchmarks read no calendar column and carry the register's mark as before"
+}

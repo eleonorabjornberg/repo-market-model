@@ -33,15 +33,19 @@ Stdlib only.
 
 from __future__ import annotations
 
+import math
 import statistics
 from dataclasses import dataclass
 from datetime import date, time
 from typing import Dict, Iterable, List, Mapping, NamedTuple, Optional, Sequence, Tuple
 
+from . import announced_iorb
 from . import protocol_benchmarks as pb
+from . import setup_diagnostic
 from . import spread_mean_reversion as smr
 from . import spread_mr_calendar as cal
 from . import spread_mr_fhs as fhs
+from . import turn_days
 from .data import DailyObservation
 from .evaluation_splits import SplitDeclaration
 from .one_step_guard import guard_one_step_fit
@@ -83,6 +87,12 @@ class StateArm:
     ridge: Optional[float] = None
     #: The settlement terms enter as `size / SIZE_UNIT * state` instead of as 0/1 flags (#1172, (r3)).
     sized: bool = False
+    #: The terms that are not 0/1 flags of the target row: the signed announced IORB change and the technical-adjustment indicator
+    #: (`IORB_EXTRAS`, #1227), read from an `IorbTable`. They enter the fit after the flag terms.
+    extra: Tuple[str, ...] = ()
+    #: Huber's threshold on a calendar target row, as a multiple of the ordinary threshold (#1226): `None` treats it as any row,
+    #: `FULL_WEIGHT` never downweights it, `CALENDAR_K` gives it its own, wider, threshold. Needs `robust`.
+    calendar_k: Optional[float] = None
 
 
 def ridge_of(arm: StateArm) -> float:
@@ -107,7 +117,62 @@ R2 = StateArm("sc_r2_huber", "(r2) (s1) with the Huber fit alone", cal.NO_FOMC_I
 R3 = StateArm("sc_r3_size", "(r3) (s3) with settlement size times the scarcity state", cal.NO_FOMC_IORB, False, True, sized=True)
 #: (s1), (r1), (r2), (s3) and (r3): the 2 x 2 of the ridge and the Huber fit, and the sized arm.
 DECOMPOSITION: Tuple[StateArm, ...] = (ARMS[0], R1, R2, ARMS[2], R3)
-ALL_ARMS: Mapping[str, StateArm] = {arm.name: arm for arm in ARMS + (R1, R2, R3)}
+
+#: The arms of #1196: (s3)'s Huber fit and ridge of 5 with the two terms that were tried only on the least-squares fit
+#: (`metadata/s3_terms_1196.json`). (s3+state) is (s3) with each term times the as-of scarcity state, as (s2); (s3+FOMC/IORB) is (s3)
+#: with `fomc_day` and `iorb_window`, as (s4).
+S3_STATE = StateArm("sc_s3_state", "(s3+state) (s3) and each term times the scarcity state", cal.NO_FOMC_IORB, True, True)
+S3_CAL = StateArm("sc_s3_fomc_iorb", "(s3+FOMC/IORB) (s3) with the FOMC and IORB terms", cal.ALL_TERMS, False, True)
+#: (s3) and the two arms that add to it.
+S3_TERMS: Tuple[StateArm, ...] = (ARMS[2], S3_STATE, S3_CAL)
+
+#: The signed announced IORB change and a technical-adjustment indicator beside `iorb_window` (#1227, `metadata/s3_iorbs_1227.json`).
+IORB_UNIT_BPS = 25.0
+IORB_SIGNED = "iorb_signed"
+IORB_TECHNICAL = "iorb_technical"
+IORB_EXTRAS: Tuple[str, ...] = (IORB_SIGNED, IORB_TECHNICAL)
+#: An IORB change that is not a multiple of 25 bp is a technical adjustment: the rule of `setup_diagnostic`.
+technical = setup_diagnostic.is_technical
+#: (s3+IORBs): (s3), with `iorb_window` and the two terms beside it. The FOMC-day term is not added.
+S3_IORBS = StateArm(
+    "sc_s3_iorbs", "(s3+IORBs) (s3) with the signed announced IORB change and a technical-adjustment indicator beside iorb_window",
+    tuple(n for n in cal.ALL_TERMS if n in cal.NO_FOMC_IORB or n == "iorb_window"), False, True, extra=IORB_EXTRAS,
+)
+#: (s3) and the arm that adds to it.
+S3_IORBS_ARMS: Tuple[StateArm, ...] = (ARMS[2], S3_IORBS)
+
+#: The arms of #1226 (`metadata/s3_huber_calendar_1226.json`): (s3) with its Huber downweighting kept off the calendar target rows.
+#: (s3-hw1) never downweights a calendar row; (s3-hw2) gives those rows a Huber threshold `CALENDAR_K` times the ordinary one. The
+#: terms, the ridge of 5, the direct pairs and the turn record are (s3)'s.
+FULL_WEIGHT = math.inf
+CALENDAR_K = 2.0
+HW1 = StateArm("sc_s3_hw1", "(s3-hw1) (s3) with calendar target rows at full weight in the Huber fit", cal.NO_FOMC_IORB, False, True,
+               calendar_k=FULL_WEIGHT)
+HW2 = StateArm("sc_s3_hw2", "(s3-hw2) (s3) with the calendar rows' Huber threshold at 2 times the ordinary one", cal.NO_FOMC_IORB,
+               False, True, calendar_k=CALENDAR_K)
+#: (s3) and the two arms that change how it weights the calendar rows.
+HW_ARMS: Tuple[StateArm, ...] = (ARMS[2], HW1, HW2)
+#: The target-row types whose rows are calendar rows: the turn types of the record in force (`turn_days.turn_label`) and the types
+#: of the directive's list. `dom_19_23` and `post_month_end_window` are terms of the fit but too broad to name a calendar row.
+CALENDAR_ROW_TERMS: Tuple[str, ...] = (
+    "month_end", "quarter_end", "tax_date", "settlement_coupon", "settlement_bill", "fomc_day", "iorb_window")
+ALL_ARMS: Mapping[str, StateArm] = {arm.name: arm for arm in ARMS + (R1, R2, R3, S3_STATE, S3_CAL, HW1, HW2, S3_IORBS)}
+
+
+def calendar_row(table: cal.TermTable, dates: Sequence[date], row: int, anchor: int) -> bool:
+    """Whether training row `row` (a pair's target) carries a calendar type, read from that row alone.
+
+    The type is the row's own turn label (`turn_days`) or one of `CALENDAR_ROW_TERMS` as `TermTable.day_types` reads it. A training
+    pair's target is on or before the decision's anchor, so the row is already public; a later row is refused.
+
+    Raises:
+        LookAheadError: `row` is after `anchor`.
+    """
+
+    if row > anchor:
+        raise LookAheadError(f"the type of row {row} ({dates[row]}) is read for a training pair, but the anchor is row {anchor}")
+    flags = table.day_types(row)
+    return any(flags[name] for name in CALENDAR_ROW_TERMS) or turn_days.turn_label(dates[row]) is not None
 
 
 # -- the state, as a decision could read it ----------------------------------------------------------------------------------
@@ -199,6 +264,56 @@ class SizeTable:
         return out
 
 
+class IorbTable:
+    """The signed announced IORB change and the technical-adjustment indicator at every panel row, as a lead can read them (#1227).
+
+    Both are functions of `iorb_announced_change_bps`, a scheduled field of the *target* row (public on the panel day before it,
+    `metadata/sources.json`, `scheduled_availability`), so they are read exactly as the flag `iorb_window` is
+    (`spread_mr_calendar.readable_offsets`): the value at a target row `T` is taken over the rows `T - j` of the window the decision
+    `lead` rows before can read (the day of the change and the two panel days after it, `j >= lead - 1`), summed (a window holds at
+    most one change); `iorb_signed` is that sum over `IORB_UNIT_BPS` (so a 25 bp cut is -1), and `iorb_technical` is 1 where a change in
+    the window is not a multiple of 25 bp (`technical`). Neither is readable at leads 4 and 5 (the same as the flag). The column is built
+    on the announcement time (`announced_iorb`), so a note announced after the decision instant is never in it.
+    """
+
+    def __init__(self, panel: Sequence[DailyObservation], announcements: Sequence[announced_iorb.IorbAnnouncement], *,
+                 decision_time: time = time(16, 0)):
+        self.dates = [row.date for row in panel]
+        self.changes = [
+            0.0 if values[announced_iorb.ANNOUNCED_CHANGE] is None else float(values[announced_iorb.ANNOUNCED_CHANGE])
+            for values in announced_iorb.announced_iorb_features(self.dates, announcements, decision_time=decision_time)
+        ]
+
+    def at(self, lead: int, row: int) -> Dict[str, float]:
+        """The two terms at target row `row` for a lead-`lead` decision (a training row: public by construction); `{}` where the
+        window is not readable at `lead`."""
+
+        offsets = cal.readable_offsets(cal.TERM["iorb_window"], lead)
+        if not offsets:
+            return {}
+        moved = [self.changes[row - j] for j in offsets if row - j >= 0 and self.changes[row - j] != 0.0]
+        return {
+            IORB_SIGNED: sum(moved) / IORB_UNIT_BPS,
+            IORB_TECHNICAL: 1.0 if any(technical(x) for x in moved) else 0.0,
+        }
+
+    def read(self, lead: int, decision_index: int) -> Dict[str, float]:
+        """The terms a forecast of the decision on row `decision_index` at `lead` reads, from the target row.
+
+        Raises:
+            LookAheadError: a row of the window is not public at the decision (`cal.require_public`).
+
+        Mutation record: see `tests/test_spread_mr_s3_iorbs.py` (`IorbTable.at`).
+        """
+
+        row = cal.target_row(decision_index, lead)
+        term = cal.TERM["iorb_window"]
+        offsets = cal.readable_offsets(term, lead)
+        if offsets:
+            cal.require_public(term, [row - j for j in offsets], decision_index, self.dates)
+        return self.at(lead, row)
+
+
 class StatePair(NamedTuple):
     """One training pair: its raw residual (bp), the scale at its origin, the flags of the readable terms, the state level.
 
@@ -213,6 +328,10 @@ class StatePair(NamedTuple):
     sizes: Mapping[str, float] = {}
     origin: int = -1
     target: int = -1
+    #: The `IorbTable` terms of the target row (`IORB_EXTRAS`), where the lead can read them (#1227).
+    extras: Mapping[str, float] = {}
+    #: Whether the pair's target row carries a calendar type (`calendar_row`); read only by an arm with a `calendar_k` (#1226).
+    calendar: bool = False
 
 
 def regressor(name: str, flags: Mapping[str, int], sizes: Mapping[str, float], state: Optional[float], sized: bool) -> float:
@@ -234,16 +353,25 @@ def solve_weighted(rows: Sequence[Sequence[float]], y: Sequence[float], weights:
     return cal.solve_ridge([[v * r for v in row] for row, r in zip(rows, root)], [v * r for v, r in zip(y, root)], ridge)
 
 
-def huber(rows: Sequence[Sequence[float]], y: Sequence[float], ridge: float) -> Tuple[List[float], int]:
-    """The Huber fit by iteratively re-weighted least squares, and the number of iterations it took."""
+def huber(
+    rows: Sequence[Sequence[float]], y: Sequence[float], ridge: float, multipliers: Optional[Sequence[float]] = None
+) -> Tuple[List[float], int]:
+    """The Huber fit by iteratively re-weighted least squares, and the number of iterations it took.
 
+    `multipliers` (one per row, default 1) scale each row's threshold, `HUBER_K` robust standard deviations of all the current
+    residuals: a row with `math.inf` is never downweighted (#1226).
+    """
+
+    if multipliers is not None and len(multipliers) != len(rows):
+        raise ValueError("huber needs one multiplier per row")
     b = cal.solve_ridge(rows, y, ridge)
     for iteration in range(1, MAX_ITERATIONS + 1):
         residual = [target - sum(c * v for c, v in zip(b, row)) for row, target in zip(rows, y)]
         centre = statistics.median(residual)
         sigma = max(1.4826 * statistics.median([abs(r - centre) for r in residual]), 1e-6)
         cut = HUBER_K * sigma
-        weights = [1.0 if abs(r) <= cut else cut / abs(r) for r in residual]
+        cuts = [cut] * len(residual) if multipliers is None else [cut * m for m in multipliers]
+        weights = [1.0 if abs(r) <= c else c / abs(r) for r, c in zip(residual, cuts)]
         new = solve_weighted(rows, y, weights, ridge)
         done = max(abs(a - c) for a, c in zip(new, b)) < TOLERANCE
         b = new
@@ -270,6 +398,8 @@ class StateEstimate:
     origins: Tuple[int, ...] = ()
     targets: Tuple[int, ...] = ()
     residuals: Tuple[float, ...] = ()
+    #: The pairs whose target row is a calendar row (set only for an arm with a `calendar_k`, #1226).
+    calendar_pairs: int = 0
 
 
 def _entering(
@@ -295,6 +425,9 @@ def fit_state_terms(
     min_flagged: int = MIN_FLAGGED,
     ridge: Optional[float] = None,
     sized: bool = False,
+    extra: Sequence[str] = (),
+
+    calendar_k: Optional[float] = None,
 ) -> StateEstimate:
     """The term effects, in standardised units, and the pool of one arm at one lead.
 
@@ -304,73 +437,93 @@ def fit_state_terms(
     at least `min_flagged` pairs have a positive such column. The intercept is dropped, so the pool, the quantiles of the residual
     after the terms, keeps the ordinary-day centre.
 
+    With `extra` (#1227), the terms of `IorbTable` (`pair.extras`) enter after the flag terms when at least `min_flagged` pairs have a
+    non-zero value; a pair without them (a lead that cannot read the window) drops them from the fit. They do not combine with
+    `interact`.
+    With `calendar_k` the Huber threshold of a pair whose `calendar` is set is `calendar_k` times the ordinary one (`FULL_WEIGHT`:
+    never downweighted); it needs `robust`.
+
     `regressors` are the panel columns the terms read (for `one_step_guard`). `training_pairs` is required, and `'direct'` is the
     only value this fit trains on.
 
     Raises:
-        ValueError: `training_pairs` is not `'direct'`.
+        ValueError: `training_pairs` is not `'direct'`, or `extra` with `interact`.
         InsufficientHistory: there is no pair.
     """
 
     if training_pairs != "direct":
         raise ValueError(f"fit_state_terms trains on direct pairs only, got training_pairs={training_pairs!r}")
+    if extra and interact:
+        raise ValueError("the IORB terms (extra) do not combine with the state interaction (interact)")
+    if calendar_k is not None and not robust:
+        raise ValueError("a calendar threshold is a setting of the Huber fit; the arm is not robust")
     if not pairs:
         raise smr.InsufficientHistory("no training pair to estimate the state-scaled calendar terms on")
     penalty = (ridge if ridge is not None else (ROBUST_RIDGE if robust else RIDGE))
     active, counts = _entering(terms, pairs, min_flagged, sized)
+    counts_extra = {name: sum(1 for p in pairs if p.extras.get(name, 0.0) != 0.0) for name in extra if name in pairs[0].extras}
+    counts.update(counts_extra)
+    active_extra = tuple(n for n in extra if counts_extra.get(n, 0) >= min_flagged)
     target = [p.raw / p.scale for p in pairs]
     effect: Dict[str, float] = {}
     slope: Dict[str, float] = {}
     iterations = 0
-    if active:
+    if active or active_extra:
         design = []
         for p in pairs:
             s = 0.0 if p.state is None else p.state
-            row = [1.0] + [regressor(name, p.flags, p.sizes, p.state, sized) for name in active]
+            row = [1.0] + [regressor(name, p.flags, p.sizes, p.state, sized) for name in active] + [p.extras[n] for n in active_extra]
             if interact:
                 row += [float(p.flags[name]) * s for name in active]
             design.append(row)
         if robust:
-            coefficients, iterations = huber(design, target, penalty)
+            multipliers = None if calendar_k is None else [calendar_k if p.calendar else 1.0 for p in pairs]
+            coefficients, iterations = huber(design, target, penalty, multipliers)
         else:
             coefficients = cal.solve_ridge(design, target, penalty)
-        effect = dict(zip(active, coefficients[1 : 1 + len(active)]))
+        names = active + active_extra
+        effect = dict(zip(names, coefficients[1 : 1 + len(names)]))
         if interact:
             slope = dict(zip(active, coefficients[1 + len(active) :]))
     pool = []
     for p, y in zip(pairs, target):
         s = 0.0 if p.state is None else p.state
         pool.append(
-            y - sum(effect[n] * regressor(n, p.flags, p.sizes, p.state, sized) for n in effect)
+            y - sum(effect[n] * regressor(n, p.flags, p.sizes, p.state, sized) for n in effect if n not in IORB_EXTRAS)
+            - sum(effect[n] * p.extras[n] for n in effect if n in IORB_EXTRAS)
             - sum(slope[n] * p.flags[n] * s for n in slope)
         )
     return StateEstimate(
-        active, effect, slope, counts, pb.empirical_quantiles(sorted(pool)), len(pairs),
+        active + active_extra, effect, slope, counts, pb.empirical_quantiles(sorted(pool)), len(pairs),
         sum(1 for p in pairs if p.state is None), iterations, sized,
         tuple(p.origin for p in pairs), tuple(p.target for p in pairs), tuple(pool),
+        sum(1 for p in pairs if p.calendar),
     )
 
 
 def standardised_shift(
-    estimate: StateEstimate, flags: Mapping[str, int], state: Optional[float], sizes: Optional[Mapping[str, float]] = None
+    estimate: StateEstimate, flags: Mapping[str, int], state: Optional[float], sizes: Optional[Mapping[str, float]] = None,
+    extras: Optional[Mapping[str, float]] = None,
 ) -> float:
     """The location shift in scale units for a row with `flags` (and `sizes`, for a sized estimate) and the state level `state`
     (`None` reads as 0)."""
 
     s = 0.0 if state is None else state
     sizes = {} if sizes is None else sizes
+    extras = {} if extras is None else extras
     return sum(
         effect * regressor(name, flags, sizes, state, estimate.sized) for name, effect in estimate.effect.items()
-    ) + sum(g * flags[name] * s for name, g in estimate.slope.items())
+        if name not in IORB_EXTRAS
+    ) + sum(effect * extras.get(name, 0.0) for name, effect in estimate.effect.items() if name in IORB_EXTRAS) + sum(g * flags[name] * s for name, g in estimate.slope.items())
 
 
 def lead_quantiles(
     estimate: StateEstimate, *, centre: float, scale: float, flags: Mapping[str, int], state: Optional[float],
-    sizes: Optional[Mapping[str, float]] = None,
+    sizes: Optional[Mapping[str, float]] = None, extras: Optional[Mapping[str, float]] = None,
 ) -> List[float]:
     """The 23 quantiles: `centre + scale * (shift + pool)`, so the effect in bp is the shift times the anchor's scale."""
 
-    shift = standardised_shift(estimate, flags, state, sizes)
+    shift = standardised_shift(estimate, flags, state, sizes, extras)
     return [centre + scale * (shift + value) for value in estimate.pool]
 
 
@@ -390,6 +543,7 @@ def refit(
     base: smr.Fit,
     training_pairs: str = "direct",
     sizes: Optional[SizeTable] = None,
+    iorb: Optional[IorbTable] = None,
 ) -> Dict[str, Dict[int, StateEstimate]]:
     """Each arm's estimate at each lead as of the decision on row `decision_index`, on the base model's training pairs.
 
@@ -410,9 +564,12 @@ def refit(
     pb._require_public(read, anchor, dates, f"the scale of {variant.name} for {dates[decision_index]}")
     reader = fhs.ScaleReader(spreads, variant)
     out: Dict[str, Dict[int, StateEstimate]] = {}
+    typed: Dict[int, bool] = {}
     for arm in arms:
         if arm.sized and sizes is None:
             raise ValueError(f"{arm.name} reads the settlement sizes and needs the size table")
+        if arm.extra and iorb is None:
+            raise ValueError(f"{arm.name} reads the announced IORB change and needs the IORB table")
         per_lead: Dict[int, StateEstimate] = {}
         for h in HORIZONS:
             k = h + lag
@@ -425,12 +582,17 @@ def refit(
                 flags_row = target if training_pairs == "direct" else origin
                 state = level(pair_state(states, dates, origin, lag, decision_index)) if (arm.interact or arm.sized) else None
                 size = sizes.sizes_at(h, flags_row) if arm.sized else {}
-                pairs.append(StatePair(raw, scale, table.flags_at(h, flags_row), state, size, origin, target))
+                extras = iorb.at(h, flags_row) if arm.extra else {}
+                if arm.calendar_k is not None and target not in typed:
+                    typed[target] = calendar_row(table, dates, target, anchor)
+                pairs.append(StatePair(raw, scale, table.flags_at(h, flags_row), state, size, origin, target, extras,
+                                       typed.get(target, False) if arm.calendar_k is not None else False))
             if not pairs:
                 raise smr.InsufficientHistory(f"{dates[decision_index]}: no training pair of lead {h} has a scale")
             per_lead[h] = fit_state_terms(
                 pairs, regressors=cal.regressors_of(arm, h), terms=arm.location, interact=arm.interact, robust=arm.robust,
-                training_pairs=training_pairs, ridge=arm.ridge, sized=arm.sized,
+                training_pairs=training_pairs, ridge=arm.ridge, sized=arm.sized, extra=arm.extra,
+                calendar_k=arm.calendar_k,
             )
         out[arm.name] = per_lead
     return out
@@ -449,6 +611,7 @@ def forecast(
     levels: Sequence[Optional[float]],
     base: smr.Fit,
     sizes: Optional[SizeTable] = None,
+    iorb: Optional[IorbTable] = None,
 ) -> Tuple[Dict[str, Dict[int, List[float]]], Dict[str, object]]:
     """The arms' forecasts of the decision day from `estimates` (possibly an older fit), and the day's detail (the scale at the
     anchor and the state level): `last`, `level`, `k`, the anchor, its scale, the flags of each target row and the state of the
@@ -480,12 +643,15 @@ def forecast(
         flags = table.read(h, decision_index)
         centre = level_at + base.phi ** (h + lag) * (last - level_at)
         read_sizes = sizes.read(h, decision_index) if sizes is not None and any(a.sized for a in arms) else {}
+        read_extras = iorb.read(h, decision_index) if iorb is not None and any(a.extra for a in arms) else {}
         for arm in arms:
             if arm.sized and sizes is None:
                 raise ValueError(f"{arm.name} reads the settlement sizes and needs the size table")
+            if arm.extra and iorb is None:
+                raise ValueError(f"{arm.name} reads the announced IORB change and needs the IORB table")
             out[arm.name][h] = lead_quantiles(
                 estimates[arm.name][h], centre=centre, scale=scale, flags=flags, state=state if (arm.interact or arm.sized) else None,
-                sizes=read_sizes if arm.sized else None,
+                sizes=read_sizes if arm.sized else None, extras=read_extras if arm.extra else None,
             )
     return out, {"scale": scale, "state": state}
 
@@ -517,6 +683,7 @@ def walk(
     refit_every: int = smr.REFIT_EVERY,
     training_pairs: str = "direct",
     sizes: Optional[SizeTable] = None,
+    iorb: Optional[IorbTable] = None,
 ) -> Walk:
     """Arm (a) and `arms` on `decision_days`, refitting as `spread_mr_fhs.walk` does (the base fit and #941's pool, then the terms).
 
@@ -549,7 +716,7 @@ def walk(
                 scaled = fhs.fit(panel, index, [BASE_VARIANT], base=base, **settings)[BASE_VARIANT.name]
                 found = refit(
                     panel, index, table, states, arms, registry=registry, decision_time=decision_time, levels=levels, base=base,
-                    training_pairs=training_pairs, sizes=sizes,
+                    training_pairs=training_pairs, sizes=sizes, iorb=iorb,
                 )
                 current, current_scaled, current_estimates = base, scaled, found
                 fits[day], estimates[day] = base, found
@@ -557,7 +724,7 @@ def walk(
             today = {ARM_A: fhs.forecast(panel, index, current_scaled, current, BASE_VARIANT, **settings)}
             mine, extra = forecast(
                 panel, index, current_estimates, table, states, arms, registry=registry, decision_time=decision_time,
-                levels=levels, base=current, sizes=sizes,
+                levels=levels, base=current, sizes=sizes, iorb=iorb,
             )
             today.update(mine)
         except smr.InsufficientHistory:

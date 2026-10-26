@@ -8263,6 +8263,37 @@ class NyFedSrfAdapterTests(unittest.TestCase):
         # keeps its row, at zero.
         self.assertEqual(rows[date(2025, 10, 8)].value, 0.0)
 
+    def test_the_data_quality_page_states_the_srf_rule_and_the_recounted_days(self):
+        """`docs/DATA_QUALITY_DECISIONS.md` restates what `srf_total_accepted` counts (#936).
+
+        `metadata/sources.json` stays byte-identical (the frozen final-test declarations hash it;
+        Eleonora's ruling of 26 October 2026 on PR #1106), so the registry's `nyfed_srf`
+        limitation keeps its old text and the current rule lives on the data-quality page. The
+        section names the three Desk-test marks (#933), the test-trade rule (#802) and the
+        afternoon pattern (#938), and its day counts, taken to 2025-12-31, equal a recount from
+        the tracked snapshots: positive days and days of at least $0.1 bn.
+        """
+
+        page = (Path(__file__).parents[1] / "docs" / "DATA_QUALITY_DECISIONS.md").read_text()
+        heading = "## What `srf_total_accepted` counts today (#936)"
+        self.assertIn(heading, page)
+        section = page.split(heading, 1)[1].split("\n## ", 1)[0]
+        for phrase in (
+            "operationLimit",
+            "ends in \" 99\"",
+            "$250 million",
+            "whole number of millions",
+            "13:29 to 13:30",
+        ):
+            self.assertIn(phrase, section)
+        _artifacts, rows = self.tracked()
+        window = [row.value for day, row in rows.items() if day <= date(2025, 12, 31)]
+        positive = sum(value > 0 for value in window)
+        large = sum(value >= 0.1 - 1e-9 for value in window)
+        self.assertIn(
+            f"above zero on {positive} operation days and at least 0.1 billion on {large}", section
+        )
+
     def test_a_take_up_is_available_at_the_next_business_day_at_16(self):
         _artifacts, rows = self.tracked()
         # The Monday after is Martin Luther King Jr. Day (#201).

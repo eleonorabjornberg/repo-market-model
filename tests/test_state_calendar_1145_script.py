@@ -9,6 +9,9 @@ a late subset of the fixture panel, with and without synthetic walks of `gbm_fun
 
 Recorded mutation (applied to the tree, the named test run, and reverted):
 
+* #1194, `verdict`: `row["difference_interval"]` replaced with `row["skill_interval"]` made
+  `test_a_gain_needs_the_mean_d_bound_above_zero_and_a_loss_below` fail with `AssertionError` ('undecided' != 'gain').
+  Red on main before the change: `verdict` was the skill-interval reading and `render` took no `reading` argument.
 * `decision_states`: `grid.get(dates[i + 1])` replaced with `grid.get(dates[i])`, so a decision reads the state of the day it is
   made rather than the state it could read (the target-day grid unshifted, the #914 class for the state).
   `test_the_state_is_keyed_by_the_decision_day` and `test_no_state_is_read_beyond_the_last_scored_day` failed with
@@ -30,11 +33,6 @@ from repo_model import scoring_protocol as sp
 from repo_model import spread_mr_calendar as cal
 from repo_model import spread_mr_state_calendar as sc
 
-import legacy_day_types
-
-# this module reproduces legacy figures: the pre-#1135 day types (see tests/legacy_day_types.py)
-setUpModule, tearDownModule = legacy_day_types.setUpModule, legacy_day_types.tearDownModule
-
 ROOT = Path(__file__).resolve().parent.parent
 _spec = importlib.util.spec_from_file_location("state_calendar_1145", ROOT / "scripts" / "state_calendar_1145.py")
 script = importlib.util.module_from_spec(_spec)
@@ -44,11 +42,31 @@ _spec.loader.exec_module(script)
 
 class ReadingTests(unittest.TestCase):
 
-    def test_a_gain_needs_the_interval_above_zero_and_a_loss_below(self):
-        self.assertEqual(script.verdict({"skill_interval": [0.01, 0.05]}), "gain")
-        self.assertEqual(script.verdict({"skill_interval": [-0.05, -0.01]}), "loss")
-        self.assertEqual(script.verdict({"skill_interval": [-0.01, 0.05]}), "undecided")
+    def test_a_gain_needs_the_mean_d_bound_above_zero_and_a_loss_below(self):
+        """#1194: the reading is the studentized bound on mean d (her ruling on #1009), not the skill interval."""
+
+        self.assertEqual(script.verdict({"skill_interval": [-0.01, 0.05], "difference_interval": [0.01, 0.05]}), "gain")
+        self.assertEqual(script.verdict({"skill_interval": [-0.05, 0.01], "difference_interval": [-0.05, -0.01]}), "loss")
+        self.assertEqual(script.verdict({"skill_interval": [0.01, 0.05], "difference_interval": [-0.01, 0.05]}), "undecided")
+        self.assertEqual(script.verdict({"skill_interval": [-0.05, -0.01], "difference_interval": [-0.05, 0.01]}), "undecided")
+        self.assertEqual(script.verdict({"undefined": "no variance"}), "undecided")
         self.assertEqual(script.verdict(None), "undecided")
+
+    def test_the_skill_reading_is_kept_for_the_first_page(self):
+        row = {"skill_interval": [0.01, 0.05], "difference_interval": [-0.01, 0.05]}
+        self.assertEqual(script.skill_verdict(row), "gain")
+        self.assertEqual(script.skill_verdict({"skill_interval": [-0.05, -0.01], "difference_interval": [-0.05, 0.01]}), "loss")
+        self.assertEqual(script.skill_verdict({"skill_interval": [-0.01, 0.05]}), "undecided")
+        self.assertEqual(script.skill_verdict(None), "undecided")
+
+    def test_the_committed_first_page_is_what_the_skill_reading_gives_and_the_mean_d_render_says_so(self):
+        record = json.loads((ROOT / "docs" / "research" / "state-calendar-1145" / "result.json").read_text(encoding="utf-8"))
+        first = (ROOT / "docs" / "research" / "state-calendar-1145-result.md").read_text(encoding="utf-8")
+        self.assertEqual(script.render(record, reading="skill"), first)
+        page = script.render(record)
+        self.assertNotEqual(page, first)
+        self.assertIn("studentized bound on mean d", page)
+        self.assertIn("understated about 2×", page)
 
     def test_the_pair_plan_names_b1_prime_beside_b1_and_the_arm_each_differs_from(self):
         for arm in (script.S2, script.S3, script.S4):
