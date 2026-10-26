@@ -20,6 +20,9 @@ so no different measure sits under one name. It is declared and left off the pan
   number of millions (`ingest.TEST_TRADE_MAX`); an operation whose note names a small value exercise is
   dropped as before. The $8-97 mn operations the floor zeroed count again. The operation still happened
   and its date keeps a row.
+* **The afternoon rule** (#938, Eleonora, ruling on #860 of 19 October 2026, read on 20 October 2026): an overnight
+  operation with no note, released at 13:29 or 13:30, whose main line is $90-130 mn and whose other lines are
+  each under $10 mn, is also a test trade (`ingest._is_afternoon_test_trade`).
 * Before 2019-09-17 (`ingest.REPO_FACILITY_START`) no Fed repo was offered to the market; the six
   operations of $64-66 million before it are test operations and are not take-up. A date with no
   operation is a structural zero.

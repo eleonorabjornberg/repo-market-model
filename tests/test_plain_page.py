@@ -42,6 +42,7 @@ BLOCKS = (
     "plain-distribution",
     "plain-turn",
     "plain-scarcity",
+    "plain-market",
     "plain-limits",
     "plain-place",
 )

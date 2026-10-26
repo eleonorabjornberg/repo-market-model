@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/b2_pool_fallback_1155.json",
+  "script": "scripts/b2_pool_fallback_1155.py",
+  "pairing": "direct",
+  "why": "benchmarks only (B1, B1', B2 on the legacy and the turn types, and B2 with a minimum pool): no fit; every target's type is read from its own calendar columns and date (the day types are known in advance), so the calendar is read at the target day"
+}

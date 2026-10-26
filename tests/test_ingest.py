@@ -347,6 +347,11 @@ class IngestTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "expected CSV"):
             fetch_fred_macro(self.output_root, lambda _: b"not,data\n")
 
+    def test_fred_rejection_shows_the_start_of_the_response(self):
+        # #1148: the 21 October failures left no trace of what FRED had sent.
+        with self.assertRaisesRegex(ValueError, r"begins b'<html>rate limited"):
+            fetch_fred_macro(self.output_root, lambda _: b"<html>rate limited</html>")
+
     def test_fred_accepts_and_preserves_zip_snapshot(self):
         buffer = io.BytesIO()
         with zipfile.ZipFile(buffer, "w") as archive:

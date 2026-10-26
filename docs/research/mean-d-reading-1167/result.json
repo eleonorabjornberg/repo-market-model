@@ -1,0 +1,3224 @@
+{
+ "finding": "1163",
+ "issue": 1167,
+ "pages": {
+  "1115": {
+   "by_direction": {
+    "gain -> undecided": 21,
+    "loss -> undecided": 1,
+    "undecided -> gain": 38,
+    "undecided -> loss": 71
+   },
+   "changed": [
+    {
+     "group": "h=1",
+     "now": "gain",
+     "pair": "mr_cal_a_base against B1_prime",
+     "section": "upper_tail_twcrps, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=1",
+     "now": "gain",
+     "pair": "mr_cal_a_base against B2",
+     "section": "upper_tail_twcrps, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=1",
+     "now": "undecided",
+     "pair": "mr_cal_b_location against B1",
+     "section": "upper_tail_twcrps, by lead",
+     "was": "gain"
+    },
+    {
+     "group": "h=1",
+     "now": "gain",
+     "pair": "mr_cal_c_location_scale against B2",
+     "section": "upper_tail_twcrps, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=1",
+     "now": "loss",
+     "pair": "mr_cal_c_location_scale against mr_cal_a_base",
+     "section": "upper_tail_twcrps, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=1",
+     "now": "loss",
+     "pair": "mr_cal_c_location_scale against spread_mr_ctx",
+     "section": "upper_tail_twcrps, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=1",
+     "now": "gain",
+     "pair": "mr_cal_d_no_fomc_iorb against B2",
+     "section": "upper_tail_twcrps, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=2",
+     "now": "gain",
+     "pair": "mr_cal_a_base against gbm_funding",
+     "section": "upper_tail_twcrps, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=2",
+     "now": "loss",
+     "pair": "mr_cal_c_location_scale against mr_cal_a_base",
+     "section": "upper_tail_twcrps, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=3",
+     "now": "loss",
+     "pair": "mr_cal_c_location_scale against spread_mr_ctx",
+     "section": "grid_crps, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=4",
+     "now": "loss",
+     "pair": "mr_cal_d_no_fomc_iorb against mr_cal_a_base",
+     "section": "grid_crps, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=4",
+     "now": "loss",
+     "pair": "mr_cal_c_location_scale against mr_cal_a_base",
+     "section": "upper_tail_twcrps, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=4",
+     "now": "undecided",
+     "pair": "mr_cal_d_no_fomc_iorb against B1_prime",
+     "section": "upper_tail_twcrps, by lead",
+     "was": "gain"
+    },
+    {
+     "group": "h=5",
+     "now": "undecided",
+     "pair": "mr_cal_d_no_fomc_iorb against B1_prime",
+     "section": "upper_tail_twcrps, by lead",
+     "was": "gain"
+    },
+    {
+     "group": "all decision days",
+     "now": "loss",
+     "pair": "mr_cal_c_location_scale against mr_cal_a_base",
+     "section": "upper_tail_twcrps, by all decision days",
+     "was": "undecided"
+    },
+    {
+     "group": "all decision days",
+     "now": "loss",
+     "pair": "mr_cal_c_location_scale against mr_cal_d_no_fomc_iorb",
+     "section": "upper_tail_twcrps, by all decision days",
+     "was": "undecided"
+    },
+    {
+     "group": "all decision days",
+     "now": "loss",
+     "pair": "mr_cal_c_location_scale against spread_mr_ctx",
+     "section": "upper_tail_twcrps, by all decision days",
+     "was": "undecided"
+    },
+    {
+     "group": "2018-19",
+     "now": "gain",
+     "pair": "mr_cal_d_no_fomc_iorb against B1_prime",
+     "section": "grid_crps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2018-19",
+     "now": "gain",
+     "pair": "mr_cal_d_no_fomc_iorb against B2",
+     "section": "grid_crps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2018-19",
+     "now": "gain",
+     "pair": "mr_cal_a_base against B1_prime",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2018-19",
+     "now": "gain",
+     "pair": "mr_cal_a_base against B2",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2018-19",
+     "now": "gain",
+     "pair": "mr_cal_c_location_scale against B2",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2018-19",
+     "now": "gain",
+     "pair": "mr_cal_d_no_fomc_iorb against B1_prime",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2018-19",
+     "now": "gain",
+     "pair": "mr_cal_d_no_fomc_iorb against B2",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2018-19",
+     "now": "gain",
+     "pair": "mr_cal_d_no_fomc_iorb against gbm_funding",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "loss",
+     "pair": "mr_cal_b_location against B1",
+     "section": "grid_crps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "loss",
+     "pair": "mr_cal_b_location against B1_prime",
+     "section": "grid_crps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "loss",
+     "pair": "mr_cal_c_location_scale against B1",
+     "section": "grid_crps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "loss",
+     "pair": "mr_cal_c_location_scale against B1_prime",
+     "section": "grid_crps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "loss",
+     "pair": "mr_cal_c_location_scale against gbm_funding",
+     "section": "grid_crps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "loss",
+     "pair": "mr_cal_c_location_scale against gbm_funding_cal_aligned",
+     "section": "grid_crps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "loss",
+     "pair": "mr_cal_d_no_fomc_iorb against B1",
+     "section": "grid_crps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "loss",
+     "pair": "mr_cal_d_no_fomc_iorb against B1_prime",
+     "section": "grid_crps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "gain",
+     "pair": "mr_cal_a_base against B2",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "gain",
+     "pair": "mr_cal_a_base against spread_mr_ctx",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "loss",
+     "pair": "mr_cal_b_location against B1",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "loss",
+     "pair": "mr_cal_b_location against B1_prime",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "loss",
+     "pair": "mr_cal_b_location against gbm_funding",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "loss",
+     "pair": "mr_cal_b_location against gbm_funding_cal_aligned",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "loss",
+     "pair": "mr_cal_b_location against mr_cal_a_base",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "loss",
+     "pair": "mr_cal_b_location against spread_mr_ctx",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "loss",
+     "pair": "mr_cal_c_location_scale against gbm_funding",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "loss",
+     "pair": "mr_cal_c_location_scale against gbm_funding_cal_aligned",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "loss",
+     "pair": "mr_cal_c_location_scale against mr_cal_a_base",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "loss",
+     "pair": "mr_cal_c_location_scale against spread_mr_ctx",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "loss",
+     "pair": "mr_cal_d_no_fomc_iorb against gbm_funding",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "loss",
+     "pair": "mr_cal_d_no_fomc_iorb against gbm_funding_cal_aligned",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "loss",
+     "pair": "mr_cal_d_no_fomc_iorb against mr_cal_a_base",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "loss",
+     "pair": "mr_cal_d_no_fomc_iorb against spread_mr_ctx",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2021-23",
+     "now": "undecided",
+     "pair": "mr_cal_a_base against B2",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "loss"
+    },
+    {
+     "group": "2021-23",
+     "now": "gain",
+     "pair": "mr_cal_a_base against spread_mr_ctx",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2021-23",
+     "now": "loss",
+     "pair": "mr_cal_b_location against gbm_funding_cal_aligned",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2021-23",
+     "now": "loss",
+     "pair": "mr_cal_c_location_scale against gbm_funding_cal_aligned",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2021-23",
+     "now": "loss",
+     "pair": "mr_cal_d_no_fomc_iorb against B1",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2021-23",
+     "now": "loss",
+     "pair": "mr_cal_d_no_fomc_iorb against B1_prime",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2021-23",
+     "now": "loss",
+     "pair": "mr_cal_d_no_fomc_iorb against gbm_funding_cal_aligned",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2024",
+     "now": "undecided",
+     "pair": "mr_cal_a_base against gbm_funding",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "gain"
+    },
+    {
+     "group": "2024",
+     "now": "undecided",
+     "pair": "mr_cal_a_base against gbm_funding_cal_aligned",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "gain"
+    },
+    {
+     "group": "2024",
+     "now": "undecided",
+     "pair": "mr_cal_b_location against spread_mr_ctx",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "gain"
+    },
+    {
+     "group": "calendar_days",
+     "now": "loss",
+     "pair": "mr_cal_b_location against gbm_funding",
+     "section": "grid_crps, by target-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "calendar_days",
+     "now": "undecided",
+     "pair": "mr_cal_c_location_scale against B1",
+     "section": "grid_crps, by target-day type",
+     "was": "gain"
+    },
+    {
+     "group": "calendar_days",
+     "now": "loss",
+     "pair": "mr_cal_c_location_scale against mr_cal_a_base",
+     "section": "upper_tail_twcrps, by target-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "calendar_days",
+     "now": "loss",
+     "pair": "mr_cal_c_location_scale against mr_cal_d_no_fomc_iorb",
+     "section": "upper_tail_twcrps, by target-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "calendar_days",
+     "now": "loss",
+     "pair": "mr_cal_d_no_fomc_iorb against mr_cal_a_base",
+     "section": "upper_tail_twcrps, by target-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "dom_19_23",
+     "now": "undecided",
+     "pair": "mr_cal_c_location_scale against B1",
+     "section": "grid_crps, by target-day type",
+     "was": "gain"
+    },
+    {
+     "group": "dom_19_23",
+     "now": "undecided",
+     "pair": "mr_cal_d_no_fomc_iorb against B1",
+     "section": "grid_crps, by target-day type",
+     "was": "gain"
+    },
+    {
+     "group": "dom_19_23",
+     "now": "gain",
+     "pair": "mr_cal_b_location against B1_prime",
+     "section": "upper_tail_twcrps, by target-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "dom_19_23",
+     "now": "undecided",
+     "pair": "mr_cal_b_location against spread_mr_ctx",
+     "section": "upper_tail_twcrps, by target-day type",
+     "was": "gain"
+    },
+    {
+     "group": "dom_19_23",
+     "now": "gain",
+     "pair": "mr_cal_c_location_scale against B1_prime",
+     "section": "upper_tail_twcrps, by target-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "fomc_day",
+     "now": "gain",
+     "pair": "mr_cal_a_base against B1",
+     "section": "grid_crps, by target-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "fomc_day",
+     "now": "undecided",
+     "pair": "mr_cal_a_base against B1_prime",
+     "section": "grid_crps, by target-day type",
+     "was": "gain"
+    },
+    {
+     "group": "fomc_day",
+     "now": "gain",
+     "pair": "mr_cal_a_base against B2",
+     "section": "grid_crps, by target-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "fomc_day",
+     "now": "loss",
+     "pair": "mr_cal_b_location against B1_prime",
+     "section": "grid_crps, by target-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "fomc_day",
+     "now": "loss",
+     "pair": "mr_cal_b_location against gbm_funding_cal_aligned",
+     "section": "grid_crps, by target-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "fomc_day",
+     "now": "loss",
+     "pair": "mr_cal_b_location against mr_cal_a_base",
+     "section": "grid_crps, by target-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "fomc_day",
+     "now": "loss",
+     "pair": "mr_cal_b_location against spread_mr_ctx",
+     "section": "grid_crps, by target-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "fomc_day",
+     "now": "loss",
+     "pair": "mr_cal_c_location_scale against B1_prime",
+     "section": "grid_crps, by target-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "fomc_day",
+     "now": "loss",
+     "pair": "mr_cal_c_location_scale against gbm_funding_cal_aligned",
+     "section": "grid_crps, by target-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "fomc_day",
+     "now": "loss",
+     "pair": "mr_cal_c_location_scale against mr_cal_a_base",
+     "section": "grid_crps, by target-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "fomc_day",
+     "now": "loss",
+     "pair": "mr_cal_c_location_scale against mr_cal_d_no_fomc_iorb",
+     "section": "grid_crps, by target-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "fomc_day",
+     "now": "loss",
+     "pair": "mr_cal_c_location_scale against spread_mr_ctx",
+     "section": "grid_crps, by target-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "fomc_day",
+     "now": "loss",
+     "pair": "mr_cal_d_no_fomc_iorb against mr_cal_a_base",
+     "section": "grid_crps, by target-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "fomc_day",
+     "now": "gain",
+     "pair": "mr_cal_a_base against B1",
+     "section": "upper_tail_twcrps, by target-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "fomc_day",
+     "now": "gain",
+     "pair": "mr_cal_a_base against B2",
+     "section": "upper_tail_twcrps, by target-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "fomc_day",
+     "now": "loss",
+     "pair": "mr_cal_b_location against B1",
+     "section": "upper_tail_twcrps, by target-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "fomc_day",
+     "now": "loss",
+     "pair": "mr_cal_b_location against B1_prime",
+     "section": "upper_tail_twcrps, by target-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "fomc_day",
+     "now": "loss",
+     "pair": "mr_cal_b_location against mr_cal_a_base",
+     "section": "upper_tail_twcrps, by target-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "fomc_day",
+     "now": "loss",
+     "pair": "mr_cal_b_location against spread_mr_ctx",
+     "section": "upper_tail_twcrps, by target-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "fomc_day",
+     "now": "loss",
+     "pair": "mr_cal_c_location_scale against mr_cal_a_base",
+     "section": "upper_tail_twcrps, by target-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "fomc_day",
+     "now": "gain",
+     "pair": "mr_cal_c_location_scale against mr_cal_b_location",
+     "section": "upper_tail_twcrps, by target-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "fomc_day",
+     "now": "loss",
+     "pair": "mr_cal_c_location_scale against mr_cal_d_no_fomc_iorb",
+     "section": "upper_tail_twcrps, by target-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "fomc_day",
+     "now": "loss",
+     "pair": "mr_cal_c_location_scale against spread_mr_ctx",
+     "section": "upper_tail_twcrps, by target-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "fomc_day",
+     "now": "loss",
+     "pair": "mr_cal_d_no_fomc_iorb against mr_cal_a_base",
+     "section": "upper_tail_twcrps, by target-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "fomc_day",
+     "now": "loss",
+     "pair": "mr_cal_d_no_fomc_iorb against spread_mr_ctx",
+     "section": "upper_tail_twcrps, by target-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "iorb_window",
+     "now": "undecided",
+     "pair": "mr_cal_a_base against B1",
+     "section": "grid_crps, by target-day type",
+     "was": "gain"
+    },
+    {
+     "group": "iorb_window",
+     "now": "gain",
+     "pair": "mr_cal_a_base against B2",
+     "section": "grid_crps, by target-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "iorb_window",
+     "now": "undecided",
+     "pair": "mr_cal_b_location against B1",
+     "section": "grid_crps, by target-day type",
+     "was": "gain"
+    },
+    {
+     "group": "iorb_window",
+     "now": "gain",
+     "pair": "mr_cal_b_location against B2",
+     "section": "grid_crps, by target-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "iorb_window",
+     "now": "undecided",
+     "pair": "mr_cal_c_location_scale against B1",
+     "section": "grid_crps, by target-day type",
+     "was": "gain"
+    },
+    {
+     "group": "iorb_window",
+     "now": "gain",
+     "pair": "mr_cal_c_location_scale against B2",
+     "section": "grid_crps, by target-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "iorb_window",
+     "now": "undecided",
+     "pair": "mr_cal_d_no_fomc_iorb against B1",
+     "section": "grid_crps, by target-day type",
+     "was": "gain"
+    },
+    {
+     "group": "iorb_window",
+     "now": "undecided",
+     "pair": "mr_cal_c_location_scale against mr_cal_d_no_fomc_iorb",
+     "section": "upper_tail_twcrps, by target-day type",
+     "was": "gain"
+    },
+    {
+     "group": "iorb_window",
+     "now": "gain",
+     "pair": "mr_cal_c_location_scale against spread_mr_ctx",
+     "section": "upper_tail_twcrps, by target-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "month_end",
+     "now": "gain",
+     "pair": "mr_cal_a_base against B2",
+     "section": "upper_tail_twcrps, by target-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "month_end",
+     "now": "undecided",
+     "pair": "mr_cal_c_location_scale against B2",
+     "section": "upper_tail_twcrps, by target-day type",
+     "was": "gain"
+    },
+    {
+     "group": "month_end",
+     "now": "undecided",
+     "pair": "mr_cal_d_no_fomc_iorb against B2",
+     "section": "upper_tail_twcrps, by target-day type",
+     "was": "gain"
+    },
+    {
+     "group": "post_month_end_window",
+     "now": "undecided",
+     "pair": "mr_cal_b_location against B1",
+     "section": "upper_tail_twcrps, by target-day type",
+     "was": "gain"
+    },
+    {
+     "group": "post_month_end_window",
+     "now": "undecided",
+     "pair": "mr_cal_c_location_scale against B1",
+     "section": "upper_tail_twcrps, by target-day type",
+     "was": "gain"
+    },
+    {
+     "group": "quarter_end",
+     "now": "gain",
+     "pair": "mr_cal_a_base against spread_mr_ctx",
+     "section": "upper_tail_twcrps, by target-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "quarter_end",
+     "now": "undecided",
+     "pair": "mr_cal_c_location_scale against mr_cal_b_location",
+     "section": "upper_tail_twcrps, by target-day type",
+     "was": "gain"
+    },
+    {
+     "group": "settlement",
+     "now": "loss",
+     "pair": "mr_cal_c_location_scale against mr_cal_d_no_fomc_iorb",
+     "section": "grid_crps, by target-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "settlement",
+     "now": "gain",
+     "pair": "mr_cal_a_base against gbm_funding_cal_aligned",
+     "section": "upper_tail_twcrps, by target-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "settlement",
+     "now": "loss",
+     "pair": "mr_cal_b_location against spread_mr_ctx",
+     "section": "upper_tail_twcrps, by target-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "mr_cal_a_base against B1",
+     "section": "grid_crps, by target-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "mr_cal_a_base against B2",
+     "section": "grid_crps, by target-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "mr_cal_a_base against gbm_funding_cal_aligned",
+     "section": "grid_crps, by target-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "mr_cal_a_base against spread_mr_ctx",
+     "section": "grid_crps, by target-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "loss",
+     "pair": "mr_cal_b_location against mr_cal_a_base",
+     "section": "grid_crps, by target-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "loss",
+     "pair": "mr_cal_b_location against spread_mr_ctx",
+     "section": "grid_crps, by target-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "loss",
+     "pair": "mr_cal_c_location_scale against mr_cal_a_base",
+     "section": "grid_crps, by target-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "loss",
+     "pair": "mr_cal_c_location_scale against spread_mr_ctx",
+     "section": "grid_crps, by target-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "loss",
+     "pair": "mr_cal_d_no_fomc_iorb against mr_cal_a_base",
+     "section": "grid_crps, by target-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "loss",
+     "pair": "mr_cal_d_no_fomc_iorb against spread_mr_ctx",
+     "section": "grid_crps, by target-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "mr_cal_a_base against B1",
+     "section": "upper_tail_twcrps, by target-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "mr_cal_a_base against B1_prime",
+     "section": "upper_tail_twcrps, by target-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "mr_cal_a_base against spread_mr_ctx",
+     "section": "upper_tail_twcrps, by target-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "loss",
+     "pair": "mr_cal_b_location against mr_cal_a_base",
+     "section": "upper_tail_twcrps, by target-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "loss",
+     "pair": "mr_cal_b_location against spread_mr_ctx",
+     "section": "upper_tail_twcrps, by target-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "loss",
+     "pair": "mr_cal_c_location_scale against mr_cal_a_base",
+     "section": "upper_tail_twcrps, by target-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "mr_cal_c_location_scale against mr_cal_b_location",
+     "section": "upper_tail_twcrps, by target-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "loss",
+     "pair": "mr_cal_d_no_fomc_iorb against mr_cal_a_base",
+     "section": "upper_tail_twcrps, by target-day type",
+     "was": "undecided"
+    }
+   ],
+   "page": "docs/research/calendar-mr-1115-mean-d-1167-result.md",
+   "paired_rows": 1190,
+   "rows_changed": 131,
+   "source": "docs/research/calendar-mr-1115/result.json",
+   "source_sha256": "33f94848cadeed4aec0b7e7198ea4d653c434aaabd0bfedcc05e89bd75c89956"
+  },
+  "1133": {
+   "by_direction": {
+    "gain -> undecided": 9,
+    "loss -> undecided": 2,
+    "undecided -> gain": 23,
+    "undecided -> loss": 15
+   },
+   "changed": [
+    {
+     "group": "h=1",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f0.5 against B1p",
+     "section": "grid_crps, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=1",
+     "now": "loss",
+     "pair": "spread_mr_fhs_mad20_f0.5+pooled against spread_mr_fhs_mad20_f0.5",
+     "section": "grid_crps, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=1",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f0.5 against B2",
+     "section": "upper_tail_twcrps, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=1",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f0.5+pooled against B2",
+     "section": "upper_tail_twcrps, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=1",
+     "now": "loss",
+     "pair": "spread_mr_fhs_mad20_f0.5+pooled against spread_mr_fhs_mad20_f0.5",
+     "section": "upper_tail_twcrps, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=2",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f0.5+pooled against B1p",
+     "section": "grid_crps, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=2",
+     "now": "loss",
+     "pair": "spread_mr_fhs_mad20_f0.5+pooled against spread_mr_fhs_mad20_f0.5",
+     "section": "grid_crps, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=2",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f0.5 against B1p",
+     "section": "upper_tail_twcrps, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=2",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f0.5 against B2",
+     "section": "upper_tail_twcrps, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=2",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f0.5+pooled against B2",
+     "section": "upper_tail_twcrps, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=2",
+     "now": "loss",
+     "pair": "spread_mr_fhs_mad20_f0.5+pooled against spread_mr_fhs_mad20_f0.5",
+     "section": "upper_tail_twcrps, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=3",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f0.5 against B1p",
+     "section": "upper_tail_twcrps, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=3",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f0.5 against B2",
+     "section": "upper_tail_twcrps, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=3",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f0.5+pooled against B1p",
+     "section": "upper_tail_twcrps, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=3",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f0.5+pooled against B2",
+     "section": "upper_tail_twcrps, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=3",
+     "now": "loss",
+     "pair": "spread_mr_fhs_mad20_f0.5+pooled against spread_mr_fhs_mad20_f0.5",
+     "section": "upper_tail_twcrps, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=4",
+     "now": "loss",
+     "pair": "spread_mr_fhs_mad20_f0.5+pooled against spread_mr_fhs_mad20_f0.5",
+     "section": "upper_tail_twcrps, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=5",
+     "now": "loss",
+     "pair": "spread_mr_fhs_mad20_f0.5+pooled against spread_mr_fhs_mad20_f0.5",
+     "section": "upper_tail_twcrps, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "all decision days",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f0.5 against B2",
+     "section": "upper_tail_twcrps, by all decision days",
+     "was": "undecided"
+    },
+    {
+     "group": "all decision days",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f0.5+pooled against B2",
+     "section": "upper_tail_twcrps, by all decision days",
+     "was": "undecided"
+    },
+    {
+     "group": "all decision days",
+     "now": "loss",
+     "pair": "spread_mr_fhs_mad20_f0.5+pooled against spread_mr_fhs_mad20_f0.5",
+     "section": "upper_tail_twcrps, by all decision days",
+     "was": "undecided"
+    },
+    {
+     "group": "ordinary",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f0.5 against B2",
+     "section": "upper_tail_twcrps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "quarter_end",
+     "now": "undecided",
+     "pair": "spread_mr_fhs_mad20_f0.5+pooled against spread_mr_fhs_mad20_f0.5",
+     "section": "grid_crps, by pressure-day type",
+     "was": "gain"
+    },
+    {
+     "group": "quarter_end",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f0.5+pooled against B2",
+     "section": "scaled_grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "quarter_end",
+     "now": "undecided",
+     "pair": "spread_mr_fhs_mad20_f0.5+pooled against spread_mr_fhs_mad20_f0.5",
+     "section": "scaled_grid_crps, by pressure-day type",
+     "was": "gain"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f0.5 against B1",
+     "section": "grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "undecided",
+     "pair": "spread_mr_fhs_mad20_f0.5 against B1p",
+     "section": "grid_crps, by pressure-day type",
+     "was": "gain"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f0.5 against B2",
+     "section": "grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "undecided",
+     "pair": "spread_mr_fhs_mad20_f0.5+pooled against B1p",
+     "section": "grid_crps, by pressure-day type",
+     "was": "gain"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f0.5+pooled against B2",
+     "section": "grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "undecided",
+     "pair": "spread_mr_fhs_mad20_f0.5+pooled against spread_mr_fhs_mad20_f0.5",
+     "section": "grid_crps, by pressure-day type",
+     "was": "gain"
+    },
+    {
+     "group": "tax_date",
+     "now": "undecided",
+     "pair": "spread_mr_fhs_mad20_f0.5 against B1p",
+     "section": "scaled_grid_crps, by pressure-day type",
+     "was": "gain"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f0.5 against B2",
+     "section": "scaled_grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f0.5+pooled against B1",
+     "section": "scaled_grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "undecided",
+     "pair": "spread_mr_fhs_mad20_f0.5+pooled against B1p",
+     "section": "scaled_grid_crps, by pressure-day type",
+     "was": "gain"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f0.5+pooled against B2",
+     "section": "scaled_grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "2018-19",
+     "now": "loss",
+     "pair": "spread_mr_fhs_mad20_f0.5+pooled against spread_mr_fhs_mad20_f0.5",
+     "section": "scaled_grid_crps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "undecided",
+     "pair": "spread_mr_fhs_mad20_f0.5+pooled against B1p",
+     "section": "grid_crps, by regime",
+     "was": "gain"
+    },
+    {
+     "group": "2020",
+     "now": "loss",
+     "pair": "spread_mr_fhs_mad20_f0.5+pooled against spread_mr_fhs_mad20_f0.5",
+     "section": "grid_crps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "loss",
+     "pair": "spread_mr_fhs_mad20_f0.5+pooled against spread_mr_fhs_mad20_f0.5",
+     "section": "scaled_grid_crps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f0.5 against B2",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f0.5+pooled against B2",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "loss",
+     "pair": "spread_mr_fhs_mad20_f0.5+pooled against spread_mr_fhs_mad20_f0.5",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2021-23",
+     "now": "undecided",
+     "pair": "spread_mr_fhs_mad20_f0.5 against B2",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "loss"
+    },
+    {
+     "group": "2021-23",
+     "now": "undecided",
+     "pair": "spread_mr_fhs_mad20_f0.5+pooled against B2",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "loss"
+    },
+    {
+     "group": "2024",
+     "now": "loss",
+     "pair": "spread_mr_fhs_mad20_f0.5+pooled against spread_mr_fhs_mad20_f0.5",
+     "section": "grid_crps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2025-26",
+     "now": "loss",
+     "pair": "spread_mr_fhs_mad20_f0.5+pooled against spread_mr_fhs_mad20_f0.5",
+     "section": "grid_crps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2025-26",
+     "now": "undecided",
+     "pair": "spread_mr_fhs_mad20_f0.5+pooled against B2",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "gain"
+    },
+    {
+     "group": "2025-26",
+     "now": "loss",
+     "pair": "spread_mr_fhs_mad20_f0.5+pooled against spread_mr_fhs_mad20_f0.5",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    }
+   ],
+   "page": "docs/research/walk-calibration-1133-mean-d-1167-result.md",
+   "paired_rows": 287,
+   "rows_changed": 49,
+   "source": "docs/research/walk-calibration-1133/result.json",
+   "source_sha256": "a42e2085d239301107e3b7db006b38ef54a98c23521277d785d611a101d7010a"
+  },
+  "1153": {
+   "by_direction": {
+    "gain -> undecided": 21,
+    "loss -> undecided": 23,
+    "undecided -> gain": 105,
+    "undecided -> loss": 7
+   },
+   "changed": [
+    {
+     "group": "h=1",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f0.5 against B1p",
+     "section": "upper_tail_twcrps, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=1",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f0.5 against B2",
+     "section": "upper_tail_twcrps, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=1",
+     "now": "gain",
+     "pair": "v1_blend5_20 against B1p",
+     "section": "upper_tail_twcrps, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=1",
+     "now": "gain",
+     "pair": "v1_blend5_20 against B2",
+     "section": "upper_tail_twcrps, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=1",
+     "now": "gain",
+     "pair": "v1_mad10 against B1p",
+     "section": "upper_tail_twcrps, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=1",
+     "now": "gain",
+     "pair": "v1_mad10 against B2",
+     "section": "upper_tail_twcrps, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=1",
+     "now": "gain",
+     "pair": "v2_ewma_hl10 against B2",
+     "section": "upper_tail_twcrps, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=1",
+     "now": "gain",
+     "pair": "v2_ewma_hl5_asym against B2",
+     "section": "upper_tail_twcrps, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=1",
+     "now": "gain",
+     "pair": "v3_miss against B1p",
+     "section": "upper_tail_twcrps, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=1",
+     "now": "gain",
+     "pair": "v3_miss against B2",
+     "section": "upper_tail_twcrps, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=1",
+     "now": "gain",
+     "pair": "v4_v3_miss_cal against B1p",
+     "section": "upper_tail_twcrps, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=1",
+     "now": "gain",
+     "pair": "v4_v3_miss_cal against B2",
+     "section": "upper_tail_twcrps, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=2",
+     "now": "gain",
+     "pair": "v1_blend5_20 against B1p",
+     "section": "upper_tail_twcrps, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=2",
+     "now": "gain",
+     "pair": "v2_ewma_hl10 against B2",
+     "section": "upper_tail_twcrps, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=3",
+     "now": "gain",
+     "pair": "v2_ewma_hl10 against B1p",
+     "section": "grid_crps, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=3",
+     "now": "gain",
+     "pair": "v1_mad5 against B2",
+     "section": "upper_tail_twcrps, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=3",
+     "now": "gain",
+     "pair": "v2_ewma_hl10 against B2",
+     "section": "upper_tail_twcrps, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=3",
+     "now": "loss",
+     "pair": "v3_miss against spread_mr_fhs_mad20_f0.5",
+     "section": "upper_tail_twcrps, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=4",
+     "now": "gain",
+     "pair": "v2_ewma_hl10 against B2",
+     "section": "upper_tail_twcrps, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=4",
+     "now": "loss",
+     "pair": "v3_miss against spread_mr_fhs_mad20_f0.5",
+     "section": "upper_tail_twcrps, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=5",
+     "now": "undecided",
+     "pair": "v1_blend5_20 against spread_mr_fhs_mad20_f0.5",
+     "section": "upper_tail_twcrps, by lead",
+     "was": "loss"
+    },
+    {
+     "group": "h=5",
+     "now": "gain",
+     "pair": "v2_ewma_hl10 against B2",
+     "section": "upper_tail_twcrps, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=5",
+     "now": "gain",
+     "pair": "v4_v3_miss_cal against spread_mr_fhs_mad20_f0.5",
+     "section": "upper_tail_twcrps, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "all decision days",
+     "now": "gain",
+     "pair": "v1_mad5 against B1p",
+     "section": "grid_crps, by all decision days",
+     "was": "undecided"
+    },
+    {
+     "group": "all decision days",
+     "now": "gain",
+     "pair": "v1_mad5 against B1p",
+     "section": "upper_tail_twcrps, by all decision days",
+     "was": "undecided"
+    },
+    {
+     "group": "all decision days",
+     "now": "gain",
+     "pair": "v1_mad5 against B2",
+     "section": "upper_tail_twcrps, by all decision days",
+     "was": "undecided"
+    },
+    {
+     "group": "all decision days",
+     "now": "gain",
+     "pair": "v2_ewma_hl10 against B1p",
+     "section": "upper_tail_twcrps, by all decision days",
+     "was": "undecided"
+    },
+    {
+     "group": "all decision days",
+     "now": "gain",
+     "pair": "v2_ewma_hl10 against B2",
+     "section": "upper_tail_twcrps, by all decision days",
+     "was": "undecided"
+    },
+    {
+     "group": "month_end",
+     "now": "undecided",
+     "pair": "v1_blend5_20 against B1p",
+     "section": "grid_crps, by pressure-day type",
+     "was": "gain"
+    },
+    {
+     "group": "month_end",
+     "now": "undecided",
+     "pair": "v1_mad10 against B1p",
+     "section": "grid_crps, by pressure-day type",
+     "was": "gain"
+    },
+    {
+     "group": "month_end",
+     "now": "gain",
+     "pair": "v1_blend5_20 against B2",
+     "section": "scaled_grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "month_end",
+     "now": "gain",
+     "pair": "v1_mad10 against B2",
+     "section": "scaled_grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "month_end",
+     "now": "undecided",
+     "pair": "v1_mad10 against spread_mr_fhs_mad20_f0.5",
+     "section": "scaled_grid_crps, by pressure-day type",
+     "was": "loss"
+    },
+    {
+     "group": "month_end",
+     "now": "gain",
+     "pair": "v1_mad5 against B2",
+     "section": "scaled_grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "month_end",
+     "now": "undecided",
+     "pair": "v2_ewma_hl3 against B1",
+     "section": "scaled_grid_crps, by pressure-day type",
+     "was": "gain"
+    },
+    {
+     "group": "month_end",
+     "now": "gain",
+     "pair": "v2_ewma_hl3 against B2",
+     "section": "scaled_grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "month_end",
+     "now": "gain",
+     "pair": "v3_miss against spread_mr_fhs_mad20_f0.5",
+     "section": "scaled_grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "ordinary",
+     "now": "undecided",
+     "pair": "v2_ewma_hl3 against spread_mr_fhs_mad20_f0.5",
+     "section": "scaled_grid_crps, by pressure-day type",
+     "was": "loss"
+    },
+    {
+     "group": "ordinary",
+     "now": "gain",
+     "pair": "v1_blend5_20 against B2",
+     "section": "upper_tail_twcrps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "quarter_end",
+     "now": "gain",
+     "pair": "v4_v3_miss_cal against B2",
+     "section": "grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "quarter_end",
+     "now": "undecided",
+     "pair": "v4_v3_miss_cal against B1",
+     "section": "scaled_grid_crps, by pressure-day type",
+     "was": "gain"
+    },
+    {
+     "group": "quarter_end",
+     "now": "undecided",
+     "pair": "v4_v3_miss_cal against B1p",
+     "section": "scaled_grid_crps, by pressure-day type",
+     "was": "gain"
+    },
+    {
+     "group": "quarter_end",
+     "now": "gain",
+     "pair": "v4_v3_miss_cal against B2",
+     "section": "scaled_grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "quarter_end",
+     "now": "undecided",
+     "pair": "v4_v3_miss_cal against spread_mr_fhs_mad20_f0.5",
+     "section": "scaled_grid_crps, by pressure-day type",
+     "was": "gain"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f0.5 against B1",
+     "section": "grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f0.5 against B2",
+     "section": "grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "v1_blend5_20 against B1",
+     "section": "grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "v1_blend5_20 against B2",
+     "section": "grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "v1_mad10 against B1",
+     "section": "grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "v1_mad10 against B2",
+     "section": "grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "v1_mad5 against B1",
+     "section": "grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "v1_mad5 against B2",
+     "section": "grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "v2_ewma_hl10 against B2",
+     "section": "grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "undecided",
+     "pair": "v2_ewma_hl10 against spread_mr_fhs_mad20_f0.5",
+     "section": "grid_crps, by pressure-day type",
+     "was": "loss"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "v2_ewma_hl3 against B1",
+     "section": "grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "v2_ewma_hl3 against B2",
+     "section": "grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "undecided",
+     "pair": "v2_ewma_hl3 against spread_mr_fhs_mad20_f0.5",
+     "section": "grid_crps, by pressure-day type",
+     "was": "loss"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "v2_ewma_hl5 against B1",
+     "section": "grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "v2_ewma_hl5 against B2",
+     "section": "grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "undecided",
+     "pair": "v2_ewma_hl5 against spread_mr_fhs_mad20_f0.5",
+     "section": "grid_crps, by pressure-day type",
+     "was": "loss"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "v2_ewma_hl5_asym against B2",
+     "section": "grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "undecided",
+     "pair": "v2_ewma_hl5_asym against spread_mr_fhs_mad20_f0.5",
+     "section": "grid_crps, by pressure-day type",
+     "was": "loss"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "v3_miss against B1",
+     "section": "grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "v3_miss against B2",
+     "section": "grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "v3_miss against spread_mr_fhs_mad20_f0.5",
+     "section": "grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "undecided",
+     "pair": "v4_v3_miss_cal against B1p",
+     "section": "grid_crps, by pressure-day type",
+     "was": "gain"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "v4_v3_miss_cal against B2",
+     "section": "grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f0.5 against B1",
+     "section": "scaled_grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "undecided",
+     "pair": "spread_mr_fhs_mad20_f0.5 against B1p",
+     "section": "scaled_grid_crps, by pressure-day type",
+     "was": "gain"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f0.5 against B2",
+     "section": "scaled_grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "v1_blend5_20 against B1",
+     "section": "scaled_grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "v1_blend5_20 against B2",
+     "section": "scaled_grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "v1_mad10 against B1",
+     "section": "scaled_grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "undecided",
+     "pair": "v1_mad10 against B1p",
+     "section": "scaled_grid_crps, by pressure-day type",
+     "was": "gain"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "v1_mad10 against B2",
+     "section": "scaled_grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "v1_mad5 against B1",
+     "section": "scaled_grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "v1_mad5 against B2",
+     "section": "scaled_grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "v2_ewma_hl10 against B2",
+     "section": "scaled_grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "undecided",
+     "pair": "v2_ewma_hl10 against spread_mr_fhs_mad20_f0.5",
+     "section": "scaled_grid_crps, by pressure-day type",
+     "was": "loss"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "v2_ewma_hl3 against B2",
+     "section": "scaled_grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "undecided",
+     "pair": "v2_ewma_hl3 against spread_mr_fhs_mad20_f0.5",
+     "section": "scaled_grid_crps, by pressure-day type",
+     "was": "loss"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "v2_ewma_hl5 against B2",
+     "section": "scaled_grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "undecided",
+     "pair": "v2_ewma_hl5 against spread_mr_fhs_mad20_f0.5",
+     "section": "scaled_grid_crps, by pressure-day type",
+     "was": "loss"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "v2_ewma_hl5_asym against B2",
+     "section": "scaled_grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "v3_miss against B1",
+     "section": "scaled_grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "v3_miss against B2",
+     "section": "scaled_grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "v3_miss against spread_mr_fhs_mad20_f0.5",
+     "section": "scaled_grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "undecided",
+     "pair": "v4_v3_miss_cal against B1p",
+     "section": "scaled_grid_crps, by pressure-day type",
+     "was": "gain"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "v4_v3_miss_cal against B2",
+     "section": "scaled_grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "undecided",
+     "pair": "v4_v3_miss_cal against spread_mr_fhs_mad20_f0.5",
+     "section": "scaled_grid_crps, by pressure-day type",
+     "was": "loss"
+    },
+    {
+     "group": "2018-19",
+     "now": "gain",
+     "pair": "v1_blend5_20 against B1p",
+     "section": "grid_crps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2018-19",
+     "now": "gain",
+     "pair": "v1_blend5_20 against B2",
+     "section": "grid_crps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2018-19",
+     "now": "gain",
+     "pair": "v1_mad10 against B2",
+     "section": "grid_crps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2018-19",
+     "now": "undecided",
+     "pair": "v1_mad5 against B1p",
+     "section": "scaled_grid_crps, by regime",
+     "was": "loss"
+    },
+    {
+     "group": "2018-19",
+     "now": "undecided",
+     "pair": "v2_ewma_hl10 against B1",
+     "section": "scaled_grid_crps, by regime",
+     "was": "gain"
+    },
+    {
+     "group": "2018-19",
+     "now": "loss",
+     "pair": "v2_ewma_hl10 against spread_mr_fhs_mad20_f0.5",
+     "section": "scaled_grid_crps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2018-19",
+     "now": "undecided",
+     "pair": "v2_ewma_hl3 against B1p",
+     "section": "scaled_grid_crps, by regime",
+     "was": "loss"
+    },
+    {
+     "group": "2018-19",
+     "now": "undecided",
+     "pair": "v2_ewma_hl3 against B2",
+     "section": "scaled_grid_crps, by regime",
+     "was": "loss"
+    },
+    {
+     "group": "2018-19",
+     "now": "undecided",
+     "pair": "v2_ewma_hl5 against B1",
+     "section": "scaled_grid_crps, by regime",
+     "was": "gain"
+    },
+    {
+     "group": "2018-19",
+     "now": "undecided",
+     "pair": "v2_ewma_hl5 against B1p",
+     "section": "scaled_grid_crps, by regime",
+     "was": "loss"
+    },
+    {
+     "group": "2018-19",
+     "now": "undecided",
+     "pair": "v2_ewma_hl5 against B2",
+     "section": "scaled_grid_crps, by regime",
+     "was": "loss"
+    },
+    {
+     "group": "2018-19",
+     "now": "undecided",
+     "pair": "v2_ewma_hl5_asym against B1",
+     "section": "scaled_grid_crps, by regime",
+     "was": "gain"
+    },
+    {
+     "group": "2018-19",
+     "now": "undecided",
+     "pair": "v2_ewma_hl5_asym against B1p",
+     "section": "scaled_grid_crps, by regime",
+     "was": "loss"
+    },
+    {
+     "group": "2018-19",
+     "now": "undecided",
+     "pair": "v2_ewma_hl5_asym against B2",
+     "section": "scaled_grid_crps, by regime",
+     "was": "loss"
+    },
+    {
+     "group": "2018-19",
+     "now": "gain",
+     "pair": "v4_v3_miss_cal against spread_mr_fhs_mad20_f0.5",
+     "section": "scaled_grid_crps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2018-19",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f0.5 against B1p",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2018-19",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f0.5 against B2",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2018-19",
+     "now": "gain",
+     "pair": "v1_blend5_20 against B1p",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2018-19",
+     "now": "gain",
+     "pair": "v1_mad10 against B1p",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2018-19",
+     "now": "gain",
+     "pair": "v3_miss against B1p",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2018-19",
+     "now": "gain",
+     "pair": "v3_miss against B2",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f0.5 against B2",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "gain",
+     "pair": "v1_blend5_20 against B2",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "gain",
+     "pair": "v1_mad10 against B2",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "gain",
+     "pair": "v1_mad5 against B2",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "gain",
+     "pair": "v2_ewma_hl10 against B2",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "gain",
+     "pair": "v2_ewma_hl3 against B2",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "gain",
+     "pair": "v2_ewma_hl5 against B2",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "gain",
+     "pair": "v2_ewma_hl5_asym against B2",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "gain",
+     "pair": "v3_miss against B2",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "loss",
+     "pair": "v3_miss against spread_mr_fhs_mad20_f0.5",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "gain",
+     "pair": "v4_v3_miss_cal against B2",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "undecided",
+     "pair": "v4_v3_miss_cal against spread_mr_fhs_mad20_f0.5",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "loss"
+    },
+    {
+     "group": "2021-23",
+     "now": "gain",
+     "pair": "v1_mad10 against B1",
+     "section": "grid_crps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2021-23",
+     "now": "gain",
+     "pair": "v2_ewma_hl10 against B1",
+     "section": "grid_crps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2021-23",
+     "now": "gain",
+     "pair": "v2_ewma_hl3 against B1",
+     "section": "grid_crps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2021-23",
+     "now": "gain",
+     "pair": "v2_ewma_hl5 against B1",
+     "section": "grid_crps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2021-23",
+     "now": "gain",
+     "pair": "v2_ewma_hl5_asym against spread_mr_fhs_mad20_f0.5",
+     "section": "scaled_grid_crps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2021-23",
+     "now": "undecided",
+     "pair": "spread_mr_fhs_mad20_f0.5 against B2",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "loss"
+    },
+    {
+     "group": "2021-23",
+     "now": "gain",
+     "pair": "v1_blend5_20 against B1",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2021-23",
+     "now": "undecided",
+     "pair": "v1_blend5_20 against B2",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "loss"
+    },
+    {
+     "group": "2021-23",
+     "now": "undecided",
+     "pair": "v1_blend5_20 against spread_mr_fhs_mad20_f0.5",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "gain"
+    },
+    {
+     "group": "2021-23",
+     "now": "gain",
+     "pair": "v1_mad10 against B1",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2021-23",
+     "now": "undecided",
+     "pair": "v1_mad10 against B2",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "loss"
+    },
+    {
+     "group": "2021-23",
+     "now": "gain",
+     "pair": "v2_ewma_hl10 against B1",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2021-23",
+     "now": "gain",
+     "pair": "v2_ewma_hl10 against B1p",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2021-23",
+     "now": "gain",
+     "pair": "v2_ewma_hl10 against spread_mr_fhs_mad20_f0.5",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2021-23",
+     "now": "gain",
+     "pair": "v2_ewma_hl3 against spread_mr_fhs_mad20_f0.5",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2021-23",
+     "now": "gain",
+     "pair": "v2_ewma_hl5 against B1",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2021-23",
+     "now": "gain",
+     "pair": "v2_ewma_hl5 against B1p",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2021-23",
+     "now": "gain",
+     "pair": "v2_ewma_hl5 against spread_mr_fhs_mad20_f0.5",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2021-23",
+     "now": "gain",
+     "pair": "v2_ewma_hl5_asym against B1",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2021-23",
+     "now": "gain",
+     "pair": "v2_ewma_hl5_asym against B1p",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2021-23",
+     "now": "gain",
+     "pair": "v2_ewma_hl5_asym against spread_mr_fhs_mad20_f0.5",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2021-23",
+     "now": "loss",
+     "pair": "v3_miss against spread_mr_fhs_mad20_f0.5",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2021-23",
+     "now": "undecided",
+     "pair": "v4_v3_miss_cal against B2",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "loss"
+    },
+    {
+     "group": "2025-26",
+     "now": "undecided",
+     "pair": "v1_mad5 against B2",
+     "section": "grid_crps, by regime",
+     "was": "gain"
+    },
+    {
+     "group": "2025-26",
+     "now": "gain",
+     "pair": "v1_mad10 against B1p",
+     "section": "scaled_grid_crps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2025-26",
+     "now": "undecided",
+     "pair": "v1_blend5_20 against B2",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "gain"
+    },
+    {
+     "group": "2025-26",
+     "now": "undecided",
+     "pair": "v1_mad10 against B2",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "gain"
+    },
+    {
+     "group": "2025-26",
+     "now": "undecided",
+     "pair": "v1_mad5 against B1p",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "gain"
+    },
+    {
+     "group": "2025-26",
+     "now": "undecided",
+     "pair": "v2_ewma_hl3 against B2",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "gain"
+    },
+    {
+     "group": "2025-26",
+     "now": "undecided",
+     "pair": "v2_ewma_hl5 against B2",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "gain"
+    },
+    {
+     "group": "2025-26",
+     "now": "loss",
+     "pair": "v2_ewma_hl5 against spread_mr_fhs_mad20_f0.5",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2025-26",
+     "now": "undecided",
+     "pair": "v2_ewma_hl5_asym against B2",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "gain"
+    },
+    {
+     "group": "2025-26",
+     "now": "loss",
+     "pair": "v2_ewma_hl5_asym against spread_mr_fhs_mad20_f0.5",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    }
+   ],
+   "page": "docs/research/faster-scale-1153-mean-d-1167-result.md",
+   "paired_rows": 1422,
+   "rows_changed": 156,
+   "source": "docs/research/faster-scale-1153/result.json",
+   "source_sha256": "bc75f924a573811bdb7356fafe06e18de32d50c7cc7e7ad278054870fbdfbde0"
+  },
+  "941": {
+   "by_direction": {
+    "gain -> undecided": 10,
+    "loss -> undecided": 10,
+    "undecided -> gain": 90,
+    "undecided -> loss": 5
+   },
+   "changed": [
+    {
+     "group": "h=1",
+     "now": "gain",
+     "pair": "spread_mr_level10 against B2",
+     "section": "brier_10, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=1",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad10_f0.5 against B2",
+     "section": "upper_tail_twcrps, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=1",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f0.25 against B2",
+     "section": "upper_tail_twcrps, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=1",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f0.5 against B2",
+     "section": "upper_tail_twcrps, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=1",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f1.0 against B2",
+     "section": "upper_tail_twcrps, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=1",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad40_f0.5 against B2",
+     "section": "upper_tail_twcrps, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=1",
+     "now": "gain",
+     "pair": "spread_mr_level10 against B2",
+     "section": "upper_tail_twcrps, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=2",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f1.0 against spread_mr_level10",
+     "section": "brier_10, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=2",
+     "now": "undecided",
+     "pair": "spread_mr_fhs_sd20_f0.5 against spread_mr_level10",
+     "section": "upper_tail_twcrps, by lead",
+     "was": "loss"
+    },
+    {
+     "group": "h=3",
+     "now": "undecided",
+     "pair": "spread_mr_fhs_sd20_f0.5 against spread_mr_level10",
+     "section": "upper_tail_twcrps, by lead",
+     "was": "loss"
+    },
+    {
+     "group": "h=4",
+     "now": "undecided",
+     "pair": "spread_mr_fhs_sd20_f0.5 against spread_mr_level10",
+     "section": "upper_tail_twcrps, by lead",
+     "was": "loss"
+    },
+    {
+     "group": "h=5",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad40_f0.5 against spread_mr_level10",
+     "section": "brier_5, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=5",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad10_f0.5 against spread_mr_level10",
+     "section": "grid_crps, by lead",
+     "was": "undecided"
+    },
+    {
+     "group": "h=5",
+     "now": "undecided",
+     "pair": "spread_mr_fhs_sd20_f0.5 against spread_mr_level10",
+     "section": "upper_tail_twcrps, by lead",
+     "was": "loss"
+    },
+    {
+     "group": "all decision days",
+     "now": "undecided",
+     "pair": "spread_mr_fhs_sd20_f0.5 against spread_mr_level10",
+     "section": "upper_tail_twcrps, by all decision days",
+     "was": "loss"
+    },
+    {
+     "group": "month_end",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f0.25 against spread_mr_level10",
+     "section": "grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "month_end",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f0.5 against spread_mr_level10",
+     "section": "grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "month_end",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad10_f0.5 against B1",
+     "section": "upper_tail_twcrps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "month_end",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad10_f0.5 against B2",
+     "section": "upper_tail_twcrps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "month_end",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f0.25 against B2",
+     "section": "upper_tail_twcrps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "month_end",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f0.5 against B2",
+     "section": "upper_tail_twcrps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "month_end",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f0.5 against spread_mr_level10",
+     "section": "upper_tail_twcrps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "month_end",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f1.0 against B2",
+     "section": "upper_tail_twcrps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "month_end",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f1.0 against spread_mr_level10",
+     "section": "upper_tail_twcrps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "month_end",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad40_f0.5 against B2",
+     "section": "upper_tail_twcrps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "month_end",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad40_f0.5 against spread_mr_level10",
+     "section": "upper_tail_twcrps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "month_end",
+     "now": "gain",
+     "pair": "spread_mr_fhs_sd20_f0.5 against B1",
+     "section": "upper_tail_twcrps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "month_end",
+     "now": "gain",
+     "pair": "spread_mr_fhs_sd20_f0.5 against B2",
+     "section": "upper_tail_twcrps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "ordinary",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f0.5 against spread_mr_level10",
+     "section": "brier_5, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "ordinary",
+     "now": "gain",
+     "pair": "spread_mr_fhs_sd20_f0.5 against B2",
+     "section": "brier_5, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "ordinary",
+     "now": "gain",
+     "pair": "spread_mr_fhs_sd20_f0.5 against B2",
+     "section": "grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "quarter_end",
+     "now": "undecided",
+     "pair": "spread_mr_level10 against B1",
+     "section": "grid_crps, by pressure-day type",
+     "was": "loss"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad10_f0.5 against B1",
+     "section": "grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad10_f0.5 against B2",
+     "section": "grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f0.25 against B1",
+     "section": "grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f0.25 against B2",
+     "section": "grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f0.5 against B1",
+     "section": "grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f0.5 against B2",
+     "section": "grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f1.0 against B1",
+     "section": "grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f1.0 against B2",
+     "section": "grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad40_f0.5 against B2",
+     "section": "grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "spread_mr_fhs_sd20_f0.5 against B2",
+     "section": "grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "tax_date",
+     "now": "gain",
+     "pair": "spread_mr_level10 against B2",
+     "section": "grid_crps, by pressure-day type",
+     "was": "undecided"
+    },
+    {
+     "group": "2018-19",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad10_f0.5 against B2",
+     "section": "grid_crps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2018-19",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad40_f0.5 against B2",
+     "section": "grid_crps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2018-19",
+     "now": "gain",
+     "pair": "spread_mr_fhs_sd20_f0.5 against B1",
+     "section": "grid_crps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2018-19",
+     "now": "gain",
+     "pair": "spread_mr_level10 against B2",
+     "section": "grid_crps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2018-19",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f0.25 against B2",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2018-19",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f0.5 against B2",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2018-19",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f1.0 against B2",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad40_f0.5 against spread_mr_level10",
+     "section": "brier_0, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "loss",
+     "pair": "spread_mr_level10 against B1",
+     "section": "brier_0, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad10_f0.5 against B1",
+     "section": "brier_10, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad10_f0.5 against B2",
+     "section": "brier_10, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f0.25 against B2",
+     "section": "brier_10, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f0.5 against B1",
+     "section": "brier_10, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f0.5 against B2",
+     "section": "brier_10, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f1.0 against B1",
+     "section": "brier_10, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f1.0 against B2",
+     "section": "brier_10, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad40_f0.5 against B1",
+     "section": "brier_10, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad40_f0.5 against B2",
+     "section": "brier_10, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad40_f0.5 against spread_mr_level10",
+     "section": "brier_10, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "gain",
+     "pair": "spread_mr_fhs_sd20_f0.5 against B2",
+     "section": "brier_10, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "undecided",
+     "pair": "spread_mr_level10 against B1",
+     "section": "brier_10, by regime",
+     "was": "gain"
+    },
+    {
+     "group": "2020",
+     "now": "gain",
+     "pair": "spread_mr_level10 against B2",
+     "section": "brier_10, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad10_f0.5 against B2",
+     "section": "brier_5, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f0.25 against B2",
+     "section": "brier_5, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f0.5 against B2",
+     "section": "brier_5, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f1.0 against B1",
+     "section": "brier_5, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f1.0 against B2",
+     "section": "brier_5, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad40_f0.5 against B2",
+     "section": "brier_5, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad40_f0.5 against spread_mr_level10",
+     "section": "brier_5, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "gain",
+     "pair": "spread_mr_fhs_sd20_f0.5 against B1",
+     "section": "brier_5, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "gain",
+     "pair": "spread_mr_fhs_sd20_f0.5 against B2",
+     "section": "brier_5, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "undecided",
+     "pair": "spread_mr_level10 against B1",
+     "section": "brier_5, by regime",
+     "was": "gain"
+    },
+    {
+     "group": "2020",
+     "now": "gain",
+     "pair": "spread_mr_level10 against B2",
+     "section": "brier_5, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad10_f0.5 against B2",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f0.25 against B2",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f0.5 against B2",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f1.0 against B2",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad40_f0.5 against B2",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad40_f0.5 against spread_mr_level10",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "gain",
+     "pair": "spread_mr_fhs_sd20_f0.5 against B2",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2020",
+     "now": "undecided",
+     "pair": "spread_mr_level10 against B1",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "gain"
+    },
+    {
+     "group": "2020",
+     "now": "gain",
+     "pair": "spread_mr_level10 against B2",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2021-23",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f1.0 against spread_mr_level10",
+     "section": "brier_0, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2021-23",
+     "now": "gain",
+     "pair": "spread_mr_fhs_sd20_f0.5 against B1",
+     "section": "brier_0, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2021-23",
+     "now": "gain",
+     "pair": "spread_mr_fhs_sd20_f0.5 against spread_mr_level10",
+     "section": "brier_0, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2021-23",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad10_f0.5 against B1",
+     "section": "grid_crps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2021-23",
+     "now": "gain",
+     "pair": "spread_mr_fhs_sd20_f0.5 against B1",
+     "section": "grid_crps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2021-23",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad10_f0.5 against B1",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2021-23",
+     "now": "undecided",
+     "pair": "spread_mr_fhs_mad10_f0.5 against B2",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "loss"
+    },
+    {
+     "group": "2021-23",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad10_f0.5 against spread_mr_level10",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2021-23",
+     "now": "undecided",
+     "pair": "spread_mr_fhs_mad20_f0.5 against B2",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "loss"
+    },
+    {
+     "group": "2021-23",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f0.5 against spread_mr_level10",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2021-23",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f1.0 against B1",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2021-23",
+     "now": "undecided",
+     "pair": "spread_mr_fhs_mad20_f1.0 against B2",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "loss"
+    },
+    {
+     "group": "2021-23",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f1.0 against spread_mr_level10",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2021-23",
+     "now": "undecided",
+     "pair": "spread_mr_fhs_mad40_f0.5 against B2",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "loss"
+    },
+    {
+     "group": "2021-23",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad40_f0.5 against spread_mr_level10",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2021-23",
+     "now": "gain",
+     "pair": "spread_mr_fhs_sd20_f0.5 against B1",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2021-23",
+     "now": "gain",
+     "pair": "spread_mr_fhs_sd20_f0.5 against spread_mr_level10",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2021-23",
+     "now": "loss",
+     "pair": "spread_mr_level10 against B1",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2021-23",
+     "now": "loss",
+     "pair": "spread_mr_level10 against B2",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2024",
+     "now": "undecided",
+     "pair": "spread_mr_fhs_mad20_f0.25 against B1",
+     "section": "brier_0, by regime",
+     "was": "gain"
+    },
+    {
+     "group": "2024",
+     "now": "gain",
+     "pair": "spread_mr_fhs_mad20_f1.0 against B1",
+     "section": "brier_0, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2024",
+     "now": "undecided",
+     "pair": "spread_mr_fhs_sd20_f0.5 against B1",
+     "section": "brier_0, by regime",
+     "was": "gain"
+    },
+    {
+     "group": "2024",
+     "now": "gain",
+     "pair": "spread_mr_level10 against B1",
+     "section": "brier_0, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2024",
+     "now": "loss",
+     "pair": "spread_mr_level10 against B2",
+     "section": "brier_0, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2024",
+     "now": "undecided",
+     "pair": "spread_mr_fhs_mad20_f0.25 against B2",
+     "section": "grid_crps, by regime",
+     "was": "gain"
+    },
+    {
+     "group": "2025-26",
+     "now": "loss",
+     "pair": "spread_mr_fhs_mad20_f0.25 against spread_mr_level10",
+     "section": "brier_0, by regime",
+     "was": "undecided"
+    },
+    {
+     "group": "2025-26",
+     "now": "undecided",
+     "pair": "spread_mr_level10 against B2",
+     "section": "grid_crps, by regime",
+     "was": "gain"
+    },
+    {
+     "group": "2025-26",
+     "now": "undecided",
+     "pair": "spread_mr_fhs_mad10_f0.5 against B2",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "gain"
+    },
+    {
+     "group": "2025-26",
+     "now": "undecided",
+     "pair": "spread_mr_fhs_mad20_f0.25 against B2",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "gain"
+    },
+    {
+     "group": "2025-26",
+     "now": "undecided",
+     "pair": "spread_mr_fhs_mad20_f1.0 against spread_mr_level10",
+     "section": "upper_tail_twcrps, by regime",
+     "was": "gain"
+    }
+   ],
+   "page": "docs/research/fhs-scale-941-mean-d-1167-result.md",
+   "paired_rows": 1180,
+   "rows_changed": 115,
+   "source": "docs/research/fhs-scale-941/result.json",
+   "source_sha256": "2545de1878e4cc7a2d358a30ebd1b4f958bdf89f9adc983e5a9f5577d5a3a159"
+  }
+ },
+ "ruling": "1009"
+}

@@ -89,6 +89,7 @@ def _owner_go(issue=63):
 
     comment = copy.deepcopy(OWNER)
     comment["body"] = f"GO #{issue}. {comment['body']}"
+    comment["issue_url"] = comment["issue_url"].rsplit("/", 1)[0] + f"/{issue}"
     return comment
 
 
@@ -337,39 +338,39 @@ class CheckTests(unittest.TestCase):
         base = _tree(**{LOCKBOX: self.lockbox, REGISTRY: _registry()})
         head = _tree(**{LOCKBOX: self._opened(), REGISTRY: _registry()})
         with self.assertRaisesRegex(oa.NotOwnerAttested, "lockbox"):
-            oa.check(base, head, self._no_fetch)
+            oa.check(base, head, self._no_fetch, cited={63})
 
     def test_a_lockbox_change_citing_a_relay_fails(self):
         base = _tree(**{LOCKBOX: self.lockbox, REGISTRY: _registry()})
         head = _tree(**{LOCKBOX: self._opened(),
                         REGISTRY: _registry(_entry(issue=151, comment_id=GO_RELAY["id"]))})
         with self.assertRaises(oa.NotOwnerAttested):
-            oa.check(base, head, self._fetch({GO_RELAY["id"]: GO_RELAY}))
+            oa.check(base, head, self._fetch({GO_RELAY["id"]: GO_RELAY}), cited={151})
 
     def test_a_lockbox_change_citing_her_go_passes(self):
         base = _tree(**{LOCKBOX: self.lockbox, REGISTRY: _registry()})
         head = _tree(**{LOCKBOX: self._opened(), REGISTRY: _registry(_entry())})
-        verified = oa.check(base, head, self._fetch({OWNER["id"]: _owner_go()}))
+        verified = oa.check(base, head, self._fetch({OWNER["id"]: _owner_go()}), cited={63})
         self.assertEqual([c["id"] for c in verified], [OWNER["id"]])
 
     def test_a_citation_of_another_kind_does_not_cover_the_change(self):
         base = _tree(**{LOCKBOX: self.lockbox, REGISTRY: _registry()})
         head = _tree(**{LOCKBOX: self._opened(), REGISTRY: _registry(_entry(kind="live-pin"))})
         with self.assertRaisesRegex(oa.NotOwnerAttested, "lockbox"):
-            oa.check(base, head, self._fetch({OWNER["id"]: _owner_go()}))
+            oa.check(base, head, self._fetch({OWNER["id"]: _owner_go()}), cited={63})
 
     def test_the_fetched_comment_must_be_the_cited_one(self):
         base = _tree(**{LOCKBOX: self.lockbox, REGISTRY: _registry()})
         head = _tree(**{LOCKBOX: self._opened(),
                         REGISTRY: _registry(_entry(comment_id=1))})
         with self.assertRaisesRegex(oa.NotOwnerAttested, "id"):
-            oa.check(base, head, self._fetch({1: _owner_go()}))
+            oa.check(base, head, self._fetch({1: _owner_go()}), cited={63})
 
     def test_an_added_entry_is_verified_even_without_a_change(self):
         base = _tree(**{REGISTRY: _registry()})
         head = _tree(**{REGISTRY: _registry(_entry(issue=151, comment_id=GO_RELAY["id"]))})
         with self.assertRaises(oa.NotOwnerAttested):
-            oa.check(base, head, self._fetch({GO_RELAY["id"]: GO_RELAY}))
+            oa.check(base, head, self._fetch({GO_RELAY["id"]: GO_RELAY}), cited={151})
 
 
 class PathKindTests(unittest.TestCase):
@@ -415,24 +416,24 @@ class PathKindTests(unittest.TestCase):
     def test_a_claude_md_change_without_a_citation_fails(self):
         tree = _tree(**{REGISTRY: _registry()})
         with self.assertRaisesRegex(oa.NotOwnerAttested, "claude-files"):
-            oa.check(tree, tree, CheckTests._no_fetch, lambda: ["CLAUDE.md"])
+            oa.check(tree, tree, CheckTests._no_fetch, lambda: ["CLAUDE.md"], cited={63})
 
     def test_a_dot_claude_change_citing_a_relay_fails(self):
         base = _tree(**{REGISTRY: _registry()})
         head = _tree(**{REGISTRY: _registry(_entry(kind="claude-files", issue=151, comment_id=GO_RELAY["id"]))})
         with self.assertRaises(oa.NotOwnerAttested):
-            oa.check(base, head, CheckTests._fetch({GO_RELAY["id"]: GO_RELAY}), lambda: [".claude/settings.json"])
+            oa.check(base, head, CheckTests._fetch({GO_RELAY["id"]: GO_RELAY}), lambda: [".claude/settings.json"], cited={151})
 
     def test_a_registration_without_a_citation_fails(self):
         tree = _tree(**{REGISTRY: _registry()})
         with self.assertRaisesRegex(oa.NotOwnerAttested, "registration"):
-            oa.check(tree, tree, CheckTests._no_fetch, lambda: ["metadata/registrations/h5.json"])
+            oa.check(tree, tree, CheckTests._no_fetch, lambda: ["metadata/registrations/h5.json"], cited={63})
 
     def test_a_registration_citing_her_go_passes(self):
         base = _tree(**{REGISTRY: _registry()})
         head = _tree(**{REGISTRY: _registry(_entry(kind="registration"))})
         verified = oa.check(base, head, CheckTests._fetch({OWNER["id"]: _owner_go()}),
-                            lambda: ["metadata/registrations/h5.json"])
+                            lambda: ["metadata/registrations/h5.json"], cited={63})
         self.assertEqual([c["id"] for c in verified], [OWNER["id"]])
 
     def test_a_citation_of_another_kind_does_not_cover_a_registration(self):
@@ -440,7 +441,7 @@ class PathKindTests(unittest.TestCase):
         head = _tree(**{REGISTRY: _registry(_entry(kind="claude-files"))})
         with self.assertRaisesRegex(oa.NotOwnerAttested, "registration"):
             oa.check(base, head, CheckTests._fetch({OWNER["id"]: _owner_go()}),
-                     lambda: ["metadata/registrations/h5.json"])
+                     lambda: ["metadata/registrations/h5.json"], cited={63})
 
 
 class DecisionsPathTests(unittest.TestCase):
@@ -476,25 +477,25 @@ class DecisionsPathTests(unittest.TestCase):
     def test_a_new_decision_without_a_citation_fails(self):
         tree = _tree(**{REGISTRY: _registry()})
         with self.assertRaisesRegex(oa.NotOwnerAttested, "decisions"):
-            oa.check(tree, tree, CheckTests._no_fetch, lambda: [self.PATH])
+            oa.check(tree, tree, CheckTests._no_fetch, lambda: [self.PATH], cited={63})
 
     def test_a_new_decision_citing_her_go_passes(self):
         base = _tree(**{REGISTRY: _registry()})
         head = _tree(**{REGISTRY: _registry(_entry(kind="decisions"))})
-        verified = oa.check(base, head, CheckTests._fetch({OWNER["id"]: _owner_go()}), lambda: [self.PATH])
+        verified = oa.check(base, head, CheckTests._fetch({OWNER["id"]: _owner_go()}), lambda: [self.PATH], cited={63})
         self.assertEqual([c["id"] for c in verified], [OWNER["id"]])
 
     def test_a_new_decision_citing_a_relay_fails(self):
         base = _tree(**{REGISTRY: _registry()})
         head = _tree(**{REGISTRY: _registry(_entry(kind="decisions", issue=151, comment_id=GO_RELAY["id"]))})
         with self.assertRaises(oa.NotOwnerAttested):
-            oa.check(base, head, CheckTests._fetch({GO_RELAY["id"]: GO_RELAY}), lambda: [self.PATH])
+            oa.check(base, head, CheckTests._fetch({GO_RELAY["id"]: GO_RELAY}), lambda: [self.PATH], cited={151})
 
     def test_a_citation_of_another_kind_does_not_cover_a_decision(self):
         base = _tree(**{REGISTRY: _registry()})
         head = _tree(**{REGISTRY: _registry(_entry(kind="claude-files"))})
         with self.assertRaisesRegex(oa.NotOwnerAttested, "decisions"):
-            oa.check(base, head, CheckTests._fetch({OWNER["id"]: _owner_go()}), lambda: [self.PATH])
+            oa.check(base, head, CheckTests._fetch({OWNER["id"]: _owner_go()}), lambda: [self.PATH], cited={63})
 
 
 class GitPathTests(unittest.TestCase):
@@ -504,6 +505,87 @@ class GitPathTests(unittest.TestCase):
             self.skipTest("not a git checkout")
         sha = head.stdout.strip()
         self.assertEqual(list(oa.git_changed(sha, sha)()), [])
+
+
+class PushRangeTests(unittest.TestCase):
+    """#1122 (ruling on finding #1110, 22 October 2026): the check runs on a push to `main`, over `before..after`.
+
+    #1078 changed `docs/decisions/scoring-protocol.md` and merged on CI that ran before #1080 bound `docs/decisions/`.
+    A fixture history reproduces it: a commit changes a binding file with no registry entry.
+
+    Tests written first and watched failing: `test_a_push_that_changes_a_binding_file_fails`,
+    `test_the_failure_names_the_commit_and_the_file` and `test_a_new_branch_push_is_read_against_the_parent`
+    raised `AttributeError` (no `push_range_report` / `resolve_push_base`) and the wiring tests `AssertionError`
+    (`'push' not found`) before the change.
+
+    Recorded mutation (22 October 2026), on the range check: in `main`, `return 1` after `NotOwnerAttested` ->
+    `return 0`. Run alone with
+    `PYTHONPATH=src:tests python3 -B -m unittest test_owner_attested.PushRangeTests`,
+    `test_a_push_that_changes_a_binding_file_fails` failed with `AssertionError` (`0 != 1`).
+    Restored, all pass.
+    """
+
+    def setUp(self):
+        import tempfile
+
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+        self.repo = Path(self._tmp.name)
+        self._git("init", "-q")
+        self._git("config", "user.email", "t@example.invalid")
+        self._git("config", "user.name", "t")
+        self.first = self._commit({REGISTRY: _registry(), "README.md": "a\n"}, "start")
+        self.old, oa.REPO = oa.REPO, self.repo
+        self.addCleanup(setattr, oa, "REPO", self.old)
+
+    def _git(self, *args):
+        return subprocess.run(["git", *args], cwd=self.repo, capture_output=True, text=True, check=True).stdout.strip()
+
+    def _commit(self, files, message):
+        for path, text in files.items():
+            target = self.repo / path
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(text, encoding="utf-8")
+        self._git("add", "-A")
+        self._git("commit", "-q", "-m", message)
+        return self._git("rev-parse", "HEAD")
+
+    def _run(self, *args):
+        out, err = io.StringIO(), io.StringIO()
+        with redirect_stdout(out), redirect_stderr(err):
+            code = oa.main(["check", *args])
+        return code, out.getvalue(), err.getvalue()
+
+    def test_a_push_that_changes_nothing_binding_passes(self):
+        after = self._commit({"README.md": "b\n"}, "docs")
+        self.assertEqual(self._run("--base", self.first, "--head", after)[0], 0)
+
+    def test_a_push_that_changes_a_binding_file_fails(self):
+        after = self._commit({"docs/decisions/scoring-protocol.md": "changed\n"}, "binding change")
+        code, _, err = self._run("--base", self.first, "--head", after)
+        self.assertEqual(code, 1)
+        self.assertIn("decisions", err)
+
+    def test_the_failure_names_the_commit_and_the_file(self):
+        self._commit({"README.md": "b\n"}, "ordinary")
+        after = self._commit({"docs/decisions/scoring-protocol.md": "changed\n"}, "binding change")
+        _, _, err = self._run("--base", self.first, "--head", after)
+        self.assertIn(after[:8], err)
+        self.assertIn("docs/decisions/scoring-protocol.md", err)
+        self.assertIn("binding change", err)
+
+    def test_a_multi_commit_push_is_read_as_one_range(self):
+        # The change and its entry may land in one push; the aggregate range is what the pull request check reads.
+        self._commit({"docs/decisions/x.md": "changed\n"}, "binding change")
+        after = self._commit({REGISTRY: _registry(_entry(kind="decisions"))}, "entry")
+        out = oa.push_range_report(self.first, after)
+        self.assertIn("docs/decisions/x.md", out)
+
+    def test_a_new_branch_push_is_read_against_the_parent(self):
+        after = self._commit({"README.md": "b\n"}, "docs")
+        self.assertEqual(oa.resolve_push_base("0" * 40, after), after + "^")
+        self.assertEqual(oa.resolve_push_base("f" * 40, after), after + "^")
+        self.assertEqual(oa.resolve_push_base(self.first, after), self.first)
 
 
 class WiringTests(unittest.TestCase):
@@ -516,10 +598,18 @@ class WiringTests(unittest.TestCase):
 
     def test_ci_runs_the_check_on_every_pull_request(self):
         job = self._job()
-        self.assertIn("if: github.event_name == 'pull_request'", job)
+        self.assertIn("github.event_name == 'pull_request'", job)
         self.assertIn("scripts/owner_attested.py check", job)
         self.assertIn("github.event.pull_request.base.sha", job)
         self.assertIn("fetch-depth: 0", job)
+
+    def test_ci_also_runs_the_check_on_every_push_to_main(self):
+        job = self._job()
+        self.assertIn("github.event_name == 'push'", job)
+        self.assertIn("github.event.before", job)
+        self.assertIn("--head \"$GITHUB_SHA\"", job)
+        self.assertNotIn("schedule", job)
+        self.assertRegex(self.workflow, r"(?s)\n  push:\n    branches: \[main\]")
 
     def test_the_job_can_read_issue_comments_and_nothing_more(self):
         job = self._job()
@@ -538,6 +628,174 @@ class WiringTests(unittest.TestCase):
             [sys.executable, "-B", str(SCRIPT), "--help"], capture_output=True, text=True,
         )
         self.assertEqual(result.returncode, 0, result.stderr)
+
+
+class MatchingTests(unittest.TestCase):
+    """#1195 (finding #1188): a binding kind is covered only by an entry the change itself added, for an issue it cites.
+
+    Tests written first and watched failing: each raised `AssertionError` (`NotOwnerAttested not raised`) or
+    `TypeError` (`check()` took no `cited`) before the change.
+
+    Recorded mutations (24 October 2026), each run with
+    `PYTHONPATH=src:tests python3 -B -m unittest test_owner_attested`:
+    (1) in `check`, `covered = {entry["kind"] for entry in added if entry["issue"] in cited}` ->
+    `covered = {entry["kind"] for entry in added}`: `test_an_entry_for_another_issue_covers_nothing` failed with
+    `AssertionError` (`NotOwnerAttested not raised`);
+    (2) in `_check`, the push loop `for sha in push_commits(base, args.head):` -> one range, base to head:
+    `test_each_merge_of_a_push_range_is_checked_on_its_own_range` failed with `AssertionError`;
+    (3) in `_check`, `head = f"{args.head}^2"` -> `head = args.head`:
+    `test_a_merge_ref_picking_up_main_is_checked_on_the_pr_range` failed with `AssertionError`.
+    Restored, all pass.
+    """
+
+    PATH = "docs/decisions/drafts/b2-thin-pool.md"
+
+    def test_an_entry_for_another_issue_covers_nothing(self):
+        # #1157: the change cites #1155; the only entry added is #1130's (decisions kind).
+        base = _tree(**{REGISTRY: _registry()})
+        head = _tree(**{REGISTRY: _registry(_entry(kind="decisions", issue=1130))})
+        with self.assertRaisesRegex(oa.NotOwnerAttested, "decisions"):
+            oa.check(base, head, CheckTests._fetch({OWNER["id"]: _owner_go(1130)}), lambda: [self.PATH],
+                     cited={1155})
+
+    def test_an_entry_for_the_cited_issue_covers_it(self):
+        base = _tree(**{REGISTRY: _registry()})
+        head = _tree(**{REGISTRY: _registry(_entry(kind="decisions", issue=1155))})
+        verified = oa.check(base, head, CheckTests._fetch({OWNER["id"]: _owner_go(1155)}), lambda: [self.PATH],
+                            cited={1155})
+        self.assertEqual([c["id"] for c in verified], [OWNER["id"]])
+
+    def test_an_entry_already_on_the_base_covers_nothing(self):
+        old = _registry(_entry(kind="decisions", issue=1155))
+        tree = _tree(**{REGISTRY: old})
+        with self.assertRaisesRegex(oa.NotOwnerAttested, "decisions"):
+            oa.check(tree, tree, CheckTests._no_fetch, lambda: [self.PATH], cited={1155})
+
+    def test_no_cited_issue_is_refused_not_assumed(self):
+        tree = _tree(**{REGISTRY: _registry()})
+        with self.assertRaises(ValueError):
+            oa.check(tree, tree, CheckTests._no_fetch, lambda: [self.PATH])
+
+    def test_what_a_change_cites(self):
+        self.assertEqual(oa.cited_issues("directive/1155-b2-thin-pool", "x", "Closes #1155.\nGO #1135 later"),
+                         {1155, 1135})
+        self.assertEqual(oa.cited_issues("see #1130 and PR #1137; fixes: #7"), {7})
+        self.assertEqual(oa.cited_issues(None, ""), set())
+
+    def test_a_merge_ref_picking_up_main_is_checked_on_the_pr_range(self):
+        # The pull_request event checks out a merge ref: main's newer entry (#1130) is in the base..merge range.
+        # The pull request cites #1130 too and adds no entry of its own, so only its own range shows that.
+        with _TempRepo() as repo:
+            repo.commit({"README": "a"}, "root")
+            first = repo.head()
+            repo.commit({"docs/decisions/x.md": "x", REGISTRY: _registry(_entry(kind="decisions", issue=1130))},
+                        "main moves: Closes #1130")
+            repo.git("checkout", "-q", "-b", "pr", first)
+            repo.commit({self.PATH: "draft"}, "the draft")
+            repo.git("checkout", "-q", "-")
+            repo.git("merge", "--no-ff", "-q", "pr", "-m", "merge ref")
+            args = ["check", "--base", first, "--merge-ref", "--cite", "1130"]
+            with _stub_fetch():
+                code, err = repo.run(args)
+        self.assertEqual(code, 1, err)
+        self.assertIn("decisions", err)
+
+    def test_each_merge_of_a_push_range_is_checked_on_its_own_range(self):
+        with _TempRepo() as repo:
+            repo.commit({"README": "a"}, "root")
+            before = repo.head()
+            repo.commit({"docs/decisions/x.md": "x", REGISTRY: _registry(_entry(kind="decisions", issue=1130))},
+                        "one (#1) Closes #1130")
+            repo.commit({self.PATH: "draft"}, "two Closes #1130")
+            with _stub_fetch():
+                code, err = repo.run(["check", "--push-before", before, "--no-fetch-pull"])
+        self.assertEqual(code, 1, err)
+        self.assertIn("two Closes #1130", err)
+
+    def test_a_push_range_of_covered_merges_passes(self):
+        with _TempRepo() as repo:
+            repo.commit({"README": "a"}, "root")
+            before = repo.head()
+            repo.commit({"docs/decisions/x.md": "x", REGISTRY: _registry(_entry(kind="decisions", issue=1130))},
+                        "one Closes #1130")
+            with _stub_fetch():
+                code, err = repo.run(["check", "--push-before", before, "--no-fetch-pull"])
+        self.assertEqual(code, 0, err)
+
+
+def _stub_fetch():
+    class Stub:
+        def __enter__(self):
+            self.saved = oa.fetch_comment
+            comment = _owner_go(1130)
+            oa.fetch_comment = lambda repository, comment_id, token: comment
+        def __exit__(self, *exc):
+            oa.fetch_comment = self.saved
+    return Stub()
+
+
+class _TempRepo:
+    """A throwaway git repository the script is pointed at (`oa.REPO`)."""
+
+    def __enter__(self):
+        import tempfile
+        self._dir = tempfile.TemporaryDirectory()
+        self.path = Path(self._dir.name)
+        self.saved = oa.REPO
+        oa.REPO = self.path
+        self.git("init", "-q", "-b", "main")
+        self.git("config", "user.email", "t@example.org")
+        self.git("config", "user.name", "t")
+        return self
+
+    def __exit__(self, *exc):
+        oa.REPO = self.saved
+        self._dir.cleanup()
+
+    def git(self, *args):
+        return subprocess.run(["git", *args], cwd=self.path, check=True, capture_output=True, text=True).stdout.strip()
+
+    def head(self):
+        return self.git("rev-parse", "HEAD")
+
+    def commit(self, files, message):
+        for name, text in files.items():
+            target = self.path / name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(text, encoding="utf-8")
+        self.git("add", "-A")
+        self.git("commit", "-q", "-m", message)
+
+    def run(self, args):
+        err = io.StringIO()
+        with redirect_stderr(err), redirect_stdout(io.StringIO()):
+            code = oa.main(args)
+        return code, err.getvalue()
+
+
+class ReplayTests(unittest.TestCase):
+    """The recorded failures of 23 October 2026 on this repository's own history (skipped in a clone without it)."""
+
+    def _have(self, *shas):
+        for sha in shas:
+            if subprocess.run(["git", "cat-file", "-e", f"{sha}^{{commit}}"], cwd=ROOT).returncode:
+                self.skipTest(f"{sha} is not in this clone")
+
+    def test_the_1157_push_range_fails(self):
+        self._have("0ee0a145", "22e2c572")
+        err = io.StringIO()
+        with redirect_stderr(err), redirect_stdout(io.StringIO()):
+            code = oa.main(["check", "--push-before", "0ee0a145", "--head", "22e2c572", "--no-fetch-pull"])
+        self.assertEqual(code, 1)
+        self.assertIn("b2-thin-pool", err.getvalue())
+
+    def test_the_1157_merge_ref_case_fails(self):
+        # Base b2f4619c; the merge ref held #1137's #1130 entry, the pull request added none.
+        self._have("b2f4619c", "22e2c572")
+        err = io.StringIO()
+        with redirect_stderr(err), redirect_stdout(io.StringIO()):
+            code = oa.main(["check", "--base", "b2f4619c", "--head", "22e2c572", "--merge-ref", "--cite", "1155"])
+        self.assertEqual(code, 1)
 
 
 if __name__ == "__main__":

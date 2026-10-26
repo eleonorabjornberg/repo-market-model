@@ -107,9 +107,32 @@ def paired_row(test: sp.PairedTest) -> dict:
     }
 
 
+def mean_d_row(test: sp.PairedTest, reason: str) -> dict:
+    """A paired test made without skill (#1215): the mean-d bound alone, with the reason skill is undefined."""
+
+    return {
+        "days": test.n,
+        "benchmark_mean": test.benchmark_mean,
+        "candidate_mean": test.benchmark_mean - test.mean_difference,
+        "difference": test.mean_difference,
+        "difference_interval": studentized_interval(test.mean_difference, test.standard_error, test.t_draws),
+        "skill": None,
+        "skill_interval": None,
+        "skill_undefined": reason,
+        "dm_statistic": None if test.dm_statistic != test.dm_statistic else test.dm_statistic,
+        "dm_p_value": None if test.dm_p_value != test.dm_p_value else test.dm_p_value,
+    }
+
+
 def run_pairs(benchmarks: Mapping[str, Mapping[date, float]], candidate: Mapping[date, float], days: Sequence[date],
-              seed: int = SEED, draws: int = sp.DRAWS) -> Dict[str, dict]:
-    """Each benchmark's paired test against the candidate on `days`, on one resample stream."""
+              seed: int = SEED, draws: int = sp.DRAWS, mean_d_fallback: bool = False) -> Dict[str, dict]:
+    """Each benchmark's paired test against the candidate on `days`, on one resample stream.
+
+    When the joint call raises: with `mean_d_fallback` False every pair is `undefined`, as before. With it True (#1215) each
+    pair is retried alone on the same seed (a pair's draws do not depend on the others), with skill; a pair whose skill is
+    undefined is retried with `with_skill=False` and keeps its mean-d bound (`skill_interval` None, `skill_undefined` the
+    reason). A pair stays `undefined` only when the mean-d bound itself cannot be computed.
+    """
 
     names = list(benchmarks)
     pairs = [({d: benchmarks[n][d] for d in days}, {d: candidate[d] for d in days}) for n in names]
@@ -118,14 +141,32 @@ def run_pairs(benchmarks: Mapping[str, Mapping[date, float]], candidate: Mapping
     except sp.ProtocolError as error:
         # Undefined where a benchmark scores zero on a resample, or a resample has no long-run variance (a group in
         # which two forecasts score alike on nearly every day). Said so, with the means, instead of a number.
-        return {n: {"undefined": str(error), "days": len(days),
+        def undefined(n: str, why: Exception) -> dict:
+            return {"undefined": str(why), "days": len(days),
                     "benchmark_mean": sum(benchmarks[n][d] for d in days) / len(days),
-                    "candidate_mean": sum(candidate[d] for d in days) / len(days)} for n in names}
+                    "candidate_mean": sum(candidate[d] for d in days) / len(days)}
+
+        if not mean_d_fallback:
+            return {n: undefined(n, error) for n in names}
+        out: Dict[str, dict] = {}
+        for n, pair in zip(names, pairs):
+            try:
+                out[n] = paired_row(sp.paired_tests([pair], seed=seed, draws=draws)[0])
+                continue
+            except sp.ProtocolError as why:
+                skill_reason = str(why)
+            try:
+                out[n] = mean_d_row(sp.paired_tests([pair], seed=seed, draws=draws, with_skill=False, inner_draws=0)[0], skill_reason)
+            except sp.ProtocolError as why:
+                out[n] = undefined(n, why)
+        return out
 
 
 def skill_text(row: dict) -> str:
     if "undefined" in row:
         return "undefined"
+    if row["skill_interval"] is None:
+        return "skill undefined"
     lo, hi = row["skill_interval"]
     return f"{pct(row['skill'])} [{pct(lo)}, {pct(hi)}]"
 
@@ -142,7 +183,7 @@ def diff_text(row: dict, places: int = 3) -> str:
 
 
 def excludes_zero(row: dict) -> bool:
-    return "undefined" not in row and (row["skill_interval"][0] > 0.0 or row["skill_interval"][1] < 0.0)
+    return "undefined" not in row and row["skill_interval"] is not None and (row["skill_interval"][0] > 0.0 or row["skill_interval"][1] < 0.0)
 
 
 # -- the frame -----------------------------------------------------------------------------------------------------
@@ -478,7 +519,7 @@ def loses(r: dict, name: str) -> List[str]:
     for split in ("regime", "pressure_day_type", "context", "anchor_day_type", "scarcity_state"):
         for label in _ordered(split, r["groups"].get(split, {})):
             row = r["groups"][split][label]["grid_crps"]["vs"][name][REFERENCE]
-            if "undefined" in row or row["skill"] >= 0.0:
+            if "undefined" in row or row["skill"] is None or row["skill"] >= 0.0:
                 continue
             tag = "" if not excludes_zero(row) else ", interval excludes 0"
             out.append(f"{label} ({split.replace('_', ' ')}) {pct(row['skill'])} [{pct(row['skill_interval'][0])}, {pct(row['skill_interval'][1])}]{tag}")

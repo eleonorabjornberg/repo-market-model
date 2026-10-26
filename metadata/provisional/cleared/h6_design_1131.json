@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/h6_design_1131.json",
+  "script": "scripts/h6_design_1131.py",
+  "pairing": "none",
+  "why": "a design and power page: it fits no gradient-boosted model and trains no calendar column. It reads the strata from the calendar at the target day and scores the existing `spread_mr_ctx` (#761, cleared above) as a stand-in series for the shape of a candidate's d; the registered H6 candidate is not chosen here, and a candidate registered later reads the calendar columns on direct pairs"
+}

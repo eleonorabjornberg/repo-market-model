@@ -275,6 +275,7 @@ NEWCOMER_VIEWS = (
     ("n3", "When does it happen?", "Scarce cash and the calendar"),
     ("n4", "Who lends to whom", "The market map"),
     ("n5", "A quarter-end squeeze", "Step by step"),
+    ("n6", "What the data show", "Three findings about the market"),
 )
 
 #: The minimum history of the published declarations: the scored grid starts at
@@ -681,6 +682,28 @@ def use_limitation_fill(repo):
         raise VisualError(f"{USE_LIMITATION} must carry exactly one blockquote line under '## Plain-English "
                           f"version'; found {len(found)}")
     return {"use_limitation": html.escape(found[0], quote=False)}
+
+
+def market_findings_fills(repo):
+    """`{{n6_lede}}` and `{{n6_body}}`: the three market findings of #1177, rendered by `scripts/market_findings_1177.py`
+    from `docs/research/market-findings-1177/result.json` and `docs/research/state-calendar-1145/result.json`.
+    No figure is typed here or in the template."""
+    spec = importlib.util.spec_from_file_location("market_findings_1177_for_visual",
+                                                  Path(repo) / "scripts" / "market_findings_1177.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    try:
+        data = module.load_findings(Path(repo) / "docs/research/market-findings-1177/result.json",
+                                    Path(repo) / "docs/research/state-calendar-1145/result.json")
+    except (OSError, ValueError, KeyError) as exc:
+        raise VisualError(f"N6, the market findings: {exc}") from exc
+
+    def link(path, label=None):
+        if not (Path(repo) / path).exists():
+            raise VisualError(f"N6 links to {path}, which does not exist")
+        return f'<a href="{BLOB}{path}">{html.escape(label or path)}</a>'
+
+    return {"n6_lede": html.escape(module.explorer_lede(data)), "n6_body": module.explorer_html(data, link)}
 
 
 def fill(template, fills):
@@ -3380,6 +3403,7 @@ def generate(repo, commit=None):
     n5, n5_fills = newcomer_n5([dict(r) for r in rows], locked, chosen, registry, decision, n5_snaps, tag_map,
                                n4["tags"], notes)
     fills.update(n5_fills)
+    fills.update(market_findings_fills(repo))
     fills.update(dfn_fills(glossary))
     note = parse_note(repo, notes["implementation_note"])
     last = rows[-1]

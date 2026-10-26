@@ -15,6 +15,12 @@ forecast is calibrated the hits are independent Bernoulli(`p`) draws. Three like
 `y > q` or `y >= q`, and the two give different hit rates. `hit_sequence` takes the rule as a required argument with
 no default; this module does not choose. The tests themselves take a 0/1 sequence and do not care how it was made.
 
+**Randomised tie rule (#1130, reporting option, inert).** A deterministic rule is mis-sized for a perfect forecaster
+when outcomes tie the quantile. `randomised_hit_sequence` counts a tie as a hit with a probability the caller supplies
+per observation, the one the forecast's own distribution assigns (for a level with exceedance probability `p`:
+`(p - P(Y > q)) / P(Y = q)`, as in the randomised PIT of Czado, Gneiting and Held 2009), against uniform draws the
+caller also supplies, so the module draws nothing and a result reproduces. It is not one of `HIT_RULES`.
+
 **Degenerate sequences.** The likelihoods use the convention 0 * ln 0 = 0, so no sequence needs a special case in
 the statistic:
 
@@ -151,3 +157,62 @@ def hit_sequence(outcomes: Sequence[float], quantiles: Sequence[float], *, rule:
             raise ValueError("an outcome or quantile is not finite: %r, %r" % (y, q))
         out.append(int(y > q) if rule == "above" else int(y >= q))
     return out
+
+
+def randomised_hit_sequence(
+    outcomes: Sequence[float], quantiles: Sequence[float], tie_probabilities: Sequence[float], draws: Sequence[float]
+) -> list:
+    """0/1 hits: 1 where `y > q`, and where `y == q` and the draw is below the tie's hit probability; else 0.
+
+    `tie_probabilities` (each in [0, 1]) and `draws` (each in [0, 1)) are required and one per observation; with
+    probabilities of 0 it is the "above" rule and with 1 the "at_or_above" rule.
+    """
+
+    n = len(outcomes)
+    if not (len(quantiles) == len(tie_probabilities) == len(draws) == n):
+        raise ValueError(
+            "outcomes, quantiles, tie probabilities and draws differ in length: %d, %d, %d, %d"
+            % (n, len(quantiles), len(tie_probabilities), len(draws))
+        )
+    out = []
+    for y, q, tie, u in zip(outcomes, quantiles, tie_probabilities, draws):
+        if not (math.isfinite(y) and math.isfinite(q)):
+            raise ValueError("an outcome or quantile is not finite: %r, %r" % (y, q))
+        if not (0.0 <= tie <= 1.0):
+            raise ValueError("a tie hit probability lies in [0, 1], got %r" % (tie,))
+        if not (0.0 <= u < 1.0):
+            raise ValueError("a draw lies in [0, 1), got %r" % (u,))
+        out.append(int(y > q or (y == q and u < tie)))
+    return out
+
+
+def tie_hit_probability(cdf_below: float, cdf_at: float, tail_level: float, *, upper: bool) -> float:
+    """The probability that a tie at a forecast quantile counts as a hit, from the forecast's own distribution (#1156).
+
+    The randomised tie rule (Czado, Gneiting and Held 2009, applied to a quantile hit): for a discrete forecast
+    distribution with `cdf_below` = P(Y < q) and `cdf_at` = P(Y <= q) at its quantile `q`, a hit in a tail of
+    probability `tail_level` must have exactly that probability. The upper tail already holds P(Y > q) = 1 - `cdf_at`
+    and the lower tail P(Y < q) = `cdf_below`; the shortfall to `tail_level`, as a share of the mass P(Y = q), is the
+    probability that a tie is a hit. It is 0 where `q` carries no mass (a continuous forecast). `upper` is True for the
+    upper tail (hit when y beyond q above) and False for the lower. Data guards raise `ValueError`: a quantile that is
+    not the tail's quantile of the distribution (the shortfall outside [0, mass]).
+    """
+
+    if not isinstance(upper, bool):
+        raise ValueError("upper must be True or False, got %r" % (upper,))
+    if not (0.0 < tail_level < 1.0):
+        raise ValueError("the tail probability must lie strictly between 0 and 1, got %r" % (tail_level,))
+    if not (0.0 <= cdf_below <= cdf_at <= 1.0):
+        raise ValueError("need 0 <= P(Y < q) <= P(Y <= q) <= 1, got %r and %r" % (cdf_below, cdf_at))
+    mass = cdf_at - cdf_below
+    beyond = (1.0 - cdf_at) if upper else cdf_below
+    need = tail_level - beyond
+    tolerance = 1e-9
+    if need < -tolerance or need > mass + tolerance:
+        raise ValueError(
+            "q is not the %s-tail quantile of the distribution: the tail needs %r from a mass of %r"
+            % ("upper" if upper else "lower", need, mass)
+        )
+    if mass <= tolerance:
+        return 0.0
+    return min(1.0, max(0.0, need / mass))

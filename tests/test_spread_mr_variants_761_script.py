@@ -93,6 +93,39 @@ class StatisticsTests(unittest.TestCase):
         self.assertIn("undefined", row)
         self.assertEqual(script.skill_text(row), "undefined")
 
+    def test_a_benchmark_that_scores_zero_keeps_its_mean_d_bound_when_asked(self):
+        """#1215: with `mean_d_fallback`, a pair whose skill is undefined keeps its mean-d bound, alone on the same seed.
+
+        Mutation (recorded): making the retry pass `with_skill=True` turned the row back to `undefined`: the first
+        assertNotIn raised AssertionError ('undefined' unexpectedly found in the row); making the retry use another seed
+        broke the equality with a pair run alone (AssertionError on the interval).
+        """
+
+        days = self.days(120)
+        zero = {d: 0.0 for d in days}
+        cand = {d: 0.3 + 0.1 * (i % 5) for i, d in enumerate(days)}
+        good = {d: 2.0 + 0.1 * (i % 7) for i, d in enumerate(days)}
+        plain = script.run_pairs({"Z": zero, "G": good}, cand, days, draws=200)
+        self.assertIn("undefined", plain["Z"])
+        self.assertIn("undefined", plain["G"])
+        rows = script.run_pairs({"Z": zero, "G": good}, cand, days, draws=200, mean_d_fallback=True)
+        self.assertNotIn("undefined", rows["Z"])
+        self.assertIsNone(rows["Z"]["skill_interval"])
+        self.assertIn("skill is undefined", rows["Z"]["skill_undefined"])
+        self.assertEqual(rows["Z"]["difference_interval"], script.studentized_interval(
+            *(lambda t: (t.mean_difference, t.standard_error, t.t_draws))(
+                sp.paired_test(zero, cand, seed=script.SEED, draws=200, with_skill=False))))
+        self.assertEqual(script.skill_text(rows["Z"]), "skill undefined")
+        self.assertFalse(script.excludes_zero(rows["Z"]))
+        # The other pair of the call is defined alone, so it gains its skill row; it is the row run alone.
+        self.assertEqual(rows["G"], script.paired_row(sp.paired_test(good, cand, seed=script.SEED, draws=200)))
+
+    def test_a_pair_with_no_mean_d_standard_error_stays_undefined(self):
+        days = self.days(40)
+        same = {d: 1.0 for d in days}
+        row = script.run_pairs({"B": same}, same, days, draws=50, mean_d_fallback=True)["B"]
+        self.assertIn("undefined", row)
+
     def test_a_row_excludes_zero_only_when_its_whole_interval_is_on_one_side(self):
         self.assertTrue(script.excludes_zero({"skill_interval": [0.01, 0.2]}))
         self.assertTrue(script.excludes_zero({"skill_interval": [-0.2, -0.01]}))

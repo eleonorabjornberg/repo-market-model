@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/balance_sheet_nested_1031.json",
+  "script": "scripts/balance_sheet_nested_1031.py",
+  "pairing": "direct",
+  "why": "both arms fit #1027's gbm_funding_cal_direct on direct pairs (`training_pairs=\"direct\"`) and read the calendar columns, treasury_settlement at lead 1 and their three balance-sheet flag columns from the target row"
+}

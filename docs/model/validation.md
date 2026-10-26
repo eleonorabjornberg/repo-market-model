@@ -310,6 +310,7 @@ only when she makes them herself on GitHub (`docs/decisions/drafts/owner-attesta
 | `docs/decisions/final-test-preregistration.md` | Decision: the final test, pre-registered | Status: in force: merged in PR #216, 3 October 2026 (#150). |
 | `docs/decisions/live-scoring-declaration.md` | Decision: how the live record is scored | Status: in force: merged in PR #286, 6 October 2026 (#276). |
 | `docs/decisions/always-flag-blocks.md` | Decision (draft): a flag from an always-flag block is not a warning in tier 1, and is still a false alarm | Status: DRAFT, for Eleonora's own attested action. |
+| `docs/decisions/b2-thin-pool.md` | B2's thin-pool fallback: a minimum pool of 4 (#1155) | Status: in force. |
 | `docs/decisions/calendar-columns.md` | Decision: the calendar columns | Status: decided and declared; the columns build. |
 | `docs/decisions/fomc-calendar.md` | Decision (draft): the FOMC meeting calendar as columns read at the target day | Status: DRAFT for Eleonora's review (#1038). |
 | `docs/decisions/fomc-point-in-time.md` | Decision: what a cancelled FOMC meeting contributes, and when it stops | Status: decided, and prospective. |
@@ -320,8 +321,10 @@ only when she makes them herself on GitHub (`docs/decisions/drafts/owner-attesta
 | `docs/decisions/live-pin-v3-bump.md` | Version bump: the protocol block joins the live record (#656) | Status: approved by Eleonora's own `GO #656` (comment 6172786156, 14 October 2026); the pin moves when #736's pull request merges. |
 | `docs/decisions/live-pin.md` | The live record's code pin | Status: a draft for Eleonora, not in force. |
 | `docs/decisions/materiality.md` | Decision: a bounded, listed defect is handled, not a reason to refuse a series | Status: decided by Eleonora, 30 September 2026. |
+| `docs/decisions/month-end-turn.md` | The month-end turn is the one month-end definition (#1135) | Status: in force. |
 | `docs/decisions/policy-point-in-time.md` | Decision: policy and legislation are read from their announcement | Status: drafted for Eleonora's review (#376, track P of #374). |
 | `docs/decisions/quarter-end-window.md` | Decision: a quarter-end window and per-quarter peak pressure | Status: decided by Eleonora, 2 October 2026 (#140; ruling on PR #186). |
+| `docs/decisions/retire-idle-freezes.md` | Decision (draft): retire the freezes that protect no live registration | Status: a draft for Eleonora, not in force. |
 | `docs/decisions/scoring-protocol.md` | Decision: the scoring protocol for hypotheses, version 1 | Status: In force since 13 October 2026. |
 | `docs/decisions/tail-refusal.md` | Decision: refusing a tail fit clamped at the lower shape bound | Status: decided, merged in PR #66, 1 October 2026, and superseded (above). |
 | `docs/decisions/tail-shape-floor.md` | Decision: the fitted tail shape is never negative | Status: decided by Eleonora, 1 October 2026, in her ruling on [#63](https://github.com/eleonorabjornberg/repo-market-model/issues/63). |

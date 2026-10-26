@@ -44,6 +44,11 @@ from repo_model import scoring_protocol as sp
 
 from test_protocol_benchmarks import DEVELOPMENT_FIRST, DEVELOPMENT_LAST, REGISTRY, SPLITS, published_panel
 
+import legacy_day_types
+
+# this module reproduces legacy figures: the pre-#1135 day types (see tests/legacy_day_types.py)
+setUpModule, tearDownModule = legacy_day_types.setUpModule, legacy_day_types.tearDownModule
+
 DAYS = 250
 REPLICATIONS = 300
 DRAWS = 1000

@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/sofr_dispersion_1175.json",
+  "script": "scripts/sofr_dispersion_1175.py",
+  "pairing": "direct",
+  "why": "(s3) of #1145 with its scale multiplied by a factor read from SOFR's as-of dispersion (repo_model.spread_mr_dispersion): the calendar terms are read from the target row on direct pairs (spread_mr_state_calendar.fit_state_terms, guarded by one_step_guard with no allow-list entry), the dispersion is read at the anchor row and the rows before it; (a), the comparator, reads no calendar column and is not a result of this study; no gradient-boosted fit is called"
+}

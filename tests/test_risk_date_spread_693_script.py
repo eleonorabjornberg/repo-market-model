@@ -20,6 +20,11 @@ from repo_model.splits import LookAheadError
 
 import test_protocol_benchmarks as tpb
 
+import legacy_day_types
+
+# this module reproduces legacy figures: the pre-#1135 day types (see tests/legacy_day_types.py)
+setUpModule, tearDownModule = legacy_day_types.setUpModule, legacy_day_types.tearDownModule
+
 ROOT = Path(__file__).resolve().parent.parent
 _spec = importlib.util.spec_from_file_location("risk_date_spread_693", ROOT / "scripts" / "risk_date_spread_693.py")
 script = importlib.util.module_from_spec(_spec)
