@@ -49,6 +49,7 @@ from repo_model import protocol_benchmarks as pb, scoring_protocol as sp  # noqa
 from repo_model import spread_mean_reversion as smr, spread_mr_variants as var  # noqa: E402
 from repo_model.baseline import panel_sha256  # noqa: E402
 from repo_model.data import load_daily_panel  # noqa: E402
+from repo_model.domain_intervals import domain_estimates
 from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
 from repo_model.metrics import _quantile, stationary_bootstrap_indices  # noqa: E402
 from repo_model.splits import SplitError  # noqa: E402
@@ -218,6 +219,56 @@ def run_pairs(benchmarks: Mapping[str, Mapping[date, float]], candidate: Mapping
         return out
 
 
+def domain_rows(cells: Mapping[object, Tuple[Mapping[date, float], Mapping[date, float], Sequence[date]]], all_days: Sequence[date],
+                seed: int = SEED, draws: int = sp.DRAWS, block_length: float = sp.BLOCK_LENGTH, level: float = 0.90) -> Dict[object, dict]:
+    """The domain estimate of each group's mean paired difference (#1228), on one stream of whole-series resamples.
+
+    A day-type group is not contiguous (quarter-ends are about three months apart), so `run_pairs` on the group's own days joins days
+    that were months apart into one block. Here each cell is `(benchmark scores, candidate scores, the group's days)`; the whole
+    aligned series `all_days` is resampled with the pooled test's block, seed and draws (`domain_intervals.domain_estimates`), and
+    the statistic is the mean of `d = benchmark - candidate` over the resampled days that belong to the group. The row carries the
+    group mean as `difference` and the percentile interval at `level` as `difference_interval` (its lower end is the one-sided 95%
+    bound), like `paired_row`, without skill; `method` says "domain". A group some resample draws no day of reads `undefined` with
+    the reason, as `run_pairs` does, and its means.
+
+    Raises:
+        ValueError: if a group day is not among `all_days`, or a score is missing on a day of `all_days`.
+    """
+
+    days = sorted(all_days)
+    position = {day: i for i, day in enumerate(days)}
+    prepared, series = {}, {}
+    for key, (benchmark, candidate, group) in cells.items():
+        missing = [day for day in group if day not in position]
+        if missing:
+            raise ValueError(f"cell {key!r}: {len(missing)} group days ({missing[0]} first) are not among the {len(days)} aligned days")
+        series[key] = [benchmark[day] - candidate[day] for day in days]
+        prepared[key] = (series[key], [position[day] for day in group])
+    done = domain_estimates(prepared, len(days), block_length=block_length, seed=seed, replications=draws, level=level)
+    out: Dict[object, dict] = {}
+    for key, (benchmark, candidate, group) in cells.items():
+        entry = done[key]
+        row = {"days": entry["count"], "method": "domain",
+               "benchmark_mean": sum(benchmark[d] for d in group) / len(group) if group else None,
+               "candidate_mean": sum(candidate[d] for d in group) / len(group) if group else None}
+        if "interval" in entry:
+            row["difference"] = entry["mean"]
+            row["difference_interval"] = [entry["interval"]["lower"], entry["interval"]["upper"]]
+        else:
+            row["undefined"] = entry.get("interval_unavailable", "the group has no day")
+        out[key] = row
+    return out
+
+
+def run_domain(benchmarks: Mapping[str, Mapping[date, float]], candidate: Mapping[date, float], days: Sequence[date],
+               all_days: Sequence[date], seed: int = SEED, draws: int = sp.DRAWS, block_length: float = sp.BLOCK_LENGTH,
+               level: float = 0.90) -> Dict[str, dict]:
+    """`run_pairs` for a non-contiguous group `days`: the domain estimate on whole-series resamples (`domain_rows`)."""
+
+    return domain_rows({n: (benchmarks[n], candidate, days) for n in benchmarks}, all_days, seed=seed, draws=draws,
+                       block_length=block_length, level=level)
+
+
 def skill_text(row: dict) -> str:
     if "undefined" in row:
         return "undefined"
@@ -304,7 +355,7 @@ def groupings(frame, states) -> Dict[str, Tuple[str, Dict]]:
     anchors = {}
     for d in days:
         a = pb._anchor(frame.panel, frame.position[d], frame.registry, DECISION_TIME)
-        anchors[d] = frame.splits.reporting_day_type(frame.panel[a].date, frame.panel[a].values)
+        anchors[d] = turn_days.reporting_day_type(frame.splits, frame.panel[a].date, frame.panel[a].values)
     return {
         "regime": ("target", {t: frame.regime(t) for t in targets}),
         "pressure_day_type": ("target", {t: frame.day_type(t) for t in targets}),
@@ -442,7 +493,7 @@ def score(args) -> int:
     contexts = {t: var.target_context(panel, frame.position[t], splits) for t in {frame.target(d, h) for d in days for h in sp.HORIZONS}}
     # the reporting day type, a third population the risk-date reconciliation names and leaves alone
     def reporting_ordinary(t):
-        return frame.splits.reporting_day_type(t, frame.values[t]) == "ordinary"
+        return turn_days.reporting_day_type(frame.splits, t, frame.values[t]) == "ordinary"
 
     scopes = {
         "ordinary": lambda d, h, t: reporting_ordinary(t),

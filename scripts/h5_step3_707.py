@@ -412,7 +412,7 @@ def score_command(args) -> int:
         return STATE_LABELS[int(value)] if value is not None else "unknown"
 
     def kind_of(day: date) -> str:
-        return splits.reporting_day_type(day, row_of[day].values)
+        return turn_days.reporting_day_type(splits, day, row_of[day].values)
 
     def cells_of(fc: Mapping[date, Mapping[int, Sequence[float]]], lead: int) -> List[Cell]:
         return [

@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/s3_2026_check_1222.json",
+  "script": "scripts/s3_2026_check_1222.py",
+  "pairing": "direct",
+  "why": "(s3) of #1145 on the 2026 development days, with #845's calibration check: (s3) reads the calendar columns at the target day on direct pairs (training_pairs = direct; the estimation routine is guarded by one_step_guard with no allow-list entry); no gradient-boosted fit is called and no gbm_funding walk is read, so (s3) is not provisional; the arm (a) and the benchmarks read no calendar column and carry the register's mark as before"
+}

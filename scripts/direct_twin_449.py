@@ -272,10 +272,10 @@ def score_command(args) -> int:
         if sorted(primary[n]) != days:
             raise SystemExit(f"{n} does not score the same decision days as B1")
     cells = {n: sd.cell_scores(forecasts[n], outcomes, calendar, sp.grid_crps) for n in names}
-    kinds = sorted({splits.reporting_day_type(calendar[position[d] + h], row_of[calendar[position[d] + h]].values) for d in days for h in HORIZONS})
+    kinds = sorted({turn_days.reporting_day_type(splits, calendar[position[d] + h], row_of[calendar[position[d] + h]].values) for d in days for h in HORIZONS})
 
     def kind_of(day: date) -> str:
-        return splits.reporting_day_type(day, row_of[day].values)
+        return turn_days.reporting_day_type(splits, day, row_of[day].values)
 
     def series(group: Sequence[date], lead: Optional[int], kind: Optional[str]) -> Dict[str, Dict[date, float]]:
         keep = set(group)
