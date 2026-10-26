@@ -54,6 +54,11 @@ from repo_model import protocol_benchmarks as pb
 from repo_model import richer_targets as rt
 from repo_model import scoring_protocol as sp
 
+import legacy_day_types
+
+# this module reproduces legacy figures: the pre-#1135 day types (see tests/legacy_day_types.py)
+setUpModule, tearDownModule = legacy_day_types.setUpModule, legacy_day_types.tearDownModule
+
 REGISTRY, SPLITS, DECISION = sim.REGISTRY, sim.SPLITS, sim.DECISION
 MEDIAN = sp.GRID.index(0.5)
 

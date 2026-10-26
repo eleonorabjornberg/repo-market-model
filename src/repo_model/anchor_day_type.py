@@ -14,6 +14,7 @@ from __future__ import annotations
 from datetime import date, time
 from typing import Dict, Iterable, Mapping, Sequence
 
+from . import turn_days
 from . import protocol_benchmarks as pb
 from .data import DailyObservation
 from .evaluation_splits import SplitDeclaration
@@ -31,7 +32,7 @@ def anchor_day_type(
 
     anchor = pb._anchor(panel, decision_index, registry, decision_time)
     row = panel[anchor]
-    return splits.reporting_day_type(row.date, row.values)
+    return turn_days.reporting_day_type(splits, row.date, row.values)
 
 
 def anchor_day_types(

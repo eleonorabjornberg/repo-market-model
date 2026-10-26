@@ -1,0 +1,28 @@
+{
+ "hypothesis": "H5",
+ "candidate": "sc_s3_robust",
+ "description": "(s3) of the state-scaled calendar study: the scaled mean reversion with calendar terms read at the target day in standardised units, fitted with a Huber estimator and a heavier ridge",
+ "label": "development, not a verdict",
+ "provisional": false,
+ "date": "2026-10-23",
+ "replaces": "spread_mr_fhs_mad20_f0.5",
+ "ruling": "https://github.com/eleonorabjornberg/repo-market-model/issues/1151#issuecomment-6370128771",
+ "note": "Eleonora's ruling on #1151 (option 2): (s3) of #1145 replaces #941's scaled mean reversion, arm (a) of #1115, as the H5 candidate; (a) had replaced gbm_funding on #1115. Nothing is registered; registration remains her own action. The page reads the candidate from this file; the step 4 record is the fallback when it is absent. The gbm_funding walks were not supplied to #1145, so no row compares (s3) with it. Each evidence entry also links its page read on the studentized bound on mean d (her ruling on #1009; #1167, #1194); the candidate stays (her ruling on #1187, 24 October 2026), and its upper-tail twCRPS losses in 2020 and on FOMC days are an open question before any registration.",
+ "scores": {
+  "record": "docs/research/state-calendar-1145/result.json",
+  "model": "sc_s3_robust",
+  "not_supplied": ["gbm_funding"],
+  "benchmarks": [
+   {"key": "B1", "label": "B1"},
+   {"key": "B1_prime", "label": "B1&prime;"},
+   {"key": "B2", "label": "B2"},
+   {"key": "mr_cal_a_base", "label": "spread_mr_fhs_mad20_f0.5"},
+   {"key": "spread_mr_ctx", "label": "spread_mr_ctx"}
+  ]
+ },
+ "evidence": [
+  {"issue": 1145, "page": "docs/research/state-calendar-1145-result.md", "record": "docs/research/state-calendar-1145/result.json", "mean_d_page": "docs/research/state-calendar-1145-mean-d-1194-result.md"},
+  {"issue": 1115, "page": "docs/research/calendar-mr-1115-result.md", "record": "docs/research/calendar-mr-1115/result.json", "mean_d_page": "docs/research/calendar-mr-1115-mean-d-1167-result.md"},
+  {"issue": 1141, "page": "docs/research/walk-calibration-1133-result.md", "record": "docs/research/walk-calibration-1133/result.json", "mean_d_page": "docs/research/walk-calibration-1133-mean-d-1167-result.md"}
+ ]
+}

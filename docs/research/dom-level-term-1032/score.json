@@ -1,0 +1,4667 @@
+{
+ "declaration": "metadata/dom_level_term_1032.json",
+ "declared_reading_rules": {
+  "helps": "the term helps when the lower end of its grid-CRPS skill interval over gbm_funding_cal_direct on the pooled cut is above 0",
+  "loses": "'loses' means a skill interval wholly below 0, read on ordinary target days",
+  "no_verdict": "development data gives no verdict",
+  "pairing": "the term is read against gbm_funding_cal_direct, which differs from it by the term alone; the other references are reported on the same cuts",
+  "replacement": "adopting the term, or naming it with a variant of #1027 as the candidate, is a marked question for Eleonora",
+  "trough": "it helps on the trough when the same lower end on target days of the 19-23 bucket is above 0"
+ },
+ "draws": 10000,
+ "groups": {
+  "dom_bucket": {
+   "1-5": {
+    "days": 297,
+    "metrics": {
+     "grid_crps": {
+      "means": {
+       "B1": 2.5831671658615125,
+       "B1_prime": 2.2158552525252517,
+       "B2": 2.842439224125309,
+       "gbm_funding": 2.1369197405453226,
+       "gbm_funding_cal_aligned": 2.151127969142037,
+       "gbm_funding_cal_direct": 2.0389607505112366,
+       "gbm_funding_cal_direct_dom": 2.0338522009382327,
+       "spread_mr_ctx": 2.0591604199131988
+      },
+      "pairs": {
+       "gbm_funding_cal_direct_dom vs B1": {
+        "benchmark_mean": 2.5831671658615125,
+        "candidate_mean": 2.03385220093823,
+        "days": 297,
+        "difference": 0.5493149649232827,
+        "difference_interval": [
+         0.23810305649096108,
+         0.9991132816866746
+        ],
+        "dm_p_value": 0.004076616278216871,
+        "dm_statistic": 2.6456574835610596,
+        "skill": 0.21265172931233065,
+        "skill_interval": [
+         0.09181880748583025,
+         0.33051064375883243
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B1_prime": {
+        "benchmark_mean": 2.2158552525252517,
+        "candidate_mean": 2.0338522009382314,
+        "days": 297,
+        "difference": 0.18200305158702038,
+        "difference_interval": [
+         -0.0732634455561744,
+         0.4324272687617008
+        ],
+        "dm_p_value": 0.10779538125460086,
+        "dm_statistic": 1.2383379912522912,
+        "skill": 0.08213670607753125,
+        "skill_interval": [
+         -0.04944032299533625,
+         0.19357343418959788
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B2": {
+        "benchmark_mean": 2.842439224125309,
+        "candidate_mean": 2.0338522009382283,
+        "days": 297,
+        "difference": 0.8085870231870806,
+        "difference_interval": [
+         0.46484704625687007,
+         1.3303534572316482
+        ],
+        "dm_p_value": 0.00017760684863454834,
+        "dm_statistic": 3.571300032694094,
+        "skill": 0.284469414974353,
+        "skill_interval": [
+         0.12802347577032883,
+         0.4076020865370198
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding": {
+        "benchmark_mean": 2.1369197405453226,
+        "candidate_mean": 2.0338522009382305,
+        "days": 297,
+        "difference": 0.1030675396070922,
+        "difference_interval": [
+         -0.09603376614319017,
+         0.29855687050831925
+        ],
+        "dm_p_value": 0.15564563176857737,
+        "dm_statistic": 1.0125162865511323,
+        "skill": 0.04823182530046275,
+        "skill_interval": [
+         -0.05502881248656407,
+         0.13329886074950495
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_aligned": {
+        "benchmark_mean": 2.151127969142037,
+        "candidate_mean": 2.033852200938231,
+        "days": 297,
+        "difference": 0.11727576820380631,
+        "difference_interval": [
+         -0.04756180405127666,
+         0.2936951360237269
+        ],
+        "dm_p_value": 0.0857329130755764,
+        "dm_statistic": 1.367508974675966,
+        "skill": 0.05451826664249127,
+        "skill_interval": [
+         -0.02696558464160783,
+         0.12807520544620835
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_direct": {
+        "benchmark_mean": 2.0389607505112366,
+        "candidate_mean": 2.0338522009382296,
+        "days": 297,
+        "difference": 0.005108549573007003,
+        "difference_interval": [
+         -0.0034131166548478694,
+         0.016942891816952837
+        ],
+        "dm_p_value": 0.14474697547902182,
+        "dm_statistic": 1.0592324040032488,
+        "skill": 0.00250546734248127,
+        "skill_interval": [
+         -0.0011333565883098464,
+         0.007363828233902773
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs spread_mr_ctx": {
+        "benchmark_mean": 2.0591604199131988,
+        "candidate_mean": 2.0338522009382305,
+        "days": 297,
+        "difference": 0.025308218974968426,
+        "difference_interval": [
+         -0.24022673489143065,
+         0.21528680391670071
+        ],
+        "dm_p_value": 0.41755789506965924,
+        "dm_statistic": 0.20814495064255736,
+        "skill": 0.012290552367957452,
+        "skill_interval": [
+         -0.12876511432622373,
+         0.11131176036049711
+        ]
+       }
+      }
+     },
+     "upper_tail_twcrps": {
+      "means": {
+       "B1": 1.496467458644414,
+       "B1_prime": 1.1875988683940844,
+       "B2": 1.3592328634167758,
+       "gbm_funding": 1.1622668992592216,
+       "gbm_funding_cal_aligned": 1.1804172676142686,
+       "gbm_funding_cal_direct": 1.1136750346104713,
+       "gbm_funding_cal_direct_dom": 1.1092459698122172,
+       "spread_mr_ctx": 1.1045254161903089
+      },
+      "pairs": {
+       "gbm_funding_cal_direct_dom vs B1": {
+        "benchmark_mean": 1.496467458644414,
+        "candidate_mean": 1.1092459698122188,
+        "days": 297,
+        "difference": 0.3872214888321952,
+        "difference_interval": [
+         0.13918734029386576,
+         0.941613777631672
+        ],
+        "dm_p_value": 0.014911404899772496,
+        "dm_statistic": 2.172435765051194,
+        "skill": 0.25875703918277154,
+        "skill_interval": [
+         0.06142577228402646,
+         0.44883951970821734
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B1_prime": {
+        "benchmark_mean": 1.1875988683940844,
+        "candidate_mean": 1.1092459698122186,
+        "days": 297,
+        "difference": 0.07835289858186574,
+        "difference_interval": [
+         -0.0696482189768153,
+         0.27384451307891816
+        ],
+        "dm_p_value": 0.22045924193895128,
+        "dm_statistic": 0.7706431389549653,
+        "skill": 0.06597589528509526,
+        "skill_interval": [
+         -0.09537843421382972,
+         0.2245946202203403
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B2": {
+        "benchmark_mean": 1.3592328634167758,
+        "candidate_mean": 1.1092459698122186,
+        "days": 297,
+        "difference": 0.24998689360455734,
+        "difference_interval": [
+         0.04504583795449932,
+         0.6564615382268807
+        ],
+        "dm_p_value": 0.03884970901632179,
+        "dm_statistic": 1.7641934327981057,
+        "skill": 0.18391763496370445,
+        "skill_interval": [
+         -0.09700080674680978,
+         0.3617793833382469
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding": {
+        "benchmark_mean": 1.1622668992592216,
+        "candidate_mean": 1.109245969812218,
+        "days": 297,
+        "difference": 0.05302092944700364,
+        "difference_interval": [
+         -0.05483197187107272,
+         0.16997342273527327
+        ],
+        "dm_p_value": 0.21654670258816866,
+        "dm_statistic": 0.7839091759771527,
+        "skill": 0.04561854895876057,
+        "skill_interval": [
+         -0.08807661622334562,
+         0.1402328976742022
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_aligned": {
+        "benchmark_mean": 1.1804172676142686,
+        "candidate_mean": 1.1092459698122186,
+        "days": 297,
+        "difference": 0.07117129780204991,
+        "difference_interval": [
+         -0.008595729165949029,
+         0.19198314649125653
+        ],
+        "dm_p_value": 0.09438738911489564,
+        "dm_statistic": 1.3142122767323023,
+        "skill": 0.06029333842759994,
+        "skill_interval": [
+         -0.043613679727598054,
+         0.14352301485145774
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_direct": {
+        "benchmark_mean": 1.1136750346104713,
+        "candidate_mean": 1.1092459698122188,
+        "days": 297,
+        "difference": 0.004429064798252647,
+        "difference_interval": [
+         0.00026138802205133687,
+         0.013256510955833786
+        ],
+        "dm_p_value": 0.060673965008119835,
+        "dm_statistic": 1.5491405786879213,
+        "skill": 0.003976981310173479,
+        "skill_interval": [
+         -0.00018342188057439597,
+         0.009426243123467948
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs spread_mr_ctx": {
+        "benchmark_mean": 1.1045254161903089,
+        "candidate_mean": 1.1092459698122192,
+        "days": 297,
+        "difference": -0.004720553621910395,
+        "difference_interval": [
+         -0.20225718363747022,
+         0.12090894146078998
+        ],
+        "dm_p_value": 0.5211345795989066,
+        "dm_statistic": -0.05300133905643206,
+        "skill": -0.004273829784915559,
+        "skill_interval": [
+         -0.23018215869712305,
+         0.11718896949458847
+        ]
+       }
+      }
+     }
+    }
+   },
+   "15-18": {
+    "days": 245,
+    "metrics": {
+     "grid_crps": {
+      "means": {
+       "B1": 3.1189224755989344,
+       "B1_prime": 3.1059696645962753,
+       "B2": 4.300459103815443,
+       "gbm_funding": 3.176293249818698,
+       "gbm_funding_cal_aligned": 3.1474991992833328,
+       "gbm_funding_cal_direct": 3.2700772530877757,
+       "gbm_funding_cal_direct_dom": 3.2472040657040857,
+       "spread_mr_ctx": 2.953681663802773
+      },
+      "pairs": {
+       "gbm_funding_cal_direct_dom vs B1": {
+        "benchmark_mean": 3.1189224755989344,
+        "candidate_mean": 3.247204065704085,
+        "days": 245,
+        "difference": -0.12828159010515044,
+        "difference_interval": [
+         -0.38722013378314973,
+         0.06243390341922006
+        ],
+        "dm_p_value": 0.8560508458702535,
+        "dm_statistic": -1.0627434555638722,
+        "skill": -0.041130098971285334,
+        "skill_interval": [
+         -0.1256483837526142,
+         0.016792009908184483
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B1_prime": {
+        "benchmark_mean": 3.1059696645962753,
+        "candidate_mean": 3.247204065704088,
+        "days": 245,
+        "difference": -0.1412344011078124,
+        "difference_interval": [
+         -0.37914805348209757,
+         0.04874032915035065
+        ],
+        "dm_p_value": 0.8780821036682673,
+        "dm_statistic": -1.1654527078452026,
+        "skill": -0.04547191903310831,
+        "skill_interval": [
+         -0.14194678713467473,
+         0.027106816091768307
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B2": {
+        "benchmark_mean": 4.300459103815443,
+        "candidate_mean": 3.2472040657040897,
+        "days": 245,
+        "difference": 1.0532550381113537,
+        "difference_interval": [
+         0.6136480314895585,
+         1.6938634761193545
+        ],
+        "dm_p_value": 7.986743318366685e-06,
+        "dm_statistic": 4.314817419408693,
+        "skill": 0.24491688275256174,
+        "skill_interval": [
+         -0.1004694370630374,
+         0.434027112829073
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding": {
+        "benchmark_mean": 3.176293249818698,
+        "candidate_mean": 3.2472040657040853,
+        "days": 245,
+        "difference": -0.07091081588538727,
+        "difference_interval": [
+         -0.1738169575923821,
+         0.044017435800478774
+        ],
+        "dm_p_value": 0.8591082127430016,
+        "dm_statistic": -1.0763213252903547,
+        "skill": -0.022325021749624294,
+        "skill_interval": [
+         -0.07174656716287531,
+         0.026118803933571605
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_aligned": {
+        "benchmark_mean": 3.1474991992833328,
+        "candidate_mean": 3.2472040657040853,
+        "days": 245,
+        "difference": -0.09970486642075248,
+        "difference_interval": [
+         -0.17620814401296392,
+         0.012657333018699868
+        ],
+        "dm_p_value": 0.9569565823082062,
+        "dm_statistic": -1.7164110508203543,
+        "skill": -0.031677487461618636,
+        "skill_interval": [
+         -0.09009276133495922,
+         0.05162327814813243
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_direct": {
+        "benchmark_mean": 3.2700772530877757,
+        "candidate_mean": 3.2472040657040857,
+        "days": 245,
+        "difference": 0.022873187383690027,
+        "difference_interval": [
+         0.008884601062959551,
+         0.04300581534304616
+        ],
+        "dm_p_value": 0.00351028290972355,
+        "dm_statistic": 2.6958671612590566,
+        "skill": 0.006994693278910149,
+        "skill_interval": [
+         0.0009061305175642655,
+         0.012132571410808101
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs spread_mr_ctx": {
+        "benchmark_mean": 2.953681663802773,
+        "candidate_mean": 3.2472040657040893,
+        "days": 245,
+        "difference": -0.29352240190131584,
+        "difference_interval": [
+         -0.7832716598190975,
+         -0.003096454726607578
+        ],
+        "dm_p_value": 0.9486122762547626,
+        "dm_statistic": -1.631544645248812,
+        "skill": -0.09937509701821248,
+        "skill_interval": [
+         -0.21088053834740905,
+         -0.023502512134928794
+        ]
+       }
+      }
+     },
+     "upper_tail_twcrps": {
+      "means": {
+       "B1": 2.409917208518189,
+       "B1_prime": 2.4240285661046985,
+       "B2": 2.9127418331854478,
+       "gbm_funding": 2.5100034244695615,
+       "gbm_funding_cal_aligned": 2.513762777567407,
+       "gbm_funding_cal_direct": 2.5204010008646973,
+       "gbm_funding_cal_direct_dom": 2.5056173467458023,
+       "spread_mr_ctx": 2.3020804984723497
+      },
+      "pairs": {
+       "gbm_funding_cal_direct_dom vs B1": {
+        "benchmark_mean": 2.409917208518189,
+        "candidate_mean": 2.5056173467458014,
+        "days": 245,
+        "difference": -0.09570013822761227,
+        "difference_interval": [
+         -0.40861571071404795,
+         0.058180145470250064
+        ],
+        "dm_p_value": 0.8396987767824637,
+        "dm_statistic": -0.9932206308701339,
+        "skill": -0.03971096512749349,
+        "skill_interval": [
+         -0.13104475875317162,
+         0.018554030138487727
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B1_prime": {
+        "benchmark_mean": 2.4240285661046985,
+        "candidate_mean": 2.505617346745798,
+        "days": 245,
+        "difference": -0.08158878064109938,
+        "difference_interval": [
+         -0.34358246005283155,
+         0.07007649477130441
+        ],
+        "dm_p_value": 0.8034930029454537,
+        "dm_statistic": -0.8541642397217513,
+        "skill": -0.033658341234900864,
+        "skill_interval": [
+         -0.13185471571123542,
+         0.03713221796477827
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B2": {
+        "benchmark_mean": 2.9127418331854478,
+        "candidate_mean": 2.5056173467458014,
+        "days": 245,
+        "difference": 0.4071244864396463,
+        "difference_interval": [
+         0.12861795475748344,
+         0.9459653228146523
+        ],
+        "dm_p_value": 0.004114774814385602,
+        "dm_statistic": 2.6425039874146194,
+        "skill": 0.13977362559262752,
+        "skill_interval": [
+         -0.0828447210558167,
+         0.30421874799949034
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding": {
+        "benchmark_mean": 2.5100034244695615,
+        "candidate_mean": 2.5056173467457996,
+        "days": 245,
+        "difference": 0.004386077723761997,
+        "difference_interval": [
+         -0.06988399765413972,
+         0.09334705618919291
+        ],
+        "dm_p_value": 0.4645850473756937,
+        "dm_statistic": 0.08888903890939596,
+        "skill": 0.0017474389401237196,
+        "skill_interval": [
+         -0.03163412877861037,
+         0.031882468847767555
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_aligned": {
+        "benchmark_mean": 2.513762777567407,
+        "candidate_mean": 2.5056173467457996,
+        "days": 245,
+        "difference": 0.008145430821607453,
+        "difference_interval": [
+         -0.047157168131112086,
+         0.1145190581523816
+        ],
+        "dm_p_value": 0.4301133778715831,
+        "dm_statistic": 0.17608552102425667,
+        "skill": 0.0032403339305906447,
+        "skill_interval": [
+         -0.022162521826698936,
+         0.03771350975936362
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_direct": {
+        "benchmark_mean": 2.5204010008646973,
+        "candidate_mean": 2.5056173467458027,
+        "days": 245,
+        "difference": 0.014783654118894773,
+        "difference_interval": [
+         0.0040722255350746795,
+         0.036895646778049615
+        ],
+        "dm_p_value": 0.018348041137010718,
+        "dm_statistic": 2.0891293357041585,
+        "skill": 0.005865596035639888,
+        "skill_interval": [
+         -9.682559349945188e-05,
+         0.010226952391638532
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs spread_mr_ctx": {
+        "benchmark_mean": 2.3020804984723497,
+        "candidate_mean": 2.505617346745802,
+        "days": 245,
+        "difference": -0.20353684827345223,
+        "difference_interval": [
+         -1.0798893028302927,
+         0.07328965438277438
+        ],
+        "dm_p_value": 0.8867580505511237,
+        "dm_statistic": -1.2094659136364705,
+        "skill": -0.08841430541135219,
+        "skill_interval": [
+         -0.23679615168003265,
+         -0.011449863802829086
+        ]
+       }
+      }
+     }
+    }
+   },
+   "19-23": {
+    "days": 305,
+    "metrics": {
+     "grid_crps": {
+      "means": {
+       "B1": 2.116145991446899,
+       "B1_prime": 1.3271840156806831,
+       "B2": 1.9363343720598707,
+       "gbm_funding": 1.1973935811447032,
+       "gbm_funding_cal_aligned": 1.2406752883325678,
+       "gbm_funding_cal_direct": 1.3247346998331648,
+       "gbm_funding_cal_direct_dom": 1.3157398201430204,
+       "spread_mr_ctx": 1.3216958123263722
+      },
+      "pairs": {
+       "gbm_funding_cal_direct_dom vs B1": {
+        "benchmark_mean": 2.116145991446899,
+        "candidate_mean": 1.3157398201430202,
+        "days": 305,
+        "difference": 0.800406171303879,
+        "difference_interval": [
+         -0.05530136130239738,
+         5.4097014136326536
+        ],
+        "dm_p_value": 0.11624219518657342,
+        "dm_statistic": 1.1939835819891071,
+        "skill": 0.3782376899037137,
+        "skill_interval": [
+         -0.02517274040218881,
+         1.154191030455086
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B1_prime": {
+        "benchmark_mean": 1.3271840156806831,
+        "candidate_mean": 1.315739820143019,
+        "days": 305,
+        "difference": 0.011444195537664023,
+        "difference_interval": [
+         -0.2947376644199658,
+         0.36413833944644686
+        ],
+        "dm_p_value": 0.47336067687173333,
+        "dm_statistic": 0.06682458174481147,
+        "skill": 0.008622915437837421,
+        "skill_interval": [
+         -0.277877346290793,
+         0.2529860729541842
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B2": {
+        "benchmark_mean": 1.9363343720598707,
+        "candidate_mean": 1.3157398201430193,
+        "days": 305,
+        "difference": 0.6205945519168514,
+        "difference_interval": [
+         0.2577305655123143,
+         1.2424849901956647
+        ],
+        "dm_p_value": 0.0020681794673835796,
+        "dm_statistic": 2.8675710683194273,
+        "skill": 0.32049968273643953,
+        "skill_interval": [
+         0.1522935572573026,
+         0.5078991398004687
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding": {
+        "benchmark_mean": 1.1973935811447032,
+        "candidate_mean": 1.315739820143021,
+        "days": 305,
+        "difference": -0.11834623899831785,
+        "difference_interval": [
+         -0.2764560540435313,
+         0.006450824161550225
+        ],
+        "dm_p_value": 0.9391018728559921,
+        "dm_statistic": -1.5472778758550036,
+        "skill": -0.09883654035056656,
+        "skill_interval": [
+         -0.2208241528838655,
+         0.007941894472659763
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_aligned": {
+        "benchmark_mean": 1.2406752883325678,
+        "candidate_mean": 1.31573982014302,
+        "days": 305,
+        "difference": -0.07506453181045217,
+        "difference_interval": [
+         -0.19639989761333748,
+         0.023561147911653535
+        ],
+        "dm_p_value": 0.8708261692556664,
+        "dm_statistic": -1.1303051589436035,
+        "skill": -0.060502963600844145,
+        "skill_interval": [
+         -0.15490387477406187,
+         0.020903827462487243
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_direct": {
+        "benchmark_mean": 1.3247346998331648,
+        "candidate_mean": 1.315739820143022,
+        "days": 305,
+        "difference": 0.008994879690142904,
+        "difference_interval": [
+         0.00423888440118315,
+         0.014249952906830229
+        ],
+        "dm_p_value": 0.0016871214295537396,
+        "dm_statistic": 2.931412610941248,
+        "skill": 0.006789947973187164,
+        "skill_interval": [
+         0.0034895195690399002,
+         0.010155970016776456
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs spread_mr_ctx": {
+        "benchmark_mean": 1.3216958123263722,
+        "candidate_mean": 1.31573982014302,
+        "days": 305,
+        "difference": 0.005955992183352407,
+        "difference_interval": [
+         -0.27786151615317756,
+         0.28619530854930886
+        ],
+        "dm_p_value": 0.48369709350497747,
+        "dm_statistic": 0.04087670704345431,
+        "skill": 0.004506325985000297,
+        "skill_interval": [
+         -0.24880766410816166,
+         0.20592078457034396
+        ]
+       }
+      }
+     },
+     "upper_tail_twcrps": {
+      "means": {
+       "B1": 1.3069841739130423,
+       "B1_prime": 0.5750258346400565,
+       "B2": 0.4639926486101214,
+       "gbm_funding": 0.34874278353632954,
+       "gbm_funding_cal_aligned": 0.35524878555503164,
+       "gbm_funding_cal_direct": 0.40084504390843617,
+       "gbm_funding_cal_direct_dom": 0.3975086343647108,
+       "spread_mr_ctx": 0.4869487697514826
+      },
+      "pairs": {
+       "gbm_funding_cal_direct_dom vs B1": {
+        "benchmark_mean": 1.3069841739130423,
+        "candidate_mean": 0.39750863436471007,
+        "days": 305,
+        "difference": 0.9094755395483323,
+        "difference_interval": [
+         0.08473840165893043,
+         9.477689943110287
+        ],
+        "dm_p_value": 0.08208299597184432,
+        "dm_statistic": 1.391196026184948,
+        "skill": 0.6958581119046071,
+        "skill_interval": [
+         0.31277630434247833,
+         1.155721209567503
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B1_prime": {
+        "benchmark_mean": 0.5750258346400565,
+        "candidate_mean": 0.3975086343647106,
+        "days": 305,
+        "difference": 0.17751720027534587,
+        "difference_interval": [
+         0.006033081734137663,
+         0.5470476825454297
+        ],
+        "dm_p_value": 0.07307178945830517,
+        "dm_statistic": 1.4532888242973396,
+        "skill": 0.30871169533880966,
+        "skill_interval": [
+         -0.08179501097909497,
+         0.6450351772564376
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B2": {
+        "benchmark_mean": 0.4639926486101214,
+        "candidate_mean": 0.39750863436471084,
+        "days": 305,
+        "difference": 0.06648401424541059,
+        "difference_interval": [
+         -0.09116329574703494,
+         0.25459586417222246
+        ],
+        "dm_p_value": 0.2185904897832791,
+        "dm_statistic": 0.7769623569076523,
+        "skill": 0.14328678362590835,
+        "skill_interval": [
+         -0.32999071449744305,
+         0.49219027364418316
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding": {
+        "benchmark_mean": 0.34874278353632954,
+        "candidate_mean": 0.3975086343647104,
+        "days": 305,
+        "difference": -0.04876585082838084,
+        "difference_interval": [
+         -0.17416055740397393,
+         0.008475803443390544
+        ],
+        "dm_p_value": 0.8682557241606317,
+        "dm_statistic": -1.1181836830193128,
+        "skill": -0.13983329012254891,
+        "skill_interval": [
+         -0.344237186867101,
+         0.008583712535448096
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_aligned": {
+        "benchmark_mean": 0.35524878555503164,
+        "candidate_mean": 0.3975086343647106,
+        "days": 305,
+        "difference": -0.04225984880967898,
+        "difference_interval": [
+         -0.13607327047579704,
+         0.014441828716559232
+        ],
+        "dm_p_value": 0.8468240716503215,
+        "dm_statistic": -1.0229069213147621,
+        "skill": -0.11895846102233192,
+        "skill_interval": [
+         -0.29016276758206744,
+         0.04657722829097098
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_direct": {
+        "benchmark_mean": 0.40084504390843617,
+        "candidate_mean": 0.3975086343647103,
+        "days": 305,
+        "difference": 0.0033364095437258923,
+        "difference_interval": [
+         0.0011030106581958773,
+         0.007741430122503237
+        ],
+        "dm_p_value": 0.017520034990087252,
+        "dm_statistic": 2.1078950328732318,
+        "skill": 0.008323439679319119,
+        "skill_interval": [
+         0.004045797108983427,
+         0.012028173031967355
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs spread_mr_ctx": {
+        "benchmark_mean": 0.4869487697514826,
+        "candidate_mean": 0.3975086343647103,
+        "days": 305,
+        "difference": 0.08944013538677234,
+        "difference_interval": [
+         -0.04496476302692923,
+         0.33991918439642066
+        ],
+        "dm_p_value": 0.17457875501521603,
+        "dm_statistic": 0.9362246968687457,
+        "skill": 0.18367463056209934,
+        "skill_interval": [
+         -0.2437101438306993,
+         0.4604379973822227
+        ]
+       }
+      }
+     }
+    }
+   },
+   "24-31": {
+    "days": 459,
+    "metrics": {
+     "grid_crps": {
+      "means": {
+       "B1": 2.437305944397083,
+       "B1_prime": 2.091253177433616,
+       "B2": 2.8219232764990076,
+       "gbm_funding": 2.1591049758204877,
+       "gbm_funding_cal_aligned": 1.9738107110244727,
+       "gbm_funding_cal_direct": 2.061338591791029,
+       "gbm_funding_cal_direct_dom": 2.0595772151058203,
+       "spread_mr_ctx": 1.9830642955862385
+      },
+      "pairs": {
+       "gbm_funding_cal_direct_dom vs B1": {
+        "benchmark_mean": 2.437305944397083,
+        "candidate_mean": 2.0595772151058185,
+        "days": 459,
+        "difference": 0.3777287292912644,
+        "difference_interval": [
+         -0.04226656930908046,
+         1.6305182586694211
+        ],
+        "dm_p_value": 0.11583684067833588,
+        "dm_statistic": 1.1960586271356328,
+        "skill": 0.15497797072197403,
+        "skill_interval": [
+         -0.028517156935549487,
+         0.49529517238156406
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B1_prime": {
+        "benchmark_mean": 2.091253177433616,
+        "candidate_mean": 2.0595772151058194,
+        "days": 459,
+        "difference": 0.031675962327796424,
+        "difference_interval": [
+         -0.2225917759510657,
+         0.2960373631588991
+        ],
+        "dm_p_value": 0.4069495724185598,
+        "dm_statistic": 0.23539889346218393,
+        "skill": 0.015146880669259347,
+        "skill_interval": [
+         -0.11587206461650135,
+         0.1332975218266067
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B2": {
+        "benchmark_mean": 2.8219232764990076,
+        "candidate_mean": 2.059577215105821,
+        "days": 459,
+        "difference": 0.7623460613931864,
+        "difference_interval": [
+         0.3708989683477159,
+         1.3308846485090808
+        ],
+        "dm_p_value": 0.00029619830443883277,
+        "dm_statistic": 3.4350719101241105,
+        "skill": 0.27015123612396147,
+        "skill_interval": [
+         0.13099343798715568,
+         0.3899196184263357
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding": {
+        "benchmark_mean": 2.1591049758204877,
+        "candidate_mean": 2.059577215105821,
+        "days": 459,
+        "difference": 0.09952776071466662,
+        "difference_interval": [
+         -0.12150065060889231,
+         0.3843170065169827
+        ],
+        "dm_p_value": 0.2026308429696968,
+        "dm_statistic": 0.8322609168857187,
+        "skill": 0.04609676779464824,
+        "skill_interval": [
+         -0.059091804991873324,
+         0.15984027546550497
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_aligned": {
+        "benchmark_mean": 1.9738107110244727,
+        "candidate_mean": 2.059577215105819,
+        "days": 459,
+        "difference": -0.0857665040813462,
+        "difference_interval": [
+         -0.20163479058833017,
+         0.06485287750101568
+        ],
+        "dm_p_value": 0.9013626796626857,
+        "dm_statistic": -1.2893551654746056,
+        "skill": -0.04345224372444031,
+        "skill_interval": [
+         -0.1021742099827027,
+         0.036301994557650465
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_direct": {
+        "benchmark_mean": 2.061338591791029,
+        "candidate_mean": 2.0595772151058194,
+        "days": 459,
+        "difference": 0.001761376685209967,
+        "difference_interval": [
+         -0.003572545606167863,
+         0.007361602638692053
+        ],
+        "dm_p_value": 0.29628173313736417,
+        "dm_statistic": 0.5351249384099028,
+        "skill": 0.0008544819818657568,
+        "skill_interval": [
+         -0.0017803565959331768,
+         0.0035628292037071553
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs spread_mr_ctx": {
+        "benchmark_mean": 1.9830642955862385,
+        "candidate_mean": 2.05957721510582,
+        "days": 459,
+        "difference": -0.0765129195195811,
+        "difference_interval": [
+         -0.3069431388782022,
+         0.1509618186787809
+        ],
+        "dm_p_value": 0.7524515349207082,
+        "dm_statistic": -0.6822246183638982,
+        "skill": -0.038583176395176916,
+        "skill_interval": [
+         -0.15384079235212117,
+         0.08054388732489914
+        ]
+       }
+      }
+     },
+     "upper_tail_twcrps": {
+      "means": {
+       "B1": 1.3906534854440966,
+       "B1_prime": 1.0907506317293414,
+       "B2": 1.3090098929620142,
+       "gbm_funding": 1.0914846410663808,
+       "gbm_funding_cal_aligned": 0.9865451650144473,
+       "gbm_funding_cal_direct": 1.0225221596853151,
+       "gbm_funding_cal_direct_dom": 1.0226731124831916,
+       "spread_mr_ctx": 1.0066452606645413
+      },
+      "pairs": {
+       "gbm_funding_cal_direct_dom vs B1": {
+        "benchmark_mean": 1.3906534854440966,
+        "candidate_mean": 1.022673112483193,
+        "days": 459,
+        "difference": 0.36798037296090363,
+        "difference_interval": [
+         0.0040335611603158905,
+         2.0529967484602936
+        ],
+        "dm_p_value": 0.10281070285249116,
+        "dm_statistic": 1.2656974944751955,
+        "skill": 0.2646096794151358,
+        "skill_interval": [
+         -0.020210823943535627,
+         0.8026886271090534
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B1_prime": {
+        "benchmark_mean": 1.0907506317293414,
+        "candidate_mean": 1.0226731124831925,
+        "days": 459,
+        "difference": 0.06807751924614894,
+        "difference_interval": [
+         -0.06461469069445888,
+         0.19210972033449425
+        ],
+        "dm_p_value": 0.2032739614053315,
+        "dm_statistic": 0.8299838357417638,
+        "skill": 0.06241345846228368,
+        "skill_interval": [
+         -0.09796053854639425,
+         0.1779008082413611
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B2": {
+        "benchmark_mean": 1.3090098929620142,
+        "candidate_mean": 1.0226731124831916,
+        "days": 459,
+        "difference": 0.2863367804788226,
+        "difference_interval": [
+         0.034386596842032824,
+         0.6620409821060338
+        ],
+        "dm_p_value": 0.02578038751471834,
+        "dm_statistic": 1.9467828405126877,
+        "skill": 0.21874302250757072,
+        "skill_interval": [
+         -0.030575172925073724,
+         0.4092039682105826
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding": {
+        "benchmark_mean": 1.0914846410663808,
+        "candidate_mean": 1.0226731124831934,
+        "days": 459,
+        "difference": 0.0688115285831875,
+        "difference_interval": [
+         -0.031324597413558655,
+         0.21365092319080548
+        ],
+        "dm_p_value": 0.14951636595466,
+        "dm_statistic": 1.0385098929732903,
+        "skill": 0.06304397331322832,
+        "skill_interval": [
+         -0.03556111747464537,
+         0.15797922177422483
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_aligned": {
+        "benchmark_mean": 0.9865451650144473,
+        "candidate_mean": 1.022673112483193,
+        "days": 459,
+        "difference": -0.03612794746874556,
+        "difference_interval": [
+         -0.10994947063071353,
+         0.0139482304929638
+        ],
+        "dm_p_value": 0.8542917040772496,
+        "dm_statistic": -1.0550190947118618,
+        "skill": -0.036620672575306254,
+        "skill_interval": [
+         -0.09001657163439716,
+         0.017985403550605933
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_direct": {
+        "benchmark_mean": 1.0225221596853151,
+        "candidate_mean": 1.0226731124831931,
+        "days": 459,
+        "difference": -0.00015095279787810624,
+        "difference_interval": [
+         -0.0035902276437399594,
+         0.003837023696769449
+        ],
+        "dm_p_value": 0.5244177360929076,
+        "dm_statistic": -0.06124445295760654,
+        "skill": -0.0001476278987680448,
+        "skill_interval": [
+         -0.003590360256540916,
+         0.003958938959112876
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs spread_mr_ctx": {
+        "benchmark_mean": 1.0066452606645413,
+        "candidate_mean": 1.0226731124831925,
+        "days": 459,
+        "difference": -0.016027851818651104,
+        "difference_interval": [
+         -0.16864697317487878,
+         0.08539695012812464
+        ],
+        "dm_p_value": 0.5980492413015168,
+        "dm_statistic": -0.2483010102685696,
+        "skill": -0.015922045674829133,
+        "skill_interval": [
+         -0.13478270036277482,
+         0.10032622721120843
+        ]
+       }
+      }
+     }
+    }
+   },
+   "6-14": {
+    "days": 553,
+    "metrics": {
+     "grid_crps": {
+      "means": {
+       "B1": 1.7533762402704622,
+       "B1_prime": 1.4678621228083972,
+       "B2": 1.6525256639672945,
+       "gbm_funding": 1.1405548859834929,
+       "gbm_funding_cal_aligned": 1.1938944923076225,
+       "gbm_funding_cal_direct": 1.3016775378742986,
+       "gbm_funding_cal_direct_dom": 1.297295253641376,
+       "spread_mr_ctx": 1.1116771831534669
+      },
+      "pairs": {
+       "gbm_funding_cal_direct_dom vs B1": {
+        "benchmark_mean": 1.7533762402704622,
+        "candidate_mean": 1.2972952536413773,
+        "days": 553,
+        "difference": 0.4560809866290848,
+        "difference_interval": [
+         0.14644733910788976,
+         1.1653408997879964
+        ],
+        "dm_p_value": 0.022825975025776102,
+        "dm_statistic": 1.9985972327057249,
+        "skill": 0.2601158702588175,
+        "skill_interval": [
+         0.10588209681919555,
+         0.4803810999262639
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B1_prime": {
+        "benchmark_mean": 1.4678621228083972,
+        "candidate_mean": 1.2972952536413762,
+        "days": 553,
+        "difference": 0.17056686916702105,
+        "difference_interval": [
+         -0.08640597594112528,
+         0.6148516973190735
+        ],
+        "dm_p_value": 0.17172215856601325,
+        "dm_statistic": 0.9473816913726522,
+        "skill": 0.11620087916750847,
+        "skill_interval": [
+         -0.07201423996855912,
+         0.3416744982059566
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B2": {
+        "benchmark_mean": 1.6525256639672945,
+        "candidate_mean": 1.2972952536413787,
+        "days": 553,
+        "difference": 0.35523041032591585,
+        "difference_interval": [
+         0.06454550855991398,
+         0.6977559310529875
+        ],
+        "dm_p_value": 0.008855977398759096,
+        "dm_statistic": 2.3715853624360554,
+        "skill": 0.21496211409697435,
+        "skill_interval": [
+         0.03793913698079171,
+         0.3661659683674967
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding": {
+        "benchmark_mean": 1.1405548859834929,
+        "candidate_mean": 1.2972952536413775,
+        "days": 553,
+        "difference": -0.15674036765788468,
+        "difference_interval": [
+         -0.30528857472996934,
+         -0.030785715524306256
+        ],
+        "dm_p_value": 0.9896386516091329,
+        "dm_statistic": -2.3129989516267737,
+        "skill": -0.13742466021065572,
+        "skill_interval": [
+         -0.26889499096326863,
+         -0.022039626504339466
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_aligned": {
+        "benchmark_mean": 1.1938944923076225,
+        "candidate_mean": 1.2972952536413767,
+        "days": 553,
+        "difference": -0.10340076133375425,
+        "difference_interval": [
+         -0.21000752765314393,
+         0.004261179685050215
+        ],
+        "dm_p_value": 0.9638664448621359,
+        "dm_statistic": -1.797431710810626,
+        "skill": -0.08660795572806085,
+        "skill_interval": [
+         -0.1767108067652341,
+         0.006985049618926181
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_direct": {
+        "benchmark_mean": 1.3016775378742986,
+        "candidate_mean": 1.2972952536413778,
+        "days": 553,
+        "difference": 0.004382284232920885,
+        "difference_interval": [
+         -0.0010947204839233888,
+         0.009944570895024131
+        ],
+        "dm_p_value": 0.09984494090158424,
+        "dm_statistic": 1.2824356022742878,
+        "skill": 0.0033666435084048264,
+        "skill_interval": [
+         -0.0009072049667933229,
+         0.007388031577603786
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs spread_mr_ctx": {
+        "benchmark_mean": 1.1116771831534669,
+        "candidate_mean": 1.297295253641377,
+        "days": 553,
+        "difference": -0.1856180704879103,
+        "difference_interval": [
+         -0.39343400047794186,
+         -0.03126999700243285
+        ],
+        "dm_p_value": 0.9803330039074957,
+        "dm_statistic": -2.0606756709791503,
+        "skill": -0.16697119748502182,
+        "skill_interval": [
+         -0.36376797274926326,
+         -0.023922275723115005
+        ]
+       }
+      }
+     },
+     "upper_tail_twcrps": {
+      "means": {
+       "B1": 0.896322489975625,
+       "B1_prime": 0.6673985840081753,
+       "B2": 0.46592219514112715,
+       "gbm_funding": 0.38747462061514126,
+       "gbm_funding_cal_aligned": 0.3947460565425186,
+       "gbm_funding_cal_direct": 0.4340394068559874,
+       "gbm_funding_cal_direct_dom": 0.4339578750669452,
+       "spread_mr_ctx": 0.3540336632143992
+      },
+      "pairs": {
+       "gbm_funding_cal_direct_dom vs B1": {
+        "benchmark_mean": 0.896322489975625,
+        "candidate_mean": 0.4339578750669439,
+        "days": 553,
+        "difference": 0.46236461490868114,
+        "difference_interval": [
+         0.1849680381003443,
+         1.5120229588825393
+        ],
+        "dm_p_value": 0.015043146260097062,
+        "dm_statistic": 2.1689524708225423,
+        "skill": 0.5158462719386355,
+        "skill_interval": [
+         0.3037464549771134,
+         0.7846070945907166
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B1_prime": {
+        "benchmark_mean": 0.6673985840081753,
+        "candidate_mean": 0.4339578750669445,
+        "days": 553,
+        "difference": 0.2334407089412308,
+        "difference_interval": [
+         0.025855358292513703,
+         0.796306491161566
+        ],
+        "dm_p_value": 0.07105692747966441,
+        "dm_statistic": 1.4679645411219115,
+        "skill": 0.34977705157727945,
+        "skill_interval": [
+         0.01286594069003405,
+         0.6791504694231647
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B2": {
+        "benchmark_mean": 0.46592219514112715,
+        "candidate_mean": 0.4339578750669447,
+        "days": 553,
+        "difference": 0.031964320074182456,
+        "difference_interval": [
+         -0.13616617764428673,
+         0.1556945786529482
+        ],
+        "dm_p_value": 0.330735038336895,
+        "dm_statistic": 0.43788441104171716,
+        "skill": 0.06860441594653054,
+        "skill_interval": [
+         -0.3664826032234745,
+         0.31119934703585955
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding": {
+        "benchmark_mean": 0.38747462061514126,
+        "candidate_mean": 0.433957875066945,
+        "days": 553,
+        "difference": -0.046483254451803735,
+        "difference_interval": [
+         -0.2150448851060602,
+         0.026562896659583266
+        ],
+        "dm_p_value": 0.8529067707917108,
+        "dm_statistic": -1.0489818794711279,
+        "skill": -0.11996464278875486,
+        "skill_interval": [
+         -0.4662649762099183,
+         0.06976229523571141
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_aligned": {
+        "benchmark_mean": 0.3947460565425186,
+        "candidate_mean": 0.4339578750669447,
+        "days": 553,
+        "difference": -0.039211818524426116,
+        "difference_interval": [
+         -0.1367158017775508,
+         0.015831232912413506
+        ],
+        "dm_p_value": 0.8768303715510557,
+        "dm_statistic": -1.1592869068927003,
+        "skill": -0.09933428814431376,
+        "skill_interval": [
+         -0.2888065642163405,
+         0.04801728901973974
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_direct": {
+        "benchmark_mean": 0.4340394068559874,
+        "candidate_mean": 0.43395787506694494,
+        "days": 553,
+        "difference": 8.15317890424769e-05,
+        "difference_interval": [
+         -0.0031580690752681904,
+         0.0036093019718950975
+        ],
+        "dm_p_value": 0.48558179012399294,
+        "dm_statistic": 0.03614896393041597,
+        "skill": 0.0001878442089695529,
+        "skill_interval": [
+         -0.007807665395279734,
+         0.009571304536115663
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs spread_mr_ctx": {
+        "benchmark_mean": 0.3540336632143992,
+        "candidate_mean": 0.43395787506694505,
+        "days": 553,
+        "difference": -0.07992421185254585,
+        "difference_interval": [
+         -0.35278275653710867,
+         0.01923095656002133
+        ],
+        "dm_p_value": 0.9010797878431911,
+        "dm_statistic": -1.2877286859310597,
+        "skill": -0.22575314202295094,
+        "skill_interval": [
+         -0.9323902756846486,
+         0.03757374953619186
+        ]
+       }
+      }
+     }
+    }
+   }
+  },
+  "pooled": {
+   "all decision days": {
+    "days": 1855,
+    "metrics": {
+     "grid_crps": {
+      "means": {
+       "B1": 2.2888782423532197,
+       "B1_prime": 1.9281063422008669,
+       "B2": 2.5183901989921473,
+       "gbm_funding": 1.8222896454436095,
+       "gbm_funding_cal_aligned": 1.8018510012163578,
+       "gbm_funding_cal_direct": 1.8682541173331555,
+       "gbm_funding_cal_direct_dom": 1.8611042695261002,
+       "spread_mr_ctx": 1.750393546494816
+      },
+      "pairs": {
+       "gbm_funding_cal_direct_dom vs B1": {
+        "benchmark_mean": 2.2888782423532197,
+        "candidate_mean": 1.8611042695261037,
+        "days": 1855,
+        "difference": 0.42777397282711593,
+        "difference_interval": [
+         0.15998353729206471,
+         1.1895394523164362
+        ],
+        "dm_p_value": 0.01823892647881986,
+        "dm_statistic": 2.0915604569198196,
+        "skill": 0.18689241083759747,
+        "skill_interval": [
+         0.09173507929451896,
+         0.3582378200101112
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B1_prime": {
+        "benchmark_mean": 1.9281063422008669,
+        "candidate_mean": 1.8611042695261018,
+        "days": 1855,
+        "difference": 0.06700207267476505,
+        "difference_interval": [
+         -0.07512799823951555,
+         0.23532481530842336
+        ],
+        "dm_p_value": 0.2236062246583148,
+        "dm_statistic": 0.7600704927696498,
+        "skill": 0.034750195675558274,
+        "skill_interval": [
+         -0.04178337250372252,
+         0.11444749809658816
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B2": {
+        "benchmark_mean": 2.5183901989921473,
+        "candidate_mean": 1.8611042695261015,
+        "days": 1855,
+        "difference": 0.6572859294660458,
+        "difference_interval": [
+         0.43939855427814045,
+         0.9281405981241052
+        ],
+        "dm_p_value": 1.2470768862016257e-10,
+        "dm_statistic": 6.327344959312429,
+        "skill": 0.2609944756492023,
+        "skill_interval": [
+         0.16554115141637282,
+         0.34789187621064344
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding": {
+        "benchmark_mean": 1.8222896454436095,
+        "candidate_mean": 1.8611042695261042,
+        "days": 1855,
+        "difference": -0.038814624082494746,
+        "difference_interval": [
+         -0.13599041923436658,
+         0.057161953123275135
+        ],
+        "dm_p_value": 0.783708471026183,
+        "dm_statistic": -0.7847791649949212,
+        "skill": -0.02129992022922673,
+        "skill_interval": [
+         -0.07658847998986461,
+         0.02998888896845812
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_aligned": {
+        "benchmark_mean": 1.8018510012163578,
+        "candidate_mean": 1.8611042695261024,
+        "days": 1855,
+        "difference": -0.05925326830974464,
+        "difference_interval": [
+         -0.12778503622707796,
+         0.011140798844240206
+        ],
+        "dm_p_value": 0.9433011043914614,
+        "dm_statistic": -1.5831038721181763,
+        "skill": -0.032884665973904124,
+        "skill_interval": [
+         -0.07260025493978503,
+         0.005005434072782762
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_direct": {
+        "benchmark_mean": 1.8682541173331555,
+        "candidate_mean": 1.8611042695261042,
+        "days": 1855,
+        "difference": 0.007149847807051406,
+        "difference_interval": [
+         0.0038579809921463768,
+         0.010537180844304878
+        ],
+        "dm_p_value": 8.586674158805874e-05,
+        "dm_statistic": 3.7573336084316225,
+        "skill": 0.0038270210356915876,
+        "skill_interval": [
+         0.0019433917810018884,
+         0.005789089953299064
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs spread_mr_ctx": {
+        "benchmark_mean": 1.750393546494816,
+        "candidate_mean": 1.8611042695261026,
+        "days": 1855,
+        "difference": -0.1107107230312867,
+        "difference_interval": [
+         -0.23604391355574697,
+         0.0018108202859770939
+        ],
+        "dm_p_value": 0.9655462035711952,
+        "dm_statistic": -1.8190251521439484,
+        "skill": -0.06324904662325011,
+        "skill_interval": [
+         -0.13616238288254184,
+         0.0013767924879194288
+        ]
+       }
+      }
+     },
+     "upper_tail_twcrps": {
+      "means": {
+       "B1": 1.3750288332356742,
+       "B1_prime": 1.0647739875776376,
+       "B2": 1.131460713699748,
+       "gbm_funding": 0.9515298646434547,
+       "gbm_funding_cal_aligned": 0.9359601929190101,
+       "gbm_funding_cal_direct": 0.9549227374798365,
+       "gbm_funding_cal_direct_dom": 0.9516024987979369,
+       "spread_mr_ctx": 0.9077185724082615
+      },
+      "pairs": {
+       "gbm_funding_cal_direct_dom vs B1": {
+        "benchmark_mean": 1.3750288332356742,
+        "candidate_mean": 0.9516024987979388,
+        "days": 1855,
+        "difference": 0.4234263344377354,
+        "difference_interval": [
+         0.17336691415532168,
+         1.4095958447729087
+        ],
+        "dm_p_value": 0.015528590583636537,
+        "dm_statistic": 2.1563392934787458,
+        "skill": 0.30793996765969045,
+        "skill_interval": [
+         0.1998686654396094,
+         0.495714142913244
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B1_prime": {
+        "benchmark_mean": 1.0647739875776376,
+        "candidate_mean": 0.9516024987979347,
+        "days": 1855,
+        "difference": 0.11317148877970291,
+        "difference_interval": [
+         0.018958761992872983,
+         0.26728564956360074
+        ],
+        "dm_p_value": 0.048951699457840614,
+        "dm_statistic": 1.6551040233301701,
+        "skill": 0.10628686472437988,
+        "skill_interval": [
+         0.004114677598249072,
+         0.2277117837130748
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B2": {
+        "benchmark_mean": 1.131460713699748,
+        "candidate_mean": 0.9516024987979307,
+        "days": 1855,
+        "difference": 0.17985821490181744,
+        "difference_interval": [
+         0.06513979714337564,
+         0.31199028906494775
+        ],
+        "dm_p_value": 0.0005868013289511698,
+        "dm_statistic": 3.2452191523831417,
+        "skill": 0.15896107812148555,
+        "skill_interval": [
+         0.026050784097518542,
+         0.28211858986257643
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding": {
+        "benchmark_mean": 0.9515298646434547,
+        "candidate_mean": 0.9516024987979386,
+        "days": 1855,
+        "difference": -7.263415448390849e-05,
+        "difference_interval": [
+         -0.05621542231511037,
+         0.05222628094420344
+        ],
+        "dm_p_value": 0.5009762615475029,
+        "dm_statistic": -0.0024471272408126033,
+        "skill": -7.633407755533248e-05,
+        "skill_interval": [
+         -0.05799148782279808,
+         0.05290290590009983
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_aligned": {
+        "benchmark_mean": 0.9359601929190101,
+        "candidate_mean": 0.9516024987979356,
+        "days": 1855,
+        "difference": -0.01564230587892544,
+        "difference_interval": [
+         -0.05569194222783274,
+         0.01850228855298027
+        ],
+        "dm_p_value": 0.7664360382589622,
+        "dm_statistic": -0.7271600379017972,
+        "skill": -0.01671257602328285,
+        "skill_interval": [
+         -0.05842803076064708,
+         0.01800232056990032
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_direct": {
+        "benchmark_mean": 0.9549227374798365,
+        "candidate_mean": 0.9516024987979361,
+        "days": 1855,
+        "difference": 0.003320238681900315,
+        "difference_interval": [
+         0.0013353679977052605,
+         0.005608047126499814
+        ],
+        "dm_p_value": 0.0037993702750660496,
+        "dm_statistic": 2.669397750261694,
+        "skill": 0.003476971017218472,
+        "skill_interval": [
+         0.0010555208414642471,
+         0.006148022020907553
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs spread_mr_ctx": {
+        "benchmark_mean": 0.9077185724082615,
+        "candidate_mean": 0.9516024987979347,
+        "days": 1855,
+        "difference": -0.043883926389673186,
+        "difference_interval": [
+         -0.13310784648781657,
+         0.022130682775498206
+        ],
+        "dm_p_value": 0.8769357064378156,
+        "dm_statistic": -1.1598040688407036,
+        "skill": -0.04834529965961263,
+        "skill_interval": [
+         -0.1363653684162458,
+         0.023924382895983275
+        ]
+       }
+      }
+     }
+    }
+   }
+  },
+  "regime": {
+   "2018-19": {
+    "days": 361,
+    "metrics": {
+     "grid_crps": {
+      "means": {
+       "B1": 5.790937983459793,
+       "B1_prime": 4.315364936167651,
+       "B2": 4.461774623630016,
+       "gbm_funding": 4.065030769706632,
+       "gbm_funding_cal_aligned": 3.985088021018902,
+       "gbm_funding_cal_direct": 4.223611416205457,
+       "gbm_funding_cal_direct_dom": 4.209453163611094,
+       "spread_mr_ctx": 3.69410819627636
+      },
+      "pairs": {
+       "gbm_funding_cal_direct_dom vs B1": {
+        "benchmark_mean": 5.790937983459793,
+        "candidate_mean": 4.209453163611096,
+        "days": 361,
+        "difference": 1.5814848198486968,
+        "difference_interval": [
+         0.3769455146565106,
+         7.149800997626043
+        ],
+        "dm_p_value": 0.03862446638644357,
+        "dm_statistic": 1.7668763844530302,
+        "skill": 0.2730964870226152,
+        "skill_interval": [
+         0.13861439695123323,
+         0.5613377456399884
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B1_prime": {
+        "benchmark_mean": 4.315364936167651,
+        "candidate_mean": 4.209453163611097,
+        "days": 361,
+        "difference": 0.10591177255655349,
+        "difference_interval": [
+         -0.30753379139823867,
+         0.7411395429300827
+        ],
+        "dm_p_value": 0.3548537022360716,
+        "dm_statistic": 0.372249083299178,
+        "skill": 0.024542946917164004,
+        "skill_interval": [
+         -0.07666923665740508,
+         0.1593776704128887
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B2": {
+        "benchmark_mean": 4.461774623630016,
+        "candidate_mean": 4.209453163611099,
+        "days": 361,
+        "difference": 0.25232146001891714,
+        "difference_interval": [
+         -0.21056998840735425,
+         0.6851700669202051
+        ],
+        "dm_p_value": 0.1306293171686128,
+        "dm_statistic": 1.1234212373331505,
+        "skill": 0.05655181655357418,
+        "skill_interval": [
+         -0.046928381675794564,
+         0.15350330245990074
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding": {
+        "benchmark_mean": 4.065030769706632,
+        "candidate_mean": 4.209453163611094,
+        "days": 361,
+        "difference": -0.1444223939044622,
+        "difference_interval": [
+         -0.4013868749084808,
+         0.08962634530445798
+        ],
+        "dm_p_value": 0.8595069305976117,
+        "dm_statistic": -1.0781067070917716,
+        "skill": -0.03552799525669642,
+        "skill_interval": [
+         -0.10432540919097931,
+         0.018625190751447085
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_aligned": {
+        "benchmark_mean": 3.985088021018902,
+        "candidate_mean": 4.209453163611094,
+        "days": 361,
+        "difference": -0.22436514259219242,
+        "difference_interval": [
+         -0.3837127241032683,
+         -0.0818397277172328
+        ],
+        "dm_p_value": 0.9923678149684195,
+        "dm_statistic": -2.4260451753592918,
+        "skill": -0.056301176136839014,
+        "skill_interval": [
+         -0.11415132563619432,
+         -0.012077422099203698
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_direct": {
+        "benchmark_mean": 4.223611416205457,
+        "candidate_mean": 4.209453163611097,
+        "days": 361,
+        "difference": 0.014158252594360182,
+        "difference_interval": [
+         0.0054451523908466415,
+         0.022586338514554202
+        ],
+        "dm_p_value": 0.004660494678183524,
+        "dm_statistic": 2.6000510485989663,
+        "skill": 0.0033521674224188283,
+        "skill_interval": [
+         0.0005120249714367772,
+         0.006507788816126361
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs spread_mr_ctx": {
+        "benchmark_mean": 3.69410819627636,
+        "candidate_mean": 4.209453163611097,
+        "days": 361,
+        "difference": -0.5153449673347368,
+        "difference_interval": [
+         -0.8838529603840777,
+         -0.20509550439739715
+        ],
+        "dm_p_value": 0.9984100609512221,
+        "dm_statistic": -2.9497921158485347,
+        "skill": -0.13950456780183146,
+        "skill_interval": [
+         -0.2993710078594778,
+         -0.02976196997113288
+        ]
+       }
+      }
+     },
+     "upper_tail_twcrps": {
+      "means": {
+       "B1": 5.279437453932311,
+       "B1_prime": 3.835545873178366,
+       "B2": 3.813448928098276,
+       "gbm_funding": 3.643184123506369,
+       "gbm_funding_cal_aligned": 3.5774166203864173,
+       "gbm_funding_cal_direct": 3.7315329451508266,
+       "gbm_funding_cal_direct_dom": 3.7213962590173506,
+       "spread_mr_ctx": 3.3121097348056545
+      },
+      "pairs": {
+       "gbm_funding_cal_direct_dom vs B1": {
+        "benchmark_mean": 5.279437453932311,
+        "candidate_mean": 3.721396259017348,
+        "days": 361,
+        "difference": 1.558041194914963,
+        "difference_interval": [
+         0.363637960320204,
+         7.423542245614787
+        ],
+        "dm_p_value": 0.04032680636427188,
+        "dm_statistic": 1.7469061853845689,
+        "skill": 0.2951150020263009,
+        "skill_interval": [
+         0.1589720632858933,
+         0.5831119166726706
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B1_prime": {
+        "benchmark_mean": 3.835545873178366,
+        "candidate_mean": 3.721396259017348,
+        "days": 361,
+        "difference": 0.11414961416101801,
+        "difference_interval": [
+         -0.27258349863552644,
+         0.7588373774202232
+        ],
+        "dm_p_value": 0.33813053267424154,
+        "dm_statistic": 0.41757064185604154,
+        "skill": 0.029760982643762965,
+        "skill_interval": [
+         -0.07826168904280342,
+         0.17901158403779432
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B2": {
+        "benchmark_mean": 3.813448928098276,
+        "candidate_mean": 3.7213962590173493,
+        "days": 361,
+        "difference": 0.0920526690809271,
+        "difference_interval": [
+         -0.32128039289076504,
+         0.49318444496559055
+        ],
+        "dm_p_value": 0.3260762812462209,
+        "dm_statistic": 0.450773832939438,
+        "skill": 0.024138954216133355,
+        "skill_interval": [
+         -0.07663613005724502,
+         0.12054000573028614
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding": {
+        "benchmark_mean": 3.643184123506369,
+        "candidate_mean": 3.7213962590173497,
+        "days": 361,
+        "difference": -0.07821213551098097,
+        "difference_interval": [
+         -0.3122698863960114,
+         0.13230050230681653
+        ],
+        "dm_p_value": 0.7406558140439772,
+        "dm_statistic": -0.6453685612426702,
+        "skill": -0.02146807102236326,
+        "skill_interval": [
+         -0.08631383457512672,
+         0.029842025265653705
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_aligned": {
+        "benchmark_mean": 3.5774166203864173,
+        "candidate_mean": 3.721396259017352,
+        "days": 361,
+        "difference": -0.1439796386309348,
+        "difference_interval": [
+         -0.2963727000288329,
+         -0.02080947518128269
+        ],
+        "dm_p_value": 0.9578174372512048,
+        "dm_statistic": -1.725901551897013,
+        "skill": -0.040246818838612856,
+        "skill_interval": [
+         -0.09452670586276601,
+         -0.0023505239289540805
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_direct": {
+        "benchmark_mean": 3.7315329451508266,
+        "candidate_mean": 3.7213962590173493,
+        "days": 361,
+        "difference": 0.010136686133477273,
+        "difference_interval": [
+         0.002297504220930245,
+         0.018407612404478538
+        ],
+        "dm_p_value": 0.02278755567019397,
+        "dm_statistic": 1.9993073321113481,
+        "skill": 0.002716493806292136,
+        "skill_interval": [
+         0.00011442025462750794,
+         0.005796287571507788
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs spread_mr_ctx": {
+        "benchmark_mean": 3.3121097348056545,
+        "candidate_mean": 3.7213962590173493,
+        "days": 361,
+        "difference": -0.40928652421169487,
+        "difference_interval": [
+         -0.7638141871215083,
+         -0.12696514556777488
+        ],
+        "dm_p_value": 0.9954029228080729,
+        "dm_statistic": -2.604749160616024,
+        "skill": -0.12357275482471618,
+        "skill_interval": [
+         -0.2873358139771482,
+         -0.01803001208959254
+        ]
+       }
+      }
+     }
+    }
+   },
+   "2020": {
+    "days": 251,
+    "metrics": {
+     "grid_crps": {
+      "means": {
+       "B1": 1.648172250129914,
+       "B1_prime": 1.6095025030313537,
+       "B2": 2.796917069114848,
+       "gbm_funding": 1.4068904842256424,
+       "gbm_funding_cal_aligned": 1.4522784361125196,
+       "gbm_funding_cal_direct": 1.5224720918188477,
+       "gbm_funding_cal_direct_dom": 1.5098419936445844,
+       "spread_mr_ctx": 1.653955003433098
+      },
+      "pairs": {
+       "gbm_funding_cal_direct_dom vs B1": {
+        "benchmark_mean": 1.648172250129914,
+        "candidate_mean": 1.5098419936445846,
+        "days": 251,
+        "difference": 0.1383302564853294,
+        "difference_interval": [
+         -0.3565020195179329,
+         0.4584561977747127
+        ],
+        "dm_p_value": 0.2665985522436527,
+        "dm_statistic": 0.6231330321863754,
+        "skill": 0.08392949006053571,
+        "skill_interval": [
+         -0.33323668498672676,
+         0.245187794594947
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B1_prime": {
+        "benchmark_mean": 1.6095025030313537,
+        "candidate_mean": 1.5098419936445864,
+        "days": 251,
+        "difference": 0.09966050938676725,
+        "difference_interval": [
+         -0.34082113004524983,
+         0.4684082803407799
+        ],
+        "dm_p_value": 0.3367592544516056,
+        "dm_statistic": 0.42132399779956764,
+        "skill": 0.06192007107728358,
+        "skill_interval": [
+         -0.3396649515204129,
+         0.2510185657976536
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B2": {
+        "benchmark_mean": 2.796917069114848,
+        "candidate_mean": 1.5098419936445895,
+        "days": 251,
+        "difference": 1.2870750754702587,
+        "difference_interval": [
+         0.5794224649970221,
+         2.6696315048702353
+        ],
+        "dm_p_value": 0.00023304053834816152,
+        "dm_statistic": 3.499528900702911,
+        "skill": 0.4601763454779818,
+        "skill_interval": [
+         0.2457434531961283,
+         0.6641729517327669
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding": {
+        "benchmark_mean": 1.4068904842256424,
+        "candidate_mean": 1.509841993644587,
+        "days": 251,
+        "difference": -0.10295150941894451,
+        "difference_interval": [
+         -0.4255181071435381,
+         0.10021080138837507
+        ],
+        "dm_p_value": 0.7844962817268584,
+        "dm_statistic": -0.787468883904877,
+        "skill": -0.07317663355695336,
+        "skill_interval": [
+         -0.3341306680125341,
+         0.09490639155098826
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_aligned": {
+        "benchmark_mean": 1.4522784361125196,
+        "candidate_mean": 1.5098419936445857,
+        "days": 251,
+        "difference": -0.057563557532066115,
+        "difference_interval": [
+         -0.26209740467833953,
+         0.10467001080623335
+        ],
+        "dm_p_value": 0.7215768978625368,
+        "dm_statistic": -0.5875323889553831,
+        "skill": -0.03963672261508826,
+        "skill_interval": [
+         -0.20449975532349107,
+         0.08846735042295036
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_direct": {
+        "benchmark_mean": 1.5224720918188477,
+        "candidate_mean": 1.5098419936445864,
+        "days": 251,
+        "difference": 0.012630098174261258,
+        "difference_interval": [
+         0.004310731010023527,
+         0.0243480094958236
+        ],
+        "dm_p_value": 0.019403642470665394,
+        "dm_statistic": 2.0662245166470936,
+        "skill": 0.00829578305055989,
+        "skill_interval": [
+         0.0018511896177523706,
+         0.014333890551901596
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs spread_mr_ctx": {
+        "benchmark_mean": 1.653955003433098,
+        "candidate_mean": 1.509841993644586,
+        "days": 251,
+        "difference": 0.14411300978851213,
+        "difference_interval": [
+         -0.34552404215415977,
+         0.3436422289021094
+        ],
+        "dm_p_value": 0.15671588448421447,
+        "dm_statistic": 1.0080472718651747,
+        "skill": 0.08713236423565222,
+        "skill_interval": [
+         -0.20252535972668012,
+         0.21986925563465898
+        ]
+       }
+      }
+     },
+     "upper_tail_twcrps": {
+      "means": {
+       "B1": 0.7401172024943706,
+       "B1_prime": 0.7519775870431309,
+       "B2": 1.2190859501125924,
+       "gbm_funding": 0.4350271126173257,
+       "gbm_funding_cal_aligned": 0.47877028099599006,
+       "gbm_funding_cal_direct": 0.4560129417514113,
+       "gbm_funding_cal_direct_dom": 0.45260498420491785,
+       "spread_mr_ctx": 0.6628967012485828
+      },
+      "pairs": {
+       "gbm_funding_cal_direct_dom vs B1": {
+        "benchmark_mean": 0.7401172024943706,
+        "candidate_mean": 0.4526049842049185,
+        "days": 251,
+        "difference": 0.2875122182894521,
+        "difference_interval": [
+         0.07855223125092553,
+         1.5354452383042738
+        ],
+        "dm_p_value": 0.048422100478693,
+        "dm_statistic": 1.660349311484706,
+        "skill": 0.3884684983952105,
+        "skill_interval": [
+         0.19594637603876425,
+         0.6257621292598092
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B1_prime": {
+        "benchmark_mean": 0.7519775870431309,
+        "candidate_mean": 0.4526049842049171,
+        "days": 251,
+        "difference": 0.29937260283821376,
+        "difference_interval": [
+         0.05722532889377399,
+         1.8956583985837216
+        ],
+        "dm_p_value": 0.061397457945350786,
+        "dm_statistic": 1.5431478137660677,
+        "skill": 0.39811373104268166,
+        "skill_interval": [
+         0.23069656260453472,
+         0.6700965634320404
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B2": {
+        "benchmark_mean": 1.2190859501125924,
+        "candidate_mean": 0.45260498420491746,
+        "days": 251,
+        "difference": 0.7664809659076749,
+        "difference_interval": [
+         0.4504357945824132,
+         1.1538825705044902
+        ],
+        "dm_p_value": 2.967039791634818e-07,
+        "dm_statistic": 4.993350264097833,
+        "skill": 0.6287341477743092,
+        "skill_interval": [
+         -0.3271693865572126,
+         0.8627658148428125
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding": {
+        "benchmark_mean": 0.4350271126173257,
+        "candidate_mean": 0.4526049842049178,
+        "days": 251,
+        "difference": -0.017577871587592102,
+        "difference_interval": [
+         -0.08670196248086331,
+         0.1363615537409405
+        ],
+        "dm_p_value": 0.6241926770732753,
+        "dm_statistic": -0.3165110413300631,
+        "skill": -0.04040638175822064,
+        "skill_interval": [
+         -0.4062523684546757,
+         0.2918661875054891
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_aligned": {
+        "benchmark_mean": 0.47877028099599006,
+        "candidate_mean": 0.4526049842049178,
+        "days": 251,
+        "difference": 0.026165296791072292,
+        "difference_interval": [
+         -0.038107970815820943,
+         0.2226380146309396
+        ],
+        "dm_p_value": 0.3073832361708926,
+        "dm_statistic": 0.5032813563791131,
+        "skill": 0.05465104629435309,
+        "skill_interval": [
+         -0.08125668366634346,
+         0.2430751930238802
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_direct": {
+        "benchmark_mean": 0.4560129417514113,
+        "candidate_mean": 0.4526049842049182,
+        "days": 251,
+        "difference": 0.003407957546493131,
+        "difference_interval": [
+         -0.0008276616096625031,
+         0.013188949112829265
+        ],
+        "dm_p_value": 0.16017566987782283,
+        "dm_statistic": 0.993736147144993,
+        "skill": 0.007473379008508333,
+        "skill_interval": [
+         -0.003063748954443937,
+         0.020046228218747277
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs spread_mr_ctx": {
+        "benchmark_mean": 0.6628967012485828,
+        "candidate_mean": 0.45260498420491807,
+        "days": 251,
+        "difference": 0.21029171704366473,
+        "difference_interval": [
+         0.1387500458710601,
+         0.28577204911227816
+        ],
+        "dm_p_value": 5.688935345027346e-07,
+        "dm_statistic": 4.866175126581462,
+        "skill": 0.31723150326072663,
+        "skill_interval": [
+         -0.11513175323666347,
+         0.6193002218052766
+        ]
+       }
+      }
+     }
+    }
+   },
+   "2021-23": {
+    "days": 748,
+    "metrics": {
+     "grid_crps": {
+      "means": {
+       "B1": 0.6974374290862606,
+       "B1_prime": 0.6659222175075568,
+       "B2": 1.4652657149500106,
+       "gbm_funding": 0.7069967493606456,
+       "gbm_funding_cal_aligned": 0.7629448977554214,
+       "gbm_funding_cal_direct": 0.9036213311122007,
+       "gbm_funding_cal_direct_dom": 0.903895133882923,
+       "spread_mr_ctx": 0.7179589667985897
+      },
+      "pairs": {
+       "gbm_funding_cal_direct_dom vs B1": {
+        "benchmark_mean": 0.6974374290862606,
+        "candidate_mean": 0.9038951338829226,
+        "days": 748,
+        "difference": -0.20645770479666206,
+        "difference_interval": [
+         -0.398870855708526,
+         -0.08203863586860724
+        ],
+        "dm_p_value": 0.9969951352096715,
+        "dm_statistic": -2.747250055395708,
+        "skill": -0.2960232648642763,
+        "skill_interval": [
+         -0.5387451786943096,
+         -0.11637146760328615
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B1_prime": {
+        "benchmark_mean": 0.6659222175075568,
+        "candidate_mean": 0.9038951338829215,
+        "days": 748,
+        "difference": -0.23797291637536472,
+        "difference_interval": [
+         -0.4299337408170524,
+         -0.11504208318403508
+        ],
+        "dm_p_value": 0.9994036205151017,
+        "dm_statistic": -3.2406060483045738,
+        "skill": -0.3573584273341417,
+        "skill_interval": [
+         -0.5974540294659295,
+         -0.17686725322545602
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B2": {
+        "benchmark_mean": 1.4652657149500106,
+        "candidate_mean": 0.9038951338829249,
+        "days": 748,
+        "difference": 0.5613705810670857,
+        "difference_interval": [
+         0.280553648147919,
+         0.9493445452343519
+        ],
+        "dm_p_value": 3.7785637054810195e-06,
+        "dm_statistic": 4.477361355588312,
+        "skill": 0.38311862165302735,
+        "skill_interval": [
+         0.21061962161350953,
+         0.5652147290526213
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding": {
+        "benchmark_mean": 0.7069967493606456,
+        "candidate_mean": 0.9038951338829226,
+        "days": 748,
+        "difference": -0.19689838452227704,
+        "difference_interval": [
+         -0.305602566180752,
+         -0.11191149384091054
+        ],
+        "dm_p_value": 0.9999995022218303,
+        "dm_statistic": -4.892514786409495,
+        "skill": -0.27849970272188246,
+        "skill_interval": [
+         -0.41695650586486216,
+         -0.16959910218627117
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_aligned": {
+        "benchmark_mean": 0.7629448977554214,
+        "candidate_mean": 0.9038951338829214,
+        "days": 748,
+        "difference": -0.14095023612750002,
+        "difference_interval": [
+         -0.20496200102280038,
+         -0.08680761114493976
+        ],
+        "dm_p_value": 0.999999925997654,
+        "dm_statistic": -5.255024593839466,
+        "skill": -0.18474497508558566,
+        "skill_interval": [
+         -0.2625477734771524,
+         -0.12121663305583479
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_direct": {
+        "benchmark_mean": 0.9036213311122007,
+        "candidate_mean": 0.9038951338829215,
+        "days": 748,
+        "difference": -0.0002738027707208972,
+        "difference_interval": [
+         -0.004474859830208201,
+         0.004034168143749061
+        ],
+        "dm_p_value": 0.5503700181987088,
+        "dm_statistic": -0.1265962519264459,
+        "skill": -0.0003030060948028901,
+        "skill_interval": [
+         -0.0050079418996383275,
+         0.004297442461518481
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs spread_mr_ctx": {
+        "benchmark_mean": 0.7179589667985897,
+        "candidate_mean": 0.9038951338829208,
+        "days": 748,
+        "difference": -0.18593616708433103,
+        "difference_interval": [
+         -0.35845908396074677,
+         -0.06569539932881484
+        ],
+        "dm_p_value": 0.9961466172442142,
+        "dm_statistic": -2.664653631555059,
+        "skill": -0.25897882146862583,
+        "skill_interval": [
+         -0.4667783336029483,
+         -0.09216547293726965
+        ]
+       }
+      }
+     },
+     "upper_tail_twcrps": {
+      "means": {
+       "B1": 0.008939176935596349,
+       "B1_prime": 0.006728328295745161,
+       "B2": 0.0030598918856079944,
+       "gbm_funding": 0.004823986392011555,
+       "gbm_funding_cal_aligned": 0.0021969408046212556,
+       "gbm_funding_cal_direct": 0.005797953997947255,
+       "gbm_funding_cal_direct_dom": 0.005810565134966453,
+       "spread_mr_ctx": 0.017177619272909374
+      },
+      "pairs": {
+       "gbm_funding_cal_direct_dom vs B1": {
+        "benchmark_mean": 0.008939176935596349,
+        "candidate_mean": 0.0058105651349664575,
+        "days": 748,
+        "difference": 0.0031286118006298913,
+        "difference_interval": [
+         -0.0027797196489590765,
+         0.0130090657301338
+        ],
+        "dm_p_value": 0.17469137942062396,
+        "dm_statistic": 0.9357872083151026,
+        "skill": 0.34998879909978825,
+        "skill_interval": [
+         -0.49325198967275313,
+         0.7678596533984724
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B1_prime": {
+        "benchmark_mean": 0.006728328295745161,
+        "candidate_mean": 0.005810565134966443,
+        "days": 748,
+        "difference": 0.0009177631607787189,
+        "difference_interval": [
+         -0.004118026732651062,
+         0.008509198247322308
+        ],
+        "dm_p_value": 0.3747978466547036,
+        "dm_statistic": 0.31917252077698505,
+        "skill": 0.13640285081794998,
+        "skill_interval": [
+         -1.1095383472034732,
+         0.7580138522998293
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B2": {
+        "benchmark_mean": 0.0030598918856079944,
+        "candidate_mean": 0.005810565134966458,
+        "days": 748,
+        "difference": -0.002750673249358464,
+        "difference_interval": [
+         -0.008567057461033346,
+         5.0738035732747315e-06
+        ],
+        "dm_p_value": 0.9526232276789832,
+        "dm_statistic": -1.6708386876144705,
+        "skill": -0.898944587649021,
+        "skill_interval": [
+         -4.141629924462187,
+         0.15682908176124633
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding": {
+        "benchmark_mean": 0.004823986392011555,
+        "candidate_mean": 0.005810565134966453,
+        "days": 748,
+        "difference": -0.0009865787429548987,
+        "difference_interval": [
+         -0.0035497798687489316,
+         0.001525047848819246
+        ],
+        "dm_p_value": 0.7881958897315512,
+        "dm_statistic": -0.8001770571050378,
+        "skill": -0.20451524170728538,
+        "skill_interval": [
+         -1.184936490057346,
+         0.20632372109363936
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_aligned": {
+        "benchmark_mean": 0.0021969408046212556,
+        "candidate_mean": 0.005810565134966455,
+        "days": 748,
+        "difference": -0.003613624330345199,
+        "difference_interval": [
+         -0.009738319741642599,
+         -0.0014355994004357753
+        ],
+        "dm_p_value": 0.996223934953172,
+        "dm_statistic": -2.6714634306471976,
+        "skill": -1.6448437403247076,
+        "skill_interval": [
+         -5.551710445919104,
+         2.0423694938248707
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_direct": {
+        "benchmark_mean": 0.005797953997947255,
+        "candidate_mean": 0.00581056513496645,
+        "days": 748,
+        "difference": -1.2611137019194717e-05,
+        "difference_interval": [
+         -0.00015402430777311234,
+         0.00019284542740933584
+        ],
+        "dm_p_value": 0.5525107116402145,
+        "dm_statistic": -0.13200722540467266,
+        "skill": -0.0021751012553151757,
+        "skill_interval": [
+         -0.026822978939719126,
+         0.03626538945071542
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs spread_mr_ctx": {
+        "benchmark_mean": 0.017177619272909374,
+        "candidate_mean": 0.005810565134966465,
+        "days": 748,
+        "difference": 0.011367054137942909,
+        "difference_interval": [
+         0.0024836628069021503,
+         0.025485253083384528
+        ],
+        "dm_p_value": 0.009616145990789082,
+        "dm_statistic": 2.340997575941765,
+        "skill": 0.6617362951960263,
+        "skill_interval": [
+         0.25147890034404885,
+         0.8604987141516466
+        ]
+       }
+      }
+     }
+    }
+   },
+   "2024": {
+    "days": 250,
+    "metrics": {
+     "grid_crps": {
+      "means": {
+       "B1": 1.6131278313043511,
+       "B1_prime": 1.4862337165217405,
+       "B2": 1.39437394086957,
+       "gbm_funding": 1.3791096912096126,
+       "gbm_funding_cal_aligned": 1.3011668280828037,
+       "gbm_funding_cal_direct": 1.1362843575074237,
+       "gbm_funding_cal_direct_dom": 1.1340502901554093,
+       "spread_mr_ctx": 1.2556341363189871
+      },
+      "pairs": {
+       "gbm_funding_cal_direct_dom vs B1": {
+        "benchmark_mean": 1.6131278313043511,
+        "candidate_mean": 1.1340502901554093,
+        "days": 250,
+        "difference": 0.4790775411489419,
+        "difference_interval": [
+         0.2157491997340376,
+         0.9831778637646487
+        ],
+        "dm_p_value": 0.0017420399882264181,
+        "dm_statistic": 2.9214483873933905,
+        "skill": 0.2969867185054807,
+        "skill_interval": [
+         0.19345467657037868,
+         0.4185547390005684
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B1_prime": {
+        "benchmark_mean": 1.4862337165217405,
+        "candidate_mean": 1.1340502901554084,
+        "days": 250,
+        "difference": 0.3521834263663321,
+        "difference_interval": [
+         0.12020393121619921,
+         0.7722037529435863
+        ],
+        "dm_p_value": 0.007249693346425001,
+        "dm_statistic": 2.444647279497281,
+        "skill": 0.2369636904689212,
+        "skill_interval": [
+         0.132539123515291,
+         0.3617056367457766
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B2": {
+        "benchmark_mean": 1.39437394086957,
+        "candidate_mean": 1.1340502901554093,
+        "days": 250,
+        "difference": 0.2603236507141606,
+        "difference_interval": [
+         0.07003506038321747,
+         0.45488525362436094
+        ],
+        "dm_p_value": 0.0018289029539129142,
+        "dm_statistic": 2.9062572509800577,
+        "skill": 0.18669572277850774,
+        "skill_interval": [
+         0.05760341667341176,
+         0.2848666349975116
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding": {
+        "benchmark_mean": 1.3791096912096126,
+        "candidate_mean": 1.1340502901554077,
+        "days": 250,
+        "difference": 0.24505940105420487,
+        "difference_interval": [
+         0.09435783632059011,
+         0.4704451301452622
+        ],
+        "dm_p_value": 0.0033406983929242795,
+        "dm_statistic": 2.71232044594232,
+        "skill": 0.1776939155864129,
+        "skill_interval": [
+         0.09762778285150235,
+         0.2564439395260077
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_aligned": {
+        "benchmark_mean": 1.3011668280828037,
+        "candidate_mean": 1.1340502901554084,
+        "days": 250,
+        "difference": 0.16711653792739536,
+        "difference_interval": [
+         0.02901524196383029,
+         0.3722473753626156
+        ],
+        "dm_p_value": 0.02315547396342188,
+        "dm_statistic": 1.9925481477232396,
+        "skill": 0.12843590408282404,
+        "skill_interval": [
+         0.04299406709018663,
+         0.22121051727681634
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_direct": {
+        "benchmark_mean": 1.1362843575074237,
+        "candidate_mean": 1.1340502901554084,
+        "days": 250,
+        "difference": 0.0022340673520153836,
+        "difference_interval": [
+         -0.0030305940163516325,
+         0.007913279826993976
+        ],
+        "dm_p_value": 0.2508567809935356,
+        "dm_statistic": 0.6717960213343127,
+        "skill": 0.0019661164366603433,
+        "skill_interval": [
+         -0.0027146784342326224,
+         0.007586715583764361
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs spread_mr_ctx": {
+        "benchmark_mean": 1.2556341363189871,
+        "candidate_mean": 1.1340502901554081,
+        "days": 250,
+        "difference": 0.12158384616357891,
+        "difference_interval": [
+         -0.022527011911440367,
+         0.28986667564376006
+        ],
+        "dm_p_value": 0.06477632208311335,
+        "dm_statistic": 1.5158683522912948,
+        "skill": 0.09683063134936241,
+        "skill_interval": [
+         -0.006331222351835961,
+         0.18187929069720388
+        ]
+       }
+      }
+     },
+     "upper_tail_twcrps": {
+      "means": {
+       "B1": 0.280454740869564,
+       "B1_prime": 0.2637372695652163,
+       "B2": 0.1964287304347819,
+       "gbm_funding": 0.21050258830642757,
+       "gbm_funding_cal_aligned": 0.2046615836350337,
+       "gbm_funding_cal_direct": 0.18689770370431547,
+       "gbm_funding_cal_direct_dom": 0.1875398922994225,
+       "spread_mr_ctx": 0.20348470356442663
+      },
+      "pairs": {
+       "gbm_funding_cal_direct_dom vs B1": {
+        "benchmark_mean": 0.280454740869564,
+        "candidate_mean": 0.18753989229942253,
+        "days": 250,
+        "difference": 0.09291484857014147,
+        "difference_interval": [
+         0.004041478285493061,
+         3.44324772595797
+        ],
+        "dm_p_value": 0.09612829306023907,
+        "dm_statistic": 1.3039325347593982,
+        "skill": 0.3313006878830228,
+        "skill_interval": [
+         0.03498481370221451,
+         1.6000564132716084
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B1_prime": {
+        "benchmark_mean": 0.2637372695652163,
+        "candidate_mean": 0.18753989229942258,
+        "days": 250,
+        "difference": 0.07619737726579374,
+        "difference_interval": [
+         0.005402391287883293,
+         2.2761900838923723
+        ],
+        "dm_p_value": 0.09061406419811302,
+        "dm_statistic": 1.3369831764962585,
+        "skill": 0.28891395361531125,
+        "skill_interval": [
+         0.060701336951394486,
+         1.1676387173089111
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B2": {
+        "benchmark_mean": 0.1964287304347819,
+        "candidate_mean": 0.1875398922994225,
+        "days": 250,
+        "undefined": "a resampled benchmark scores zero; skill is undefined"
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding": {
+        "benchmark_mean": 0.21050258830642757,
+        "candidate_mean": 0.18753989229942247,
+        "days": 250,
+        "difference": 0.02296269600700508,
+        "difference_interval": [
+         0.003731796984416686,
+         0.18696072164510708
+        ],
+        "dm_p_value": 0.059233628784209014,
+        "dm_statistic": 1.5612394778229097,
+        "skill": 0.10908510052892272,
+        "skill_interval": [
+         0.022091209522160676,
+         0.24546405086788348
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_aligned": {
+        "benchmark_mean": 0.2046615836350337,
+        "candidate_mean": 0.18753989229942253,
+        "days": 250,
+        "difference": 0.017121691335611162,
+        "difference_interval": [
+         0.000754632045515985,
+         0.25583306415107454
+        ],
+        "dm_p_value": 0.09651219066331984,
+        "dm_statistic": 1.3016841462270807,
+        "skill": 0.08365855003909142,
+        "skill_interval": [
+         0.020672193671221764,
+         0.5847321744543207
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_direct": {
+        "benchmark_mean": 0.18689770370431547,
+        "candidate_mean": 0.18753989229942247,
+        "days": 250,
+        "difference": -0.0006421885951070097,
+        "difference_interval": [
+         -0.003686790133677792,
+         3.4736178392744533e-05
+        ],
+        "dm_p_value": 0.8517756680418422,
+        "dm_statistic": -1.0440793825045516,
+        "skill": -0.0034360432599161014,
+        "skill_interval": [
+         -0.0065282935902886505,
+         -0.0010147021977135059
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs spread_mr_ctx": {
+        "benchmark_mean": 0.20348470356442663,
+        "candidate_mean": 0.1875398922994225,
+        "days": 250,
+        "difference": 0.015944811265004136,
+        "difference_interval": [
+         0.0017822195111896408,
+         0.21918075185789065
+        ],
+        "dm_p_value": 0.08226169964244989,
+        "dm_statistic": 1.390018040276107,
+        "skill": 0.07835877088400281,
+        "skill_interval": [
+         0.042359469349538305,
+         0.1467186792924579
+        ]
+       }
+      }
+     }
+    }
+   },
+   "2025-26": {
+    "days": 249,
+    "metrics": {
+     "grid_crps": {
+      "means": {
+       "B1": 3.3570950599499456,
+       "B1_prime": 3.068174887230078,
+       "B2": 3.7757804260520405,
+       "gbm_funding": 2.8337408695512196,
+       "gbm_funding_cal_aligned": 2.6326019703355814,
+       "gbm_funding_cal_direct": 2.449487486299371,
+       "gbm_funding_cal_direct_dom": 2.431569866527529,
+       "spread_mr_ctx": 2.665326357834647
+      },
+      "pairs": {
+       "gbm_funding_cal_direct_dom vs B1": {
+        "benchmark_mean": 3.3570950599499456,
+        "candidate_mean": 2.4315698665275303,
+        "days": 249,
+        "difference": 0.9255251934224152,
+        "difference_interval": [
+         0.37267399115181044,
+         1.5058201401414313
+        ],
+        "dm_p_value": 0.0012425600660627145,
+        "dm_statistic": 3.0251473616480062,
+        "skill": 0.2756922806458197,
+        "skill_interval": [
+         0.06418584992360582,
+         0.4022990850356393
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B1_prime": {
+        "benchmark_mean": 3.068174887230078,
+        "candidate_mean": 2.4315698665275285,
+        "days": 249,
+        "difference": 0.6366050207025494,
+        "difference_interval": [
+         0.08380077656117368,
+         1.1778639015418575
+        ],
+        "dm_p_value": 0.01409532854139861,
+        "dm_statistic": 2.1946229332233815,
+        "skill": 0.20748654952888654,
+        "skill_interval": [
+         -0.0318553775425143,
+         0.35365509510968013
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B2": {
+        "benchmark_mean": 3.7757804260520405,
+        "candidate_mean": 2.431569866527529,
+        "days": 249,
+        "difference": 1.3442105595245115,
+        "difference_interval": [
+         0.5065725399971982,
+         2.8438867810621486
+        ],
+        "dm_p_value": 0.00033630980933208043,
+        "dm_statistic": 3.4005031461845467,
+        "skill": 0.35600866783718654,
+        "skill_interval": [
+         0.23226568140407788,
+         0.48597019639729966
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding": {
+        "benchmark_mean": 2.8337408695512196,
+        "candidate_mean": 2.4315698665275276,
+        "days": 249,
+        "difference": 0.4021710030236918,
+        "difference_interval": [
+         -0.04415096065234414,
+         0.7912631760088219
+        ],
+        "dm_p_value": 0.028613081034586374,
+        "dm_statistic": 1.9015794083479494,
+        "skill": 0.14192229337024162,
+        "skill_interval": [
+         -0.06934902168584131,
+         0.2805125018352131
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_aligned": {
+        "benchmark_mean": 2.6326019703355814,
+        "candidate_mean": 2.431569866527528,
+        "days": 249,
+        "difference": 0.2010321038080535,
+        "difference_interval": [
+         -0.16962875997058077,
+         0.5167270300325271
+        ],
+        "dm_p_value": 0.11903758647233043,
+        "dm_statistic": 1.179811554547677,
+        "skill": 0.0763625136170614,
+        "skill_interval": [
+         -0.09614435713067776,
+         0.19844327360472885
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_direct": {
+        "benchmark_mean": 2.449487486299371,
+        "candidate_mean": 2.431569866527527,
+        "days": 249,
+        "difference": 0.017917619771843883,
+        "difference_interval": [
+         0.007462289550860807,
+         0.030533805703084622
+        ],
+        "dm_p_value": 0.0019029557702501254,
+        "dm_statistic": 2.893815968130366,
+        "skill": 0.007314844379512797,
+        "skill_interval": [
+         0.003247473277473597,
+         0.011172534963269557
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs spread_mr_ctx": {
+        "benchmark_mean": 2.665326357834647,
+        "candidate_mean": 2.43156986652753,
+        "days": 249,
+        "difference": 0.2337564913071172,
+        "difference_interval": [
+         -0.26038357229260145,
+         0.6622126382386369
+        ],
+        "dm_p_value": 0.15438354886005867,
+        "dm_statistic": 1.0178124426823913,
+        "skill": 0.08770276503663313,
+        "skill_interval": [
+         -0.13397390025467945,
+         0.24702778970626385
+        ]
+       }
+      }
+     },
+     "upper_tail_twcrps": {
+      "means": {
+       "B1": 1.6025722203305934,
+       "B1_prime": 1.3950488255922193,
+       "B2": 1.5392793731447518,
+       "gbm_funding": 1.2094791556332314,
+       "gbm_funding_cal_aligned": 1.1305142187521156,
+       "gbm_funding_cal_direct": 1.0733935545162956,
+       "gbm_funding_cal_direct_dom": 1.067023789853351,
+       "spread_mr_ctx": 1.0948803796207143
+      },
+      "pairs": {
+       "gbm_funding_cal_direct_dom vs B1": {
+        "benchmark_mean": 1.6025722203305934,
+        "candidate_mean": 1.0670237898533506,
+        "days": 249,
+        "difference": 0.5355484304772428,
+        "difference_interval": [
+         0.14425945635544807,
+         1.2069888713212658
+        ],
+        "dm_p_value": 0.013347175645595954,
+        "dm_statistic": 2.2159584002904857,
+        "skill": 0.3341805278309173,
+        "skill_interval": [
+         -0.05011529036645124,
+         0.5200184747633991
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B1_prime": {
+        "benchmark_mean": 1.3950488255922193,
+        "candidate_mean": 1.067023789853351,
+        "days": 249,
+        "difference": 0.32802503573886843,
+        "difference_interval": [
+         0.006148376895235341,
+         0.7659027545124149
+        ],
+        "dm_p_value": 0.04241073191465361,
+        "dm_statistic": 1.7233709551577396,
+        "skill": 0.2351351649642921,
+        "skill_interval": [
+         -0.16904871508835656,
+         0.44288042131405264
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B2": {
+        "benchmark_mean": 1.5392793731447518,
+        "candidate_mean": 1.067023789853351,
+        "days": 249,
+        "difference": 0.47225558329140077,
+        "difference_interval": [
+         0.11607405604446269,
+         1.3952776608376058
+        ],
+        "dm_p_value": 0.007540520287467212,
+        "dm_statistic": 2.4304270757662847,
+        "skill": 0.30680303493353606,
+        "skill_interval": [
+         0.16520815862992186,
+         0.3985221181073336
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding": {
+        "benchmark_mean": 1.2094791556332314,
+        "candidate_mean": 1.067023789853352,
+        "days": 249,
+        "difference": 0.14245536577987944,
+        "difference_interval": [
+         -0.10438486287540899,
+         0.417622855217156
+        ],
+        "dm_p_value": 0.13612336648365853,
+        "dm_statistic": 1.0979032630569803,
+        "skill": 0.1177824066800853,
+        "skill_interval": [
+         -0.27293108302311286,
+         0.3500563742248278
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_aligned": {
+        "benchmark_mean": 1.1305142187521156,
+        "candidate_mean": 1.067023789853351,
+        "days": 249,
+        "difference": 0.06349042889876459,
+        "difference_interval": [
+         -0.10798556662591104,
+         0.20999724004813403
+        ],
+        "dm_p_value": 0.22758176232006033,
+        "dm_statistic": 0.746834405474998,
+        "skill": 0.05616066374542959,
+        "skill_interval": [
+         -0.2643712074594405,
+         0.2070463588751914
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_direct": {
+        "benchmark_mean": 1.0733935545162956,
+        "candidate_mean": 1.0670237898533512,
+        "days": 249,
+        "difference": 0.006369764662944282,
+        "difference_interval": [
+         -0.000317825340516731,
+         0.017003720467102513
+        ],
+        "dm_p_value": 0.07370156971618247,
+        "dm_statistic": 1.4487652926104921,
+        "skill": 0.005934230400530675,
+        "skill_interval": [
+         0.0005184589632372602,
+         0.010389163857933828
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs spread_mr_ctx": {
+        "benchmark_mean": 1.0948803796207143,
+        "candidate_mean": 1.0670237898533512,
+        "days": 249,
+        "difference": 0.02785658976736301,
+        "difference_interval": [
+         -0.21201065262615812,
+         0.18661696072614758
+        ],
+        "dm_p_value": 0.4023995567568711,
+        "dm_statistic": 0.24714098802372034,
+        "skill": 0.025442587414903736,
+        "skill_interval": [
+         -0.2718230299042035,
+         0.20174926556918238
+        ]
+       }
+      }
+     }
+    }
+   }
+  },
+  "target_type": {
+   "calendar_days": {
+    "days": 1011,
+    "metrics": {
+     "grid_crps": {
+      "means": {
+       "B1": 2.5739757452801784,
+       "B1_prime": 2.2971793993248184,
+       "B2": 3.107833492452589,
+       "gbm_funding": 2.2946854228221754,
+       "gbm_funding_cal_aligned": 2.2218708714913507,
+       "gbm_funding_cal_direct": 2.2969695275927777,
+       "gbm_funding_cal_direct_dom": 2.2877590270702335,
+       "spread_mr_ctx": 2.161627989351316
+      },
+      "pairs": {
+       "gbm_funding_cal_direct_dom vs B1": {
+        "benchmark_mean": 2.5739757452801784,
+        "candidate_mean": 2.287759027070232,
+        "days": 1011,
+        "difference": 0.2862167182099461,
+        "difference_interval": [
+         0.0428346880912685,
+         0.7331773203934767
+        ],
+        "dm_p_value": 0.03975346248715683,
+        "dm_statistic": 1.7535541982187652,
+        "skill": 0.11119635401956411,
+        "skill_interval": [
+         0.026600828098475082,
+         0.21063932056918816
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B1_prime": {
+        "benchmark_mean": 2.2971793993248184,
+        "candidate_mean": 2.287759027070233,
+        "days": 1011,
+        "difference": 0.009420372254585545,
+        "difference_interval": [
+         -0.15788947377561813,
+         0.1664521904992508
+        ],
+        "dm_p_value": 0.4590643527471022,
+        "dm_statistic": 0.10279118003774351,
+        "skill": 0.004100843084939017,
+        "skill_interval": [
+         -0.06919345723668677,
+         0.0691165709071256
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B2": {
+        "benchmark_mean": 3.107833492452589,
+        "candidate_mean": 2.2877590270702353,
+        "days": 1011,
+        "difference": 0.8200744653823537,
+        "difference_interval": [
+         0.5184753835717364,
+         1.239878142413699
+        ],
+        "dm_p_value": 2.9674980472904622e-08,
+        "dm_statistic": 5.420748642141015,
+        "skill": 0.2638733598096276,
+        "skill_interval": [
+         0.12260093956685406,
+         0.37694311583558254
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding": {
+        "benchmark_mean": 2.2946854228221754,
+        "candidate_mean": 2.2877590270702335,
+        "days": 1011,
+        "difference": 0.006926395751941686,
+        "difference_interval": [
+         -0.11448630548177101,
+         0.13131797906936574
+        ],
+        "dm_p_value": 0.45662026536605516,
+        "dm_statistic": 0.10895203949333501,
+        "skill": 0.0030184511057829828,
+        "skill_interval": [
+         -0.04922167380171398,
+         0.053954909538124415
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_aligned": {
+        "benchmark_mean": 2.2218708714913507,
+        "candidate_mean": 2.2877590270702313,
+        "days": 1011,
+        "difference": -0.06588815557888048,
+        "difference_interval": [
+         -0.14305511040323876,
+         0.009348711434541385
+        ],
+        "dm_p_value": 0.9397917545292899,
+        "dm_statistic": -1.5530278096127947,
+        "skill": -0.029654358596751137,
+        "skill_interval": [
+         -0.06534369931071558,
+         0.002542081561985144
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_direct": {
+        "benchmark_mean": 2.2969695275927777,
+        "candidate_mean": 2.287759027070234,
+        "days": 1011,
+        "difference": 0.009210500522543621,
+        "difference_interval": [
+         0.004733356382971358,
+         0.014492022019286569
+        ],
+        "dm_p_value": 0.0003707159401866722,
+        "dm_statistic": 3.373781523627411,
+        "skill": 0.00400984880813644,
+        "skill_interval": [
+         0.001741405839816444,
+         0.006509028469406753
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs spread_mr_ctx": {
+        "benchmark_mean": 2.161627989351316,
+        "candidate_mean": 2.287759027070229,
+        "days": 1011,
+        "difference": -0.126131037718913,
+        "difference_interval": [
+         -0.289812635376113,
+         0.014368757838521068
+        ],
+        "dm_p_value": 0.9464775663168733,
+        "dm_statistic": -1.6116190284411829,
+        "skill": -0.05835002060496253,
+        "skill_interval": [
+         -0.12811973061206144,
+         0.0034358470593117904
+        ]
+       }
+      }
+     },
+     "upper_tail_twcrps": {
+      "means": {
+       "B1": 1.6399125752591033,
+       "B1_prime": 1.4193005039134712,
+       "B2": 1.6238657738786346,
+       "gbm_funding": 1.3815891817660044,
+       "gbm_funding_cal_aligned": 1.3337178904608122,
+       "gbm_funding_cal_direct": 1.358875322527659,
+       "gbm_funding_cal_direct_dom": 1.3526733978114758,
+       "spread_mr_ctx": 1.2914624003344668
+      },
+      "pairs": {
+       "gbm_funding_cal_direct_dom vs B1": {
+        "benchmark_mean": 1.6399125752591033,
+        "candidate_mean": 1.3526733978114749,
+        "days": 1011,
+        "difference": 0.2872391774476284,
+        "difference_interval": [
+         0.09133280747579914,
+         0.8385153935221004
+        ],
+        "dm_p_value": 0.023713100804874543,
+        "dm_statistic": 1.9824741157187469,
+        "skill": 0.17515517703877911,
+        "skill_interval": [
+         0.09910869742129101,
+         0.2829380349484659
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B1_prime": {
+        "benchmark_mean": 1.4193005039134712,
+        "candidate_mean": 1.3526733978114756,
+        "days": 1011,
+        "difference": 0.06662710610199557,
+        "difference_interval": [
+         -0.020010363327681566,
+         0.1668604184218611
+        ],
+        "dm_p_value": 0.13227427620498522,
+        "dm_statistic": 1.1157047132504283,
+        "skill": 0.04694362181813017,
+        "skill_interval": [
+         -0.023690004105504307,
+         0.11707708419591414
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B2": {
+        "benchmark_mean": 1.6238657738786346,
+        "candidate_mean": 1.3526733978114729,
+        "days": 1011,
+        "difference": 0.27119237606716184,
+        "difference_interval": [
+         0.10184586311173266,
+         0.4915695316227267
+        ],
+        "dm_p_value": 0.0010197117673435008,
+        "dm_statistic": 3.0844303539912703,
+        "skill": 0.16700418250666965,
+        "skill_interval": [
+         -0.010151976399301904,
+         0.31969327334528913
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding": {
+        "benchmark_mean": 1.3815891817660044,
+        "candidate_mean": 1.352673397811477,
+        "days": 1011,
+        "difference": 0.028915783954527353,
+        "difference_interval": [
+         -0.03678805146838888,
+         0.09965112537407125
+        ],
+        "dm_p_value": 0.23295337220932866,
+        "dm_statistic": 0.7291551794904432,
+        "skill": 0.020929364775110648,
+        "skill_interval": [
+         -0.023490071314884578,
+         0.06803633614324464
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_aligned": {
+        "benchmark_mean": 1.3337178904608122,
+        "candidate_mean": 1.3526733978114793,
+        "days": 1011,
+        "difference": -0.018955507350667,
+        "difference_interval": [
+         -0.06306310499989262,
+         0.018251262141792242
+        ],
+        "dm_p_value": 0.7712181244952611,
+        "dm_statistic": -0.7428644493887205,
+        "skill": -0.01421253136532321,
+        "skill_interval": [
+         -0.04453079125932987,
+         0.010860024403789373
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_direct": {
+        "benchmark_mean": 1.358875322527659,
+        "candidate_mean": 1.352673397811476,
+        "days": 1011,
+        "difference": 0.006201924716183038,
+        "difference_interval": [
+         0.0031428151579377564,
+         0.010577356852640198
+        ],
+        "dm_p_value": 0.0007629368995577535,
+        "dm_statistic": 3.1697171775852975,
+        "skill": 0.004564013057980014,
+        "skill_interval": [
+         0.0009755995555672196,
+         0.008225379091951234
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs spread_mr_ctx": {
+        "benchmark_mean": 1.2914624003344668,
+        "candidate_mean": 1.352673397811477,
+        "days": 1011,
+        "difference": -0.06121099747701022,
+        "difference_interval": [
+         -0.19717375414807642,
+         0.031866390720162334
+        ],
+        "dm_p_value": 0.8693463264441584,
+        "dm_statistic": -1.1233064930710508,
+        "skill": -0.04739665472348061,
+        "skill_interval": [
+         -0.12138555366442336,
+         0.019010405812364913
+        ]
+       }
+      }
+     }
+    }
+   },
+   "month_end": {
+    "days": 150,
+    "metrics": {
+     "grid_crps": {
+      "means": {
+       "B1": 2.2495988391304365,
+       "B1_prime": 2.099376875362319,
+       "B2": 2.9292919565217383,
+       "gbm_funding": 2.1823919745870928,
+       "gbm_funding_cal_aligned": 1.8254076524761202,
+       "gbm_funding_cal_direct": 1.78948145703311,
+       "gbm_funding_cal_direct_dom": 1.7879945939376338,
+       "spread_mr_ctx": 2.121311676050645
+      },
+      "pairs": {
+       "gbm_funding_cal_direct_dom vs B1": {
+        "benchmark_mean": 2.2495988391304365,
+        "candidate_mean": 1.7879945939376336,
+        "days": 150,
+        "difference": 0.4616042451928028,
+        "difference_interval": [
+         0.05492929391967993,
+         1.1874686403915757
+        ],
+        "dm_p_value": 0.02481691907262462,
+        "dm_statistic": 1.9631061754509995,
+        "skill": 0.20519402711428855,
+        "skill_interval": [
+         0.06546940334750179,
+         0.36473063846439613
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B1_prime": {
+        "benchmark_mean": 2.099376875362319,
+        "candidate_mean": 1.787994593937633,
+        "days": 150,
+        "difference": 0.31138228142468605,
+        "difference_interval": [
+         -0.029319032197866635,
+         0.8981107552903496
+        ],
+        "dm_p_value": 0.06246693793028424,
+        "dm_statistic": 1.534389432210816,
+        "skill": 0.1483212876539599,
+        "skill_interval": [
+         -0.00308636272703669,
+         0.3110258486291596
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B2": {
+        "benchmark_mean": 2.9292919565217383,
+        "candidate_mean": 1.7879945939376325,
+        "days": 150,
+        "difference": 1.1412973625841059,
+        "difference_interval": [
+         0.6035362806494547,
+         1.9880940214408396
+        ],
+        "dm_p_value": 0.00018923807081772104,
+        "dm_statistic": 3.5546544527643618,
+        "skill": 0.38961543592236886,
+        "skill_interval": [
+         0.28983144365532565,
+         0.49407572547151474
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding": {
+        "benchmark_mean": 2.1823919745870928,
+        "candidate_mean": 1.787994593937633,
+        "days": 150,
+        "difference": 0.39439738064945984,
+        "difference_interval": [
+         0.003707937039604703,
+         1.1591839015323648
+        ],
+        "dm_p_value": 0.03601410607209332,
+        "dm_statistic": 1.798939748186169,
+        "skill": 0.18071793941786263,
+        "skill_interval": [
+         0.052592214955702626,
+         0.34421513521078595
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_aligned": {
+        "benchmark_mean": 1.8254076524761202,
+        "candidate_mean": 1.7879945939376345,
+        "days": 150,
+        "difference": 0.03741305853848575,
+        "difference_interval": [
+         -0.09062571881167245,
+         0.2947804164488846
+        ],
+        "dm_p_value": 0.3266504557884783,
+        "dm_statistic": 0.4491812508362611,
+        "skill": 0.020495727892745414,
+        "skill_interval": [
+         -0.048022624211906756,
+         0.12835613233166773
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_direct": {
+        "benchmark_mean": 1.78948145703311,
+        "candidate_mean": 1.7879945939376338,
+        "days": 150,
+        "difference": 0.001486863095476021,
+        "difference_interval": [
+         -0.006166677020135003,
+         0.011891114025502202
+        ],
+        "dm_p_value": 0.38445816423504875,
+        "dm_statistic": 0.2937926805583281,
+        "skill": 0.0008308904736801138,
+        "skill_interval": [
+         -0.003789830762515369,
+         0.006037717689780157
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs spread_mr_ctx": {
+        "benchmark_mean": 2.121311676050645,
+        "candidate_mean": 1.7879945939376345,
+        "days": 150,
+        "difference": 0.33331708211301075,
+        "difference_interval": [
+         -0.043920593364034866,
+         0.7360493980333938
+        ],
+        "dm_p_value": 0.030061822534676375,
+        "dm_statistic": 1.8798857891017753,
+        "skill": 0.1571278213739738,
+        "skill_interval": [
+         -0.03539015392558864,
+         0.31445788724311985
+        ]
+       }
+      }
+     },
+     "upper_tail_twcrps": {
+      "means": {
+       "B1": 1.1646557739130434,
+       "B1_prime": 1.1734376782608682,
+       "B2": 1.5226678231884054,
+       "gbm_funding": 1.1725169619542064,
+       "gbm_funding_cal_aligned": 0.9561680819823365,
+       "gbm_funding_cal_direct": 0.9289275002685772,
+       "gbm_funding_cal_direct_dom": 0.925075469589851,
+       "spread_mr_ctx": 1.1742230832517844
+      },
+      "pairs": {
+       "gbm_funding_cal_direct_dom vs B1": {
+        "benchmark_mean": 1.1646557739130434,
+        "candidate_mean": 0.9250754695898511,
+        "days": 150,
+        "difference": 0.23958030432319233,
+        "difference_interval": [
+         -0.016818810763223335,
+         1.254885539018847
+        ],
+        "dm_p_value": 0.07950199356586285,
+        "dm_statistic": 1.40842930384095,
+        "skill": 0.20570911138682946,
+        "skill_interval": [
+         -0.11016412849296259,
+         0.46315131051985137
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B1_prime": {
+        "benchmark_mean": 1.1734376782608682,
+        "candidate_mean": 0.92507546958985,
+        "days": 150,
+        "difference": 0.24836220867101816,
+        "difference_interval": [
+         -0.035515582913996036,
+         0.9197141464423508
+        ],
+        "dm_p_value": 0.07540761356883507,
+        "dm_statistic": 1.4366578852215355,
+        "skill": 0.21165351451737216,
+        "skill_interval": [
+         -0.2684696592590007,
+         0.476903296133078
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B2": {
+        "benchmark_mean": 1.5226678231884054,
+        "candidate_mean": 0.925075469589851,
+        "days": 150,
+        "undefined": "a resampled benchmark scores zero; skill is undefined"
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding": {
+        "benchmark_mean": 1.1725169619542064,
+        "candidate_mean": 0.9250754695898507,
+        "days": 150,
+        "difference": 0.2474414923643558,
+        "difference_interval": [
+         -0.01578659262394,
+         1.9651920585790044
+        ],
+        "dm_p_value": 0.07836271006853957,
+        "dm_statistic": 1.4161710829578604,
+        "skill": 0.21103446721312322,
+        "skill_interval": [
+         0.0054536620979599715,
+         0.5445505695849925
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_aligned": {
+        "benchmark_mean": 0.9561680819823365,
+        "candidate_mean": 0.925075469589851,
+        "days": 150,
+        "difference": 0.031092612392485546,
+        "difference_interval": [
+         -0.005113590094556555,
+         0.13510361491792236
+        ],
+        "dm_p_value": 0.16616458953822644,
+        "dm_statistic": 0.9694330299317666,
+        "skill": 0.03251793589263517,
+        "skill_interval": [
+         -0.0029357011314806378,
+         0.0780856614787499
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_direct": {
+        "benchmark_mean": 0.9289275002685772,
+        "candidate_mean": 0.9250754695898509,
+        "days": 150,
+        "difference": 0.0038520306787262933,
+        "difference_interval": [
+         -0.0013578181622178323,
+         0.016319760047678655
+        ],
+        "dm_p_value": 0.1756907819430782,
+        "dm_statistic": 0.9319128544760981,
+        "skill": 0.0041467506103679466,
+        "skill_interval": [
+         -0.0031366090344783918,
+         0.013171738304237398
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs spread_mr_ctx": {
+        "benchmark_mean": 1.1742230832517844,
+        "candidate_mean": 0.9250754695898518,
+        "days": 150,
+        "difference": 0.24914761366193255,
+        "difference_interval": [
+         -0.08041276005964104,
+         0.7315312874667308
+        ],
+        "dm_p_value": 0.057126840546304236,
+        "dm_statistic": 1.5793592394307159,
+        "skill": 0.21218081744055506,
+        "skill_interval": [
+         -0.2776857768729845,
+         0.5554857114957293
+        ]
+       }
+      }
+     }
+    }
+   },
+   "ordinary": {
+    "days": 848,
+    "metrics": {
+     "grid_crps": {
+      "means": {
+       "B1": 1.9608634351927805,
+       "B1_prime": 1.5012114295358225,
+       "B2": 1.834302746103365,
+       "gbm_funding": 1.2734565150635986,
+       "gbm_funding_cal_aligned": 1.306980652275503,
+       "gbm_funding_cal_direct": 1.361474354997323,
+       "gbm_funding_cal_direct_dom": 1.3570113037134721,
+       "spread_mr_ctx": 1.2711296837608586
+      },
+      "pairs": {
+       "gbm_funding_cal_direct_dom vs B1": {
+        "benchmark_mean": 1.9608634351927805,
+        "candidate_mean": 1.3570113037134708,
+        "days": 848,
+        "difference": 0.6038521314793096,
+        "difference_interval": [
+         0.22136301490987842,
+         1.8918930978914736
+        ],
+        "dm_p_value": 0.017764801181824885,
+        "dm_statistic": 2.102270326700609,
+        "skill": 0.30795216058477953,
+        "skill_interval": [
+         0.14528863211480486,
+         0.634161487153966
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B1_prime": {
+        "benchmark_mean": 1.5012114295358225,
+        "candidate_mean": 1.3570113037134717,
+        "days": 848,
+        "difference": 0.14420012582235087,
+        "difference_interval": [
+         -0.028542756113934226,
+         0.36760503086729024
+        ],
+        "dm_p_value": 0.09439901220532076,
+        "dm_statistic": 1.3141431830181391,
+        "skill": 0.09605584062661834,
+        "skill_interval": [
+         -0.021797250879726865,
+         0.21622537358955574
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B2": {
+        "benchmark_mean": 1.834302746103365,
+        "candidate_mean": 1.357011303713473,
+        "days": 848,
+        "difference": 0.47729144238989196,
+        "difference_interval": [
+         0.22196570155861645,
+         0.8028785361450637
+        ],
+        "dm_p_value": 7.09724642127263e-05,
+        "dm_statistic": 3.8047544552237564,
+        "skill": 0.2602031989560114,
+        "skill_interval": [
+         0.13811363104070382,
+         0.3768738949261925
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding": {
+        "benchmark_mean": 1.2734565150635986,
+        "candidate_mean": 1.3570113037134708,
+        "days": 848,
+        "difference": -0.08355478864987227,
+        "difference_interval": [
+         -0.19530503064644128,
+         0.019856356371101128
+        ],
+        "dm_p_value": 0.934188616836459,
+        "dm_statistic": -1.5077334283232462,
+        "skill": -0.06561259663091001,
+        "skill_interval": [
+         -0.15671770885657296,
+         0.01719644542041228
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_aligned": {
+        "benchmark_mean": 1.306980652275503,
+        "candidate_mean": 1.357011303713472,
+        "days": 848,
+        "difference": -0.050030651437968886,
+        "difference_interval": [
+         -0.12885505825237153,
+         0.031698453602379724
+        ],
+        "dm_p_value": 0.8767632996706742,
+        "dm_statistic": -1.1589577660630128,
+        "skill": -0.0382795654632405,
+        "skill_interval": [
+         -0.1014791540148854,
+         0.025071661056701
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_direct": {
+        "benchmark_mean": 1.361474354997323,
+        "candidate_mean": 1.357011303713472,
+        "days": 848,
+        "difference": 0.004463051283851118,
+        "difference_interval": [
+         0.0005702753009956423,
+         0.008486865152110598
+        ],
+        "dm_p_value": 0.027274099935835627,
+        "dm_statistic": 1.9224576314633606,
+        "skill": 0.003278101616434702,
+        "skill_interval": [
+         0.0004901213938167544,
+         0.006086420092375004
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs spread_mr_ctx": {
+        "benchmark_mean": 1.2711296837608586,
+        "candidate_mean": 1.357011303713471,
+        "days": 848,
+        "difference": -0.08588161995261248,
+        "difference_interval": [
+         -0.2358761442975438,
+         0.04855105247619579
+        ],
+        "dm_p_value": 0.8745501019271905,
+        "dm_statistic": -1.1481665962050203,
+        "skill": -0.0675632243112416,
+        "skill_interval": [
+         -0.19660339867721138,
+         0.03947501106137513
+        ]
+       }
+      }
+     },
+     "upper_tail_twcrps": {
+      "means": {
+       "B1": 1.0725653272832913,
+       "B1_prime": 0.6566036434406606,
+       "B2": 0.5608418452625085,
+       "gbm_funding": 0.4539963558229057,
+       "gbm_funding_cal_aligned": 0.46879327987441377,
+       "gbm_funding_cal_direct": 0.4788396003475115,
+       "gbm_funding_cal_direct_dom": 0.47923973446060075,
+       "spread_mr_ctx": 0.4631314259114274
+      },
+      "pairs": {
+       "gbm_funding_cal_direct_dom vs B1": {
+        "benchmark_mean": 1.0725653272832913,
+        "candidate_mean": 0.4792397344606012,
+        "days": 848,
+        "difference": 0.5933255928226902,
+        "difference_interval": [
+         0.23198653424325233,
+         2.2606535366044542
+        ],
+        "dm_p_value": 0.017057513778002797,
+        "dm_statistic": 2.118709469723542,
+        "skill": 0.5531836408748444,
+        "skill_interval": [
+         0.3558393944533984,
+         0.8307939515392215
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B1_prime": {
+        "benchmark_mean": 0.6566036434406606,
+        "candidate_mean": 0.4792397344606007,
+        "days": 848,
+        "difference": 0.17736390898005988,
+        "difference_interval": [
+         0.05526103174800116,
+         0.3993314344887188
+        ],
+        "dm_p_value": 0.024074905405585434,
+        "dm_statistic": 1.9760438518189722,
+        "skill": 0.2701232482516507,
+        "skill_interval": [
+         0.07972070777797916,
+         0.4662176122071725
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B2": {
+        "benchmark_mean": 0.5608418452625085,
+        "candidate_mean": 0.47923973446059953,
+        "days": 848,
+        "difference": 0.0816021108019089,
+        "difference_interval": [
+         -0.03499414969876789,
+         0.18961990418405444
+        ],
+        "dm_p_value": 0.07159079710663152,
+        "dm_statistic": 1.4640452165495705,
+        "skill": 0.1454993265770212,
+        "skill_interval": [
+         -0.08204029476259964,
+         0.29373853639452496
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding": {
+        "benchmark_mean": 0.4539963558229057,
+        "candidate_mean": 0.47923973446060136,
+        "days": 848,
+        "difference": -0.025243378637695654,
+        "difference_interval": [
+         -0.0938327908479936,
+         0.024279640657714558
+        ],
+        "dm_p_value": 0.7846600314173094,
+        "dm_statistic": -0.7880286682375914,
+        "skill": -0.05560260190181473,
+        "skill_interval": [
+         -0.1905780382892984,
+         0.0562687040816214
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_aligned": {
+        "benchmark_mean": 0.46879327987441377,
+        "candidate_mean": 0.4792397344606012,
+        "days": 848,
+        "difference": -0.010446454586187422,
+        "difference_interval": [
+         -0.0473970240133115,
+         0.0206978719186209
+        ],
+        "dm_p_value": 0.6905857437581745,
+        "dm_statistic": -0.49751133382712703,
+        "skill": -0.022283712319822395,
+        "skill_interval": [
+         -0.09707116901790305,
+         0.045490376717972035
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_direct": {
+        "benchmark_mean": 0.4788396003475115,
+        "candidate_mean": 0.4792397344606011,
+        "days": 848,
+        "difference": -0.0004001341130895813,
+        "difference_interval": [
+         -0.00246963413372109,
+         0.001953702637934439
+        ],
+        "dm_p_value": 0.6114635022570087,
+        "dm_statistic": -0.2831354660270687,
+        "skill": -0.0008356328774796179,
+        "skill_interval": [
+         -0.005405303293329064,
+         0.0042581636840628235
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs spread_mr_ctx": {
+        "benchmark_mean": 0.4631314259114274,
+        "candidate_mean": 0.4792397344606009,
+        "days": 848,
+        "difference": -0.016108308549173517,
+        "difference_interval": [
+         -0.11868368930542934,
+         0.05917724711062801
+        ],
+        "dm_p_value": 0.6338353262370541,
+        "dm_statistic": -0.34202862869730233,
+        "skill": -0.03478129025140735,
+        "skill_interval": [
+         -0.28211949905830014,
+         0.1273075213117079
+        ]
+       }
+      }
+     }
+    }
+   },
+   "quarter_end": {
+    "days": 30,
+    "metrics": {
+     "grid_crps": {
+      "means": {
+       "B1": 6.9558718695652235,
+       "B1_prime": 6.847104492753628,
+       "B2": 7.560183913043479,
+       "gbm_funding": 7.833301329129564,
+       "gbm_funding_cal_aligned": 6.896457030744519,
+       "gbm_funding_cal_direct": 6.7270537231736105,
+       "gbm_funding_cal_direct_dom": 6.707149124723693,
+       "spread_mr_ctx": 6.487581030481518
+      },
+      "pairs": {
+       "gbm_funding_cal_direct_dom vs B1": {
+        "benchmark_mean": 6.9558718695652235,
+        "candidate_mean": 6.707149124723696,
+        "days": 30,
+        "difference": 0.24872274484152795,
+        "difference_interval": [
+         -1.9479409882932002,
+         4.003568336636599
+        ],
+        "dm_p_value": 0.4095418806766661,
+        "dm_statistic": 0.2287235864499182,
+        "skill": 0.0357572349671637,
+        "skill_interval": [
+         -0.32888349517824333,
+         0.35044683848215924
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B1_prime": {
+        "benchmark_mean": 6.847104492753628,
+        "candidate_mean": 6.707149124723695,
+        "days": 30,
+        "difference": 0.13995536802993352,
+        "difference_interval": [
+         -2.1133332945105945,
+         3.855601452364544
+        ],
+        "dm_p_value": 0.4500033947288563,
+        "dm_statistic": 0.12565277008603587,
+        "skill": 0.02044008064694353,
+        "skill_interval": [
+         -0.36483523476785246,
+         0.3499165058428141
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B2": {
+        "benchmark_mean": 7.560183913043479,
+        "candidate_mean": 6.707149124723694,
+        "days": 30,
+        "difference": 0.853034788319786,
+        "difference_interval": [
+         -0.35985354935902714,
+         1.759379908587854
+        ],
+        "dm_p_value": 0.10433264935311448,
+        "dm_statistic": 1.2572439899054548,
+        "skill": 0.11283254456919455,
+        "skill_interval": [
+         -0.3922485571065446,
+         0.29302229249928663
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding": {
+        "benchmark_mean": 7.833301329129564,
+        "candidate_mean": 6.707149124723696,
+        "days": 30,
+        "difference": 1.126152204405868,
+        "difference_interval": [
+         -1.1222830391771792,
+         4.749898146523306
+        ],
+        "dm_p_value": 0.14648904987092382,
+        "dm_statistic": 1.0516109110396958,
+        "skill": 0.14376469857198843,
+        "skill_interval": [
+         -0.11907333896136801,
+         0.39489451387143065
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_aligned": {
+        "benchmark_mean": 6.896457030744519,
+        "candidate_mean": 6.707149124723695,
+        "days": 30,
+        "difference": 0.1893079060208241,
+        "difference_interval": [
+         -0.19914174932193285,
+         0.8327162374222261
+        ],
+        "dm_p_value": 0.1904418900709718,
+        "dm_statistic": 0.8762690613865242,
+        "skill": 0.027450023276718225,
+        "skill_interval": [
+         -0.019520320662596218,
+         0.0889099504577784
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_direct": {
+        "benchmark_mean": 6.7270537231736105,
+        "candidate_mean": 6.707149124723694,
+        "days": 30,
+        "difference": 0.01990459844991661,
+        "difference_interval": [
+         -0.00741421696538621,
+         0.05749915039798219
+        ],
+        "dm_p_value": 0.10447089392240871,
+        "dm_statistic": 1.2564805653776687,
+        "skill": 0.0029588879870764955,
+        "skill_interval": [
+         0.0008815738232290792,
+         0.005434533626177973
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs spread_mr_ctx": {
+        "benchmark_mean": 6.487581030481518,
+        "candidate_mean": 6.707149124723696,
+        "days": 30,
+        "difference": -0.21956809424217694,
+        "difference_interval": [
+         -2.012577380709555,
+         2.8621959205750005
+        ],
+        "dm_p_value": 0.5882478297744254,
+        "dm_statistic": -0.22304004443643963,
+        "skill": -0.03384437022220596,
+        "skill_interval": [
+         -0.3337945785035962,
+         0.40652471137512247
+        ]
+       }
+      }
+     },
+     "upper_tail_twcrps": {
+      "means": {
+       "B1": 5.377350753623186,
+       "B1_prime": 5.311155057971011,
+       "B2": 5.541422492753625,
+       "gbm_funding": 5.968741244018944,
+       "gbm_funding_cal_aligned": 5.393360791936062,
+       "gbm_funding_cal_direct": 5.214185164589507,
+       "gbm_funding_cal_direct_dom": 5.201839021165715,
+       "spread_mr_ctx": 5.0079025183223
+      },
+      "pairs": {
+       "gbm_funding_cal_direct_dom vs B1": {
+        "benchmark_mean": 5.377350753623186,
+        "candidate_mean": 5.201839021165716,
+        "days": 30,
+        "difference": 0.17551173245746957,
+        "difference_interval": [
+         -0.8679115072414656,
+         1.8913411679606504
+        ],
+        "dm_p_value": 0.3857817503431391,
+        "dm_statistic": 0.2903303783012047,
+        "skill": 0.03263907089177922,
+        "skill_interval": [
+         -0.26510163317231933,
+         0.26273763337307293
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B1_prime": {
+        "benchmark_mean": 5.311155057971011,
+        "candidate_mean": 5.201839021165716,
+        "days": 30,
+        "difference": 0.10931603680529527,
+        "difference_interval": [
+         -1.0077833559141893,
+         1.7272467622745968
+        ],
+        "dm_p_value": 0.4307646133860241,
+        "dm_statistic": 0.17442785240589515,
+        "skill": 0.02058234708121224,
+        "skill_interval": [
+         -0.2940319876994916,
+         0.2653434863644478
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B2": {
+        "benchmark_mean": 5.541422492753625,
+        "candidate_mean": 5.201839021165715,
+        "days": 30,
+        "undefined": "a resampled benchmark scores zero; skill is undefined"
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding": {
+        "benchmark_mean": 5.968741244018944,
+        "candidate_mean": 5.201839021165716,
+        "days": 30,
+        "difference": 0.7669022228532278,
+        "difference_interval": [
+         -0.22004549382825378,
+         3.264403950520672
+        ],
+        "dm_p_value": 0.1018572058270899,
+        "dm_statistic": 1.2710400200101568,
+        "skill": 0.12848642477535985,
+        "skill_interval": [
+         -0.07934096631432869,
+         0.278868677638712
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_aligned": {
+        "benchmark_mean": 5.393360791936062,
+        "candidate_mean": 5.201839021165716,
+        "days": 30,
+        "difference": 0.1915217707703462,
+        "difference_interval": [
+         0.025565193242634676,
+         0.7045689719830615
+        ],
+        "dm_p_value": 0.06463006014059913,
+        "dm_statistic": 1.5170259979523153,
+        "skill": 0.035510654332026506,
+        "skill_interval": [
+         0.0048698258215616776,
+         0.06198498191696032
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_direct": {
+        "benchmark_mean": 5.214185164589507,
+        "candidate_mean": 5.201839021165718,
+        "days": 30,
+        "difference": 0.012346143423788996,
+        "difference_interval": [
+         -0.0007260479974058268,
+         0.0347418073943044
+        ],
+        "dm_p_value": 0.11254428401553407,
+        "dm_statistic": 1.2131079051474325,
+        "skill": 0.002367799192793139,
+        "skill_interval": [
+         0.000618574690283417,
+         0.004527553654288674
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs spread_mr_ctx": {
+        "benchmark_mean": 5.0079025183223,
+        "candidate_mean": 5.201839021165715,
+        "days": 30,
+        "difference": -0.19393650284341488,
+        "difference_interval": [
+         -2.372017411065584,
+         0.9586190873575843
+        ],
+        "dm_p_value": 0.6106959320491672,
+        "dm_statistic": -0.2811333327134466,
+        "skill": -0.0387260938354658,
+        "skill_interval": [
+         -0.6617255721983126,
+         0.3330554050901172
+        ]
+       }
+      }
+     }
+    }
+   },
+   "settlement": {
+    "days": 742,
+    "metrics": {
+     "grid_crps": {
+      "means": {
+       "B1": 2.111873588421426,
+       "B1_prime": 1.7786562816418627,
+       "B2": 2.4085617590530854,
+       "gbm_funding": 1.6763190340253056,
+       "gbm_funding_cal_aligned": 1.684794380282454,
+       "gbm_funding_cal_direct": 1.7824277625675378,
+       "gbm_funding_cal_direct_dom": 1.7718232501627207,
+       "spread_mr_ctx": 1.6102444606110162
+      },
+      "pairs": {
+       "gbm_funding_cal_direct_dom vs B1": {
+        "benchmark_mean": 2.111873588421426,
+        "candidate_mean": 1.771823250162726,
+        "days": 742,
+        "difference": 0.3400503382586999,
+        "difference_interval": [
+         0.03384533276448293,
+         1.0752759548874533
+        ],
+        "dm_p_value": 0.06230694012870597,
+        "dm_statistic": 1.5356922356238716,
+        "skill": 0.16101832047290257,
+        "skill_interval": [
+         0.017552789133843616,
+         0.3893501228573929
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B1_prime": {
+        "benchmark_mean": 1.7786562816418627,
+        "candidate_mean": 1.771823250162724,
+        "days": 742,
+        "difference": 0.006833031479138822,
+        "difference_interval": [
+         -0.16888137289008318,
+         0.17680922435083488
+        ],
+        "dm_p_value": 0.4727060814519438,
+        "dm_statistic": 0.06846916791010856,
+        "skill": 0.0038416818075897767,
+        "skill_interval": [
+         -0.10619419544967806,
+         0.0923079527689159
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B2": {
+        "benchmark_mean": 2.4085617590530854,
+        "candidate_mean": 1.7718232501627202,
+        "days": 742,
+        "difference": 0.6367385088903652,
+        "difference_interval": [
+         0.3457915515097329,
+         1.0166115654239813
+        ],
+        "dm_p_value": 1.2135760124043493e-05,
+        "dm_statistic": 4.221469126701215,
+        "skill": 0.2643646178044012,
+        "skill_interval": [
+         0.15784283972283325,
+         0.3700729496444938
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding": {
+        "benchmark_mean": 1.6763190340253056,
+        "candidate_mean": 1.771823250162721,
+        "days": 742,
+        "difference": -0.09550421613741535,
+        "difference_interval": [
+         -0.22409710774452163,
+         0.01414995378018774
+        ],
+        "dm_p_value": 0.9357061411424012,
+        "dm_statistic": -1.5196947260698603,
+        "skill": -0.05697257753381426,
+        "skill_interval": [
+         -0.1362632488583711,
+         0.007696087770198708
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_aligned": {
+        "benchmark_mean": 1.684794380282454,
+        "candidate_mean": 1.7718232501627216,
+        "days": 742,
+        "difference": -0.08702886988026744,
+        "difference_interval": [
+         -0.18322929113656178,
+         -0.002692568547494889
+        ],
+        "dm_p_value": 0.9610536105412666,
+        "dm_statistic": -1.7630457197882798,
+        "skill": -0.05165548443108953,
+        "skill_interval": [
+         -0.10992550825543534,
+         -0.0016989637536014637
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_direct": {
+        "benchmark_mean": 1.7824277625675378,
+        "candidate_mean": 1.7718232501627236,
+        "days": 742,
+        "difference": 0.010604512404814092,
+        "difference_interval": [
+         0.005523066747432293,
+         0.016523953065421655
+        ],
+        "dm_p_value": 0.00026277815198660903,
+        "dm_statistic": 3.4673810427274567,
+        "skill": 0.005949476678672568,
+        "skill_interval": [
+         0.0033079859691645718,
+         0.00873192093619069
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs spread_mr_ctx": {
+        "benchmark_mean": 1.6102444606110162,
+        "candidate_mean": 1.7718232501627247,
+        "days": 742,
+        "difference": -0.16157878955170837,
+        "difference_interval": [
+         -0.3487200183047901,
+         -0.017315237620663726
+        ],
+        "dm_p_value": 0.9719009335890063,
+        "dm_statistic": -1.9094960343315397,
+        "skill": -0.10034426045495999,
+        "skill_interval": [
+         -0.21455738501313854,
+         -0.012314926875939325
+        ]
+       }
+      }
+     },
+     "upper_tail_twcrps": {
+      "means": {
+       "B1": 1.2223630131548107,
+       "B1_prime": 0.9238161436481884,
+       "B2": 1.001813617719443,
+       "gbm_funding": 0.8157888036099263,
+       "gbm_funding_cal_aligned": 0.8167564550218707,
+       "gbm_funding_cal_direct": 0.8562204351329936,
+       "gbm_funding_cal_direct_dom": 0.8492209079870149,
+       "spread_mr_ctx": 0.7722946564837424
+      },
+      "pairs": {
+       "gbm_funding_cal_direct_dom vs B1": {
+        "benchmark_mean": 1.2223630131548107,
+        "candidate_mean": 0.8492209079870157,
+        "days": 742,
+        "difference": 0.37314210516779495,
+        "difference_interval": [
+         0.10370041378427292,
+         1.330759464819319
+        ],
+        "dm_p_value": 0.03711544124255606,
+        "dm_statistic": 1.7851876624302654,
+        "skill": 0.3052629220224426,
+        "skill_interval": [
+         0.10611260688166643,
+         0.6244415662336944
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B1_prime": {
+        "benchmark_mean": 0.9238161436481884,
+        "candidate_mean": 0.8492209079870148,
+        "days": 742,
+        "difference": 0.07459523566117363,
+        "difference_interval": [
+         -0.04247257776865411,
+         0.20839113380581353
+        ],
+        "dm_p_value": 0.16148599331302793,
+        "dm_statistic": 0.98836895369292,
+        "skill": 0.08074684142950125,
+        "skill_interval": [
+         -0.0692764837425778,
+         0.1846147857616917
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B2": {
+        "benchmark_mean": 1.001813617719443,
+        "candidate_mean": 0.8492209079870157,
+        "days": 742,
+        "difference": 0.15259270973242728,
+        "difference_interval": [
+         -0.012176550203297637,
+         0.30720840448041054
+        ],
+        "dm_p_value": 0.024618818218164917,
+        "dm_statistic": 1.9665281281252174,
+        "skill": 0.15231646589092457,
+        "skill_interval": [
+         -0.028639987040746967,
+         0.27116530816735723
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding": {
+        "benchmark_mean": 0.8157888036099263,
+        "candidate_mean": 0.8492209079870147,
+        "days": 742,
+        "difference": -0.033432104377088365,
+        "difference_interval": [
+         -0.13548455648961802,
+         0.0327292359711034
+        ],
+        "dm_p_value": 0.7761101930896751,
+        "dm_statistic": -0.7591219432770127,
+        "skill": -0.04098132289772648,
+        "skill_interval": [
+         -0.16615231585385953,
+         0.036358244845538915
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_aligned": {
+        "benchmark_mean": 0.8167564550218707,
+        "candidate_mean": 0.8492209079870147,
+        "days": 742,
+        "difference": -0.032464452965144046,
+        "difference_interval": [
+         -0.10917487173724288,
+         0.01642397535484829
+        ],
+        "dm_p_value": 0.8312942410975545,
+        "dm_statistic": -0.9592922911023507,
+        "skill": -0.039748021292681096,
+        "skill_interval": [
+         -0.130425339219891,
+         0.017180688164994386
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_direct": {
+        "benchmark_mean": 0.8562204351329936,
+        "candidate_mean": 0.8492209079870153,
+        "days": 742,
+        "difference": 0.006999527145978317,
+        "difference_interval": [
+         0.003665265069693718,
+         0.011849833809425218
+        ],
+        "dm_p_value": 0.0004394742646736116,
+        "dm_statistic": 3.326655851283816,
+        "skill": 0.008174912509406653,
+        "skill_interval": [
+         0.004399581311863282,
+         0.011805916909205579
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs spread_mr_ctx": {
+        "benchmark_mean": 0.7722946564837424,
+        "candidate_mean": 0.8492209079870143,
+        "days": 742,
+        "difference": -0.07692625150327197,
+        "difference_interval": [
+         -0.263865218125284,
+         0.029089666545494636
+        ],
+        "dm_p_value": 0.8900639481861592,
+        "dm_statistic": -1.226868276578794,
+        "skill": -0.09960738541623115,
+        "skill_interval": [
+         -0.3225331721705006,
+         0.023848527433379937
+        ]
+       }
+      }
+     }
+    }
+   },
+   "tax_date": {
+    "days": 89,
+    "metrics": {
+     "grid_crps": {
+      "means": {
+       "B1": 5.496216785539813,
+       "B1_prime": 5.419839838788471,
+       "B2": 7.737837357107959,
+       "gbm_funding": 5.772364080499885,
+       "gbm_funding_cal_aligned": 5.79201305746542,
+       "gbm_funding_cal_direct": 5.9487748575394415,
+       "gbm_funding_cal_direct_dom": 5.9417737293810085,
+       "spread_mr_ctx": 5.3683182599861805
+      },
+      "pairs": {
+       "gbm_funding_cal_direct_dom vs B1": {
+        "benchmark_mean": 5.496216785539813,
+        "candidate_mean": 5.941773729381008,
+        "days": 89,
+        "difference": -0.4455569438411941,
+        "difference_interval": [
+         -1.2648256671089424,
+         0.042595406530421376
+        ],
+        "dm_p_value": 0.9252575985539955,
+        "dm_statistic": -1.441353631389249,
+        "skill": -0.08106611533471993,
+        "skill_interval": [
+         -0.19575157733383647,
+         -0.0019965769263903393
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B1_prime": {
+        "benchmark_mean": 5.419839838788471,
+        "candidate_mean": 5.941773729381009,
+        "days": 89,
+        "difference": -0.5219338905925381,
+        "difference_interval": [
+         -1.254684811495528,
+         -0.06934029831167554
+        ],
+        "dm_p_value": 0.9663654857249714,
+        "dm_statistic": -1.829872352310429,
+        "skill": -0.09630061147880878,
+        "skill_interval": [
+         -0.2506830619606951,
+         0.013025169500434641
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B2": {
+        "benchmark_mean": 7.737837357107959,
+        "candidate_mean": 5.941773729381006,
+        "days": 89,
+        "difference": 1.7960636277269533,
+        "difference_interval": [
+         0.929964256683033,
+         3.7028298029007773
+        ],
+        "dm_p_value": 0.0004490779281807189,
+        "dm_statistic": 3.3206266875165666,
+        "skill": 0.23211441968046712,
+        "skill_interval": [
+         -0.2978358206100562,
+         0.49331280478883444
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding": {
+        "benchmark_mean": 5.772364080499885,
+        "candidate_mean": 5.941773729381008,
+        "days": 89,
+        "difference": -0.16940964888112267,
+        "difference_interval": [
+         -0.41435723901559923,
+         0.0021949454188366913
+        ],
+        "dm_p_value": 0.9446254342341867,
+        "dm_statistic": -1.5948350291873024,
+        "skill": -0.02934839980960658,
+        "skill_interval": [
+         -0.07625656825389586,
+         0.016512273830138473
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_aligned": {
+        "benchmark_mean": 5.79201305746542,
+        "candidate_mean": 5.941773729381007,
+        "days": 89,
+        "difference": -0.14976067191558673,
+        "difference_interval": [
+         -0.34525011463325195,
+         -0.05166795074656834
+        ],
+        "dm_p_value": 0.9759878230714292,
+        "dm_statistic": -1.9771528634124527,
+        "skill": -0.025856411308078416,
+        "skill_interval": [
+         -0.05997780083450552,
+         0.010463998223635338
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_direct": {
+        "benchmark_mean": 5.9487748575394415,
+        "candidate_mean": 5.941773729381008,
+        "days": 89,
+        "difference": 0.007001128158434146,
+        "difference_interval": [
+         -0.0025427172106642455,
+         0.015999587686791227
+        ],
+        "dm_p_value": 0.13621201519373138,
+        "dm_statistic": 1.0974973686659504,
+        "skill": 0.001176902526334638,
+        "skill_interval": [
+         -0.0017672131743274027,
+         0.003763638807172824
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs spread_mr_ctx": {
+        "benchmark_mean": 5.3683182599861805,
+        "candidate_mean": 5.9417737293810085,
+        "days": 89,
+        "difference": -0.5734554693948284,
+        "difference_interval": [
+         -1.80481536092417,
+         0.07496374514981985
+        ],
+        "dm_p_value": 0.9145600693565599,
+        "dm_statistic": -1.369382116950242,
+        "skill": -0.1068221818496105,
+        "skill_interval": [
+         -0.1911128313061931,
+         -0.027259841823238914
+        ]
+       }
+      }
+     },
+     "upper_tail_twcrps": {
+      "means": {
+       "B1": 4.662240102589153,
+       "B1_prime": 4.652707049340496,
+       "B2": 5.659997132388861,
+       "gbm_funding": 4.904849313181637,
+       "gbm_funding_cal_aligned": 4.911566983979982,
+       "gbm_funding_cal_direct": 4.974637171110243,
+       "gbm_funding_cal_direct_dom": 4.973195509972914,
+       "spread_mr_ctx": 4.564666444828905
+      },
+      "pairs": {
+       "gbm_funding_cal_direct_dom vs B1": {
+        "benchmark_mean": 4.662240102589153,
+        "candidate_mean": 4.9731955099729115,
+        "days": 89,
+        "difference": -0.31095540738375854,
+        "difference_interval": [
+         -2.67401916061405,
+         0.0868492665439225
+        ],
+        "dm_p_value": 0.8826215337992976,
+        "dm_statistic": -1.188194138647124,
+        "skill": -0.06669656657345273,
+        "skill_interval": [
+         -0.1508232343224448,
+         -0.015299370093378444
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B1_prime": {
+        "benchmark_mean": 4.652707049340496,
+        "candidate_mean": 4.973195509972911,
+        "days": 89,
+        "difference": -0.32048846063241465,
+        "difference_interval": [
+         -3.299534967701705,
+         0.06595582000985617
+        ],
+        "dm_p_value": 0.9070580918747926,
+        "dm_statistic": -1.322854357819499,
+        "skill": -0.06888214908734534,
+        "skill_interval": [
+         -0.16120171514664175,
+         -0.005796499418624965
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs B2": {
+        "benchmark_mean": 5.659997132388861,
+        "candidate_mean": 4.973195509972914,
+        "days": 89,
+        "undefined": "a resampled benchmark scores zero; skill is undefined"
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding": {
+        "benchmark_mean": 4.904849313181637,
+        "candidate_mean": 4.973195509972914,
+        "days": 89,
+        "undefined": "a resampled benchmark scores zero; skill is undefined"
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_aligned": {
+        "benchmark_mean": 4.911566983979982,
+        "candidate_mean": 4.97319550997291,
+        "days": 89,
+        "difference": -0.06162852599292836,
+        "difference_interval": [
+         -0.35243956858745146,
+         0.009853925368370715
+        ],
+        "dm_p_value": 0.860515418356258,
+        "dm_statistic": -1.0826379329204179,
+        "skill": -0.012547630154274925,
+        "skill_interval": [
+         -0.03671821289853984,
+         0.009167993500477778
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs gbm_funding_cal_direct": {
+        "benchmark_mean": 4.974637171110243,
+        "candidate_mean": 4.973195509972911,
+        "days": 89,
+        "difference": 0.0014416611373317982,
+        "difference_interval": [
+         -0.006424634332614536,
+         0.011280745926369858
+        ],
+        "dm_p_value": 0.3904542940888517,
+        "dm_statistic": 0.2781351837008833,
+        "skill": 0.0002898022685361086,
+        "skill_interval": [
+         -0.002006647580929558,
+         0.002237370501842277
+        ]
+       },
+       "gbm_funding_cal_direct_dom vs spread_mr_ctx": {
+        "benchmark_mean": 4.564666444828905,
+        "candidate_mean": 4.973195509972914,
+        "days": 89,
+        "difference": -0.4085290651440092,
+        "difference_interval": [
+         -3.3765833481802314,
+         0.1881954252259943
+        ],
+        "dm_p_value": 0.8476130705276164,
+        "dm_statistic": -1.026249787342016,
+        "skill": -0.08949811997913067,
+        "skill_interval": [
+         -0.19187768869962177,
+         -0.027922793435128414
+        ]
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ "issue": 1032,
+ "label": "development, not a verdict",
+ "means": {
+  "grid_crps": {
+   "B1": 2.2888782423532197,
+   "B1_prime": 1.9281063422008669,
+   "B2": 2.5183901989921473,
+   "gbm_funding": 1.8222896454436095,
+   "gbm_funding_cal_aligned": 1.8018510012163578,
+   "gbm_funding_cal_direct": 1.8682541173331555,
+   "gbm_funding_cal_direct_dom": 1.8611042695261002,
+   "spread_mr_ctx": 1.750393546494816
+  },
+  "upper_tail_twcrps": {
+   "B1": 1.3750288332356742,
+   "B1_prime": 1.0647739875776376,
+   "B2": 1.131460713699748,
+   "gbm_funding": 0.9515298646434547,
+   "gbm_funding_cal_aligned": 0.9359601929190101,
+   "gbm_funding_cal_direct": 0.9549227374798365,
+   "gbm_funding_cal_direct_dom": 0.9516024987979369,
+   "spread_mr_ctx": 0.9077185724082615
+  }
+ },
+ "models": [
+  "B1",
+  "B1_prime",
+  "B2",
+  "spread_mr_ctx",
+  "gbm_funding",
+  "gbm_funding_cal_direct",
+  "gbm_funding_cal_aligned",
+  "gbm_funding_cal_direct_dom"
+ ],
+ "not_run": {},
+ "notes": {
+  "b1_prime_missing": [],
+  "benchmark_missing": [],
+  "candidate_skipped_for_history": 75,
+  "decision_days_offered": 1930,
+  "first": "2018-07-19",
+  "gbm": {
+   "common_days": 1855,
+   "gbm_days": 1855,
+   "transparent_days": 1855
+  },
+  "last": "2025-12-23",
+  "last_target": "2025-12-31",
+  "refits": 89,
+  "scored_decision_days": 1855
+ },
+ "pairs": [
+  [
+   "gbm_funding_cal_direct_dom",
+   "gbm_funding_cal_direct"
+  ],
+  [
+   "gbm_funding_cal_direct_dom",
+   "gbm_funding_cal_aligned"
+  ],
+  [
+   "gbm_funding_cal_direct_dom",
+   "gbm_funding"
+  ],
+  [
+   "gbm_funding_cal_direct_dom",
+   "B1"
+  ],
+  [
+   "gbm_funding_cal_direct_dom",
+   "B1_prime"
+  ],
+  [
+   "gbm_funding_cal_direct_dom",
+   "B2"
+  ],
+  [
+   "gbm_funding_cal_direct_dom",
+   "spread_mr_ctx"
+  ]
+ ],
+ "panel_sha256": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+ "reading_over_gbm_funding": [
+  "gbm_funding_cal_direct_dom is not shown to beat gbm_funding on calendar days (skill +0.3%, one-sided 95% lower bound -4.9%) and does not lose on ordinary days (skill -6.6%, interval -15.7% to +1.7%)."
+ ],
+ "reading_rules": [
+  "The day-of-month term helps over gbm_funding_cal_direct on all decision days (skill +0.4%, interval +0.2% to +0.6%).",
+  "The day-of-month term helps over gbm_funding_cal_direct on target days of the 19th to 23rd (skill +0.7%, interval +0.3% to +1.0%).",
+  "It does not lose on ordinary target days (skill +0.3%, interval +0.0% to +0.6%)."
+ ],
+ "scratch_panel_sha256": "f9fae9dce43341f2816d19c76d9562f9773f0bff5891bd051f52eac0ffecb8f3",
+ "seed": 1032,
+ "skipped_groups": {}
+}

@@ -1,0 +1,970 @@
+{
+ "cells": {
+  "cut/coded_days": {
+   "grid_crps": {
+    "gbm_funding_cal_direct vs B2": {
+     "days": 166,
+     "skill": 0.2653951645024449,
+     "skill_interval": [
+      0.13023699850457582,
+      0.3817977595210422
+     ]
+    },
+    "gbm_funding_cal_direct_bs_coded vs B2": {
+     "days": 166,
+     "skill": 0.27120210408461737,
+     "skill_interval": [
+      0.1399912075573276,
+      0.38568286131738294
+     ]
+    },
+    "gbm_funding_cal_direct_bs_coded vs gbm_funding_cal_direct": {
+     "days": 166,
+     "skill": 0.007904848023821515,
+     "skill_interval": [
+      0.0008624727205517211,
+      0.016402013015349437
+     ]
+    },
+    "gbm_funding_cal_direct_bs_turn vs B2": {
+     "days": 166,
+     "skill": 0.2713136709016869,
+     "skill_interval": [
+      0.14338529253317114,
+      0.38403726163692986
+     ]
+    },
+    "gbm_funding_cal_direct_bs_turn vs gbm_funding_cal_direct": {
+     "days": 166,
+     "skill": 0.008056721264614526,
+     "skill_interval": [
+      -0.009038156857930106,
+      0.03894198373029244
+     ]
+    },
+    "gbm_funding_cal_direct_bs_turn vs gbm_funding_cal_direct_bs_coded": {
+     "days": 166,
+     "skill": 0.0001530833413412883,
+     "skill_interval": [
+      -0.018298538570464696,
+      0.024980059012401013
+     ]
+    }
+   },
+   "upper_tail_twcrps": {
+    "gbm_funding_cal_direct vs B2": {
+     "days": 166,
+     "skill": 0.23805573579114608,
+     "skill_interval": [
+      -0.00336065111127562,
+      0.44373200864009343
+     ]
+    },
+    "gbm_funding_cal_direct_bs_coded vs B2": {
+     "days": 166,
+     "skill": 0.2422724499372408,
+     "skill_interval": [
+      0.011534420558375502,
+      0.4465811855413049
+     ]
+    },
+    "gbm_funding_cal_direct_bs_coded vs gbm_funding_cal_direct": {
+     "days": 166,
+     "skill": 0.0055341503889041865,
+     "skill_interval": [
+      -0.0004459997128489438,
+      0.014629962595324118
+     ]
+    },
+    "gbm_funding_cal_direct_bs_turn vs B2": {
+     "days": 166,
+     "skill": 0.2492252148566178,
+     "skill_interval": [
+      0.02012582404169594,
+      0.4404686202855651
+     ]
+    },
+    "gbm_funding_cal_direct_bs_turn vs gbm_funding_cal_direct": {
+     "days": 166,
+     "skill": 0.014659181242173115,
+     "skill_interval": [
+      -0.014237467057764231,
+      0.05769571370605338
+     ]
+    },
+    "gbm_funding_cal_direct_bs_turn vs gbm_funding_cal_direct_bs_coded": {
+     "days": 166,
+     "skill": 0.009175811172236264,
+     "skill_interval": [
+      -0.01793490523807037,
+      0.04394040211785185
+     ]
+    }
+   }
+  },
+  "cut/penultimate": {
+   "grid_crps": {
+    "gbm_funding_cal_direct vs B2": {
+     "days": 90,
+     "skill": 0.3206931647145961,
+     "skill_interval": [
+      0.10383680169052176,
+      0.510845748525197
+     ]
+    },
+    "gbm_funding_cal_direct_bs_coded vs B2": {
+     "days": 90,
+     "skill": 0.3208481583818531,
+     "skill_interval": [
+      0.10301630537258158,
+      0.5079964508302199
+     ]
+    },
+    "gbm_funding_cal_direct_bs_coded vs gbm_funding_cal_direct": {
+     "days": 90,
+     "skill": 0.00022816444529353346,
+     "skill_interval": [
+      -0.008068798920802232,
+      0.007691261896815784
+     ]
+    },
+    "gbm_funding_cal_direct_bs_turn vs B2": {
+     "days": 90,
+     "skill": 0.319584545649159,
+     "skill_interval": [
+      0.10656504867138178,
+      0.5110318664462764
+     ]
+    },
+    "gbm_funding_cal_direct_bs_turn vs gbm_funding_cal_direct": {
+     "days": 90,
+     "skill": -0.0016319857358292429,
+     "skill_interval": [
+      -0.007267201154310185,
+      0.005525097042038689
+     ]
+    },
+    "gbm_funding_cal_direct_bs_turn vs gbm_funding_cal_direct_bs_coded": {
+     "days": 90,
+     "skill": -0.0018605746981166997,
+     "skill_interval": [
+      -0.012036064708208985,
+      0.011504564383463698
+     ]
+    }
+   },
+   "upper_tail_twcrps": {
+    "gbm_funding_cal_direct vs B2": {
+     "days": 90,
+     "skill": null,
+     "skill_interval": null,
+     "undefined": true
+    },
+    "gbm_funding_cal_direct_bs_coded vs B2": {
+     "days": 90,
+     "skill": null,
+     "skill_interval": null,
+     "undefined": true
+    },
+    "gbm_funding_cal_direct_bs_coded vs gbm_funding_cal_direct": {
+     "days": 90,
+     "skill": -0.002812737349100147,
+     "skill_interval": [
+      -0.01670473493565311,
+      0.00885179830423619
+     ]
+    },
+    "gbm_funding_cal_direct_bs_turn vs B2": {
+     "days": 90,
+     "skill": null,
+     "skill_interval": null,
+     "undefined": true
+    },
+    "gbm_funding_cal_direct_bs_turn vs gbm_funding_cal_direct": {
+     "days": 90,
+     "skill": 0.007979874441375575,
+     "skill_interval": [
+      -0.009372481507093548,
+      0.01943598673412738
+     ]
+    },
+    "gbm_funding_cal_direct_bs_turn vs gbm_funding_cal_direct_bs_coded": {
+     "days": 90,
+     "skill": 0.010762340154359841,
+     "skill_interval": [
+      -0.009186142647925421,
+      0.02823898204664925
+     ]
+    }
+   }
+  },
+  "cut/turn_days": {
+   "grid_crps": {
+    "gbm_funding_cal_direct vs B2": {
+     "days": 179,
+     "skill": 0.2898587531513604,
+     "skill_interval": [
+      0.08638959907859922,
+      0.402994972120683
+     ]
+    },
+    "gbm_funding_cal_direct_bs_coded vs B2": {
+     "days": 179,
+     "skill": 0.28965724856326625,
+     "skill_interval": [
+      0.0943936192566869,
+      0.4004458293976279
+     ]
+    },
+    "gbm_funding_cal_direct_bs_coded vs gbm_funding_cal_direct": {
+     "days": 179,
+     "skill": -0.00028375282943827215,
+     "skill_interval": [
+      -0.007290497440852727,
+      0.007669573105713729
+     ]
+    },
+    "gbm_funding_cal_direct_bs_turn vs B2": {
+     "days": 179,
+     "skill": 0.2962623156974885,
+     "skill_interval": [
+      0.09601865810299887,
+      0.4059417199874351
+     ]
+    },
+    "gbm_funding_cal_direct_bs_turn vs gbm_funding_cal_direct": {
+     "days": 179,
+     "skill": 0.00901730828133816,
+     "skill_interval": [
+      -0.010280475721037876,
+      0.029610858440479768
+     ]
+    },
+    "gbm_funding_cal_direct_bs_turn vs gbm_funding_cal_direct_bs_coded": {
+     "days": 179,
+     "skill": 0.00929842265703818,
+     "skill_interval": [
+      -0.012833576704616758,
+      0.0283700319340243
+     ]
+    }
+   },
+   "upper_tail_twcrps": {
+    "gbm_funding_cal_direct vs B2": {
+     "days": 179,
+     "skill": 0.2182666321261983,
+     "skill_interval": [
+      -0.020611700288857338,
+      0.3796593323851444
+     ]
+    },
+    "gbm_funding_cal_direct_bs_coded vs B2": {
+     "days": 179,
+     "skill": 0.21945920492685408,
+     "skill_interval": [
+      -0.011906917053902871,
+      0.3776836588484206
+     ]
+    },
+    "gbm_funding_cal_direct_bs_coded vs gbm_funding_cal_direct": {
+     "days": 179,
+     "skill": 0.0015255493108851112,
+     "skill_interval": [
+      -0.0042174347988924235,
+      0.01088377972042304
+     ]
+    },
+    "gbm_funding_cal_direct_bs_turn vs B2": {
+     "days": 179,
+     "skill": 0.222085352854369,
+     "skill_interval": [
+      -0.011010050245190361,
+      0.3768502865206269
+     ]
+    },
+    "gbm_funding_cal_direct_bs_turn vs gbm_funding_cal_direct": {
+     "days": 179,
+     "skill": 0.0048849401664367124,
+     "skill_interval": [
+      -0.022396678722454613,
+      0.0372852543275357
+     ]
+    },
+    "gbm_funding_cal_direct_bs_turn vs gbm_funding_cal_direct_bs_coded": {
+     "days": 179,
+     "skill": 0.003364523602214423,
+     "skill_interval": [
+      -0.025590925729384123,
+      0.03456791622004991
+     ]
+    }
+   }
+  },
+  "cut/unflagged": {
+   "grid_crps": {
+    "gbm_funding_cal_direct vs B2": {
+     "days": 1604,
+     "skill": 0.254987038286392,
+     "skill_interval": [
+      0.13419597370766118,
+      0.35888191505523137
+     ]
+    },
+    "gbm_funding_cal_direct_bs_coded vs B2": {
+     "days": 1604,
+     "skill": 0.25822381699146135,
+     "skill_interval": [
+      0.13574459295426622,
+      0.362419114311643
+     ]
+    },
+    "gbm_funding_cal_direct_bs_coded vs gbm_funding_cal_direct": {
+     "days": 1604,
+     "skill": 0.004344593814346485,
+     "skill_interval": [
+      0.00019540872835153208,
+      0.009416018524341284
+     ]
+    },
+    "gbm_funding_cal_direct_bs_turn vs B2": {
+     "days": 1604,
+     "skill": 0.2558924009052876,
+     "skill_interval": [
+      0.13510955326394275,
+      0.35954750254218465
+     ]
+    },
+    "gbm_funding_cal_direct_bs_turn vs gbm_funding_cal_direct": {
+     "days": 1604,
+     "skill": 0.0012152306945279405,
+     "skill_interval": [
+      -0.002223357983383109,
+      0.005205674175903502
+     ]
+    },
+    "gbm_funding_cal_direct_bs_turn vs gbm_funding_cal_direct_bs_coded": {
+     "days": 1604,
+     "skill": -0.003143018257498458,
+     "skill_interval": [
+      -0.00831083449692713,
+      0.001857597995419701
+     ]
+    }
+   },
+   "upper_tail_twcrps": {
+    "gbm_funding_cal_direct vs B2": {
+     "days": 1604,
+     "skill": 0.13571673863552092,
+     "skill_interval": [
+      -0.03817382418215387,
+      0.27228467437136517
+     ]
+    },
+    "gbm_funding_cal_direct_bs_coded vs B2": {
+     "days": 1604,
+     "skill": 0.13950962775995895,
+     "skill_interval": [
+      -0.04062051073854514,
+      0.27861860143852457
+     ]
+    },
+    "gbm_funding_cal_direct_bs_coded vs gbm_funding_cal_direct": {
+     "days": 1604,
+     "skill": 0.004388479210449945,
+     "skill_interval": [
+      -0.0018910139818905554,
+      0.01229870851748724
+     ]
+    },
+    "gbm_funding_cal_direct_bs_turn vs B2": {
+     "days": 1604,
+     "skill": 0.13889924129656753,
+     "skill_interval": [
+      -0.03577487309871841,
+      0.2763583757406617
+     ]
+    },
+    "gbm_funding_cal_direct_bs_turn vs gbm_funding_cal_direct": {
+     "days": 1604,
+     "skill": 0.0036822449344006123,
+     "skill_interval": [
+      -0.0033562098993018042,
+      0.011633370045741522
+     ]
+    },
+    "gbm_funding_cal_direct_bs_turn vs gbm_funding_cal_direct_bs_coded": {
+     "days": 1604,
+     "skill": -0.0007093472316283271,
+     "skill_interval": [
+      -0.008404863899560083,
+      0.007690396189681483
+     ]
+    }
+   }
+  },
+  "pooled/all decision days": {
+   "grid_crps": {
+    "gbm_funding_cal_direct vs B2": {
+     "days": 1855,
+     "skill": 0.2581554208395413,
+     "skill_interval": [
+      0.16085170290890194,
+      0.3459594500391842
+     ]
+    },
+    "gbm_funding_cal_direct_bs_coded vs B2": {
+     "days": 1855,
+     "skill": 0.26141931455455486,
+     "skill_interval": [
+      0.16280703457115506,
+      0.34892639017810767
+     ]
+    },
+    "gbm_funding_cal_direct_bs_coded vs gbm_funding_cal_direct": {
+     "days": 1855,
+     "skill": 0.004399700161868569,
+     "skill_interval": [
+      0.000556758022953257,
+      0.00897375436920508
+     ]
+    },
+    "gbm_funding_cal_direct_bs_turn vs B2": {
+     "days": 1855,
+     "skill": 0.260036252958136,
+     "skill_interval": [
+      0.16123916682943204,
+      0.3477411794642893
+     ]
+    },
+    "gbm_funding_cal_direct_bs_turn vs gbm_funding_cal_direct": {
+     "days": 1855,
+     "skill": 0.0025353452346082305,
+     "skill_interval": [
+      -0.002866139323445213,
+      0.008957671205325842
+     ]
+    },
+    "gbm_funding_cal_direct_bs_turn vs gbm_funding_cal_direct_bs_coded": {
+     "days": 1855,
+     "skill": -0.0018725937784103339,
+     "skill_interval": [
+      -0.007360056212490327,
+      0.00453087033967006
+     ]
+    }
+   },
+   "upper_tail_twcrps": {
+    "gbm_funding_cal_direct vs B2": {
+     "days": 1855,
+     "skill": 0.1560266070950516,
+     "skill_interval": [
+      0.024552113674161352,
+      0.2774050994158463
+     ]
+    },
+    "gbm_funding_cal_direct_bs_coded vs B2": {
+     "days": 1855,
+     "skill": 0.15941141111242185,
+     "skill_interval": [
+      0.023646415973765184,
+      0.2813267013685365
+     ]
+    },
+    "gbm_funding_cal_direct_bs_coded vs gbm_funding_cal_direct": {
+     "days": 1855,
+     "skill": 0.0040105577330111185,
+     "skill_interval": [
+      -0.0014313131737668317,
+      0.01073002687032005
+     ]
+    },
+    "gbm_funding_cal_direct_bs_turn vs B2": {
+     "days": 1855,
+     "skill": 0.15941412549221917,
+     "skill_interval": [
+      0.024347538344193898,
+      0.28167692343684475
+     ]
+    },
+    "gbm_funding_cal_direct_bs_turn vs gbm_funding_cal_direct": {
+     "days": 1855,
+     "skill": 0.0040137739242086514,
+     "skill_interval": [
+      -0.006306000782323236,
+      0.01686940814814929
+     ]
+    },
+    "gbm_funding_cal_direct_bs_turn vs gbm_funding_cal_direct_bs_coded": {
+     "days": 1855,
+     "skill": 3.229141857376857e-06,
+     "skill_interval": [
+      -0.009264151676253994,
+      0.012060608268641682
+     ]
+    }
+   }
+  },
+  "target_type/ordinary": {
+   "grid_crps": {
+    "gbm_funding_cal_direct vs B2": {
+     "days": 1591,
+     "skill": 0.2583526275790517,
+     "skill_interval": [
+      0.1636561366125311,
+      0.35088345463858306
+     ]
+    },
+    "gbm_funding_cal_direct_bs_coded vs B2": {
+     "days": 1591,
+     "skill": 0.262857358876701,
+     "skill_interval": [
+      0.1680872943210736,
+      0.35558641476565533
+     ]
+    },
+    "gbm_funding_cal_direct_bs_coded vs gbm_funding_cal_direct": {
+     "days": 1591,
+     "skill": 0.006073953020212593,
+     "skill_interval": [
+      0.0010253303162103336,
+      0.01159651601779483
+     ]
+    },
+    "gbm_funding_cal_direct_bs_turn vs B2": {
+     "days": 1591,
+     "skill": 0.259725277877522,
+     "skill_interval": [
+      0.16571678951993662,
+      0.3522649716731871
+     ]
+    },
+    "gbm_funding_cal_direct_bs_turn vs gbm_funding_cal_direct": {
+     "days": 1591,
+     "skill": 0.0018508125957351683,
+     "skill_interval": [
+      -0.002321441052499284,
+      0.006270108049199088
+     ]
+    },
+    "gbm_funding_cal_direct_bs_turn vs gbm_funding_cal_direct_bs_coded": {
+     "days": 1591,
+     "skill": -0.004248948337062067,
+     "skill_interval": [
+      -0.010836428222794604,
+      0.002061226203932241
+     ]
+    }
+   },
+   "upper_tail_twcrps": {
+    "gbm_funding_cal_direct vs B2": {
+     "days": 1591,
+     "skill": 0.14970078520374314,
+     "skill_interval": [
+      -0.01972372103917447,
+      0.2652494852784477
+     ]
+    },
+    "gbm_funding_cal_direct_bs_coded vs B2": {
+     "days": 1591,
+     "skill": 0.15525877626785267,
+     "skill_interval": [
+      -0.019481031011351013,
+      0.2713647918427996
+     ]
+    },
+    "gbm_funding_cal_direct_bs_coded vs gbm_funding_cal_direct": {
+     "days": 1591,
+     "skill": 0.006536512050574214,
+     "skill_interval": [
+      -0.0020137771869831967,
+      0.015545178143271096
+     ]
+    },
+    "gbm_funding_cal_direct_bs_turn vs B2": {
+     "days": 1591,
+     "skill": 0.15485882061831693,
+     "skill_interval": [
+      -0.008773100050874727,
+      0.2698678020801577
+     ]
+    },
+    "gbm_funding_cal_direct_bs_turn vs gbm_funding_cal_direct": {
+     "days": 1591,
+     "skill": 0.006066141570893646,
+     "skill_interval": [
+      -0.004117287690826212,
+      0.015877003343993404
+     ]
+    },
+    "gbm_funding_cal_direct_bs_turn vs gbm_funding_cal_direct_bs_coded": {
+     "days": 1591,
+     "skill": -0.00047346529126243074,
+     "skill_interval": [
+      -0.014436651373933506,
+      0.01346752299304699
+     ]
+    }
+   }
+  },
+  "target_type/quarter_end_turn": {
+   "grid_crps": {
+    "gbm_funding_cal_direct vs B2": {
+     "days": 44,
+     "skill": 0.1683982217173878,
+     "skill_interval": [
+      -0.14026070864688936,
+      0.30049797347322044
+     ]
+    },
+    "gbm_funding_cal_direct_bs_coded vs B2": {
+     "days": 44,
+     "skill": 0.17994678498517516,
+     "skill_interval": [
+      -0.06144167012033072,
+      0.29904329278292163
+     ]
+    },
+    "gbm_funding_cal_direct_bs_coded vs gbm_funding_cal_direct": {
+     "days": 44,
+     "skill": 0.01388713152061426,
+     "skill_interval": [
+      -0.008157250456667448,
+      0.10036766012025358
+     ]
+    },
+    "gbm_funding_cal_direct_bs_turn vs B2": {
+     "days": 44,
+     "skill": 0.2047487493668393,
+     "skill_interval": [
+      -0.05946325412075848,
+      0.3181922015936098
+     ]
+    },
+    "gbm_funding_cal_direct_bs_turn vs gbm_funding_cal_direct": {
+     "days": 44,
+     "skill": 0.04371145973800227,
+     "skill_interval": [
+      0.004168303090014015,
+      0.1357243701081551
+     ]
+    },
+    "gbm_funding_cal_direct_bs_turn vs gbm_funding_cal_direct_bs_coded": {
+     "days": 44,
+     "skill": 0.030244335279163308,
+     "skill_interval": [
+      -0.01702705241902558,
+      0.09091218331954565
+     ]
+    }
+   },
+   "upper_tail_twcrps": {
+    "gbm_funding_cal_direct vs B2": {
+     "days": 44,
+     "skill": 0.006675352885065142,
+     "skill_interval": [
+      -0.23129119398710218,
+      0.1537189324596409
+     ]
+    },
+    "gbm_funding_cal_direct_bs_coded vs B2": {
+     "days": 44,
+     "skill": 0.034773603851091746,
+     "skill_interval": [
+      -0.15500482457967274,
+      0.17560227092059205
+     ]
+    },
+    "gbm_funding_cal_direct_bs_coded vs gbm_funding_cal_direct": {
+     "days": 44,
+     "skill": 0.02828707718834589,
+     "skill_interval": [
+      0.005091187684810258,
+      0.19167673012510825
+     ]
+    },
+    "gbm_funding_cal_direct_bs_turn vs B2": {
+     "days": 44,
+     "skill": 0.06188720167392793,
+     "skill_interval": [
+      -0.1738804861120935,
+      0.21571245354656415
+     ]
+    },
+    "gbm_funding_cal_direct_bs_turn vs gbm_funding_cal_direct": {
+     "days": 44,
+     "skill": 0.05558288415496691,
+     "skill_interval": [
+      -0.02770466460221302,
+      0.27118907367908046
+     ]
+    },
+    "gbm_funding_cal_direct_bs_turn vs gbm_funding_cal_direct_bs_coded": {
+     "days": 44,
+     "skill": 0.028090402346034958,
+     "skill_interval": [
+      -0.06179096972853527,
+      0.14781559487189175
+     ]
+    }
+   }
+  },
+  "target_type/tax_date": {
+   "grid_crps": {
+    "gbm_funding_cal_direct vs B2": {
+     "days": 89,
+     "skill": 0.23120962834985037,
+     "skill_interval": [
+      -0.29233855990924573,
+      0.48776451761206474
+     ]
+    },
+    "gbm_funding_cal_direct_bs_coded vs B2": {
+     "days": 89,
+     "skill": 0.23253936144787013,
+     "skill_interval": [
+      -0.29633471989733173,
+      0.4903509341012521
+     ]
+    },
+    "gbm_funding_cal_direct_bs_coded vs gbm_funding_cal_direct": {
+     "days": 89,
+     "skill": 0.0017296432773546294,
+     "skill_interval": [
+      -0.0004583149240679964,
+      0.004947364430720308
+     ]
+    },
+    "gbm_funding_cal_direct_bs_turn vs B2": {
+     "days": 89,
+     "skill": 0.2300280366615831,
+     "skill_interval": [
+      -0.2997220910512688,
+      0.4870292314898986
+     ]
+    },
+    "gbm_funding_cal_direct_bs_turn vs gbm_funding_cal_direct": {
+     "days": 89,
+     "skill": -0.001536949124026053,
+     "skill_interval": [
+      -0.003212409956588054,
+      0.00030145293616799795
+     ]
+    },
+    "gbm_funding_cal_direct_bs_turn vs gbm_funding_cal_direct_bs_coded": {
+     "days": 89,
+     "skill": -0.003272252230452891,
+     "skill_interval": [
+      -0.0052171161341995065,
+      -0.0013580546345881063
+     ]
+    }
+   },
+   "upper_tail_twcrps": {
+    "gbm_funding_cal_direct vs B2": {
+     "days": 89,
+     "skill": null,
+     "skill_interval": null,
+     "undefined": true
+    },
+    "gbm_funding_cal_direct_bs_coded vs B2": {
+     "days": 89,
+     "skill": null,
+     "skill_interval": null,
+     "undefined": true
+    },
+    "gbm_funding_cal_direct_bs_coded vs gbm_funding_cal_direct": {
+     "days": 89,
+     "skill": 0.0004651556827335541,
+     "skill_interval": [
+      -0.0005593999238474208,
+      0.0026858293047338495
+     ]
+    },
+    "gbm_funding_cal_direct_bs_turn vs B2": {
+     "days": 89,
+     "skill": null,
+     "skill_interval": null,
+     "undefined": true
+    },
+    "gbm_funding_cal_direct_bs_turn vs gbm_funding_cal_direct": {
+     "days": 89,
+     "skill": -0.0012046264149859745,
+     "skill_interval": [
+      -0.00290911575776064,
+      0.0005098761977304668
+     ]
+    },
+    "gbm_funding_cal_direct_bs_turn vs gbm_funding_cal_direct_bs_coded": {
+     "days": 89,
+     "skill": -0.0016705591678097761,
+     "skill_interval": [
+      -0.004568076285456082,
+      0.0005001624047608459
+     ]
+    }
+   }
+  },
+  "target_type/turn": {
+   "grid_crps": {
+    "gbm_funding_cal_direct vs B2": {
+     "days": 120,
+     "skill": 0.4254329820654202,
+     "skill_interval": [
+      0.3691989740216047,
+      0.4985915710372357
+     ]
+    },
+    "gbm_funding_cal_direct_bs_coded vs B2": {
+     "days": 120,
+     "skill": 0.41720459959077183,
+     "skill_interval": [
+      0.3592851433996203,
+      0.4937084261598365
+     ]
+    },
+    "gbm_funding_cal_direct_bs_coded vs gbm_funding_cal_direct": {
+     "days": 120,
+     "skill": -0.014321014290425848,
+     "skill_interval": [
+      -0.02603776877085976,
+      -0.004864067896922621
+     ]
+    },
+    "gbm_funding_cal_direct_bs_turn vs B2": {
+     "days": 120,
+     "skill": 0.42290963539391474,
+     "skill_interval": [
+      0.3655408362393659,
+      0.49823575274780596
+     ]
+    },
+    "gbm_funding_cal_direct_bs_turn vs gbm_funding_cal_direct": {
+     "days": 120,
+     "skill": -0.004391736025113812,
+     "skill_interval": [
+      -0.04260419493946741,
+      0.015235534432671347
+     ]
+    },
+    "gbm_funding_cal_direct_bs_turn vs gbm_funding_cal_direct_bs_coded": {
+     "days": 120,
+     "skill": 0.009789088587756534,
+     "skill_interval": [
+      -0.009692944871308543,
+      0.025756440543073453
+     ]
+    }
+   },
+   "upper_tail_twcrps": {
+    "gbm_funding_cal_direct vs B2": {
+     "days": 120,
+     "skill": 0.39311880915832037,
+     "skill_interval": [
+      0.34976627349818057,
+      0.4451492773766935
+     ]
+    },
+    "gbm_funding_cal_direct_bs_coded vs B2": {
+     "days": 120,
+     "skill": 0.38048125308629904,
+     "skill_interval": [
+      0.34117116137136594,
+      0.4255057488930494
+     ]
+    },
+    "gbm_funding_cal_direct_bs_coded vs gbm_funding_cal_direct": {
+     "days": 120,
+     "skill": -0.02082377286152891,
+     "skill_interval": [
+      -0.056098024285870976,
+      -0.0003583560551937426
+     ]
+    },
+    "gbm_funding_cal_direct_bs_turn vs B2": {
+     "days": 120,
+     "skill": 0.39086872567112974,
+     "skill_interval": [
+      0.35190524130812134,
+      0.431479936223574
+     ]
+    },
+    "gbm_funding_cal_direct_bs_turn vs gbm_funding_cal_direct": {
+     "days": 120,
+     "skill": -0.0037076177695837703,
+     "skill_interval": [
+      -0.11137098702775117,
+      0.027744749620209345
+     ]
+    },
+    "gbm_funding_cal_direct_bs_turn vs gbm_funding_cal_direct_bs_coded": {
+     "days": 120,
+     "skill": 0.016767002833374327,
+     "skill_interval": [
+      -0.025967575208475976,
+      0.0360278890637607
+     ]
+    }
+   }
+  }
+ },
+ "declaration": "metadata/balance_sheet_nested_1031.json",
+ "draws": 10000,
+ "hypothesis": "H5 step 2; H6 step 1",
+ "issue": 1031,
+ "notes": {
+  "b1_prime_missing": [],
+  "benchmark_missing": [],
+  "candidate_skipped_for_history": 75,
+  "decision_days_offered": 1930,
+  "first": "2018-07-19",
+  "gbm": {
+   "common_days": 1855,
+   "gbm_days": 1855,
+   "transparent_days": 1855
+  },
+  "last": "2025-12-23",
+  "last_target": "2025-12-31",
+  "refits": 89,
+  "scored_decision_days": 1855
+ },
+ "panel_sha256": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+ "pooled_means": {
+  "grid_crps": {
+   "B1": 2.2888782423532197,
+   "B2": 2.5183901989921473,
+   "gbm_funding": 1.8222896454436095,
+   "gbm_funding_cal_direct": 1.8682541173331555,
+   "gbm_funding_cal_direct_bs_coded": 1.8600343593907098,
+   "gbm_funding_cal_direct_bs_turn": 1.8635174481597374
+  },
+  "upper_tail_twcrps": {
+   "B1": 1.3750288332356742,
+   "B2": 1.131460713699748,
+   "gbm_funding": 0.9515298646434547,
+   "gbm_funding_cal_direct": 0.9549227374798365,
+   "gbm_funding_cal_direct_bs_coded": 0.9510929647106078,
+   "gbm_funding_cal_direct_bs_turn": 0.9510898934965055
+  }
+ },
+ "reading_rules": {
+  "B2": [
+   "gbm_funding_cal_direct_bs_coded beats the reference on its flagged days (skill +27.1%, one-sided 95% lower bound +14.0%) and does not lose on days neither set flags (skill +25.8%, interval +13.6% to +36.2%).",
+   "gbm_funding_cal_direct_bs_turn beats the reference on its flagged days (skill +29.6%, one-sided 95% lower bound +9.6%) and does not lose on days neither set flags (skill +25.6%, interval +13.5% to +36.0%)."
+  ],
+  "gbm_funding_cal_direct": [
+   "gbm_funding_cal_direct_bs_coded beats the reference on its flagged days (skill +0.8%, one-sided 95% lower bound +0.1%) and does not lose on days neither set flags (skill +0.4%, interval +0.0% to +0.9%).",
+   "gbm_funding_cal_direct_bs_turn is not shown to beat the reference on its flagged days (skill +0.9%, one-sided 95% lower bound -1.0%) and does not lose on days neither set flags (skill +0.1%, interval -0.2% to +0.5%)."
+  ],
+  "relabel_alone": [
+   "gbm_funding_cal_direct_bs_turn is not shown to beat the reference on its flagged days (skill +0.9%, one-sided 95% lower bound -1.3%) and does not lose on days neither set flags (skill -0.3%, interval -0.8% to +0.2%)."
+  ]
+ },
+ "scratch_panel_sha256": "f9fae9dce43341f2816d19c76d9562f9773f0bff5891bd051f52eac0ffecb8f3",
+ "seed": 1031,
+ "skipped_groups": {
+  "cut/december_26": 5,
+  "target_type/year_end": 15
+ },
+ "source": "docs/research/balance-sheet-nested-1031/score.json",
+ "tier": "development, not a verdict"
+}

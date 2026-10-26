@@ -92,20 +92,21 @@ def acf(values: Sequence[float], max_lag: int) -> List[float]:
     return [sum(centred[i] * centred[i + k] for i in range(n - k)) / n / gamma0 for k in range(1, max_lag + 1)]
 
 
-def politis_white(values: Sequence[float]) -> float:
+def politis_white(values: Sequence[float], max_truncation: int | None = None) -> float:
     """The automatic mean block length of the stationary bootstrap for the mean of `values`.
 
     Politis and White (2004), with the correction of Patton, Politis and White (2009): the lag window is flat-topped,
     lambda(t) = 1 for |t| <= 1/2 and 2 (1 - |t|) up to 1; the truncation M is twice the first lag after which K_N
     autocorrelations are all inside the band c * sqrt(log10(N) / N), c = 2, capped at ceil(sqrt(N)) + K_N; and
     b = (2 G^2 / D)^(1/3) N^(1/3) with G = sum lambda(k/M) |k| gamma(k) and D = 2 g(0)^2, g(0) = sum lambda(k/M) gamma(k).
+    `max_truncation` replaces the cap on M (default ceil(sqrt(N)) + K_N, as above); #1022 reads the block with a wider one.
     """
 
     n = len(values)
     if n < 20:
         raise ValueError(f"a series of {n} values is too short for an automatic block length")
     k_n = max(5, int(math.ceil(math.sqrt(math.log10(n)))))
-    m_max = int(math.ceil(math.sqrt(n))) + k_n
+    m_max = int(math.ceil(math.sqrt(n))) + k_n if max_truncation is None else int(max_truncation)
     rho = acf(values, m_max + k_n)
     band = 2.0 * math.sqrt(math.log10(n) / n)
     m_hat = 0
@@ -365,6 +366,10 @@ def check_command(_args) -> int:
     return 0
 
 
+from repo_model import turn_days  # noqa: E402
+
+
+@turn_days.with_legacy_flag
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = parser.add_subparsers(dest="command", required=True)
