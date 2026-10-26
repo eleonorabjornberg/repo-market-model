@@ -1,0 +1,70 @@
+{
+ "status": "declared by the pull request that closes #1229 before any score was computed; a development check, never a verdict, and no choice is made on it. Nothing is published: no model joins any published declaration, `gbm_funding`'s declaration and `scripts/final_test_preregistration.py` do not change, no lockbox day is scored, no day after 2026-09-03 is read, and no record in docs/runs/ is edited. There is no new arm. Amendments made after a number was computed would be listed in `amendments`; there are none.",
+ "issue": 1229,
+ "avenue": 1222,
+ "ruling": "Eleonora, 26 October 2026, chat, relayed on #1229: ledger item 55, option 1 on avenue #1222. No new arm, and no choice made on these days.",
+ "hypothesis": "H5 (primary goal): the SOFR - IORB spread distribution in bp. Step 3, a check of the chosen candidate (s3) of #1145. Development tier",
+ "target": "spread_bps at the scored day, in basis points, as a 23-quantile distribution at each lead h = 1..5 (scoring_protocol.GRID)",
+ "models": {
+  "candidate": "(s3) of #1145: sc_s3_robust (repo_model.spread_mr_state_calendar.ARMS[2], the first of S3_TERMS), the H5 candidate, refit walk-forward as declared in #1196 (metadata/s3_terms_1196.json): the seven location terms month_end, quarter_end, tax_date, settlement_coupon, settlement_bill, dom_19_23 and post_month_end_window in standardised units, a Huber fit, ridge 5, direct pairs, every term read at the target day, refit every 21 decision days, the two-year training window and the minimum of 60 pairs of the base model",
+  "comparator_a": "(a): spread_mr_fhs_mad20_f0.5, #941's scaled mean reversion, the base of (s3); it reads no calendar column and carries the provisional register's mark",
+  "benchmarks": "B1, B1' (repo_model.b1_calendar, #960; beside B1 in every table, B1 stays the protocol's benchmark) and B2 of scoring protocol v1 (repo_model.protocol_benchmarks). B1 and B2 carry the provisional register's mark. A decision day that B2 refuses is recorded as missing (listed in `notes.benchmark_missing`), never filled",
+  "pairs": "direct (training_pairs = 'direct'); the estimation routine is decorated with repo_model.one_step_guard.guard_one_step_fit and needs no allow-list entry. No entry is added to one_step_guard.ONE_STEP_ALLOW_LIST",
+  "walk": "the walk starts where #1196's does, on the first decision day with the history the base model needs, and refits every 21 decision days from there, so every refit date before 2026 is #1196's; the days from 2025-12-04 on are walked in addition. The scarcity state is not read: neither (a) nor (s3) has a state term, and every decision's state is recorded as unknown",
+  "no_new_arm": "no arm, term, setting or tuning is added or changed; (s3+state) and (s3+FOMC/IORB) of #1196 are not scored here"
+ },
+ "scored_days": {
+  "decision_days": "the decision days whose five targets all fall from 2026-01-02 to 2026-09-03 (first target on or after 2026-01-02, fifth target on or before 2026-09-03) and for which every model has a forecast",
+  "first_target_day": "2026-01-02",
+  "last_target_day": "2026-09-03",
+  "lockbox": "the near-blind tier is open (metadata/lockbox.json, GO #151, 5 October 2026); every scored decision day and target day passes lockbox.require_unlocked through ranking's require_scored_days with the last day 2026-09-03; no day after 2026-09-03 is read, and a day after it raises LookAheadError",
+  "calibration_table_window": "the one exception to the first target day, stated by the ruling: #845's table (the first report) is read over the ordinary target days from 2025-12-12 to 2026-09-03, as #845 declared its stretch (metadata/exploration_845.json), from the lead-h forecast of every decision day whose target falls in it. The days 2025-12-12 to 2025-12-31 were already scored by #1196. The same table is also given on the target days of the scored decision days alone (2026-01-02 to 2026-09-03), where the cells of the second window are a subset of the first's",
+  "seen_before": "these days were already seen by #845 and by the #151 final test. This is a check, not evidence for a verdict or a choice"
+ },
+ "report": {
+  "1_calibration_in_the_large": {
+   "what": "#845's table for (s3) and (a): by lead 1 to 5, on ordinary target days (SplitDeclaration.reporting_day_type(target) == 'ordinary'), the cells, the pressure days (distinct target days above +5 bp), the realised share, the mean P(spread > +5 bp) of each model, and the error mean P less the realised share with its level part and its residual-pool part (the decomposition of scripts/calibration_reserve_mgmt_845.py `decompose`: the level part is what moving each cell's law by the mean of outcome less the law's median would remove; the two add to the error exactly)",
+   "event": "whole basis points, strictly above: data.exceeds_bp(y, 5.0) and smr.exceedance(23 quantiles, 5.0), as #845",
+   "interval": "5th and 95th percentile of a stationary bootstrap over the cells of one lead in target-day order, mean block 10, 10,000 draws, seed 1222 (mean P, realised share and the error resampled jointly, as #845)",
+   "minimum": "fewer than 3 pressure days in a (window, lead) cell: only its counts are tracked and shown (Eleonora's ruling on #710); its figures go to the --withheld file, which is not tracked, and to the pull request body",
+   "day_sets": "ordinary target days only (#845's headline); the calm-ordinary sensitivity is not repeated"
+  },
+  "2_coverage": {
+   "what": "the share of (decision day, lead) cells whose outcome falls in the central 50% band (q25 to q75) and the central 90% band (q05 to q95), nominal 0.50 and 0.90, for (s3), (a), B1, B1' and B2, by lead and by target month, and pooled; with the q95 exceedance. Both hit rules of Eleonora's open question #993 are reported: the closed band (q_lo <= y <= q_hi) and the open band, and the exceedance with y > q and y >= q",
+   "interval": "90% stationary-bootstrap percentile interval over the cells in date order: mean block 10 for the cells of one lead, mean block 50 cells (5 x 10) for cells of several leads, 2,000 resamples, seed 1222; none for a group of fewer than 20 target days",
+   "month": "the calendar month of the target day of the cell"
+  },
+  "3_scores": {
+   "measures": ["grid CRPS (23 levels), by lead and the mean over leads 1..5 (primary)", "upper-tail twCRPS, weight 1{z > 0 bp}, by lead and the mean over leads (key secondary)"],
+   "pairs": "(s3) against B1, B1', B2 and (a); (a) against B1, B1' and B2",
+   "paired": "skill = mean(d) / mean(S(benchmark)) with d = S(benchmark) - S(candidate), positive favours the candidate; scoring_protocol.paired_tests, the studentized stationary bootstrap (ruling 1), mean block 10 business days, 10,000 draws, seed 1222; two-sided 90% interval, so the lower end is the one-sided 95% bound. Both the skill interval and the studentized interval on mean d (bp) are reported for every tested row",
+   "reading": "a reading is taken from the mean-d bound (Eleonora's ruling on #1009, 20 October 2026): better when the lower end of the 90% interval of mean d is above zero, worse when the upper end is below zero, otherwise undecided; the skill interval's reading is listed beside it where it differs. Lens C's caveat (the lag-10 HAC standard error is understated about 2x after 2020) is stated on the page. A row whose bound was not computed reads 'no reading' with the reason (#1215)",
+   "splits": "pooled over the scored decision days, by lead, by target month, and by target-day type (month_end, quarter_end, tax_date, settlement, fomc_day, iorb_window, dom_19_23, post_month_end_window, ordinary, and calendar_days; the groups overlap) as #1196. The regime split of the other pages has one regime here (2025-26) and is the pooled row. A target day's score is the mean over the leads that forecast it and it belongs to the group of its own date",
+   "min_days": "a group of fewer than 20 days is listed and not tested (the rule of the H5 pages)",
+   "day_type_intervals": "the intervals on the target-day types and on the months are the current method of the H5 pages: the group's own days are passed to paired_tests as one short series. #1221 asks whether that is right and has not been decided (queued as #1228). The page labels every such interval 'current method' and the rows are not read as evidence for a pressure-day type either way; they follow #1221's outcome when it is merged"
+  }
+ },
+ "pressure_day_types": "the benchmarks (B2's pools) and the mean-reversion level read the pressure-day types of the month-end turn record in force since #1161 (repo_model.turn_days.IN_FORCE is True), as every scoring entry point on main does, as #1196 did",
+ "reading_rules": [
+  "A figure is a check on days that #845 and the #151 final test had already seen. Nothing here is a verdict and no choice (adopt, drop, retune) is made on it.",
+  "A pooled figure is never read without the month and target-day-type splits beside it.",
+  "A cell under 3 pressure days has counts only. The upper-tail and P(> +5 bp) splits are thin: 2026 has few pressure days.",
+  "Lens C's caveat is stated on the page; the day-type and month intervals are labelled as the current method (#1221 open).",
+  "(a), B1 and B2 carry the provisional register's mark; (s3) reads the calendar at the target day on direct pairs and does not."
+ ],
+ "limits": {
+  "last_day": "2026-09-03",
+  "first_target_day": "2026-01-02",
+  "arms": 0,
+  "gbm_funding": "not scored: its walks are a long run that stays on Eleonora's Mac and the issue does not ask for them",
+  "gbm_funding_declaration": "unchanged",
+  "preregistration": "scripts/final_test_preregistration.py is not touched",
+  "allow_list": "repo_model.one_step_guard.ONE_STEP_ALLOW_LIST is not changed"
+ },
+ "long_run": "cloud, about 40 minutes on 4 cores or less (the walk is minutes; the paired tests and bootstrap intervals are the long part); under the two-hour line of `long-run`",
+ "questions": [
+  "Whether the 2026 days, now checked, change what is claimed for (s3) is Eleonora's; this page makes no choice.",
+  "Whether the day-type and month intervals are read once #1221 is decided is hers (#1228)."
+ ],
+ "amendments": []
+}
