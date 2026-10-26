@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/s3_iorbs_1227.json",
+  "script": "scripts/s3_iorbs_1227.py",
+  "pairing": "direct",
+  "why": "the signed announced IORB change and a technical-adjustment indicator on (s3)'s robust fit: (s3) and (s3+IORBs) read the calendar columns and the scheduled IORB field at the target day on direct pairs (training_pairs = direct; the estimation routine is guarded by one_step_guard with no allow-list entry; the scheduled field is read only at the rows and leads asof rule 2 admits); no gradient-boosted fit is called and no gbm_funding walk is read, so the arms are not provisional; the arm (a) and the benchmarks read no calendar column and carry the register's mark as before"
+}
