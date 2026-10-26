@@ -153,6 +153,17 @@ class PageTests(unittest.TestCase):
         self.assertIn("Superseded on main by #1250 (finding #1243)", note)
         self.assertIn("kept as the record of what was run on b56ab27f", note)
 
+    def test_the_old_page_and_record_carry_the_note_and_nothing_else_changed(self):
+        """The old files are the committed ones plus the note: the page's text after the note is what #1196's script renders from
+        the record, and the record without the key is the score that the baseline stage reproduces."""
+
+        old_page = (ROOT / "docs" / "research" / "s3-terms-1196-result.md").read_text(encoding="utf-8")
+        old = json.loads(script.OLD_RESULT.read_text(encoding="utf-8"))
+        record = json.loads((ROOT / "docs" / "research" / "s3-terms-1243" / "result.json").read_text(encoding="utf-8"))
+        note = script.superseded_note(record["base_sha"], 1253, record["against_1196"]["stages"][1]["commit"])
+        self.assertTrue(old_page.startswith("> " + note + "\n\n# "))
+        self.assertEqual(old.pop("superseded"), note)
+
 
 class CommittedRecordTests(unittest.TestCase):
     """The tracked record of the re-score, and the page generated from it."""

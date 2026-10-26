@@ -231,10 +231,10 @@ def retitle(body: str) -> str:
 
 
 def superseded_note(base_sha: str, pr: int, old_base: str) -> str:
-    """The dated note put at the top of the old page and its `result.json` (the rest stays byte-identical)."""
+    """The dated note put at the top of the old page and in its `result.json` (the rest of both stays byte-identical)."""
 
-    return (f"Superseded on main by #{pr} (finding #1243); kept as the record of what was run on {old_base}. "
-            f"Re-scored on {base_sha}.")
+    return (f"Superseded on main by #{pr} (finding #1243); kept as the record of what was run on {old_base}. Re-scored on {base_sha}; "
+            "see docs/research/s3-terms-1243-result.md. 26 October 2026.")
 
 
 def page_text(r: dict) -> str:
