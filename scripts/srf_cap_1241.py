@@ -119,7 +119,16 @@ def reading_words(row: Optional[dict]) -> str:
 
 
 def _fmt(row: Optional[dict]) -> str:
-    return "identical" if row is not None and row.get("identical") else d1172._fmt(row)
+    """The cell of a table: `identical`, the protocol's skill and mean-d interval, or, where the studentized bound cannot be computed,
+    `undefined` and beside it the unstudentized percentile interval of mean d (not the protocol's interval; no reading is taken from it)."""
+
+    if row is not None and row.get("identical"):
+        return "identical"
+    text = d1172._fmt(row)
+    extra = None if row is None else row.get("unstudentized")
+    if extra is not None and "undefined" in row:
+        text += f" (studentized bound not computed); unstudentized d {extra['mean_d']:+.3f} [{extra['interval'][0]:+.3f}, {extra['interval'][1]:+.3f}]"
+    return text
 
 
 def committed_declaration(path: Path = DECLARATION) -> dict:
@@ -265,7 +274,20 @@ def _pairs_task(job):
             continue
         out[name] = s761.run_pairs({name: series[name]}, series[candidate], days, seed=SEED, draws=_STATE["draws"],
                                   mean_d_fallback=True)[name]
+        if name == S3 and "undefined" in out[name]:
+            out[name]["unstudentized"] = unstudentized_mean_d(series, candidate, days)
     return (split, label, metric, candidate), out
+
+
+def unstudentized_mean_d(series, candidate: str, members: Sequence[date]) -> dict:
+    """Mean d against (s3) and its 90% stationary-bootstrap percentile interval (mean block 10, in date order), for a group whose
+    studentized bound cannot be computed (most of its days score alike). It is not the protocol's interval and no reading is taken
+    from it; it only shows which way the mean difference points. `d = S((s3)) - S(candidate)`, positive favours the candidate."""
+
+    d = [series[S3][x] - series[candidate][x] for x in sorted(members)]
+    low, high = metrics.stationary_bootstrap_interval(
+        lambda idx: sum(d[i] for i in idx) / len(idx), len(d), block_length=BLOCK, seed=SEED, replications=_STATE["reps"])
+    return {"mean_d": sum(d) / len(d), "interval": [low, high], "days": len(d)}
 
 
 def _block_task(job):
@@ -669,7 +691,12 @@ def render(r: dict) -> str:
         "(her ruling on #1009, 20 October 2026). **Caveat (Lens C, #958):** the lag-10 HAC standard error that studentizes the bound is "
         "understated about 2x after 2020, so an interval that excludes zero is narrower than it should be. The intervals of a "
         "pressure-day-type or calendar-day-type group keep the current method (the days of a type, scattered, resampled in date order as if "
-        f"consecutive), which #1221 questions. Scored decision days: {n['scored_decision_days']:,} ({n['first']} to {n['last']}); the "
+        "consecutive), which #1221 questions. **Where a cap changes only a few days of a group, the studentized bound cannot be computed** (a resample "
+        "has no long-run variance): the cell reads \"undefined\", no reading is taken, and the unstudentized percentile interval of mean d "
+        "(the same stationary bootstrap, mean block 10, not the protocol's interval) is shown beside it so the direction is visible. **The two "
+        "scores move by the same amount here**: a cap changes a forecast only above the line, which is above 0 bp, where the weight of the "
+        "upper-tail twCRPS is 1, so mean d on grid CRPS and on twCRPS is the same number in every group and the two readings agree; the "
+        f"tables show both because the protocol names both. Scored decision days: {n['scored_decision_days']:,} ({n['first']} to {n['last']}); the "
         f"fit is renewed {n['refits']} times. The pressure-day types are the month-end turn record in force (#1161) and B2 reads the thin-pool "
         "record in force (#1198), so (s3) and B2 are not the figures of pages scored on earlier labels.", "",
         "**The line.** `repo_model.srf_line` reads the minimum bid rate less the IORB, in bp, from `metadata/policy_events.json`, as public "

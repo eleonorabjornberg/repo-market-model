@@ -121,6 +121,46 @@ class BlockTaskTests(unittest.TestCase):
         self.assertEqual(out, {script.S3: None})
 
 
+class UnstudentizedTests(unittest.TestCase):
+
+    def setUp(self):
+        self.days = [date(2022, 1, 3) + timedelta(days=i) for i in range(300)]
+        self.s3 = {d: 1.0 + 0.01 * (i % 7) for i, d in enumerate(self.days)}
+        self.cap = dict(self.s3)
+        for d in self.days[100:103]:
+            self.cap[d] = self.s3[d] + 0.5  # the cap scores worse on three days only
+        self.saved = dict(script._STATE)
+        script._STATE.update(series={("decision", "grid_crps"): {"B1": self.s3, "B1_prime": self.s3, "B2": self.s3,
+                                                                   "srf_cap_m0": self.cap, script.S3: self.s3}}, draws=200, reps=50)
+
+    def tearDown(self):
+        script._STATE.clear()
+        script._STATE.update(self.saved)
+
+    def test_the_direction_of_mean_d_is_shown_where_the_studentized_bound_cannot_be_computed(self):
+        """d = S((s3)) - S(cap), positive favours the cap: a cap that scores worse on three days has a negative mean d."""
+
+        out = script.unstudentized_mean_d(script._STATE["series"][("decision", "grid_crps")], "srf_cap_m0", self.days)
+        self.assertAlmostEqual(out["mean_d"], -1.5 / 300, places=12)
+        self.assertEqual(out["days"], 300)
+        self.assertLessEqual(out["interval"][0], out["interval"][1])
+        self.assertLessEqual(out["interval"][1], 0.0 + 1e-12)
+
+    def test_an_undefined_row_against_s3_carries_the_unstudentized_interval_and_no_reading(self):
+        _ident, out = script._pairs_task(("pooled", "all decision days", "decision", "grid_crps", "srf_cap_m0", tuple(self.days)))
+        row = out[script.S3]
+        self.assertIn("undefined", row)
+        self.assertIn("unstudentized", row)
+        text = script._fmt(row)
+        self.assertIn("unstudentized d -0.005", text)
+        self.assertIn("studentized bound not computed", text)
+        self.assertNotIn("unstudentized", out["B1"] if "B1" in out else {})
+        self.assertTrue(script.verdict(row).startswith("**no reading**"))
+
+    def test_the_cell_of_a_defined_row_is_the_protocols_and_has_no_unstudentized_part(self):
+        self.assertNotIn("unstudentized", script._fmt(row(0.01, 0.05, 0.001, 0.05)))
+
+
 class DeclarationTests(unittest.TestCase):
 
     def test_the_declaration_names_the_arms_and_the_primary_the_script_has(self):
@@ -281,6 +321,21 @@ class CommittedRecordTests(unittest.TestCase):
             for arm in script.CAPS:
                 self.assertTrue(entry_["grid_crps"]["vs"][arm][script.S3].get("identical"), (regime, arm))
                 self.assertEqual(entry_["grid_crps"]["means"][arm], entry_["grid_crps"]["means"][script.S3])
+
+    def test_the_two_scores_move_by_the_same_amount_because_the_cap_acts_only_above_zero(self):
+        record = json.loads(self.RECORD.read_text(encoding="utf-8"))
+        checked = 0
+        for split, labels in record["groups"].items():
+            for label, entry_ in labels.items():
+                if "grid_crps" not in entry_:
+                    continue
+                for arm in script.CAPS:
+                    one = entry_["grid_crps"]["vs"].get(arm, {}).get(script.S3, {})
+                    two = entry_["upper_tail_twcrps"]["vs"].get(arm, {}).get(script.S3, {})
+                    if "difference" in one and "difference" in two:
+                        self.assertAlmostEqual(one["difference"], two["difference"], places=9, msg=(split, label, arm))
+                        checked += 1
+        self.assertGreater(checked, 0)
 
     def test_the_line_in_the_record_is_the_registers_and_starts_with_the_facility(self):
         record = json.loads(self.RECORD.read_text(encoding="utf-8"))
