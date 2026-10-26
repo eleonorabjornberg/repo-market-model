@@ -78,11 +78,11 @@ class TestInForceWithTheRecord(unittest.TestCase):
 
 class TestB2ReadsTheTurnLabels(unittest.TestCase):
     def test_b2_for_a_year_end_target_is_the_trailing_years_year_end_spreads(self):
-        """`protocol_benchmarks.b2_forecast` pools by `turn_days.reporting_day_type`, so a year-end target reads year-end rows.
+        """`protocol_benchmarks.b2_forecast_no_minimum` pools by `turn_days.reporting_day_type`, so a year-end target reads year-end rows.
 
         Run on the simulated panel of `benchmark_simulation` (spreads vary by row); the decision is 30 December 2019 and the
-        target 31 December, whose window holds 31 December 2018 and 2 January 2019 only (the pool a fallback, #1155, would
-        widen; B2 itself has none in force).
+        target 31 December, whose window holds 31 December 2018 and 2 January 2019 only (the pool the fallback of #1155,
+        in force since #1198, widens to the quarter-end turn: `b2_forecast` itself; see `test_b2_pool_1155.py`).
         """
 
         import benchmark_simulation as sim
@@ -91,7 +91,7 @@ class TestB2ReadsTheTurnLabels(unittest.TestCase):
         rows = sim.simulate(sim.ProcessSpec(), seed=741).rows
         days = [r.date for r in rows]
         t = days.index(date(2019, 12, 30))
-        got = pb.b2_forecast(rows, t, registry=sim.REGISTRY, decision_time=sim.DECISION, splits=sim.SPLITS)
+        got = pb.b2_forecast_no_minimum(rows, t, registry=sim.REGISTRY, decision_time=sim.DECISION, splits=sim.SPLITS)
         window = [
             r.spread_bps for r in rows[:t]
             if date(2018, 12, 30) <= r.date and td.reporting_day_type(sim.SPLITS, r.date, r.values) == "year_end"

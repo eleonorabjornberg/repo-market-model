@@ -1,4 +1,4 @@
-"""Pin the legacy day-type reading (`turn_days.IN_FORCE` False) for a test module that reproduces legacy figures (#1161).
+"""Pin the legacy day-type reading (`turn_days.IN_FORCE` and `b2_pool.IN_FORCE` False) for a test module that reproduces legacy figures (#1161).
 
 Once the month-end turn record (#1135) is in force, every reader of `turn_days.reporting_day_type` (B2's pools, the
 mean-reversion level, `anchor_day_type`, `ranking_daytype`, B1', the risk dates) labels `turn`, `quarter_end_turn` and
@@ -14,15 +14,17 @@ The in-force reading is tested in `test_month_end_turn_1135.py`, `test_b2_pool_1
 
 from unittest import mock
 
-from repo_model import turn_days
+from repo_model import b2_pool, turn_days
 
 _patchers = []
 
 
 def setUpModule():
-    patcher = mock.patch.object(turn_days, "IN_FORCE", False)
-    patcher.start()
-    _patchers.append(patcher)
+    # B2's thin-pool fallback (#1155, #1198) is chained over the turn labels, so the legacy reading is plain B2 as well
+    for target in (turn_days, b2_pool):
+        patcher = mock.patch.object(target, "IN_FORCE", False)
+        patcher.start()
+        _patchers.append(patcher)
 
 
 def tearDownModule():
