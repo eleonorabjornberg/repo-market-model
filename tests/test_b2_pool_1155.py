@@ -1,11 +1,15 @@
-"""B2's thin-pool fallback of #1155 (H5 step 2, benchmarks; development tier, a draft inert until Eleonora merges it).
+"""B2's thin-pool fallback of #1155 (H5 step 2, benchmarks), in force since #1198 on her `GO #1155`: minimum pool 4.
 
-`repo_model.b2_pool.b2_fallback_forecast` is B2 (`protocol_benchmarks.b2_forecast`) with a minimum pool and a declared
-chain: a target whose own type has fewer than `pool_min` rows in the trailing year takes the first later step of its chain
+`repo_model.b2_pool.b2_fallback_forecast` is B2 (`protocol_benchmarks.b2_forecast_no_minimum`) with a minimum pool and a declared
+chain; `protocol_benchmarks.b2_forecast`, the B2 the protocol scores, is this function while `b2_pool.IN_FORCE` is True: a target whose own type has fewer than `pool_min` rows in the trailing year takes the first later step of its chain
 that has `pool_min`, else every day of the window. `Hand` restates it in the test's own words. What these tests pin: the
 pure choice (`choose_pool`), including the boundary at `pool_min`; that a pool with enough rows is exactly B2's; that a
 year-end target with no earlier year-end in the window is forecast instead of refused; the chain's order; and that a
 change to every spread after the anchor moves nothing.
+
+#1198 rewrote the draft-state tests (the switch is off, the record is a draft, `b2_forecast` is plain B2) into in-force ones,
+and watched them fail first: `POOL_MIN` was 10, `IN_FORCE` False, the record in `drafts/`, `b2_forecast` refused a first
+year-end. The explicit `pool_min` of 10 below is the drafted alternative, kept as a parameter of the function.
 
 Written before the code: the module did not exist (`ModuleNotFoundError: No module named 'repo_model.b2_pool'`).
 
@@ -20,8 +24,10 @@ Recorded mutation (the as-of guard; run on `AsOfTests` and `ForecastTests`, then
 from __future__ import annotations
 
 import dataclasses
+import json
 import unittest
 from datetime import date
+from unittest import mock
 
 from repo_model import b2_pool
 from repo_model import protocol_benchmarks as pb
@@ -129,7 +135,7 @@ class ChoosePoolTests(unittest.TestCase):
             self.assertEqual(chain[0], kind)
             self.assertTrue(set(chain) <= set(td.LABELS))
         self.assertEqual(b2_pool.CHAINS["year_end"], ("year_end", "quarter_end_turn", "turn"))
-        self.assertEqual(b2_pool.POOL_MIN, 10)
+        self.assertEqual(b2_pool.POOL_MIN, 4)
 
 
 class ForecastTests(unittest.TestCase):
@@ -139,6 +145,7 @@ class ForecastTests(unittest.TestCase):
 
     def test_it_matches_the_definition_on_sampled_days(self):
         hand = Hand(self.panel, self.settings, b2_pool.POOL_MIN)
+        self.assertEqual(b2_pool.POOL_MIN, 4)
         for t in (300, 520, 905, 1200, 1500, 1800, len(self.panel) - 12):
             got = b2_pool.b2_fallback_forecast(self.panel, t, **self.settings)
             self.assertEqual(sorted(got), list(sp.HORIZONS))
@@ -150,34 +157,35 @@ class ForecastTests(unittest.TestCase):
 
     def test_a_pool_with_enough_rows_is_exactly_b2(self):
         hand, t = find(self.panel, self.settings, 10, lambda h, t: all(h.rows(t, k)[1] == h.kind(t + k) for k in sp.HORIZONS))
-        plain = pb.b2_forecast(self.panel, t, **self.settings)
-        self.assertEqual(b2_pool.b2_fallback_forecast(self.panel, t, **self.settings), plain)
+        plain = pb.b2_forecast_no_minimum(self.panel, t, **self.settings)
+        self.assertEqual(b2_pool.b2_fallback_forecast(self.panel, t, pool_min=10, **self.settings), plain)
 
     def test_a_year_end_target_with_a_thin_pool_reads_the_turn_pool(self):
         hand, t = find(self.panel, self.settings, 10,
                        lambda h, t: h.kind(t + 1) == "year_end" and h.counts(t).get("year_end", 0) < 10
                        and h.counts(t).get("quarter_end_turn", 0) < 10 and h.counts(t).get("turn", 0) >= 10)
         used = {}
-        got = b2_pool.b2_fallback_forecast(self.panel, t, used=used, **self.settings)
+        got = b2_pool.b2_fallback_forecast(self.panel, t, pool_min=10, used=used, **self.settings)
         self.assertEqual(used[1][0], "turn")
         want = pb.empirical_quantiles(sorted(self.panel[s].spread_bps for s in hand.rows(t, 1)[0]))
         for x, y in zip(got[1], want):
             self.assertAlmostEqual(x, y)
-        self.assertGreaterEqual(used[1][1], b2_pool.POOL_MIN)
+        self.assertGreaterEqual(used[1][1], 10)
 
     def test_the_first_year_end_of_a_panel_is_forecast_instead_of_refused(self):
         hand, t = find(self.panel, self.settings, 10,
                        lambda h, t: h.kind(t + 1) == "year_end" and h.counts(t).get("year_end", 0) == 0, start=5)
         with self.assertRaises(sp.ProtocolError):
-            pb.b2_forecast(self.panel, t, **self.settings)
+            pb.b2_forecast_no_minimum(self.panel, t, **self.settings)
         got = b2_pool.b2_fallback_forecast(self.panel, t, **self.settings)
         self.assertEqual(got[1], sorted(got[1]))
+        self.assertEqual(pb.b2_forecast(self.panel, t, **self.settings), got)
 
     def test_a_larger_minimum_widens_the_pool(self):
         hand, t = find(self.panel, self.settings, 30,
                        lambda h, t: h.kind(t + 1) == "turn" and 10 <= h.counts(t).get("turn", 0) < 30)
         used10, used30 = {}, {}
-        b2_pool.b2_fallback_forecast(self.panel, t, used=used10, **self.settings)
+        b2_pool.b2_fallback_forecast(self.panel, t, pool_min=10, used=used10, **self.settings)
         b2_pool.b2_fallback_forecast(self.panel, t, pool_min=30, used=used30, **self.settings)
         self.assertEqual(used10[1][0], "turn")
         self.assertEqual(used30[1][0], b2_pool.ALL_DAYS)
@@ -188,14 +196,65 @@ class ForecastTests(unittest.TestCase):
         for h in sp.HORIZONS:
             self.assertEqual(got[h], sorted(got[h]))
 
-    def test_it_adds_no_rule_while_the_draft_is_unmerged(self):
-        # protocol_benchmarks.b2_forecast, the B2 the protocol scores, is untouched by this module
-        self.assertFalse(b2_pool.IN_FORCE)
-        self.assertFalse((b2_pool.ROOT / "docs" / "decisions" / "b2-thin-pool.md").exists())
-        self.assertTrue((b2_pool.ROOT / "docs" / "decisions" / "drafts" / "b2-thin-pool.md").exists())
+    def test_the_record_is_in_force_with_her_go(self):
+        record = b2_pool.ROOT / "docs" / "decisions" / "b2-thin-pool.md"
+        self.assertTrue(b2_pool.IN_FORCE)
+        self.assertTrue(record.exists())
+        self.assertFalse((b2_pool.ROOT / "docs" / "decisions" / "drafts" / "b2-thin-pool.md").exists())
+        text = record.read_text(encoding="utf-8")
+        self.assertIn("**Status: in force.**", text)
+        self.assertIn("GO #1155", text)
+        self.assertNotIn("not in force", text)
+        self.assertEqual(b2_pool.POOL_MIN, 4)
 
     def test_the_switch_and_the_record_move_together(self):
         self.assertEqual(b2_pool.IN_FORCE, (b2_pool.ROOT / "docs" / "decisions" / "b2-thin-pool.md").exists())
+
+    def test_the_attestation_names_this_change(self):
+        entries = json.loads((b2_pool.ROOT / "metadata" / "owner_attestations.json").read_text())["attestations"]
+        mine = [e for e in entries if e["issue"] == 1155 and e["comment_id"] == 6387463494 and "IN_FORCE True" in e["what"]]
+        self.assertEqual(len(mine), 1)
+        self.assertEqual(mine[0]["kind"], "decisions")
+        self.assertEqual(mine[0]["phrase"], "GO #1155")
+
+
+class WiringTests(unittest.TestCase):
+    """`protocol_benchmarks.b2_forecast` is the fallback while the record is in force, and plain B2 when the switch is off."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.panel, cls.settings = setup()
+
+    def test_b2_forecast_is_the_fallback_with_the_declared_minimum(self):
+        for t in (300, 905, 1500, len(self.panel) - 12):
+            self.assertEqual(pb.b2_forecast(self.panel, t, **self.settings),
+                             b2_pool.b2_fallback_forecast(self.panel, t, pool_min=4, **self.settings))
+
+    def test_only_year_end_changes_pool_at_a_minimum_of_four(self):
+        for t in range(300, len(self.panel) - 6, 7):
+            a = pb.b2_forecast(self.panel, t, **self.settings)
+            b = pb.b2_forecast_no_minimum(self.panel, t, **self.settings)
+            for h in sp.HORIZONS:
+                kind = td.reporting_day_type(self.settings["splits"], self.panel[t + h].date, self.panel[t + h].values)
+                if kind != "year_end":
+                    self.assertEqual(a[h], b[h], (t, h, kind))
+
+    def test_with_the_switch_off_b2_is_plain(self):
+        t = 1500
+        with mock.patch.object(b2_pool, "IN_FORCE", False):
+            self.assertEqual(pb.b2_forecast(self.panel, t, **self.settings),
+                             pb.b2_forecast_no_minimum(self.panel, t, **self.settings))
+
+    def test_every_decision_day_of_the_published_panel_is_forecast(self):
+        # the first year-end of the panel is refused by plain B2 and is forecast now
+        refused = 0
+        for t in range(5, len(self.panel) - 6, 3):
+            try:
+                pb.b2_forecast_no_minimum(self.panel, t, **self.settings)
+            except sp.ProtocolError:
+                refused += 1
+            pb.b2_forecast(self.panel, t, **self.settings)
+        self.assertGreater(refused, 0)
 
 
 class AsOfTests(unittest.TestCase):

@@ -192,10 +192,35 @@ def b2_forecast(
     decision_time: time,
     splits: SplitDeclaration,
 ) -> Dict[int, List[float]]:
-    """§4 B2: the trailing year's spreads on days of the target's type, per lead.
+    """§4 B2: the trailing year's spreads on days of the target's type, per lead, with the thin-pool fallback.
 
-    The target's type is read from its own calendar columns, which are known in advance;
-    every sampled row's from its own.
+    While the record `docs/decisions/b2-thin-pool.md` is in force (`b2_pool.IN_FORCE`, #1155, put in force by #1198) a
+    target whose type has fewer than `b2_pool.POOL_MIN` rows in the trailing year reads the next step of its declared chain
+    (`b2_pool.CHAINS`), and a first year-end is forecast instead of refused. Otherwise it is `b2_forecast_no_minimum`.
+    """
+
+    from . import b2_pool  # b2_pool imports this module
+
+    if b2_pool.IN_FORCE:
+        return b2_pool.b2_fallback_forecast(
+            panel, decision_index, registry=registry, decision_time=decision_time, splits=splits,
+            pool_min=b2_pool.POOL_MIN,
+        )
+    return b2_forecast_no_minimum(panel, decision_index, registry=registry, decision_time=decision_time, splits=splits)
+
+
+def b2_forecast_no_minimum(
+    panel: Sequence[DailyObservation],
+    decision_index: int,
+    *,
+    registry: Mapping[str, Mapping[str, object]],
+    decision_time: time,
+    splits: SplitDeclaration,
+) -> Dict[int, List[float]]:
+    """§4 B2 as it stood before #1155 was in force: the trailing year's spreads on days of the target's type, per lead.
+
+    No minimum pool: a type with no row in the window raises `ProtocolError`. The target's type is read from its own
+    calendar columns, which are known in advance; every sampled row's from its own.
     """
 
     anchor = _anchor(panel, decision_index, registry, decision_time)
