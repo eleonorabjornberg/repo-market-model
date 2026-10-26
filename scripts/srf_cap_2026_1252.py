@@ -265,7 +265,7 @@ def answer_sentence(r: Mapping[str, object]) -> str:
 
     def share(entry) -> str:
         lo, hi = entry["interval"]
-        return f"{entry['above']} of {entry['days']} days, {100 * entry['share']:.1f}% [{100 * lo:.1f}%, {100 * hi:.1f}%]"
+        return f"{entry['above']} of {entry['days']} days ({100 * entry['share']:.1f}%, exact interval [{100 * lo:.1f}%, {100 * hi:.1f}%])"
 
     names = {"SOFR": "SOFR", "SOFR_p99": "its 99th percentile"}
     moved = [s for s in SERIES if rules["changed"][s]]
