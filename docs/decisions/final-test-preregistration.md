@@ -30,7 +30,7 @@ not, you still have the case study." "The S-curve" means the persistence-logisti
 - **Primary cell:** `crps, h = 1`
 - **Model:** `dynamic_logit`
 - **Calibrator:** `platt_recency`
-- **Declaration checksum:** `2a903201e6d65fa6a26b6f1b3e1cf56dec7fbf06c6757a690ba6559329aa042c`
+- **Declaration checksum:** `c650e442a18caf808f6f5b87b25514010452ebda18a0392deda464e471f7a083`
 - **Declaration checksum at opening:** `28ad819321d50a44b50adf69f78af1fbe28d6c4f6a9a813544e13d06deed4432`
 - **Code:** the model is `ml.dynamic_logit_exceedance` under `ml.DYNAMIC_LOGIT_SETTINGS` (#137), with the inputs of
   `scripts/pressure_dynamic_logit.py`'s `DYNAMIC_FEATURES`: the latest spread, reserves as the scarcity state, the
@@ -55,7 +55,7 @@ not, you still have the case study." "The S-curve" means the persistence-logisti
 
   `tests/test_final_test_freeze.py` fails if any of these changes after this record merges.
 
-- **CRPS declaration checksum:** `c2fff5dae3739d5f28d3664113d8bc0e1720ee4398c8aebd9d12e4b8119eb6a0`
+- **CRPS declaration checksum:** `2ebb022203cba411d8b3306a5320d3a7a404b3d4c275b0e555cdc660a49a8af9`
 - **CRPS declaration checksum at opening:** `d0847824027e80e06392b7ba641908cd83a60e38d21ceffff6b9d9d57cf14b59`
 - **CRPS sensitivity seed:** `1970125677`
 - **The CRPS checksum** is `scripts/final_test_preregistration.py crps-declaration`, added by the amendment of
