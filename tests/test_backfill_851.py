@@ -100,9 +100,9 @@ class BackFilledRowsServeOnlyAdmittedSeries(_Built):
 
 class TheGuardReadsTheModelsColumns(unittest.TestCase):
     def test_series_read_follows_derived_features_to_their_series(self):
-        self.assertEqual(backfill.series_read(("spread_bps",)), ("sofr",))
+        self.assertEqual(backfill.series_read(("spread_bps",)), ("iorb", "sofr"))
         self.assertEqual(backfill.series_read(("sofr_p25", "sofr", "tgcr")), ("sofr", "tgcr"))
-        self.assertEqual(backfill.series_read(("quarter_end", "tax_date", "iorb")), ())
+        self.assertEqual(backfill.series_read(("quarter_end", "tax_date", "iorb")), ("iorb",))
         self.assertEqual(backfill.series_read(("tbill_4w", "reserve_balances")), ("reserve_balances", "tbill_4w"))
         self.assertEqual(backfill.series_read(("reserves_when_depleted",)), ("on_rrp", "reserve_balances"))
         self.assertEqual(backfill.series_read(("reserve_scarcity_state",)), ("reserve_scarcity_state",))

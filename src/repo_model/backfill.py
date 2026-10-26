@@ -302,16 +302,17 @@ def load_admitted_series(path: Path) -> Dict[str, datetime]:
 #: row (#887).
 WORKBOOK_SERIES = {"sofr": "sofr", "sofr_p25": "sofr", "sofr_p75": "sofr", "tgcr": "tgcr", "bgcr": "bgcr"}
 
-#: Features that are not a back-fill series: the calendar, and IORB, an administered rate that defines the
-#: spread (whether it needs its own `admitted` entry is a marked question on #742's pull request, not settled here).
-NOT_A_SERIES = contract.CALENDAR_FEATURES | {"iorb"}
+#: Features that are not a back-fill series: the calendar columns, which are functions of the date. IORB is a series
+#: like any other: Eleonora admitted it as training history only, from the same instant as SOFR (ruling of 26 October
+#: 2026, #1230), so it needs its own `admitted` entry and a fit that reads it is checked against it.
+NOT_A_SERIES = contract.CALENDAR_FEATURES
 
 
 def series_read(features: Iterable[str]) -> Tuple[str, ...]:
     """The back-fill series that a model reading `features` draws on, from the feature declarations (#832).
 
     Derived and composed features (`spread_bps`, `reserves_when_depleted`) are followed to the panel columns
-    they are computed from. A workbook column maps to its series; the calendar and IORB are no series; any other
+    they are computed from. A workbook column maps to its series; the calendar columns are no series; any other
     column stands for itself, so a column this module does not know is never admitted.
     """
 

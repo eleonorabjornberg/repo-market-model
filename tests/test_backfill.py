@@ -380,7 +380,8 @@ class RefusesSeriesThatAreNotAdmitted(unittest.TestCase):
 
     def test_the_declaration_lists_the_three_workbook_series_at_the_ruled_instant(self):
         admitted = backfill.load_admitted_series(ROOT / "metadata" / "backfill_posting.json")
-        self.assertEqual(admitted, self.ADMITTED)
+        # The three workbook series, and IOER/IORB from the same instant (her ruling of 26 October 2026, #1230).
+        self.assertEqual(admitted, {**self.ADMITTED, "iorb": datetime(2018, 5, 17, 0, 0)})
 
     def test_a_malformed_list_is_refused(self):
         import tempfile
