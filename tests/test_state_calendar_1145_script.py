@@ -33,11 +33,6 @@ from repo_model import scoring_protocol as sp
 from repo_model import spread_mr_calendar as cal
 from repo_model import spread_mr_state_calendar as sc
 
-import legacy_day_types
-
-# this module reproduces legacy figures: the pre-#1135 day types (see tests/legacy_day_types.py)
-setUpModule, tearDownModule = legacy_day_types.setUpModule, legacy_day_types.tearDownModule
-
 ROOT = Path(__file__).resolve().parent.parent
 _spec = importlib.util.spec_from_file_location("state_calendar_1145", ROOT / "scripts" / "state_calendar_1145.py")
 script = importlib.util.module_from_spec(_spec)
