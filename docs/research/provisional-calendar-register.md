@@ -135,6 +135,7 @@ Order: H5 first (the primary goal), then H9, then the other hypotheses; design r
 | 36 | #1013 | #1025 | H1 | The scaled-score study on the series its paths use | none | `gbm_funding` as a series | one_step | series | 2026-10-20-model-01025-H1-step2 | The corrected calibration is set beside #999's. |
 | 37 | #1015 | #1024 | H1 | The B2 leg of "Supported" under #963's rules | `metadata/b2_leg_contiguous_1015.json` | `gbm_funding` and `spread_mr_ctx` as series | one_step | series | 2026-10-20-model-01024-H1-step3 | At 250 days the B1 leg survives and the B2 leg is between 3.0 and 4.0 for both. |
 | 38 | #1022 | #1108 | H1 | The block length after April 2020, without 2019-09-18 | none | `gbm_funding` as a series | one_step | series | 2026-10-22-model-01022-H1-step3 | The block stays 10: post-2020-04 the automatic block is 10.2 against B1 and 64.9 against B2. |
+| 39 | #1197 | #1201 | H5 | (s3) of #1145 against `gbm_funding` on her Mac walks, paired on the same 1,855 days | none | `gbm_funding` as a series (the walks, read-only), scored against (s3) and (a) of #1145, which read the calendar columns on direct pairs | one_step | series | 2026-10-26-model-01197-H5-step3 | Pooled grid CRPS: (s3) against `gbm_funding` +10.6% [+6.1, +14.9], a gain on the mean-d bound; the `gbm_funding` side of every comparison is the one-step walk, so the figures are provisional until it is re-run. |
 <!-- end generated: register:results -->
 
 ## 3. Declarations that name a calendar or scheduled column and are not in the class

@@ -1,0 +1,15 @@
+{
+  "order": 350,
+  "directive": 1197,
+  "pull_request": 1201,
+  "hypothesis": "H5",
+  "result": "(s3) of #1145 against `gbm_funding` on her Mac walks, paired on the same 1,855 days",
+  "declarations": [],
+  "model": "`gbm_funding` as a series (the walks, read-only), scored against (s3) and (a) of #1145, which read the calendar columns on direct pairs",
+  "pairing": "one_step",
+  "class": "series",
+  "on_the_page": [
+    "2026-10-26-model-01197-H5-step3"
+  ],
+  "concluded": "Pooled grid CRPS: (s3) against `gbm_funding` +10.6% [+6.1, +14.9], a gain on the mean-d bound; the `gbm_funding` side of every comparison is the one-step walk, so the figures are provisional until it is re-run."
+}

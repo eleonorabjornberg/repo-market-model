@@ -225,10 +225,7 @@ class TestEveryDeclarationIsClassified(unittest.TestCase):
                 self.assertTrue((ROOT / register.ENTRIES / "producers" / f"{Path(script).stem}.json").is_file())
 
     #: Scripts that read a `gbm_funding` walk and have no result row yet: finding #1111's second half, not settled here.
-    #: `scripts/s3_vs_gbm_1197.py` (#1197) is here until its Mac run returns: its result row (`results/pr_<PR>.json`, class
-    #: `series`) needs the pull request and the page and log entry that run commits, so the session that finishes the branch adds
-    #: the row and removes the script from this list.
-    UNREGISTERED_SERIES_READERS = ("scripts/b1_calendar_960.py", "scripts/per_leg_calibration_929.py", "scripts/s3_vs_gbm_1197.py")
+    UNREGISTERED_SERIES_READERS = ("scripts/b1_calendar_960.py", "scripts/per_leg_calibration_929.py")
 
     def test_every_script_reading_a_gbm_funding_walk_is_registered(self):
         """#1111: a script that reads the walks of `gbm_funding` as data (class `series`) needs a result row, as a caller of a
