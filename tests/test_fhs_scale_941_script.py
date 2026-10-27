@@ -188,6 +188,7 @@ class EndToEndTests(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        sys.modules["fhs_scale_941"] = script  # another test module may have re-registered the name (pickling by module name)
         import panel_cache
 
         cls.panel_path = Path(panel_cache.published_build()["path"])
