@@ -123,6 +123,7 @@ class SubsetRunTests(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        sys.modules["sofr_dispersion_1175"] = script  # another test module may have re-registered the name (pickling by module name)
         import test_protocol_benchmarks as tpb
 
         cls.directory = tempfile.TemporaryDirectory()
