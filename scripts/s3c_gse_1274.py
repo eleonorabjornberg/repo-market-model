@@ -586,10 +586,27 @@ def headline(r: Mapping[str, object]) -> str:
     return "; ".join(parts) + "."
 
 
+def ramp_sentence(r: Mapping[str, object]) -> str:
+    """Where the arm moves the score, from the ramp-day split: (s3c-gse) against (s3c) on grid CRPS and twCRPS, on the target days the changed
+    term is non-zero and on the others, by window. The intervals of these groups keep the current method."""
+
+    parts = []
+    for window, text in (("2026", "the 2026 days"), ("development", "the development window")):
+        groups = r["windows"].get(window, {}).get("groups", {}).get(RAMP_SPLIT)
+        if not groups:
+            continue
+        for label, name in ((RAMP_DAYS, "on the ramp days"), (OTHER_DAYS, "on the other days")):
+            g = groups[label]
+            parts.append(f"{text}, {name} ({g['days']} target days): " + ", ".join(
+                f"{METRIC_TITLES[m]} {cell(_vs(g, m, S3C))}" for m in ("grid_crps", "upper_tail_twcrps")))
+    return ("Against (s3c), by whether the changed term is non-zero on the target day (the intervals of these groups keep the current method, "
+            "#1221): " + "; ".join(parts) + ".")
+
+
 def render(r: dict) -> str:
     out = [
         "# (s3c-gse): the GSE cash cycle as a ramp from the 19th to the 25th, on (s3c) (#1274)", "",
-        "**Does a ramp from the 19th to the 25th of the month, in place of the flat 19th-23rd term, improve (s3c)?** " + headline(r), "",
+        "**Does a ramp from the 19th to the 25th of the month, in place of the flat 19th-23rd term, improve (s3c)?** " + headline(r), "", ramp_sentence(r), "",
         "**Hypothesis and step:** H5 (primary goal), step 3, an arm on the candidate (s3c); ledger item 66 on #1116. **Development data, not a verdict** "
         "(scoring protocol v1, #640). Her ruling of 27 October 2026 (chat, relayed on #1274): queue four arms on (s3c), one directive each, independent of "
         "each other; this is the GSE-cycle ramp. **(s3c) stays the candidate until she rules on the result.** Nothing is registered or published and no "
