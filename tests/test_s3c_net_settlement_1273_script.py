@@ -5,7 +5,7 @@ Written first, against the declaration. The new read path (`repo_model.s3c_net.N
 line and the full-allotment flag are (s3c)'s (`test_s3c_candidate`). What these tests pin: that the declaration names what the module has (seed, models, the
 arms, the last day, no amendment) and that the cleared register row exists; the test plan; the Brier cell arithmetic (strict event on whole basis points)
 and the 90% band hit; the gross-against-panel check; the cell-by-lead difference count; the changed-term day split; the per-regime effect arithmetic on a
-hand case (the term enters the mean in bp per USD 100 bn, a day without the term in the fit counts 0); the page (the control and the practitioner's figure are
+hand case (the term enters the mean in bp per USD 100 bn, a day without the term in the fit counts 0); the page (the control is
 named, the marked questions carry numbered options and one default); the refusal to walk a day whose (s3) differs from #1255's frame; a small run of
 `score` and `page` end to end on the fixture panel; and, once the full run is committed, that the tracked page is what the script renders from the
 tracked record and that #1255's pooled means are reproduced.
@@ -284,10 +284,10 @@ class EndToEndTests(unittest.TestCase):
             for term in script.TERMS:
                 self.assertIn("mean", w["effects"]["net"]["all"][term])
 
-    def test_the_page_names_the_control_the_practitioner_and_ends_with_the_marked_questions(self):
+    def test_the_page_names_the_control_and_ends_with_the_marked_questions(self):
         text = self.page.read_text(encoding="utf-8")
         self.assertIn("(s3c-gross)", text)
-        self.assertIn("practitioner", text)
+        self.assertNotIn("practitioner", text)
         self.assertIn("## Questions for Eleonora", text)
         self.assertIn("**Options**", text)
         self.assertNotIn("GO #", text)
