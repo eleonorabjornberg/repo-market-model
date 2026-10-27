@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/regime_spells_1182.json",
+  "script": "scripts/regime_spells_1182.py",
+  "pairing": "direct",
+  "why": "(s3) of #1145 with calm and stress spells (repo_model.spread_mr_regime): the calendar terms are read from the target row on direct pairs (spread_mr_state_calendar.fit_state_terms, guarded by one_step_guard with no allow-list entry); (m3)'s entry flags are the calendar columns of the day entered, read at that day (spread_mr_regime.fit_regimes, guarded by one_step_guard with no allow-list entry), a scheduled flag only where asof rule 2 admits it; (a), the comparator, reads no calendar column and is not a result of this study; no gradient-boosted fit is called"
+}

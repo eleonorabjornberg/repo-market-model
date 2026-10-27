@@ -25,6 +25,7 @@ from __future__ import annotations
 from datetime import date, time
 from typing import Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
+from . import turn_days
 from . import protocol_benchmarks as pb
 from . import spread_mean_reversion as smr
 from . import lockbox
@@ -310,12 +311,12 @@ def climatology(
     first = pb._window_start(panel, decision_index, pb.B2_YEARS)
     rows = list(range(first, anchor + 1))
     pb._require_public(rows, anchor, dates, f"climatology for {dates[decision_index]}")
-    kinds = [splits.reporting_day_type(panel[s].date, panel[s].values) for s in rows]
+    kinds = [turn_days.reporting_day_type(splits, panel[s].date, panel[s].values) for s in rows]
     pressure = [exceeds_bp(panel[s].spread_bps, TAU) for s in rows]
     out = []
     for h in leads:
         target = panel[decision_index + h]
-        out.append(type_share(kinds, pressure, splits.reporting_day_type(target.date, target.values)))
+        out.append(type_share(kinds, pressure, turn_days.reporting_day_type(splits, target.date, target.values)))
     return out
 
 

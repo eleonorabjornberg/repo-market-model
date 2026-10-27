@@ -20,6 +20,7 @@ from __future__ import annotations
 from datetime import date, time
 from typing import Dict, Iterable, List, Mapping, NamedTuple, Optional, Sequence, Tuple
 
+from . import turn_days
 from . import protocol_benchmarks as pb
 from . import ranking
 from . import spread_mean_reversion as smr
@@ -185,7 +186,7 @@ def residual_pools(
         k = h + lag
         for origin, target in rows[h]:
             if target not in kinds:
-                kinds[target] = splits.reporting_day_type(panel[target].date, panel[target].values)
+                kinds[target] = turn_days.reporting_day_type(splits, panel[target].date, panel[target].values)
             residual = (panel[target].spread_bps - levels[origin]) - fit_.phi**k * (panel[origin].spread_bps - levels[origin])
             by_lead.setdefault((kinds[target], h), []).append(residual)
     pools: Dict[Tuple[str, int], List[float]] = {}
@@ -232,7 +233,7 @@ def typed_quantiles(
     fallback: Dict[int, bool] = {}
     for h in leads:
         target = panel[decision_index + h]
-        pool = pools.get((splits.reporting_day_type(target.date, target.values), h), ())
+        pool = pools.get((turn_days.reporting_day_type(splits, target.date, target.values), h), ())
         centre = level + fit_.phi ** (h + lag) * (last - level)
         if len(pool) >= MIN_POOL:
             quantiles[h] = pb.empirical_quantiles(list(pool), centre)

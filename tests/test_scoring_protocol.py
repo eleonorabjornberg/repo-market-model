@@ -340,6 +340,39 @@ class BootstrapTests(unittest.TestCase):
         with self.assertRaises(sp.ProtocolError):
             test.upper_skill()
 
+    def test_mean_d_bound_survives_a_benchmark_that_scores_zero_when_skill_is_left_out(self):
+        """#1215: skill's zero-benchmark guard belongs to skill. Without skill the mean-d bound is computed, and is the
+        bound a test with a nonzero benchmark would give from the same draws; with skill the call still raises.
+
+        Mutation (recorded): moving the observed-mean check back out of `if with_skill:` made the first assertion raise
+        ProtocolError("the benchmark scores zero on every day; skill is undefined"); dropping the resampled-mean check's
+        `with_skill` condition made the second raise ProtocolError("a resampled benchmark scores zero; ...").
+        """
+
+        zero = {day: 0.0 for day in self.days}
+        test = sp.paired_test(zero, self.cand, seed=7, draws=200, with_skill=False)
+        self.assertTrue(test.lower_mean_difference() < test.mean_difference)
+        self.assertIsNone(test.skill_standard_error)
+        self.assertEqual(test.skill_t_draws, ())
+        with self.assertRaises(sp.ProtocolError):
+            sp.paired_test(zero, self.cand, seed=7, draws=200, with_skill=True)
+        # A benchmark that is zero on all but one day: skill is defined, but most resamples miss that day.
+        sparse = dict(zero)
+        sparse[self.days[5]] = 1.0
+        test = sp.paired_test(sparse, self.cand, seed=7, draws=200, with_skill=False)
+        self.assertEqual(len(test.t_draws), 200)
+        with self.assertRaises(sp.ProtocolError):
+            sp.paired_test(sparse, self.cand, seed=7, draws=200, with_skill=True)
+
+    def test_the_mean_d_draws_do_not_depend_on_skill_or_on_other_pairs(self):
+        alone = sp.paired_test(self.bench, self.cand, seed=7, draws=100, with_skill=False)
+        zero = {day: 0.0 for day in self.days}
+        both = sp.paired_tests([(zero, self.cand), (self.bench, self.cand)], seed=7, draws=100, with_skill=False)
+        with_skill = sp.paired_test(self.bench, self.cand, seed=7, draws=100)
+        self.assertEqual(both[1].t_draws, alone.t_draws)
+        self.assertEqual(both[1].standard_error, alone.standard_error)
+        self.assertEqual(with_skill.t_draws, alone.t_draws)
+
     def test_a_level_finer_than_the_draws_is_refused(self):
         test = sp.paired_test(self.bench, self.cand, seed=7, draws=1000)
         with self.assertRaises(sp.UnresolvedLevel):

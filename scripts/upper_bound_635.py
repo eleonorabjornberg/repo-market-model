@@ -647,7 +647,7 @@ def score_command(args) -> int:
     label = fits["label"]
     target_date = [dates[i] for i in scored_rows]
     regimes = [splits.regime(d) for d in target_date]
-    daytypes = [splits.reporting_day_type(d, panel[i].values) for d, i in zip(target_date, scored_rows)]
+    daytypes = [turn_days.reporting_day_type(splits, d, panel[i].values) for d, i in zip(target_date, scored_rows)]
     ordinary_dates = {d for d, o in zip(target_date, ordinary) if o}
     outcome = {d: spread[p] for p, d in enumerate(target_date) if spread[p] is not None}
     document = {"declaration_sha256": hashlib.sha256(DECLARATION.read_bytes()).hexdigest(), "fits_panel_sha256": fits["panel_sha256"]}
@@ -1080,6 +1080,10 @@ def report_command(args) -> int:
 # -- main ------------------------------------------------------------------------------------------------------------
 
 
+from repo_model import turn_days  # noqa: E402
+
+
+@turn_days.with_legacy_flag
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     sub = parser.add_subparsers(dest="command", required=True)

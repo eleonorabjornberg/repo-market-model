@@ -1,0 +1,93 @@
+{
+ "status": "declared by the pull request that closes #1255 before any score was computed; a development study, never a verdict. Nothing is registered or published: no record in docs/runs/ is edited, the live record and its pin do not change, no declaration already merged changes, `gbm_funding`'s declaration and `scripts/final_test_preregistration.py` do not change, `metadata/sources.json` does not change, no day after 2026-09-03 is read and no lockbox day is scored. Amendments made after a number was computed are listed in `amendments`.",
+ "issue": 1255,
+ "ledger": "item 61 on #1116",
+ "avenue": 1252,
+ "ruling": "Eleonora, 26 October 2026, about 7:20 pm ET, chat, relayed on #1255: asked \"should (s3) carry the cap from full allotment onwards?\", she answered \"it should\". This revises question 1 on #1249: a cap becomes part of the H5 candidate, from full allotment onwards.",
+ "hypothesis": "H5 (primary goal): the SOFR - IORB spread distribution in bp. Step 3, the candidate. Development tier",
+ "target": "spread_bps at the scored day, in basis points, as a 23-quantile distribution at each lead h = 1..5 (scoring_protocol.GRID)",
+ "candidate": {
+  "name": "sc_s3c",
+  "label": "(s3c)",
+  "definition": "(s3) of #1145 (`sc_s3_robust`, `repo_model.spread_mr_state_calendar.ARMS[2]`), unchanged, with every quantile of its forecast for target day T clipped at min(q, line(T) + 0 bp) when the facility is at full allotment on T, and (s3) itself on every other day. The cap is a transform of (s3)'s forecast quantiles after the walk and fits nothing",
+  "module": "repo_model.s3c_candidate (full_allotment, cap_line, capped_quantiles); the line is repo_model.srf_line.srf_line_bps and the clip is repo_model.srf_line.cap_quantiles, both #1241's and unchanged",
+  "margin_bp": 0.0,
+  "margin_not_tuned": "the margin of 0 bp is the primary #1241 and #1252 declared; the margins of 5 and 10 bp are not arms here",
+  "pairs": "direct: (s3) reads the calendar columns at the target day with training_pairs = 'direct', so the fitter is not calendar-blind and needs no ONE_STEP_ALLOW_LIST entry; the provisional-register row is metadata/provisional/cleared/s3c_candidate_1255.json",
+  "full_allotment": {
+   "rule": "the facility is at full allotment on target day T when the `standing_repo` entry of metadata/policy_events.json in force on T (the latest effective date on or before T, then the latest announcement, among the entries announced at or before the decision instant) states no aggregate operation limit: details.aggregate_operation_limit_bn is null. The first such entry is `standing_repo-20251210` (announced 2025-12-10 14:00, effective 2025-12-11). An entry without the field is refused (ValueError), never read as full allotment",
+   "no_date_in_code": "no date is hard-coded. An entry that re-imposes an aggregate limit stops the cap on its effective date; one that removes it again restarts it; tests/test_s3c_candidate.py tests both directions on a synthetic register",
+   "information_set": "the entry read is the one repo_model.srf_line reads for the line: announced at or before the decision instant (16:00 America/New_York on the decision day, the published records' decision time) and effective on or before T, passed through policy_events.require_announced, which raises LookAheadError for an entry announced later. This is the availability rule of metadata/srf_cap_1241.json (scheduled_availability, basis announced_before_ref_date, 1 business day, 16:00), unchanged",
+   "later_entry": "metadata/policy_events.json also holds `standing_repo-20260916` (announced 2026-09-16, effective 2026-09-17; no aggregate limit). It is after the last scored day (2026-09-03) and after the panel's build cutoff, and is not read by any scored cell"
+  }
+ },
+ "windows": [
+  {
+   "name": "development",
+   "label": "the development window of #1145 and #1241",
+   "frame": "#1241's frame (`scripts/srf_cap_1241.py` build_frame): decision days whose five targets fall on or before 2025-12-31 (`spread_mean_reversion_686.LAST_DAY`), (s3) walk-forward refit every 21 decision days as #1196 declared, with B1, B1' and B2. (a) (#941) is taken from the same walk. The days from 2025-12-11 are the only days on which (s3c) differs from (s3)",
+   "splits": "pooled; by lead; by regime; by calendar target-day type (#1115's groups); by pressure-day type of the target day (added by #1241)"
+  },
+  {
+   "name": "2026",
+   "label": "the 2026 development days of #1229",
+   "frame": "#1229's frame (`scripts/s3_2026_check_1222.py` build_frame): decision days whose five targets all fall from 2026-01-02 to 2026-09-03 (the near-blind tier open since GO #151, metadata/lockbox.json), exactly as #1229 and #1252 did. The blind tier (from 2026-09-04) and every lockbox day are refused: a scored decision day or target day passes lockbox.require_unlocked through spread_mean_reversion_686.require_scored_days with the last day 2026-09-03, and #1229's span guard refuses a decision day with a target before 2026-01-02 or after 2026-09-03",
+   "splits": "pooled; by lead; by target month; by pressure-day type of the target day; by calendar target-day type (#1252's groups). The regime split has one regime in the window and is the pooled row",
+   "seen_before": "these days were already seen by #845, by the #151 final test, by #1229 and by #1252. This is a check, not evidence for a verdict or a choice"
+  }
+ ],
+ "arms": [
+  {"name": "sc_s3_robust", "role": "(s3) of #1145, the H5 candidate until this ruling; the comparator of (s3c); unchanged", "margin_bp": null},
+  {"name": "sc_s3c", "role": "(s3c), the candidate: (s3) capped at the SRF line from full allotment onwards", "margin_bp": 0.0}
+ ],
+ "models": ["B1", "B1_prime", "B2", "mr_cal_a_base", "sc_s3_robust", "sc_s3c"],
+ "primary": {
+  "metric": "grid CRPS (23 levels) averaged over leads h = 1..5",
+  "key_secondary": "upper-tail twCRPS (weight 1{z > 0 bp})",
+  "comparison": "(s3c) against (s3)",
+  "references": "(s3c) is also tested against (a), B1, B1' (#960) and B2, as #1145 and #1229 tested (s3)"
+ },
+ "scoring": {
+  "scorer": "repo_model.scoring_protocol (#655), the development tier: no verdict, no registration",
+  "test": "scoring_protocol.paired_tests, the studentized stationary bootstrap (ruling 1), mean block 10 business days, 10,000 draws, seed 1255, two-sided 90% interval (the lower end is the one-sided 95% bound); both the skill interval and the studentized interval on mean d (bp) are reported for every tested row; where the studentized bound cannot be computed (most of a group's days score alike) the unstudentized percentile interval of mean d is given beside, with no reading taken from it",
+  "reading": "a reading is taken from the mean-d bound (Eleonora's ruling on #1009, 20 October 2026): (s3c) is read better than a reference when the lower end of the 90% interval of mean d is above zero, worse when the upper end is below zero, otherwise undecided. The skill interval's reading is listed beside it where it differs. Lens C's caveat (the lag-10 HAC standard error is understated about 2x after 2020) is stated on the page",
+  "politis_white": "the Politis-White block of the paired differential against (s3) is reported for the pooled group, as #1241 reported it",
+  "identical_groups": "a group in which (s3c)'s score equals (s3)'s on every day is listed as identical against (s3) and not tested against it; a group of fewer than 20 days is listed and not tested",
+  "day_type_intervals": "the intervals of a pressure-day-type, calendar-day-type or month group keep the current method (the group's days, scattered, resampled in date order as if consecutive), which #1221 questions and #1228 will decide; the page labels them so and reads no pressure-day type from them",
+  "pressure_day_types": "turn_days.reporting_day_type (the month-end turn record in force since #1161); B2 reads the thin-pool record in force since #1198; --legacy-day-types reproduces earlier pages",
+  "seed": 1255
+ },
+ "checks": {
+  "before_full_allotment_identical": "every forecast cell whose target is before 2025-12-11 (no full allotment) is element-for-element (s3)'s; the script counts the cells and refuses to write a record if one differs. tests/test_s3c_candidate.py pins the same on the real register",
+  "binding": "per window: the cells at full allotment, the cells in which the cap moves any quantile, and those in which it moves the 0.95 and the 0.99 level, by lead",
+  "reproduction": "(s3)'s pooled mean scores in the development window against #1241's record (docs/research/srf-cap-1241/result.json) and in the 2026 window against #1229's (docs/research/s3-2026-check-1222/result.json); the walk is the same, so they agree to the last digits, and the page states the difference"
+ },
+ "reading_rules": [
+  "A figure is a check on days that were already seen. Nothing here is a verdict, nothing is registered and no choice is made on it.",
+  "A gain of (s3c) over a reference is read as present on a split when the 90% interval of mean d excludes zero on the positive side, and as a loss when it excludes zero on the negative side; otherwise as undecided. A point estimate alone is not read.",
+  "A pooled figure is never read without the regime (development window) or month (2026) and pressure-day-type splits beside it. The upper-tail figures of the 2026 window rest on few pressure days; the page states the counts.",
+  "Lens C's caveat is stated on the page. The day-type and month intervals are labelled as the current method (#1221 open, #1228).",
+  "The page ends with marked questions for Eleonora with numbered options and defaults that change no claim."
+ ],
+ "questions": [
+  "1. The registration draft and any page that names \"the H5 candidate\" still say (s3). The page lists each one; a follow-up updates them after she merges this; none is edited here.",
+  "2. The facility line lives in the study declaration (#1249 Q3 default). Whether it moves to metadata/sources.json for a registered candidate. Default: it stays in the declaration until registration."
+ ],
+ "limits": {
+  "last_day": "2026-09-03",
+  "arms": 0,
+  "gbm_funding_declaration": "unchanged",
+  "gbm_funding": "not compared: its walks are Eleonora's Mac",
+  "preregistration": "scripts/final_test_preregistration.py is not touched; test_final_test_freeze and test_live_score_freeze are run before the push",
+  "allow_list": "repo_model.one_step_guard.ONE_STEP_ALLOW_LIST is not changed",
+  "sources": "metadata/sources.json is not changed; no declaration already merged is changed; docs/runs/ is not touched"
+ },
+ "long_run": "cloud; the walks of (s3) are minutes and the paired tests are the longer part (one candidate against five references on two windows; #1241's run, with three candidates, and #1252's, with three, were each well under two hours on 4 cores); under the two-hour line of `long-run`. If the measured time says otherwise, the run goes to the Mac as a `needs-mac:` comment",
+ "amendments": [
+  {
+   "when": "after the declared run and before the pull request was opened, 26 October 2026",
+   "what": "added the `arms` block above (names, roles and margins of the two arms already declared under `candidate` and `models`), and the status sentence's closing words (\"there are none\") now point at this list; the block is added because tests/test_model_declarations.py reads a declaration's arms from an `arms` or `candidates` block",
+   "changes_no_number": "no rule, setting, window, seed, margin or model changed and no figure depends on it; the script's output was computed from the declaration as committed in the first commit of the branch, and the diff of this block against it is the block alone"
+  }
+ ]
+}
