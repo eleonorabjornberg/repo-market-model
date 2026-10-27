@@ -59,6 +59,7 @@ def _load(name: str):
 from repo_model import b1_calendar as b1c, pressure  # noqa: E402
 from repo_model import protocol_benchmarks as pb, scoring_protocol as sp  # noqa: E402
 from repo_model import spread_mr_fhs as fhs  # noqa: E402
+from repo_model import turn_days  # noqa: E402
 from repo_model.baseline import panel_sha256  # noqa: E402
 from repo_model.data import (  # noqa: E402
     DailyObservation, build_daily_panel, load_daily_panel, load_point_in_time_panel, verify_daily_panel, write_daily_panel,
@@ -642,6 +643,7 @@ def page(args) -> int:
     return 0
 
 
+@turn_days.with_legacy_flag
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = parser.add_subparsers(dest="command", required=True)
