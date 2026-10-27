@@ -1,0 +1,86 @@
+{
+ "status": "declared by the pull request that closes #1275 before any score was computed; a development study, never a verdict. (s3c) stays the H5 candidate until Eleonora rules on the result. Nothing is registered or published: no record in docs/runs/ is edited, the live record and its pin do not change, no declaration already merged changes, docs/research/h5-candidate.json, `gbm_funding`'s declaration, `scripts/final_test_preregistration.py` and metadata/sources.json do not change, no day after 2026-09-03 is read and no lockbox day is scored. Amendments made after a number was computed are listed in `amendments`; there are none.",
+ "issue": 1275,
+ "ledger": "item 67 on #1116",
+ "ruling": "Eleonora, 27 October 2026, about 3:25 pm ET, chat, relayed on #1275: queue four arms on (s3c) (net settlement, a GSE-cycle ramp, spike-sized carryover, MBS settlement days), one directive each, independent of each other. This is the spike-sized carryover. The directive body, as edited at 3:45 pm ET, is the text followed.",
+ "hypothesis": "H5 (primary goal): the SOFR - IORB spread distribution in bp. Step 3, an arm on the candidate (s3c). Development tier",
+ "target": "spread_bps at the scored day, in basis points, as a 23-quantile distribution at each lead h = 1..5 (scoring_protocol.GRID)",
+ "why": "(s3c) has a flat term for the first three business days of the month (`post_month_end_window`), and its mean reversion carries part of a spike forward. The carryover may scale with the spike: a larger month-end spike may leave more pressure on the next one or two days.",
+ "candidate": {
+  "name": "sc_s3c_carry",
+  "label": "(s3c-carry)",
+  "definition": "(s3c) with one term added to (s3)'s fit: on a target row that is business day 1 or 2 of its month the column is DECAY[bday] * spike, 0 on every other row. DECAY = {1: 1.0, 2: 0.5}, declared here before any score and not tuned. Every other term, the Huber fit, the ridge of 5 and the SRF cap at full allotment (margin 0 bp, repo_model.s3c_candidate) are (s3c)'s and are not changed; `post_month_end_window` is kept as it is and the new term is added beside it",
+  "module": "repo_model.s3c_carry (month_end_row, business_day, spike_bp, carry_value, fit_carry_terms, walk); the cap, the line and the full-allotment flag are repo_model.s3c_candidate's and repo_model.srf_line's, unchanged",
+  "spike": "max(0, SOFR - IORB of the month-end row E, less the model's level at E), in bp. E is the last panel row of the month before the target's month. The model's level is spread_mean_reversion.ordinary_levels: the median of the last 10 ordinary days at or before E (the level the model uses), so a row's level reads only rows at or before it. A level not yet defined gives a spike of 0",
+  "business_day": "derived_features.bday_of_month on the target row's date (the market calendar, the position post_month_end_window counts): 1 is the first weekday of the month that is not in the market holiday table",
+  "units": "in the fit the column is divided by the scale at the pair's origin, as the target (the raw residual) is, so the coefficient is a carryover fraction and the effect in bp is coefficient * DECAY * spike. A forecast adds that effect, in bp, to every quantile, beside the shift and the pool of the fit",
+  "entry": "the term enters a lead's fit when at least 3 training pairs (MIN_FLAGGED, as for the flag terms) have a positive column; the intercept is dropped, so the pool keeps the ordinary-day centre. Where it does not enter, the estimate is spread_mr_state_calendar.fit_state_terms' on the same pairs, element for element",
+  "information_set": "a new availability rule. The month-end spread is read only if it was public at the decision instant: E is at or before the decision's anchor (protocol_benchmarks._anchor, the last public row; the panel dates SOFR so that the anchor is the day before the decision day). A training pair reads it only if E is at or before the pair's own origin, the anchor of the decision it stands for. When it was not public the column is 0 (never an earlier month-end's spike). spike_bp raises LookAheadError (repo_model.splits) for a row after the anchor. Leakage test with one recorded mutation: tests/test_s3c_carry.py. On this dating the column can be non-zero only on business day 2 at lead 1 (business day 1 follows the month-end by one row and its spread is public the morning after the decision); the study reports on the days it is non-zero and on the other days, and says so",
+  "pairs": "direct: the column is a function of the target row's own date and of rows at or before the anchor, read at the target row on direct pairs (training_pairs = 'direct'); fit_carry_terms is guarded by one_step_guard with no allow-list entry; the provisional-register row is metadata/provisional/cleared/s3c_carry_1275.json",
+  "margin_bp": 0.0
+ },
+ "frame": {
+  "windows": "the development window (targets up to 2025-12-31, as #1145, #1241 and #1255) and the 2026 development days (targets 2026-01-02 to 2026-09-03, the near-blind tier open since GO #151, as #1229, #1252 and #1255), the frames of scripts/s3c_candidate_1255.py, loaded as they are",
+  "walk": "(s3)'s walk is #1229's and #1255's (every decision day from the start of the panel, refit every 21 decision days, direct pairs); the carry arm is walked on the same days with the same refit schedule, and (s3) re-forecast inside it must equal the frame's (s3) cell for cell or the run stops",
+  "guards": "a scored decision day or target day passes lockbox.require_unlocked through spread_mean_reversion_686.require_scored_days with the last day 2026-09-03; the blind tier (from 2026-09-04) and every lockbox day are refused",
+  "reproduction": "(s3) and (s3c) of the frames are #1255's; the pooled means are compared with docs/research/s3c-candidate-1255/result.json and the difference stated on the page"
+ },
+ "arms": [
+  {
+   "name": "sc_s3_robust",
+   "role": "(s3) of #1145; reference",
+   "margin_bp": null
+  },
+  {
+   "name": "sc_s3c",
+   "role": "(s3c), the H5 candidate; reference",
+   "margin_bp": 0.0
+  },
+  {
+   "name": "sc_s3c_carry",
+   "role": "(s3c-carry), (s3c) with the spike-sized month-end carryover term",
+   "margin_bp": 0.0
+  }
+ ],
+ "models": [
+  "B1",
+  "B1_prime",
+  "B2",
+  "sc_s3_robust",
+  "sc_s3c",
+  "sc_s3c_carry"
+ ],
+ "primary": {
+  "metric": "grid CRPS (23 levels) averaged over leads h = 1..5",
+  "key_secondary": "upper-tail twCRPS (weight 1{z > 0 bp})",
+  "pressure_probability": "the Brier score of P(spread > +5 bp), the probability read off the 23 quantiles as 1 - F(floor(tau) + 0.5), F linear between them (spread_mean_reversion.exceedance), the event strict and on whole basis points (data.exceeds_bp)",
+  "comparisons": "(s3c-carry) paired with (s3c) and with (s3), and against B1, B1' and B2",
+  "calibration": "the 90% band coverage (closed band q05 to q95) of (s3c-carry) beside (s3c)'s and (s3)'s, pooled, by regime, by lead and on the days the term is non-zero; means, not tested"
+ },
+ "scoring": {
+  "scorer": "repo_model.scoring_protocol (#655), the development tier: no verdict, no registration",
+  "test": "scoring_protocol.paired_tests, the studentized stationary bootstrap (ruling 1), mean block 10 business days, 10,000 draws, seed 1275, two-sided 90% interval (the lower end is the one-sided 95% bound); the skill interval and the studentized interval on mean d are reported for every tested row; where the studentized bound cannot be computed the unstudentized percentile interval of mean d is given beside it, with no reading taken from it",
+  "reading": "a reading is taken from the mean-d bound (her ruling on #1009): the later arm is read better than a reference when the lower end of the 90% interval of mean d is above zero, worse when the upper end is below zero, otherwise undecided. Lens C's caveat (the lag-10 HAC standard error is understated about 2x after 2020) is stated on the page",
+  "splits": "pooled; by regime; by pressure-day type of the target day; by lead; by calendar target-day type (2026 window as #1255); and, at lead 1, the decision days on which the changed term is non-zero against the other days (a group of fewer than 20 days is listed and not tested). The intervals of a group of target days keep the current method (the group's days, scattered, resampled in date order as if consecutive), which #1221 questions and #1228 will decide",
+  "identical_groups": "a group in which an arm's score equals the reference's on every day is listed as identical and not tested against it",
+  "seed": 1275
+ },
+ "fitted_effect": "the fitted effect of the changed term in bp, by regime: on each (decision day, lead 1) cell where the column is positive, coefficient (of the refit in force) * column; the count, the mean, the smallest and the largest, by the regime of the target day; and the coefficient (carryover fraction) of each refit, summarised by the regime of the refit day (the median, the range and the number of refits in which the term is active)",
+ "reading_rules": [
+  "A figure is a check on days that were already seen. Nothing here is a verdict, nothing is registered and no choice is made on it; (s3c) stays the candidate until she rules on the result.",
+  "A gain or loss is read from the 90% interval of mean d excluding zero; otherwise undecided. A point estimate alone is not read.",
+  "A pooled figure is never read without the regime, pressure-day type and lead splits beside it. The days on which the changed term is non-zero are few; the page states the counts.",
+  "The page says plainly on how many decision days and at which leads the changed term is non-zero under the as-of rule, and that on every other cell (s3c-carry) differs from (s3c) only through the refit of the lead-1 fit.",
+  "The page cites no source for the idea beyond her ruling and compares with no outside figure.",
+  "The page ends with marked questions for Eleonora with numbered options and defaults that change no claim."
+ ],
+ "limits": {
+  "last_day": "2026-09-03",
+  "named_candidate": "unchanged; docs/research/h5-candidate.json is not changed",
+  "preregistration": "scripts/final_test_preregistration.py is not touched; test_final_test_freeze and test_live_score_freeze are run before the push",
+  "allow_list": "repo_model.one_step_guard.ONE_STEP_ALLOW_LIST is not changed",
+  "sources": "metadata/sources.json is not changed; no declaration already merged is changed; docs/runs/ is not touched"
+ },
+ "long_run": "cloud; one walk of (s3) and of the carry arm over the whole panel (minutes) and the paired tests of one arm against five references on two windows, about two dozen groups and four metrics (the longer part; #1255's was well under two hours on 4 cores). If the measured time says otherwise, the run goes to the Mac as a `needs-mac:` comment",
+ "amendments": []
+}
