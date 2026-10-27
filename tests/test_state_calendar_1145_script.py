@@ -141,6 +141,8 @@ class EndToEndTests(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        cls._registered = sys.modules.get("state_calendar_1145")
+        sys.modules["state_calendar_1145"] = script  # another test module may have re-registered the name (pickling by module name)
         import panel_cache
         from repo_model.baseline import panel_sha256
         from repo_model.data import load_daily_panel
@@ -170,6 +172,8 @@ class EndToEndTests(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         cls.tmp.cleanup()
+        if cls._registered is not None:
+            sys.modules["state_calendar_1145"] = cls._registered
 
     def test_every_arm_is_scored_against_b1_b1_prime_b2_the_context_model_and_gbm_funding(self):
         cell = self.result["groups"]["pooled"]["all decision days"]["grid_crps"]

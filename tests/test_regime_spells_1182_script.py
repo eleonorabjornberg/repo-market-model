@@ -200,6 +200,7 @@ class SubsetRunTests(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        sys.modules["regime_spells_1182"] = script  # another test module may have re-registered the name (pickling by module name)
         import test_protocol_benchmarks as tpb
 
         cls.directory = tempfile.TemporaryDirectory()
@@ -278,6 +279,7 @@ class ThinPoolSwitchTests(unittest.TestCase):
     """`score --b2-thin-pool off` scores B2 as the first page's was (#1224), records it, and puts the switch back."""
 
     def test_off_is_recorded_and_restored(self):
+        sys.modules["regime_spells_1182"] = script  # another test module may have re-registered the name (pickling by module name)
         import test_protocol_benchmarks as tpb
         from repo_model import b2_pool
 
