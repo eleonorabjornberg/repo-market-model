@@ -1,5 +1,5 @@
 {
- "status": "declared by the pull request that closes #1255 before any score was computed; a development study, never a verdict. Nothing is registered or published: no record in docs/runs/ is edited, the live record and its pin do not change, no declaration already merged changes, `gbm_funding`'s declaration and `scripts/final_test_preregistration.py` do not change, `metadata/sources.json` does not change, no day after 2026-09-03 is read and no lockbox day is scored. Amendments made after a number was computed would be listed in `amendments`; there are none.",
+ "status": "declared by the pull request that closes #1255 before any score was computed; a development study, never a verdict. Nothing is registered or published: no record in docs/runs/ is edited, the live record and its pin do not change, no declaration already merged changes, `gbm_funding`'s declaration and `scripts/final_test_preregistration.py` do not change, `metadata/sources.json` does not change, no day after 2026-09-03 is read and no lockbox day is scored. Amendments made after a number was computed are listed in `amendments`.",
  "issue": 1255,
  "ledger": "item 61 on #1116",
  "avenue": 1252,
@@ -35,6 +35,10 @@
    "splits": "pooled; by lead; by target month; by pressure-day type of the target day; by calendar target-day type (#1252's groups). The regime split has one regime in the window and is the pooled row",
    "seen_before": "these days were already seen by #845, by the #151 final test, by #1229 and by #1252. This is a check, not evidence for a verdict or a choice"
   }
+ ],
+ "arms": [
+  {"name": "sc_s3_robust", "role": "(s3) of #1145, the H5 candidate until this ruling; the comparator of (s3c); unchanged", "margin_bp": null},
+  {"name": "sc_s3c", "role": "(s3c), the candidate: (s3) capped at the SRF line from full allotment onwards", "margin_bp": 0.0}
  ],
  "models": ["B1", "B1_prime", "B2", "mr_cal_a_base", "sc_s3_robust", "sc_s3c"],
  "primary": {
@@ -79,5 +83,11 @@
   "sources": "metadata/sources.json is not changed; no declaration already merged is changed; docs/runs/ is not touched"
  },
  "long_run": "cloud; the walks of (s3) are minutes and the paired tests are the longer part (one candidate against five references on two windows; #1241's run, with three candidates, and #1252's, with three, were each well under two hours on 4 cores); under the two-hour line of `long-run`. If the measured time says otherwise, the run goes to the Mac as a `needs-mac:` comment",
- "amendments": []
+ "amendments": [
+  {
+   "when": "after the declared run and before the pull request was opened, 26 October 2026",
+   "what": "added the `arms` block above (names, roles and margins of the two arms already declared under `candidate` and `models`), and the status sentence's closing words (\"there are none\") now point at this list; the block is added because tests/test_model_declarations.py reads a declaration's arms from an `arms` or `candidates` block",
+   "changes_no_number": "no rule, setting, window, seed, margin or model changed and no figure depends on it; the script's output was computed from the declaration as committed in the first commit of the branch, and the diff of this block against it is the block alone"
+  }
+ ]
 }

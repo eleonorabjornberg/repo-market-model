@@ -80,7 +80,8 @@ class DeclarationTests(unittest.TestCase):
         self.assertEqual([w["name"] for w in declaration["windows"]], list(script.WINDOWS))
         self.assertEqual(declaration["limits"]["last_day"], script.LAST_DAY.isoformat())
         self.assertEqual(declaration["limits"]["arms"], 0)
-        self.assertEqual(declaration["amendments"], [])
+        self.assertEqual([a["what"][:24] for a in declaration["amendments"]], ["added the `arms` block a"])  # the only one; see the PR
+        self.assertEqual([a["name"] for a in declaration["arms"]], [script.S3, script.S3C])
 
     def test_the_cleared_register_row_exists_for_the_declaration(self):
         row = json.loads((ROOT / "metadata" / "provisional" / "cleared" / "s3c_candidate_1255.json").read_text(encoding="utf-8"))
