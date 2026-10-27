@@ -80,10 +80,10 @@ when the feature set was fixed; re-scoring them belongs with next-version resear
 
 ## Amendment: back-filled repo-rate history is training history only (#374, #430)
 
-**Draft change from #1230, for Eleonora to review. Not in force until she has merged it.** The pull request that
-closes #1230 amends items 1 and 4 below: it admits IOER/IORB on back-filled rows as training history only (her
-ruling of 26 October 2026), and corrects item 1's line on the SOFR volume to her ruling of 19 October 2026 on #742.
-The rest of this amendment is in force as it stands.
+**The change from #1230 is in force from the merge of PR #1231 on 26 October 2026 (her GO #1230).** It amends items 1
+and 4 below: it admits IOER/IORB on back-filled rows as training history only (her ruling of 26 October 2026), and
+corrects item 1's line on the SOFR volume to her ruling of 19 October 2026 on #742. The rest of this amendment is in
+force as it stands.
 
 The snapshot and the guard are merged. **Posting instant established: 2018-05-17** (the start of that day, New York
 time) for TGCR, BGCR and SOFR, by her ruling of 13 October 2026 on PR #661 (#633); the source is
