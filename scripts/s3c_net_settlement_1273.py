@@ -534,7 +534,7 @@ def render(r: dict) -> str:
         "no long-run variance: the bound is then not computed, the unstudentized interval of mean d is given beside it, and no reading is taken from "
         "that. Groups of fewer than 20 days are listed with their means and not tested.", "",
         "**What kind of look this is.** The 2026 days were already seen by #845, by the #151 final test, by #1229, #1252 and #1255. This is a check "
-        "on an arm suggested to her, not evidence for a verdict. The changed terms are read at lead 1 only, so the average over h = 1..5 dilutes them by about "
+        "on an arm queued by her ruling, not evidence for a verdict. The changed terms are read at lead 1 only, so the average over h = 1..5 dilutes them by about "
         "a fifth: read the lead-1 row and the non-zero-term days beside the pooled figure.", ""]
     for window in WINDOWS:
         w = r["windows"].get(window)
@@ -596,7 +596,7 @@ def question() -> List[str]:
         "2. **Add a flag version of the net as a further arm**, in a directive of its own.",
         "3. **Read the result on the control's terms**: take the sized gross form as the baseline for the other three arms.", "",
         "**Question 2. What follows from this result.** (s3c) stays the H5 candidate. Whether (s3c-net) replaces it, or the net terms are carried into the "
-        "arms of the other three suggestions, is a choice for her, and it rests on days already seen.", "",
+        "arms of the other three queued arms, is a choice for her, and it rests on days already seen.", "",
         "**Options** (the default applies if you have not answered by the next 5 pm batch):", "",
         "1. **(s3c) stays the candidate and nothing changes** (default).",
         "2. **Draft a directive that tests (s3c-net) prospectively**, on the confirmation days only, under the scoring protocol.", ""]
