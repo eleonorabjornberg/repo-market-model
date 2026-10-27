@@ -785,7 +785,7 @@
       "publication": "DTCC GCF Repo Index fact sheet (quoted in #962): the index is posted at approximately 3:30 p.m. ET on the day it is for. 15:30 ET on the reference date itself is declared, so a 16:00 ET decision on that day reads it and a 14:00 ET decision does not."
     },
     "coverage": [
-      "Forward capture only, from the first business day the capture runs (the gcf-index-captures branch, one file per business day, never back-filled); a day fetched after 16:00 ET or with no row is a missed record and holds no value. The index page shows about 12 months; whether the earlier history is read is #962's question 2(a), not decided."
+      "Forward capture only, from the first business day the capture runs (on Eleonora's Mac, in a private directory outside any checkout, one file per business day, never back-filled; no DTCC data is kept in this repository); a day fetched after 16:00 ET or with no row is a missed record and holds no value. The index page shows about 12 months; whether the earlier history is read is #962's question 2(a), not decided."
     ],
     "field_frequencies": {
       "GCF_TREASURY_PAR_USD": "business_daily",
@@ -797,7 +797,7 @@
     ],
     "frequency": "business daily",
     "identities": [],
-    "limitation": "Off in every published declaration (#962), and declared here and not in metadata/sources.json, which the final-test pre-registration freezes by its bytes. No column reads it: no history is read as an input until Eleonora rules on whether the fact sheet's general \"about 3:30 p.m.\" establishes a publication instant for the history (#962 question 2(a)). GCF_TREASURY_RATE_PERCENT is the par-weighted average rate of the day's overnight GCF Repo trades in the Treasury CUSIP (371487AE9), in percent; GCF_TREASURY_PAR_USD is that day's total par value, in USD (the file serves USD). The MBS columns of the same file are kept in each day's stored bytes and declared by no field here. A day with no captured record has no value, never zero. The reading of a captured value is guarded by repo_model.gcf_index (a value fetched after the day's 16:00 ET decision instant, or after the reader's instant, raises LookAheadError). DTCC's terms of use for storing and redistributing the index are an open question to Eleonora (#962 question 2(c)).",
+    "limitation": "Off in every published declaration (#962), and declared here and not in metadata/sources.json, which the final-test pre-registration freezes by its bytes. No column reads it: no history is read as an input until Eleonora rules on whether the fact sheet's general \"about 3:30 p.m.\" establishes a publication instant for the history (#962 question 2(a)). GCF_TREASURY_RATE_PERCENT is the par-weighted average rate of the day's overnight GCF Repo trades in the Treasury CUSIP (371487AE9), in percent; GCF_TREASURY_PAR_USD is that day's total par value, in USD (the file serves USD). The MBS columns of the same file are kept in each day's stored bytes and declared by no field here. A day with no captured record has no value, never zero. The reading of a captured value is guarded by repo_model.gcf_index (a value fetched after the day's 16:00 ET decision instant, or after the reader's instant, raises LookAheadError). DTCC's terms of use forbid redistributing the index and compiling it into a database, so the store is private to her Mac (her ruling of 27 October 2026 on #1281; #962 question 2(c)).",
     "provider": "DTCC Solutions LLC (Fixed Income Clearing Corporation data)",
     "release_lag": {
       "available_time": "15:30",

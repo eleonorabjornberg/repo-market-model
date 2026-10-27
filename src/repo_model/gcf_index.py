@@ -434,7 +434,7 @@ def plan(now: datetime, already: Set[date]) -> Plan:
       tries again);
     * `late`: after 16:00 ET, fetch once and record the day missed (`fetched_after_decision` or `no_posting`).
 
-    `gaps` lists the business days after the branch's earliest day and before today with no file at all, which the run
+    `gaps` lists the business days after the store's earliest day and before today with no file at all, which the run
     records as `no_run`: a day nobody fetched is never filled in later.
     """
 

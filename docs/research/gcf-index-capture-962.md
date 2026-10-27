@@ -12,11 +12,16 @@ approximately 3:30 p.m. EST" (quoted in #962, not re-read here: see "What was an
 only public repo rate for day T that exists at T's 16:00 ET decision instant, half an hour after it is posted;
 SOFR for T prints at 08:00 ET on the next business day.
 
-`.github/workflows/gcf-index-capture.yml` is its own workflow. The live record, `live-log.yml` and the live pin are
-not touched. Each business day it makes up to four requests inside the 15:30 to 16:00 ET window and one after it, to
-one URL, `https://cms-prod.dtcc.com/data/gcfindex.csv?v=<epoch ms>`, the file the index page itself loads. It
-appends one file per business day, `gcf/<date>.json`, to the add-only `gcf-index-captures` branch
-(`scripts/gcf_index_capture.py`, `repo_model.gcf_index`):
+The capture is a Mac job, not a GitHub Actions workflow (Eleonora's ruling of 27 October 2026 on #1281). DTCC's
+Terms of Use forbid redistributing the content and compiling it into a database, and this repository is public, so
+the store is private and **no DTCC data is kept in this repository**. `scripts/gcf_index_capture.py` is code only. A
+launchd job (`scripts/launchd/org.rmm.gcf-index-capture.plist`) runs it every five minutes on her Mac; the script reads
+the ET clock and fetches only on a business day from 15:30 to 16:00 ET (one request per run, to one URL,
+`https://cms-prod.dtcc.com/data/gcfindex.csv?v=<epoch ms>`, the file the index page itself loads), and once after
+16:00 ET to record the day missed. It appends one file per business day, `gcf/<date>.json`, to a private directory
+outside any checkout, `~/rmm-private/gcf-index/` by default, and refuses a directory inside a git checkout
+(`gcf_index_capture.require_private`). The live record, `live-log.yml` and the live pin are not touched. The
+`needs-mac:` comment on the pull request carries the install paste.
 
 | Day's outcome | What is stored |
 |---|---|
@@ -24,14 +29,18 @@ appends one file per business day, `gcf/<date>.json`, to the add-only `gcf-index
 | `missed`, `fetched_after_decision` | no value: the hash of the response, the fetch instant, and the reason. The row was there, but not before 16:00 ET |
 | `missed`, `no_posting` | no value: the file had no row for the day after 16:00 ET; the latest row date it did have |
 | `missed`, `unreadable_response` | no value: the hash of what was returned |
-| `missed`, `no_run` | no value, no fetch: a business day after the branch's first day on which no run kept anything |
+| `missed`, `no_run` | no value, no fetch: a business day after the store's first day on which no run kept anything |
 
 A day's file is written once and never overwritten; a missed day is never back-filled. A run in the window that finds
-no row for the day writes nothing and leaves it to a later slot. The capture starts on the first business day after
-the pull request merges and the branch does not yet exist; there is no earlier file.
+no row for the day writes nothing and leaves it to a later run. The capture starts on the first business day after
+the job is installed; there is no earlier file. A Mac that is asleep through the window misses the day, and the day
+is recorded missed, never back-filled.
+
+**History.** Her history files (the 12-month CSV and DTCC's 2005-2024 workbook) go in the same private directory,
+under `history/`, and never into the repository. Nothing here reads them; rulings (a) and (b) on #1280 stand.
 
 **The guard.** `gcf_index.check_record` raises `LookAheadError` for a captured record fetched after the day's 16:00 ET
-decision instant, and `gcf_index.read_value` raises it for a value fetched after the reader's instant. Both run when a
+decision instant, and `gcf_index.read_value` raises it for a value fetched after the reader's instant. A reader takes the private directory as an argument. Both run when a
 record is built, written and read back. The recorded mutations are in `tests/test_gcf_index_capture.py`.
 
 **The declaration.** `dtcc_gcf_repo_index` in `metadata/sources_measurement.json`: `basis: ref_date`, `days: 0`,
@@ -68,6 +77,6 @@ Not checked:
 
 Separate issue, labelled `needs-eleonora`, linked from the pull request: (a) whether the fact sheet's general "about
 3:30 p.m." establishes the publication instant for the history under #630's rule; (b) the pre-2025 history request,
-which she has approved and is sending herself; (c) DTCC's terms of use. The terms (`https://www.dtcc.com/terms`,
+which she has approved and is sending herself; (c) DTCC's terms of use (ruled 27 October 2026: the store is her Mac). The terms (`https://www.dtcc.com/terms`,
 last updated 11 March 2026, section "Use of Content") are quoted there, with what they would mean for an automated
 daily fetch and for storing the bytes on a public branch. None of it is settled in code.

@@ -237,7 +237,7 @@ class WriteOnceTests(unittest.TestCase):
 
 
 class WhatToDoTests(unittest.TestCase):
-    """`gi.plan`: what a run at `now` does for the day, given what is already on the branch."""
+    """`gi.plan`: what a run at `now` does for the day, given what is already in the store."""
 
     def test_before_the_window_nothing_is_fetched(self):
         self.assertEqual(gi.plan(_utc(15, 29, 59), already=set()).action, "wait")
@@ -253,7 +253,7 @@ class WhatToDoTests(unittest.TestCase):
     def test_the_last_instant_of_the_window_still_fetches(self):
         self.assertEqual(gi.plan(_utc(16, 0, 0), already=set()).action, "fetch")
 
-    def test_a_day_already_on_the_branch_is_not_fetched_again(self):
+    def test_a_day_already_stored_is_not_fetched_again(self):
         self.assertEqual(gi.plan(_utc(15, 40), already={DAY}).action, "done")
 
     def test_after_the_decision_instant_the_day_is_fetched_once_to_be_recorded_missed(self):
@@ -261,12 +261,12 @@ class WhatToDoTests(unittest.TestCase):
         self.assertEqual((decision.action, decision.day), ("late", DAY))
 
     def test_unrecorded_earlier_business_days_are_no_run_not_back_filled(self):
-        # The branch's earliest day is Wednesday the 21st; Thursday and Friday have no file; Monday is today.
+        # The store's earliest day is Wednesday the 21st; Thursday and Friday have no file; Monday is today.
         already = {date(2026, 10, 21)}
         decision = gi.plan(_utc(15, 40), already=already)
         self.assertEqual(decision.gaps, [date(2026, 10, 22), date(2026, 10, 23)])
 
-    def test_an_empty_branch_has_no_gaps(self):
+    def test_an_empty_store_has_no_gaps(self):
         self.assertEqual(gi.plan(_utc(15, 40), already=set()).gaps, [])
 
 
@@ -373,7 +373,7 @@ class CaptureScriptTests(unittest.TestCase):
 
 
 class DeclarationTests(unittest.TestCase):
-    """The measurement declaration of `dtcc_gcf_repo_index` and the workflow's slots (#962 criterion 1)."""
+    """The measurement declaration of `dtcc_gcf_repo_index` and the Mac job that replaced the workflow (#962 criterion 1, her ruling of 27 October 2026)."""
 
     ROOT = Path(__file__).resolve().parents[1]
 
@@ -395,18 +395,61 @@ class DeclarationTests(unittest.TestCase):
         self.assertNotIn("dtcc_gcf_repo_index", published)
         self.assertNotIn("dtcc_gcf_repo_index", str(dict(contract.FEATURE_FIELDS)))
 
-    def test_the_workflow_slots_cover_the_window_in_both_offsets_and_end_after_it(self):
-        import re
+    def test_there_is_no_workflow_and_no_dtcc_data_in_the_repository(self):
+        """Her ruling of 27 October 2026 (#1281): the store is her Mac, so no Actions workflow fetches or pushes it."""
 
-        text = (self.ROOT / ".github" / "workflows" / "gcf-index-capture.yml").read_text(encoding="utf-8")
-        slots = [tuple(int(x) for x in m.groups()) for m in re.finditer(r'- cron: "(\d+) (\d+) \* \* 1-5"', text)]
-        self.assertTrue(slots)
-        for offset, label in ((-4, "EDT"), (-5, "EST")):
-            local = sorted(((h + offset) * 60 + m) for m, h in slots)
-            inside = [t for t in local if 15 * 60 + 30 <= t <= 16 * 60]
-            self.assertGreaterEqual(len(inside), 4, label)
-            self.assertGreater(local[-1], 16 * 60, label)  # a last slot after the decision instant records the miss
-        self.assertNotIn("live-log", text.split("jobs:")[1])
+        self.assertFalse((self.ROOT / ".github" / "workflows" / "gcf-index-capture.yml").exists())
+        for path in (self.ROOT / ".github").rglob("*"):
+            if path.is_file():
+                self.assertNotIn("gcf-index-captures", path.read_text(encoding="utf-8"), path)
+        self.assertFalse((self.ROOT / "gcf").exists())
+
+    def test_the_launchd_job_polls_all_day_and_keeps_its_data_outside_the_checkout(self):
+        import plistlib
+
+        raw = (self.ROOT / "scripts" / "launchd" / "org.rmm.gcf-index-capture.plist").read_bytes()
+        plist = plistlib.loads(raw)
+        self.assertEqual(plist["Label"], "org.rmm.gcf-index-capture")
+        # Time-zone free: the script itself decides (15:30 to 16:00 ET) whether a run fetches.
+        self.assertLessEqual(plist["StartInterval"], 600)
+        args = plist["ProgramArguments"]
+        self.assertIn("capture", args)
+        self.assertEqual(args[args.index("--out-dir") + 1], "__OUT_DIR__")
+        self.assertNotIn(str(self.ROOT).encode(), raw)
+
+
+class PrivateDirectoryTests(unittest.TestCase):
+    """The capture writes only outside any git checkout (her ruling of 27 October 2026, #1281)."""
+
+    @classmethod
+    def setUpClass(cls):
+        import importlib.util
+
+        path = Path(__file__).resolve().parents[1] / "scripts" / "gcf_index_capture.py"
+        spec = importlib.util.spec_from_file_location("gcf_index_capture_private", path)
+        cls.script = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(cls.script)
+
+    def test_a_directory_inside_a_checkout_is_refused_even_when_it_does_not_exist_yet(self):
+        with tempfile.TemporaryDirectory() as root:
+            (Path(root) / ".git").mkdir()
+            for target in (Path(root), Path(root) / "gcf-index" / "deeper"):
+                with self.assertRaises(ValueError):
+                    self.script.require_private(target)
+
+    def test_a_directory_outside_any_checkout_is_accepted(self):
+        with tempfile.TemporaryDirectory() as root:
+            self.assertEqual(self.script.require_private(Path(root) / "gcf-index"), (Path(root) / "gcf-index").resolve())
+
+    def test_the_main_entry_refuses_a_checkout_and_writes_nothing(self):
+        with tempfile.TemporaryDirectory() as root:
+            (Path(root) / ".git").mkdir()
+            code = self.script.main(["capture", "--out-dir", str(Path(root) / "x"), "--now", _utc(16, 30).isoformat()])
+            self.assertEqual(code, 2)
+            self.assertFalse((Path(root) / "x").exists())
+
+    def test_the_default_directory_is_the_private_one_in_the_home_directory(self):
+        self.assertEqual(self.script.DEFAULT_DIR, Path("~/rmm-private/gcf-index").expanduser())
 
 
 if __name__ == "__main__":
