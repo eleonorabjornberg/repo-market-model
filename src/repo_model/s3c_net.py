@@ -1,6 +1,6 @@
 """(s3c-net): the settlement terms of (s3c) as net bill and net coupon settlement (#1273; H5 step 3, ledger item 65 on #1116).
 
-Eleonora, 27 October 2026 (chat, relayed; a repo practitioner's suggestion): what adds collateral and drains cash on a settlement day is
+Eleonora, 27 October 2026 (chat, relayed): what adds collateral and drains cash on a settlement day is
 *new* money, the securities settling less those maturing, not the gross settlement. `repo_model.net_settlement` (#426) builds that net
 from the Fiscal Data auction records, each figure read at its announcement. (s3c) (`repo_model.s3c_candidate`) does not read it: its two
 settlement terms (`settlement_coupon`, `settlement_bill`) are 0/1 flags of the gross settlement being above zero
