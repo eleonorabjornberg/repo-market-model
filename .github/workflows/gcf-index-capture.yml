@@ -1,0 +1,88 @@
+name: gcf-index-capture
+
+# DTCC GCF Repo Index, forward capture (#962, Eleonora's ruling of 19 October 2026 on #958 and her re-queue of
+# 27 October 2026). DTCC posts the day's par-weighted GCF Treasury rate and par volume at about 15:30 ET on the day
+# itself, half an hour before the 16:00 ET decision instant. The data file keeps a year of rows and no vintages, so a
+# day not kept at the time is not kept at all: the capture runs in the 15:30 to 16:00 ET window, and its own workflow,
+# not the live-log run (the live record and its pin are not touched).
+#
+# `scripts/gcf_index_capture.py capture` writes `gcf/<date>.json` to the add-only `gcf-index-captures` branch in one
+# add-only commit, checked before the push: the response as fetched, the fetch instant in UTC and in ET and its
+# SHA-256. A day fetched after 16:00 ET, or with no row by then, is a `missed` record with no value; a day with no run
+# at all is `no_run`. Nothing is back-filled. One request per run, to one URL.
+#
+# Slots (UTC), Monday to Friday. A slot is a no-op before 15:30 ET, after the day is on the branch, and on a weekend or
+# a holiday (`repo_model.gcf_index.plan`), so each hour's twin is harmless. 15:30 ET is 19:30 UTC in EDT and 20:30 UTC in
+# EST. Four slots a day fall inside the window in EDT (19:32 to 19:55), four in EST (20:32 to 20:55); GitHub may start
+# any of them late. 21:10 UTC is after 16:00 ET in both and records a day nobody kept as missed.
+#
+# The branch is not protected by a ruleset like `live-log`; adding one is Eleonora's (see the pull request).
+
+on:
+  schedule:
+    - cron: "32 19 * * 1-5"
+    - cron: "40 19 * * 1-5"
+    - cron: "48 19 * * 1-5"
+    - cron: "55 19 * * 1-5"
+    - cron: "32 20 * * 1-5"
+    - cron: "40 20 * * 1-5"
+    - cron: "48 20 * * 1-5"
+    - cron: "55 20 * * 1-5"
+    - cron: "10 21 * * 1-5"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: gcf-index-capture
+  cancel-in-progress: false
+
+jobs:
+  capture:
+    name: keep the afternoon's GCF Repo Index
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      PYTHONDONTWRITEBYTECODE: "1"
+    steps:
+      - name: Check out main
+        run: git clone --quiet "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" main
+
+      - name: Python at the declared version
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.11"
+          check-latest: false
+
+      - name: Capture the day on gcf-index-captures
+        run: |
+          set -euo pipefail
+          url="https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git"
+          if git ls-remote --exit-code --heads "$url" gcf-index-captures >/dev/null; then
+            git clone --quiet --branch gcf-index-captures --single-branch "$url" captures
+          else
+            git init --quiet -b gcf-index-captures captures
+            git -C captures remote add origin "$url"
+          fi
+          export PYTHONPATH=main/src
+          python3 -B main/scripts/gcf_index_capture.py capture --out-dir captures
+          cd captures
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "nothing new to keep."
+            exit 0
+          fi
+          base=$(git rev-parse --verify -q HEAD || true)
+          git add gcf
+          git -c user.name="github-actions[bot]" \
+            -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit --quiet -m "GCF Repo Index $(date -u +%FT%TZ)"
+          # Add-only: nothing already on the branch is modified, renamed or deleted.
+          if [ -n "$base" ] && git diff --name-status "$base" HEAD | grep -v '^A'; then
+            echo "the commit changes a file already on the branch" >&2
+            exit 1
+          fi
+          git push --quiet origin HEAD:refs/heads/gcf-index-captures
+          python3 -B ../main/scripts/gcf_index_capture.py verify --dir .
