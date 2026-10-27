@@ -376,7 +376,7 @@ CANDIDATE_GROUPS = (("pooled", "all decision days", "all decision days"), ("targ
 CANDIDATE_SPLITS = (("regime", "by regime"), ("target_day_type", "by target-day type"))
 #: What the page calls each evidence page of the candidate record: the page is for a lay reader, so no issue number.
 EVIDENCE_NAMES = {1145: "state-scaled calendar study", 1115: "calendar-terms study",
-                  1141: "walk-forward calibration study"}
+                  1141: "walk-forward calibration study", 1255: "SRF-capped candidate study"}
 SPLIT_BENCHMARKS = (("B1", "B1"), ("B1_prime", "B1&prime;"))
 
 
@@ -443,7 +443,7 @@ def candidate_standings(root):
     return {"kind": "candidate", "candidate": name, "benchmarks": benches, "groups": groups, "splits": splits,
             "first": score["notes"]["first"], "last": score["notes"]["last"], "date": rec["date"],
             "ruling": rec["ruling"], "replaces": rec.get("replaces"), "note": rec.get("note"),
-            "description": rec.get("description"), "provisional": rec.get("provisional", True),
+            "description": rec.get("description"), "shown_as": rec["scores"].get("shown_as"), "provisional": rec.get("provisional", True),
             "missing": list(rec["scores"].get("not_supplied") or ()),
             "evidence": list(rec.get("evidence") or []), "record": scores_path, "file": CANDIDATE}
 
@@ -489,7 +489,11 @@ def standings(repo):
 
 def candidate_standings_html(st):
     """The standings of the candidate the committed ruling record names (#1152): mean d with its interval and reading."""
-    name = esc(st["candidate"])
+    candidate = esc(st["candidate"])
+    #: When the scoring record is the candidate's base (#1259), the tables are the base's and say so.
+    name = esc(st.get("shown_as") or st["candidate"])
+    scored = (f'The tables are not {candidate}&rsquo;s own: they are {name}, scored on the record below; {candidate}&rsquo;s own '
+              'scores are on the last evidence page. ') if st.get("shown_as") else ""
 
     def mean_d(pair):
         if not pair:
@@ -544,7 +548,7 @@ def candidate_standings_html(st):
         for e in st["evidence"])
     return (
         '<p><span class="runin">The development standings.</span> '
-        f'The H5 candidate is <b>{name}</b>, {esc(st["description"] or "the scaled mean reversion of the volatility-scaling study")}. '
+        f'The H5 candidate is <b>{candidate}</b>, {esc(st["description"] or "the scaled mean reversion of the volatility-scaling study")}. '
         f'<a href="{esc(st["ruling"])}">Eleonora ruled on {esc(st["date"])}</a> that it replaces '
         f'{esc(st["replaces"] or "the previous candidate")}; the committed record is <code>{esc(st["file"])}</code> '
         f'and the evidence pages are {links}. Nothing is registered: registration remains her own action. '
@@ -556,7 +560,7 @@ def candidate_standings_html(st):
         '95% bounds, and the reading follows the bound on mean d as the protocol does: better when the lower end is '
         'above zero, worse when the upper end is below, no difference otherwise. The skill interval is drawn '
         'separately and can fall on the other side of zero (Eleonora&rsquo;s ruling on which interval is read), so it is shown for reference and not read. '
-        f'{missing}<span class="rs-tag">{esc(DEV_LABEL)}</span>{mark}</p>'
+        f'{scored}{missing}<span class="rs-tag">{esc(DEV_LABEL)}</span>{mark}</p>'
         f'<table class="rs-standings"><thead><tr><th scope="col">Model</th>{head}</tr></thead>'
         f'<tbody>{"".join(body)}</tbody></table>'
         '<p class="rs-note"><b>Lens C&rsquo;s caveat.</b> B1&prime; is Lens C&rsquo;s calendar-aware persistence: '

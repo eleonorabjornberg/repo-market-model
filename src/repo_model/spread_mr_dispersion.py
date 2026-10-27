@@ -1,6 +1,6 @@
-"""Scaling the H5 candidate by SOFR's in-panel dispersion (#1175; H5 step 3, avenue #1166 option 1; development tier).
+"""Scaling (s3), the H5 candidate when this study ran, by SOFR's in-panel dispersion (#1175; H5 step 3, avenue #1166 option 1; development tier).
 
-`metadata/sofr_dispersion_1175.json` is the declaration; this module is its arithmetic. The base is (s3) of #1145
+`metadata/sofr_dispersion_1175.json` is the declaration; this module is its arithmetic. The base is (s3) of #1145 (since #1259 the H5 candidate is (s3c), which caps (s3); this study's base stays (s3))
 (`repo_model.spread_mr_state_calendar`, the Huber fit with state-scaled calendar terms on #941's scaled mean reversion), unchanged:
 `centre + scale(anchor) * (shift + z)`, with `z` the pool of the standardised residuals after the terms. An arm multiplies the
 scale by a factor read from SOFR's own dispersion as of the anchor row, which the panel already holds (`sofr_p25`, `sofr_p75`;

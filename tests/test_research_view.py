@@ -288,12 +288,15 @@ class CandidateStandings(unittest.TestCase):
     def test_the_record_names_the_ruled_candidate_and_its_evidence(self):
         rec = self.record()
         self.assertEqual(rec["scores"]["model"], "sc_s3_robust")
-        self.assertEqual(rec["candidate"], "sc_s3_robust")
-        self.assertEqual(rec["replaces"], "spread_mr_fhs_mad20_f0.5")
-        self.assertEqual(rec["date"], "2026-10-23")
+        self.assertEqual(rec["candidate"], "sc_s3c")  # #1259: (s3c), (s3) capped at the SRF line; the record scores its base
+        self.assertEqual(rec["base"], rec["scores"]["model"])
+        self.assertEqual(rec["cap"]["margin_bp"], 0)
+        self.assertEqual(rec["replaces"], "sc_s3_robust, (s3) of the state-scaled calendar study")
+        self.assertEqual(rec["date"], "2026-10-26")
+        self.assertTrue(rec["earlier_ruling"]["url"].startswith("https://github.com/eleonorabjornberg/repo-market-model/issues/1151#issuecomment-"))
         self.assertEqual(rec["scores"]["record"], "docs/research/state-calendar-1145/result.json")
-        self.assertTrue(rec["ruling"].startswith("https://github.com/eleonorabjornberg/repo-market-model/issues/1151#issuecomment-"))
-        self.assertEqual({e["issue"] for e in rec["evidence"]}, {1145, 1115, 1141})
+        self.assertEqual(rec["ruling"], "https://github.com/eleonorabjornberg/repo-market-model/pull/1256")
+        self.assertEqual({e["issue"] for e in rec["evidence"]}, {1145, 1115, 1141, 1255})
         for e in rec["evidence"]:
             self.assertTrue((ROOT / e["page"]).is_file(), e["page"])
             self.assertTrue((ROOT / e["record"]).is_file(), e["record"])
@@ -307,10 +310,12 @@ class CandidateStandings(unittest.TestCase):
         self.assertNotIn("names <b>gbm_funding</b> as its best candidate", block)
         for e in self.record()["evidence"]:
             self.assertIn(e["page"], block)
-            self.assertIn(e["mean_d_page"], block)  # #1194: each evidence page is linked beside its reading on the mean-d bound
+            if e.get("mean_d_page"):  # #1194: each evidence page is linked beside its reading on the mean-d bound (#1255's page is its own)
+                self.assertIn(e["mean_d_page"], block)
         self.assertNotRegex(block, r"(?<![&\w])#\d+")
         self.assertIn(self.record()["ruling"], block)
-        self.assertIn("2026-10-23", block)
+        self.assertIn("2026-10-26", block)
+        self.assertIn("(s3), the base of (s3c)", block)  # #1259: the tables are the base's, and the page says so
 
     def test_it_is_scored_beside_all_five_and_labelled(self):
         block = self.block()
