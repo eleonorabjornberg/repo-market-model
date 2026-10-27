@@ -465,7 +465,7 @@ def split_table(r: Mapping[str, object], split: str, candidate: str, reference: 
     out = [f"| {split.replace('_', ' ')} | days | " + " | ".join(METRIC_TITLES[m] for m in metrics_) + " |", "|---|---|" + "---|" * len(metrics_)]
     for label in sorted(labels):
         g = labels[label]
-        out.append(f"| {label} | {g['days']} | " + " | ".join(cell(_vs(g, m, candidate, reference)) if label not in r["skipped_groups"] else "not tested" for m in metrics_) + " |")
+        out.append(f"| {label} | {g['days']} | " + " | ".join(cell(_vs(g, m, candidate, reference)) if f"{split}/{label}" not in r["skipped_groups"] else "not tested (fewer than 20 days)" for m in metrics_) + " |")
     return out
 
 
@@ -508,12 +508,33 @@ def event_table(ev: Mapping[str, object], threshold: str) -> List[str]:
 
 def headline(r: Mapping[str, object]) -> str:
     pooled = r["groups"]["pooled"]["all decision days"]
-    turn = r["groups"]["turn_day"]["turn days (cap off in (s3c-t))"]
-    parts = []
-    for title, g in (("pooled", pooled), ("on turn days", turn)):
-        for m in ("grid_crps", "brier_gt10"):
-            parts.append(f"{title}, {METRIC_TITLES[m]}, (s3c-t) against (s3c): {cell(_vs(g, m, S3CT, S3C))}")
+    turn_label = "turn days (cap off in (s3c-t))"
+    turn = r["groups"]["turn_day"][turn_label]
+    parts = [f"pooled, {METRIC_TITLES[m]}, (s3c-t) against (s3c): {cell(_vs(pooled, m, S3CT, S3C))}" for m in ("grid_crps", "brier_gt10")]
+    if f"turn_day/{turn_label}" in r["skipped_groups"]:
+        parts.append(f"on the {turn['days']} turn days (too few to test) the mean grid CRPS is {turn['grid_crps']['means'][S3C]:.3f} for (s3c) and "
+                     f"{turn['grid_crps']['means'][S3CT]:.3f} for (s3c-t), the mean Brier score of P(> +10 bp) {turn['brier_gt10']['means'][S3C]:.4f} and "
+                     f"{turn['brier_gt10']['means'][S3CT]:.4f}")
+    else:
+        parts += [f"on turn days, {METRIC_TITLES[m]}, (s3c-t) against (s3c): {cell(_vs(turn, m, S3CT, S3C))}" for m in ("grid_crps", "brier_gt10")]
     return "; ".join(parts) + "."
+
+
+def closes_above_the_line(r: Mapping[str, object]) -> str:
+    """Which of the days above +10 bp the rule reaches: those whose reporting type is a turn, and those it leaves under the cap."""
+
+    days = [x for x in r["events"]["days"] if x["above_10"]]
+    on_turn = [x for x in days if x["turn"]]
+    off_turn = [x for x in days if not x["turn"]]
+
+    def show(rows) -> str:
+        return ", ".join(f"{x['date']} ({x['spread_bp']:+.0f} bp, `{x['day_type']}`)" for x in rows) or "none"
+
+    top = max((x["probabilities"][S3CT][h]["p10"] for x in off_turn for h in x["probabilities"][S3CT] if x["probabilities"][S3CT][h]), default=0.0)
+    return (f"Days on which SOFR - IORB closed above +10 bp in the frame: {len(days)}. On a turn day (the cap is off in (s3c-t)): {show(on_turn)}. "
+            f"Not on a turn day, so (s3c-t) is (s3c) and the cap stays on: {show(off_turn)}; the highest P(> +10 bp) (s3c-t) gave any of them, at any "
+            f"lead, is {top:.4f}. The day types are those in force (`turn_days.reporting_day_type`): a day that is not a `turn`, `quarter_end_turn` or "
+            "`year_end` is not lifted, whatever SOFR did on it. Which days the rule should lift is the choice behind Question 1.")
 
 
 def render(r: dict) -> str:
@@ -558,7 +579,8 @@ def render(r: dict) -> str:
         out += ["Reproduction of #1255 (same walk, the 2026 window's decision days, "
                 f"{ag['days_here']} here and {ag['days_there']} there): pooled mean difference here minus there, " + "; ".join(
                     f"{METRIC_TITLES[m]}: " + ", ".join(f"{LABELS[x]} {v['difference']:+.2e}" for x, v in rows.items()) for m, rows in ag["metrics"].items()) + ".", ""]
-    out += ["## Mean scores (pooled)", ""] + mean_table(pooled) + [""]
+    out += ["## What the turn-day rule does to the days above the line", "", closes_above_the_line(r), "",
+            "## Mean scores (pooled)", ""] + mean_table(pooled) + [""]
     for cand in (S3CT, S3C, S3):
         out += [f"## {LABELS[cand]} against each reference (pooled)", ""] + against_table(pooled, cand) + [""]
     out += ["## Where the cap acts and what it bounds", ""] + bounds_table(b) + [""]
