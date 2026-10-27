@@ -13,7 +13,7 @@ tracked record and that #1255's pooled means are reproduced.
 Recorded mutation (the check of this study, #1273): in `s3c_net_settlement_1273.extra_walks`, the comparison
 `if walk.forecasts[S3][d] != frame.forecasts[S3][d]:` was changed to `if False:`. `ExtraWalkTests.test_a_walk_that_is_not_1255s_is_refused` then failed with
 `AssertionError` (`ValueError` not raised); restored, it passes. Second mutation (the event definition): in `cell_table`, `data.exceeds_bp(y, TAU)` was
-replaced by `y >= TAU`; `CellTableTests.test_the_event_is_strict_on_whole_basis_points` then failed with `AssertionError` (`0.0 != 1.0`).
+replaced by `y >= TAU`; `CellTableTests.test_the_event_is_strict_on_whole_basis_points` then failed with `AssertionError` (`1.0 != 0.0`).
 """
 
 from __future__ import annotations
@@ -291,6 +291,37 @@ class EndToEndTests(unittest.TestCase):
         self.assertIn("## Questions for Eleonora", text)
         self.assertIn("**Options**", text)
         self.assertNotIn("GO #", text)
+
+
+class CommittedRecordTests(unittest.TestCase):
+    """The tracked record of the declared run, and the page generated from it."""
+
+    RECORD = ROOT / "docs" / "research" / "s3c-net-settlement-1273" / "result.json"
+    PAGE = ROOT / "docs" / "research" / "s3c-net-settlement-1273-result.md"
+
+    def test_the_tracked_page_is_what_the_script_renders_from_the_tracked_record(self):
+        record = json.loads(self.RECORD.read_text(encoding="utf-8"))
+        self.assertEqual(self.PAGE.read_text(encoding="utf-8"), script.render(record))
+
+    def test_the_record_is_the_declared_full_run_on_the_published_panel(self):
+        record = json.loads(self.RECORD.read_text(encoding="utf-8"))
+        manifest = json.loads((ROOT / "metadata" / "funding_panel_manifest.json").read_text(encoding="utf-8"))
+        self.assertIsNone(record["subset_from"])
+        self.assertEqual((record["seed"], record["draws"]), (script.SEED, sp.DRAWS))
+        self.assertEqual(record["declaration"], "metadata/s3c_net_settlement_1273.json")
+        self.assertEqual(record["models"], list(script.MODELS))
+        self.assertIn(record["panel_sha256"], json.dumps(manifest))
+        for window, w in record["windows"].items():
+            self.assertLessEqual(w["notes"]["last_target"], script.WINDOW_LAST[window].isoformat())
+            self.assertEqual(w["gross_check"]["differences"], 0)
+
+    def test_s3_and_s3c_are_reproduced_from_1255(self):
+        record = json.loads(self.RECORD.read_text(encoding="utf-8"))
+        self.assertTrue(record["against_1255"])
+        for rec in record["against_1255"].values():
+            for rows in rec["metrics"].values():
+                for v in rows.values():
+                    self.assertLess(abs(v["difference"]), 1e-9)
 
 
 if __name__ == "__main__":
