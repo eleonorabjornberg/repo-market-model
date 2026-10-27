@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/faster_scale_1153.json",
+  "script": "scripts/faster_scale_1153.py",
+  "pairing": "direct",
+  "why": "scaled mean reversion with a faster-reacting scale (repo_model.spread_mr_scale): arms v1 to v3 read no calendar column, so their figures are provisional under the calendar-first rule as #941's are; arm v4 reads the target day's calendar type from the target row on direct pairs (spread_mr_calendar.TermTable, fit_type_factors guarded by one_step_guard with no allow-list entry); no gradient-boosted fit is called"
+}

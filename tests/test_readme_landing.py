@@ -28,7 +28,7 @@ class LandingTest(unittest.TestCase):
     def test_first_screen_carries_verdict_final_test_and_site(self):
         first = head(45)
         self.assertIn("<!-- generated: landing -->", first)
-        self.assertIn("what is the chance that tomorrow SOFR is more than 5 basis points above IORB", first.replace("\n", " "))
+        self.assertIn("what is the whole distribution of tomorrow's spread, SOFR minus IORB, in basis points?", first.replace("\n", " "))
         self.assertIn("Where this is", first)
         self.assertIn("near blind", first)
         self.assertIn("not a stress warning", first)

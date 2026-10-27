@@ -732,7 +732,7 @@ def score_command(args) -> int:
     document["by_regime"] = by_regime
 
     def kind_of(day: date) -> str:
-        return splits.reporting_day_type(day, row_of[day].values)
+        return turn_days.reporting_day_type(splits, day, row_of[day].values)
 
     by_type = {}
     for kind in sorted({kind_of(calendar[position[d] + h]) for d in days for h in HORIZONS}):
@@ -941,6 +941,10 @@ def report_command(args) -> int:
     return 0
 
 
+from repo_model import turn_days  # noqa: E402
+
+
+@turn_days.with_legacy_flag
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     commands = parser.add_subparsers(dest="command", required=True)

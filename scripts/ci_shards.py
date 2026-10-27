@@ -21,6 +21,7 @@ than a sixth of the suite, so it holds a shard by itself and sets the floor of t
     python3 scripts/ci_shards.py modules --shard 2        # module names for shard 2 of SHARDS
     python3 scripts/ci_shards.py check                    # every module in exactly one shard
     python3 scripts/ci_shards.py ml-modules               # the modules that skip without the ml extra (#1018)
+    python3 scripts/ci_shards.py ml-modules --shard 2     # shard 2 of ML_SHARDS of those, for the pull-request ml job (#1096)
 """
 
 import argparse
@@ -36,6 +37,9 @@ WEIGHTS = TESTS / "ci_shard_weights.json"
 
 #: The number of shards. `tests.yml` lists the same shard numbers in its matrices.
 SHARDS = 6
+#: The number of shards the pull-request ml job splits `ml-modules` into (#1096). `tests.yml` lists the same numbers.
+#: A push and the nightly schedule run the whole suite in SHARDS shards instead.
+ML_SHARDS = 3
 #: Seconds assumed for a module that has no recorded weight.
 DEFAULT_WEIGHT = 5.0
 
@@ -124,11 +128,19 @@ def main(argv=None):
     mods = sub.add_parser("modules", help="print the module names of one shard, space separated")
     mods.add_argument("--shard", type=int, required=True, help="1 to SHARDS")
     sub.add_parser("check", help="fail unless every test module is in exactly one shard")
-    sub.add_parser("ml-modules", help="print the module names that skip without the ml extra, space separated")
+    ml = sub.add_parser("ml-modules", help="print the module names that skip without the ml extra, space separated")
+    ml.add_argument("--shard", type=int, help="1 to ML_SHARDS: print only that shard of them (default: all of them)")
     args = parser.parse_args(argv)
 
     if args.command == "ml-modules":
-        print(" ".join(sorted(ml_extra_modules())))
+        found = sorted(ml_extra_modules())
+        if args.shard is not None:
+            if not 1 <= args.shard <= ML_SHARDS:
+                raise ValueError(f"--shard must be 1 to {ML_SHARDS}")
+            split = assign(found, load_weights(), ML_SHARDS)
+            check(found, split)
+            found = split[args.shard]
+        print(" ".join(found))
         return 0
 
     modules = all_modules()

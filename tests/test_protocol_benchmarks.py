@@ -25,6 +25,11 @@ from repo_model.data import load_point_in_time_panel
 from repo_model.evaluation_splits import load_split_declaration
 from repo_model.splits import LookAheadError
 
+import legacy_day_types
+
+# this module reproduces legacy figures: the pre-#1135 day types (see tests/legacy_day_types.py)
+setUpModule, tearDownModule = legacy_day_types.setUpModule, legacy_day_types.tearDownModule
+
 ROOT = Path(__file__).resolve().parents[1]
 REGISTRY = json.loads((ROOT / "metadata" / "sources.json").read_text(encoding="utf-8"))
 SPLITS = load_split_declaration(ROOT / "metadata" / "evaluation_splits.json")

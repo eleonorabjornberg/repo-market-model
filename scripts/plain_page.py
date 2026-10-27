@@ -363,6 +363,32 @@ def scarcity_block(emit):
 
 
 # --------------------------------------------------------------------------
+# what the data show about the market (#1177)
+
+
+def _market_findings():
+    """`scripts/market_findings_1177.py`, loaded by path: the one place the three findings' text is made."""
+
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("market_findings_1177_for_plain", ROOT / "scripts/market_findings_1177.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def market_block(emit):
+    """Three observations about the repo market, every figure read from its record (development data, #1177)."""
+
+    findings = _market_findings()
+    lines = findings.plain_lines(findings.load_findings(), _link)
+    lines[-1] = _sources(emit, extra=[
+        _link("docs/research/market-findings-1177/result.json"), _link("docs/research/state-calendar-1145/result.json"),
+        _link("docs/research/market-findings-1177-result.md", "the study page")])
+    return lines
+
+
+# --------------------------------------------------------------------------
 # where it falls short
 
 
@@ -449,6 +475,7 @@ BLOCKS = {
     "plain-distribution": distribution_block,
     "plain-turn": turn_block,
     "plain-scarcity": scarcity_block,
+    "plain-market": market_block,
     "plain-limits": limits_block,
     "plain-place": place_block,
 }

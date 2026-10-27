@@ -214,6 +214,10 @@ is the same drift as a hand-written date, and `tests/test_docs_freshness.py`
 refuses both. To see the numbers, read the JSON. To reproduce them, follow the next
 section.
 
+**Study pages made before #1185 (month-end turn in force) reproduce with `--legacy-day-types`**: a study script that walks
+B2 takes the flag and runs under the legacy day types (`turn_days.legacy_reading`); a run without it is a new measurement, not a
+reproduction.
+
 ## Reproduce the published persistence run
 
 From a clean clone, with no network and no gitignored file:

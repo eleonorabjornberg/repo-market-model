@@ -1,0 +1,1277 @@
+{
+ "by_direction": {
+  "gain -> undecided": 19,
+  "loss -> undecided": 5,
+  "undecided -> gain": 99,
+  "undecided -> loss": 47
+ },
+ "candidate_changed": [
+  {
+   "group": "2018-19",
+   "metric": "grid_crps",
+   "now": "gain",
+   "split": "regime",
+   "was": "undecided"
+  },
+  {
+   "group": "2018-19",
+   "metric": "upper_tail_twcrps",
+   "now": "gain",
+   "split": "regime",
+   "was": "undecided"
+  },
+  {
+   "group": "2020",
+   "metric": "upper_tail_twcrps",
+   "now": "loss",
+   "split": "regime",
+   "was": "undecided"
+  },
+  {
+   "group": "2024",
+   "metric": "upper_tail_twcrps",
+   "now": "gain",
+   "split": "regime",
+   "was": "undecided"
+  },
+  {
+   "group": "fomc_day",
+   "metric": "upper_tail_twcrps",
+   "now": "loss",
+   "split": "target_day_type",
+   "was": "undecided"
+  },
+  {
+   "group": "quarter_end",
+   "metric": "upper_tail_twcrps",
+   "now": "undecided",
+   "split": "target_day_type",
+   "was": "gain"
+  },
+  {
+   "group": "settlement",
+   "metric": "upper_tail_twcrps",
+   "now": "gain",
+   "split": "target_day_type",
+   "was": "undecided"
+  }
+ ],
+ "changed": [
+  {
+   "group": "h=1",
+   "now": "gain",
+   "pair": "(s2) against B1'",
+   "section": "grid_crps, by lead",
+   "was": "undecided"
+  },
+  {
+   "group": "h=1",
+   "now": "gain",
+   "pair": "(a) against B1'",
+   "section": "upper_tail_twcrps, by lead",
+   "was": "undecided"
+  },
+  {
+   "group": "h=1",
+   "now": "gain",
+   "pair": "(a) against B2",
+   "section": "upper_tail_twcrps, by lead",
+   "was": "undecided"
+  },
+  {
+   "group": "h=1",
+   "now": "gain",
+   "pair": "(s1) against B1'",
+   "section": "upper_tail_twcrps, by lead",
+   "was": "undecided"
+  },
+  {
+   "group": "h=1",
+   "now": "gain",
+   "pair": "(s1) against B2",
+   "section": "upper_tail_twcrps, by lead",
+   "was": "undecided"
+  },
+  {
+   "group": "h=1",
+   "now": "gain",
+   "pair": "(s2) against B1'",
+   "section": "upper_tail_twcrps, by lead",
+   "was": "undecided"
+  },
+  {
+   "group": "h=1",
+   "now": "gain",
+   "pair": "(s2) against B2",
+   "section": "upper_tail_twcrps, by lead",
+   "was": "undecided"
+  },
+  {
+   "group": "h=1",
+   "now": "gain",
+   "pair": "(s3) against B1'",
+   "section": "upper_tail_twcrps, by lead",
+   "was": "undecided"
+  },
+  {
+   "group": "h=1",
+   "now": "gain",
+   "pair": "(s3) against B2",
+   "section": "upper_tail_twcrps, by lead",
+   "was": "undecided"
+  },
+  {
+   "group": "h=1",
+   "now": "gain",
+   "pair": "(s4) against B2",
+   "section": "upper_tail_twcrps, by lead",
+   "was": "undecided"
+  },
+  {
+   "group": "h=1",
+   "now": "loss",
+   "pair": "(s4) against (s1)",
+   "section": "upper_tail_twcrps, by lead",
+   "was": "undecided"
+  },
+  {
+   "group": "h=2",
+   "now": "gain",
+   "pair": "(s1) against B1'",
+   "section": "upper_tail_twcrps, by lead",
+   "was": "undecided"
+  },
+  {
+   "group": "h=2",
+   "now": "gain",
+   "pair": "(s2) against B1'",
+   "section": "upper_tail_twcrps, by lead",
+   "was": "undecided"
+  },
+  {
+   "group": "h=2",
+   "now": "gain",
+   "pair": "(s3) against spread_mr_ctx",
+   "section": "upper_tail_twcrps, by lead",
+   "was": "undecided"
+  },
+  {
+   "group": "h=2",
+   "now": "gain",
+   "pair": "(s4) against B1'",
+   "section": "upper_tail_twcrps, by lead",
+   "was": "undecided"
+  },
+  {
+   "group": "h=3",
+   "now": "loss",
+   "pair": "(s4) against (s1)",
+   "section": "upper_tail_twcrps, by lead",
+   "was": "undecided"
+  },
+  {
+   "group": "h=4",
+   "now": "gain",
+   "pair": "(s3) against spread_mr_ctx",
+   "section": "upper_tail_twcrps, by lead",
+   "was": "undecided"
+  },
+  {
+   "group": "h=5",
+   "now": "gain",
+   "pair": "(s3) against spread_mr_ctx",
+   "section": "upper_tail_twcrps, by lead",
+   "was": "undecided"
+  },
+  {
+   "group": "all decision days",
+   "now": "loss",
+   "pair": "(s4) against (s1)",
+   "section": "upper_tail_twcrps, by all decision days",
+   "was": "undecided"
+  },
+  {
+   "group": "2018-19",
+   "now": "gain",
+   "pair": "(s3) against (a)",
+   "section": "grid_crps, by regime",
+   "was": "undecided"
+  },
+  {
+   "group": "2018-19",
+   "now": "loss",
+   "pair": "(s4) against (s1)",
+   "section": "grid_crps, by regime",
+   "was": "undecided"
+  },
+  {
+   "group": "2018-19",
+   "now": "loss",
+   "pair": "(s4) against spread_mr_ctx",
+   "section": "grid_crps, by regime",
+   "was": "undecided"
+  },
+  {
+   "group": "2018-19",
+   "now": "gain",
+   "pair": "(a) against B1'",
+   "section": "upper_tail_twcrps, by regime",
+   "was": "undecided"
+  },
+  {
+   "group": "2018-19",
+   "now": "gain",
+   "pair": "(a) against B2",
+   "section": "upper_tail_twcrps, by regime",
+   "was": "undecided"
+  },
+  {
+   "group": "2018-19",
+   "now": "gain",
+   "pair": "(s3) against B1'",
+   "section": "upper_tail_twcrps, by regime",
+   "was": "undecided"
+  },
+  {
+   "group": "2018-19",
+   "now": "gain",
+   "pair": "(s3) against B2",
+   "section": "upper_tail_twcrps, by regime",
+   "was": "undecided"
+  },
+  {
+   "group": "2018-19",
+   "now": "gain",
+   "pair": "(s3) against (a)",
+   "section": "upper_tail_twcrps, by regime",
+   "was": "undecided"
+  },
+  {
+   "group": "2020",
+   "now": "loss",
+   "pair": "(s4) against (s1)",
+   "section": "grid_crps, by regime",
+   "was": "undecided"
+  },
+  {
+   "group": "2020",
+   "now": "gain",
+   "pair": "(a) against B2",
+   "section": "upper_tail_twcrps, by regime",
+   "was": "undecided"
+  },
+  {
+   "group": "2020",
+   "now": "gain",
+   "pair": "(a) against spread_mr_ctx",
+   "section": "upper_tail_twcrps, by regime",
+   "was": "undecided"
+  },
+  {
+   "group": "2020",
+   "now": "gain",
+   "pair": "(s1) against B2",
+   "section": "upper_tail_twcrps, by regime",
+   "was": "undecided"
+  },
+  {
+   "group": "2020",
+   "now": "loss",
+   "pair": "(s1) against (a)",
+   "section": "upper_tail_twcrps, by regime",
+   "was": "undecided"
+  },
+  {
+   "group": "2020",
+   "now": "gain",
+   "pair": "(s2) against B2",
+   "section": "upper_tail_twcrps, by regime",
+   "was": "undecided"
+  },
+  {
+   "group": "2020",
+   "now": "loss",
+   "pair": "(s2) against (a)",
+   "section": "upper_tail_twcrps, by regime",
+   "was": "undecided"
+  },
+  {
+   "group": "2020",
+   "now": "gain",
+   "pair": "(s2) against (s1)",
+   "section": "upper_tail_twcrps, by regime",
+   "was": "undecided"
+  },
+  {
+   "group": "2020",
+   "now": "undecided",
+   "pair": "(s3) against B1'",
+   "section": "upper_tail_twcrps, by regime",
+   "was": "gain"
+  },
+  {
+   "group": "2020",
+   "now": "gain",
+   "pair": "(s3) against B2",
+   "section": "upper_tail_twcrps, by regime",
+   "was": "undecided"
+  },
+  {
+   "group": "2020",
+   "now": "loss",
+   "pair": "(s3) against (a)",
+   "section": "upper_tail_twcrps, by regime",
+   "was": "undecided"
+  },
+  {
+   "group": "2020",
+   "now": "gain",
+   "pair": "(s3) against (s1)",
+   "section": "upper_tail_twcrps, by regime",
+   "was": "undecided"
+  },
+  {
+   "group": "2020",
+   "now": "gain",
+   "pair": "(s4) against B2",
+   "section": "upper_tail_twcrps, by regime",
+   "was": "undecided"
+  },
+  {
+   "group": "2020",
+   "now": "loss",
+   "pair": "(s4) against (a)",
+   "section": "upper_tail_twcrps, by regime",
+   "was": "undecided"
+  },
+  {
+   "group": "2020",
+   "now": "loss",
+   "pair": "(s4) against (s1)",
+   "section": "upper_tail_twcrps, by regime",
+   "was": "undecided"
+  },
+  {
+   "group": "2021-23",
+   "now": "gain",
+   "pair": "(s2) against B1'",
+   "section": "grid_crps, by regime",
+   "was": "undecided"
+  },
+  {
+   "group": "2021-23",
+   "now": "undecided",
+   "pair": "(s2) against (a)",
+   "section": "grid_crps, by regime",
+   "was": "gain"
+  },
+  {
+   "group": "2021-23",
+   "now": "undecided",
+   "pair": "(a) against B2",
+   "section": "upper_tail_twcrps, by regime",
+   "was": "loss"
+  },
+  {
+   "group": "2021-23",
+   "now": "gain",
+   "pair": "(a) against spread_mr_ctx",
+   "section": "upper_tail_twcrps, by regime",
+   "was": "undecided"
+  },
+  {
+   "group": "2021-23",
+   "now": "undecided",
+   "pair": "(s1) against B2",
+   "section": "upper_tail_twcrps, by regime",
+   "was": "loss"
+  },
+  {
+   "group": "2021-23",
+   "now": "gain",
+   "pair": "(s1) against spread_mr_ctx",
+   "section": "upper_tail_twcrps, by regime",
+   "was": "undecided"
+  },
+  {
+   "group": "2021-23",
+   "now": "gain",
+   "pair": "(s2) against B1",
+   "section": "upper_tail_twcrps, by regime",
+   "was": "undecided"
+  },
+  {
+   "group": "2021-23",
+   "now": "gain",
+   "pair": "(s2) against B1'",
+   "section": "upper_tail_twcrps, by regime",
+   "was": "undecided"
+  },
+  {
+   "group": "2021-23",
+   "now": "undecided",
+   "pair": "(s2) against B2",
+   "section": "upper_tail_twcrps, by regime",
+   "was": "loss"
+  },
+  {
+   "group": "2021-23",
+   "now": "gain",
+   "pair": "(s3) against B1",
+   "section": "upper_tail_twcrps, by regime",
+   "was": "undecided"
+  },
+  {
+   "group": "2021-23",
+   "now": "undecided",
+   "pair": "(s3) against B2",
+   "section": "upper_tail_twcrps, by regime",
+   "was": "loss"
+  },
+  {
+   "group": "2021-23",
+   "now": "gain",
+   "pair": "(s3) against spread_mr_ctx",
+   "section": "upper_tail_twcrps, by regime",
+   "was": "undecided"
+  },
+  {
+   "group": "2021-23",
+   "now": "undecided",
+   "pair": "(s4) against B2",
+   "section": "upper_tail_twcrps, by regime",
+   "was": "loss"
+  },
+  {
+   "group": "2024",
+   "now": "gain",
+   "pair": "(s1) against (a)",
+   "section": "upper_tail_twcrps, by regime",
+   "was": "undecided"
+  },
+  {
+   "group": "2024",
+   "now": "undecided",
+   "pair": "(s1) against spread_mr_ctx",
+   "section": "upper_tail_twcrps, by regime",
+   "was": "gain"
+  },
+  {
+   "group": "2024",
+   "now": "gain",
+   "pair": "(s2) against (a)",
+   "section": "upper_tail_twcrps, by regime",
+   "was": "undecided"
+  },
+  {
+   "group": "2024",
+   "now": "undecided",
+   "pair": "(s2) against spread_mr_ctx",
+   "section": "upper_tail_twcrps, by regime",
+   "was": "gain"
+  },
+  {
+   "group": "2024",
+   "now": "gain",
+   "pair": "(s3) against (a)",
+   "section": "upper_tail_twcrps, by regime",
+   "was": "undecided"
+  },
+  {
+   "group": "2024",
+   "now": "loss",
+   "pair": "(s3) against (s1)",
+   "section": "upper_tail_twcrps, by regime",
+   "was": "undecided"
+  },
+  {
+   "group": "2024",
+   "now": "undecided",
+   "pair": "(s3) against spread_mr_ctx",
+   "section": "upper_tail_twcrps, by regime",
+   "was": "gain"
+  },
+  {
+   "group": "2024",
+   "now": "gain",
+   "pair": "(s4) against (a)",
+   "section": "upper_tail_twcrps, by regime",
+   "was": "undecided"
+  },
+  {
+   "group": "2024",
+   "now": "undecided",
+   "pair": "(s4) against spread_mr_ctx",
+   "section": "upper_tail_twcrps, by regime",
+   "was": "gain"
+  },
+  {
+   "group": "2025-26",
+   "now": "gain",
+   "pair": "(s1) against (a)",
+   "section": "upper_tail_twcrps, by regime",
+   "was": "undecided"
+  },
+  {
+   "group": "2025-26",
+   "now": "undecided",
+   "pair": "(s1) against spread_mr_ctx",
+   "section": "upper_tail_twcrps, by regime",
+   "was": "gain"
+  },
+  {
+   "group": "2025-26",
+   "now": "gain",
+   "pair": "(s4) against (a)",
+   "section": "upper_tail_twcrps, by regime",
+   "was": "undecided"
+  },
+  {
+   "group": "2025-26",
+   "now": "undecided",
+   "pair": "(s4) against spread_mr_ctx",
+   "section": "upper_tail_twcrps, by regime",
+   "was": "gain"
+  },
+  {
+   "group": "2018-19",
+   "now": "loss",
+   "pair": "(a) against spread_mr_ctx",
+   "section": "scaled_grid_crps, by scaled",
+   "was": "undecided"
+  },
+  {
+   "group": "2018-19",
+   "now": "undecided",
+   "pair": "(s1) against B1",
+   "section": "scaled_grid_crps, by scaled",
+   "was": "gain"
+  },
+  {
+   "group": "2018-19",
+   "now": "loss",
+   "pair": "(s1) against spread_mr_ctx",
+   "section": "scaled_grid_crps, by scaled",
+   "was": "undecided"
+  },
+  {
+   "group": "2018-19",
+   "now": "undecided",
+   "pair": "(s2) against B1",
+   "section": "scaled_grid_crps, by scaled",
+   "was": "gain"
+  },
+  {
+   "group": "2018-19",
+   "now": "loss",
+   "pair": "(s2) against spread_mr_ctx",
+   "section": "scaled_grid_crps, by scaled",
+   "was": "undecided"
+  },
+  {
+   "group": "2018-19",
+   "now": "gain",
+   "pair": "(s3) against (s1)",
+   "section": "scaled_grid_crps, by scaled",
+   "was": "undecided"
+  },
+  {
+   "group": "2018-19",
+   "now": "undecided",
+   "pair": "(s4) against B1",
+   "section": "scaled_grid_crps, by scaled",
+   "was": "gain"
+  },
+  {
+   "group": "2018-19",
+   "now": "loss",
+   "pair": "(s4) against (a)",
+   "section": "scaled_grid_crps, by scaled",
+   "was": "undecided"
+  },
+  {
+   "group": "2018-19",
+   "now": "loss",
+   "pair": "(s4) against spread_mr_ctx",
+   "section": "scaled_grid_crps, by scaled",
+   "was": "undecided"
+  },
+  {
+   "group": "2020",
+   "now": "undecided",
+   "pair": "(a) against B1'",
+   "section": "scaled_grid_crps, by scaled",
+   "was": "gain"
+  },
+  {
+   "group": "2020",
+   "now": "gain",
+   "pair": "(s2) against B1",
+   "section": "scaled_grid_crps, by scaled",
+   "was": "undecided"
+  },
+  {
+   "group": "2020",
+   "now": "gain",
+   "pair": "(s2) against (s1)",
+   "section": "scaled_grid_crps, by scaled",
+   "was": "undecided"
+  },
+  {
+   "group": "2020",
+   "now": "loss",
+   "pair": "(s4) against (a)",
+   "section": "scaled_grid_crps, by scaled",
+   "was": "undecided"
+  },
+  {
+   "group": "2021-23",
+   "now": "gain",
+   "pair": "(s3) against B1'",
+   "section": "scaled_grid_crps, by scaled",
+   "was": "undecided"
+  },
+  {
+   "group": "2024",
+   "now": "undecided",
+   "pair": "(a) against B2",
+   "section": "scaled_grid_crps, by scaled",
+   "was": "gain"
+  },
+  {
+   "group": "2024",
+   "now": "gain",
+   "pair": "(s3) against (a)",
+   "section": "scaled_grid_crps, by scaled",
+   "was": "undecided"
+  },
+  {
+   "group": "2025-26",
+   "now": "gain",
+   "pair": "(a) against B1'",
+   "section": "scaled_grid_crps, by scaled",
+   "was": "undecided"
+  },
+  {
+   "group": "all decision days",
+   "now": "gain",
+   "pair": "(a) against spread_mr_ctx",
+   "section": "scaled_grid_crps, by scaled",
+   "was": "undecided"
+  },
+  {
+   "group": "calendar_days",
+   "now": "gain",
+   "pair": "(s1) against B1'",
+   "section": "grid_crps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "calendar_days",
+   "now": "gain",
+   "pair": "(s1) against B1'",
+   "section": "upper_tail_twcrps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "calendar_days",
+   "now": "loss",
+   "pair": "(s4) against (s1)",
+   "section": "upper_tail_twcrps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "dom_19_23",
+   "now": "gain",
+   "pair": "(s1) against B1'",
+   "section": "upper_tail_twcrps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "dom_19_23",
+   "now": "gain",
+   "pair": "(s2) against B1'",
+   "section": "upper_tail_twcrps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "dom_19_23",
+   "now": "gain",
+   "pair": "(s2) against spread_mr_ctx",
+   "section": "upper_tail_twcrps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "dom_19_23",
+   "now": "gain",
+   "pair": "(s3) against B1'",
+   "section": "upper_tail_twcrps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "dom_19_23",
+   "now": "gain",
+   "pair": "(s4) against B1'",
+   "section": "upper_tail_twcrps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "fomc_day",
+   "now": "gain",
+   "pair": "(a) against B1",
+   "section": "grid_crps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "fomc_day",
+   "now": "undecided",
+   "pair": "(a) against B1'",
+   "section": "grid_crps, by target-day type",
+   "was": "gain"
+  },
+  {
+   "group": "fomc_day",
+   "now": "gain",
+   "pair": "(a) against B2",
+   "section": "grid_crps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "fomc_day",
+   "now": "gain",
+   "pair": "(s1) against B2",
+   "section": "grid_crps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "fomc_day",
+   "now": "loss",
+   "pair": "(s1) against (a)",
+   "section": "grid_crps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "fomc_day",
+   "now": "gain",
+   "pair": "(s2) against B2",
+   "section": "grid_crps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "fomc_day",
+   "now": "gain",
+   "pair": "(s3) against B2",
+   "section": "grid_crps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "fomc_day",
+   "now": "gain",
+   "pair": "(s3) against (s1)",
+   "section": "grid_crps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "fomc_day",
+   "now": "loss",
+   "pair": "(s4) against B1",
+   "section": "grid_crps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "fomc_day",
+   "now": "loss",
+   "pair": "(s4) against B1'",
+   "section": "grid_crps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "fomc_day",
+   "now": "loss",
+   "pair": "(s4) against (a)",
+   "section": "grid_crps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "fomc_day",
+   "now": "loss",
+   "pair": "(s4) against (s1)",
+   "section": "grid_crps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "fomc_day",
+   "now": "loss",
+   "pair": "(s4) against spread_mr_ctx",
+   "section": "grid_crps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "fomc_day",
+   "now": "gain",
+   "pair": "(a) against B1",
+   "section": "upper_tail_twcrps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "fomc_day",
+   "now": "gain",
+   "pair": "(a) against B2",
+   "section": "upper_tail_twcrps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "fomc_day",
+   "now": "loss",
+   "pair": "(s1) against B1",
+   "section": "upper_tail_twcrps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "fomc_day",
+   "now": "loss",
+   "pair": "(s1) against B1'",
+   "section": "upper_tail_twcrps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "fomc_day",
+   "now": "loss",
+   "pair": "(s1) against (a)",
+   "section": "upper_tail_twcrps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "fomc_day",
+   "now": "loss",
+   "pair": "(s1) against spread_mr_ctx",
+   "section": "upper_tail_twcrps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "fomc_day",
+   "now": "loss",
+   "pair": "(s2) against (a)",
+   "section": "upper_tail_twcrps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "fomc_day",
+   "now": "gain",
+   "pair": "(s3) against B2",
+   "section": "upper_tail_twcrps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "fomc_day",
+   "now": "loss",
+   "pair": "(s3) against (a)",
+   "section": "upper_tail_twcrps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "fomc_day",
+   "now": "gain",
+   "pair": "(s3) against (s1)",
+   "section": "upper_tail_twcrps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "fomc_day",
+   "now": "loss",
+   "pair": "(s4) against B1",
+   "section": "upper_tail_twcrps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "fomc_day",
+   "now": "loss",
+   "pair": "(s4) against B1'",
+   "section": "upper_tail_twcrps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "fomc_day",
+   "now": "loss",
+   "pair": "(s4) against (a)",
+   "section": "upper_tail_twcrps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "fomc_day",
+   "now": "loss",
+   "pair": "(s4) against (s1)",
+   "section": "upper_tail_twcrps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "fomc_day",
+   "now": "loss",
+   "pair": "(s4) against spread_mr_ctx",
+   "section": "upper_tail_twcrps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "iorb_window",
+   "now": "undecided",
+   "pair": "(a) against B1",
+   "section": "grid_crps, by target-day type",
+   "was": "gain"
+  },
+  {
+   "group": "iorb_window",
+   "now": "gain",
+   "pair": "(a) against B2",
+   "section": "grid_crps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "iorb_window",
+   "now": "gain",
+   "pair": "(s1) against B2",
+   "section": "grid_crps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "iorb_window",
+   "now": "gain",
+   "pair": "(s2) against B2",
+   "section": "grid_crps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "iorb_window",
+   "now": "gain",
+   "pair": "(s3) against B2",
+   "section": "grid_crps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "iorb_window",
+   "now": "gain",
+   "pair": "(s4) against B2",
+   "section": "grid_crps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "month_end",
+   "now": "gain",
+   "pair": "(a) against B2",
+   "section": "upper_tail_twcrps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "month_end",
+   "now": "gain",
+   "pair": "(s3) against B2",
+   "section": "upper_tail_twcrps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "month_end",
+   "now": "gain",
+   "pair": "(s3) against spread_mr_ctx",
+   "section": "upper_tail_twcrps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "post_month_end_window",
+   "now": "loss",
+   "pair": "(s1) against (a)",
+   "section": "upper_tail_twcrps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "post_month_end_window",
+   "now": "loss",
+   "pair": "(s2) against (a)",
+   "section": "upper_tail_twcrps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "post_month_end_window",
+   "now": "loss",
+   "pair": "(s4) against (a)",
+   "section": "upper_tail_twcrps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "quarter_end",
+   "now": "undecided",
+   "pair": "(s3) against B1",
+   "section": "grid_crps, by target-day type",
+   "was": "gain"
+  },
+  {
+   "group": "quarter_end",
+   "now": "undecided",
+   "pair": "(s4) against (s1)",
+   "section": "grid_crps, by target-day type",
+   "was": "gain"
+  },
+  {
+   "group": "quarter_end",
+   "now": "gain",
+   "pair": "(a) against spread_mr_ctx",
+   "section": "upper_tail_twcrps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "quarter_end",
+   "now": "undecided",
+   "pair": "(s3) against (a)",
+   "section": "upper_tail_twcrps, by target-day type",
+   "was": "gain"
+  },
+  {
+   "group": "quarter_end",
+   "now": "gain",
+   "pair": "(s3) against spread_mr_ctx",
+   "section": "upper_tail_twcrps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "settlement",
+   "now": "gain",
+   "pair": "(s1) against B1'",
+   "section": "upper_tail_twcrps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "settlement",
+   "now": "gain",
+   "pair": "(s2) against B1'",
+   "section": "upper_tail_twcrps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "settlement",
+   "now": "gain",
+   "pair": "(s2) against B2",
+   "section": "upper_tail_twcrps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "settlement",
+   "now": "gain",
+   "pair": "(s3) against (a)",
+   "section": "upper_tail_twcrps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "settlement",
+   "now": "gain",
+   "pair": "(s3) against (s1)",
+   "section": "upper_tail_twcrps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "settlement",
+   "now": "gain",
+   "pair": "(s3) against spread_mr_ctx",
+   "section": "upper_tail_twcrps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "settlement",
+   "now": "gain",
+   "pair": "(s4) against B1'",
+   "section": "upper_tail_twcrps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "settlement",
+   "now": "loss",
+   "pair": "(s4) against (s1)",
+   "section": "upper_tail_twcrps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "tax_date",
+   "now": "gain",
+   "pair": "(a) against B1",
+   "section": "grid_crps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "tax_date",
+   "now": "gain",
+   "pair": "(a) against B2",
+   "section": "grid_crps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "tax_date",
+   "now": "gain",
+   "pair": "(a) against spread_mr_ctx",
+   "section": "grid_crps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "tax_date",
+   "now": "gain",
+   "pair": "(s1) against B2",
+   "section": "grid_crps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "tax_date",
+   "now": "loss",
+   "pair": "(s1) against (a)",
+   "section": "grid_crps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "tax_date",
+   "now": "loss",
+   "pair": "(s1) against spread_mr_ctx",
+   "section": "grid_crps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "tax_date",
+   "now": "gain",
+   "pair": "(s2) against B2",
+   "section": "grid_crps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "tax_date",
+   "now": "undecided",
+   "pair": "(s3) against B1'",
+   "section": "grid_crps, by target-day type",
+   "was": "gain"
+  },
+  {
+   "group": "tax_date",
+   "now": "gain",
+   "pair": "(s3) against B2",
+   "section": "grid_crps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "tax_date",
+   "now": "gain",
+   "pair": "(s3) against (s1)",
+   "section": "grid_crps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "tax_date",
+   "now": "gain",
+   "pair": "(s3) against spread_mr_ctx",
+   "section": "grid_crps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "tax_date",
+   "now": "gain",
+   "pair": "(s4) against B2",
+   "section": "grid_crps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "tax_date",
+   "now": "loss",
+   "pair": "(s4) against (a)",
+   "section": "grid_crps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "tax_date",
+   "now": "loss",
+   "pair": "(s4) against spread_mr_ctx",
+   "section": "grid_crps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "tax_date",
+   "now": "gain",
+   "pair": "(a) against B1",
+   "section": "upper_tail_twcrps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "tax_date",
+   "now": "gain",
+   "pair": "(a) against B1'",
+   "section": "upper_tail_twcrps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "tax_date",
+   "now": "gain",
+   "pair": "(a) against spread_mr_ctx",
+   "section": "upper_tail_twcrps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "tax_date",
+   "now": "loss",
+   "pair": "(s2) against (a)",
+   "section": "upper_tail_twcrps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "tax_date",
+   "now": "gain",
+   "pair": "(s3) against B1",
+   "section": "upper_tail_twcrps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "tax_date",
+   "now": "gain",
+   "pair": "(s3) against B1'",
+   "section": "upper_tail_twcrps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "tax_date",
+   "now": "gain",
+   "pair": "(s3) against spread_mr_ctx",
+   "section": "upper_tail_twcrps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "tax_date",
+   "now": "loss",
+   "pair": "(s4) against (a)",
+   "section": "upper_tail_twcrps, by target-day type",
+   "was": "undecided"
+  },
+  {
+   "group": "tax_date",
+   "now": "loss",
+   "pair": "(s4) against spread_mr_ctx",
+   "section": "upper_tail_twcrps, by target-day type",
+   "was": "undecided"
+  }
+ ],
+ "finding": "1187",
+ "issue": 1194,
+ "page": "docs/research/state-calendar-1145-mean-d-1194-result.md",
+ "paired_rows": 1260,
+ "regime_and_pooled_changed": 50,
+ "regime_and_pooled_rows": 319,
+ "regime_line": {
+  "grid_crps": {
+   "2018-19": "gain",
+   "2020": "undecided",
+   "2021-23": "gain",
+   "2024": "gain",
+   "2025-26": "gain"
+  },
+  "upper_tail_twcrps": {
+   "2018-19": "gain",
+   "2020": "loss",
+   "2021-23": "gain",
+   "2024": "gain",
+   "2025-26": "gain"
+  }
+ },
+ "rows_changed": 170,
+ "ruling": "1009",
+ "source": "docs/research/state-calendar-1145/result.json",
+ "source_sha256": "b31f958901e8693ec2ffdde58f7c67bb1fa8fb26c5ae424b823e17e842c2e9d1"
+}

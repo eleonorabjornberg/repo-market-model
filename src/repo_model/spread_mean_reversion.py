@@ -27,6 +27,7 @@ from dataclasses import dataclass
 from datetime import date, time
 from typing import Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
+from . import turn_days
 from . import protocol_benchmarks as pb
 from .data import DailyObservation
 from .evaluation_splits import SplitDeclaration
@@ -80,7 +81,7 @@ def ordinary_levels(panel: Sequence[DailyObservation], splits: SplitDeclaration)
     recent: List[float] = []
     out: List[Optional[float]] = []
     for row in panel:
-        if splits.reporting_day_type(row.date, row.values) == "ordinary":
+        if turn_days.reporting_day_type(splits, row.date, row.values) == "ordinary":
             recent.append(row.spread_bps)
             if len(recent) > LEVEL_DAYS:
                 recent.pop(0)

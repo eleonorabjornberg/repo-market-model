@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/s3_terms_1196.json",
+  "script": "scripts/s3_terms_1196.py",
+  "pairing": "direct",
+  "why": "the scarcity interaction and the FOMC/IORB terms on (s3)'s robust fit: (s3), (s3+state) and (s3+FOMC/IORB) read the calendar columns at the target day on direct pairs (training_pairs = direct; the estimation routine is guarded by one_step_guard with no allow-list entry); no gradient-boosted fit is called, and the gbm_funding walks are read as a comparison only when supplied (a Mac run), so the arms are not provisional; the arm (a) and the benchmarks read no calendar column and carry the register's mark as before"
+}

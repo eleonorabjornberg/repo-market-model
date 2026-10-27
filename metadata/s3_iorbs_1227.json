@@ -1,0 +1,114 @@
+{
+ "status": "declared by the pull request that closes #1227 before any score was computed; a development study, never a verdict. Nothing is published: no arm or term joins any published declaration, `gbm_funding`'s declaration and `scripts/final_test_preregistration.py` do not change, no day after 2025-12-31 is scored, no lockbox day is scored, and no record in docs/runs/ is edited. Whether the arm replaces (s3) as the H5 candidate is Eleonora's decision on the page's evidence. Amendments made after a number was computed would be listed in `amendments`; there are none.",
+ "issue": 1227,
+ "avenue": 1214,
+ "ruling": "Eleonora, 26 October 2026, relayed (ledger item 53, option 1 on avenue #1214): declare one arm, (s3+IORBs), before any score: the signed `iorb_announced_change_bps` at the target day; a technical-adjustment indicator by `setup_diagnostic.is_technical` (an IORB change that is not a multiple of 25 bp); both beside `iorb_window`. Scheduled availability is as the flag already has, on direct pairs; everything else as (s3). An availability test for the signed change at the target day with one recorded mutation. Score as #1196: grid CRPS over h = 1-5 and upper-tail twCRPS against B1 (B1' beside), B2, (a) and (s3), IORB-window rows named; show the regime split, most of the six technical changes falling in 2018-19; read on the mean-d bound with the skill interval beside and Lens C's caveat. The page says there are 29 IORB changes, 6 of them technical, so the count is small; the arm counts toward the variant count; adoption is hers; development data, not a verdict. Cloud, under two hours.",
+ "hypothesis": "H5 (primary goal): the SOFR - IORB spread distribution in bp. Step 3 (fix). Development tier",
+ "target": "spread_bps at the scored day, in basis points, as a 23-quantile distribution at each lead h = 1..5 (scoring_protocol.GRID)",
+ "base": {
+  "name": "(s3) of #1145: sc_s3_robust, the H5 candidate; comparator (a): spread_mr_fhs_mad20_f0.5 (#941)",
+  "module": "repo_model.spread_mr_state_calendar (#1145), unchanged for (a) and (s3); the arm of this study is one new StateArm constant (S3_IORBS) of the same module, with the terms `iorb_signed` and `iorb_technical` read from a new IorbTable (the pattern of #1172's SizeTable). tests/test_spread_mr_s3_iorbs.py pins that (s3+IORBs) is (s3) with `iorb_window` and the two terms and nothing else, that the earlier arms are unchanged, and the availability of the two terms",
+  "formula": "q_p(t+h) = level + phi^k * (last - level) + scale(anchor) * (shift_h(T) + z_h,p), shift_h(T) = sum_j beta_j x_j(T) in scale units, z_h,p the 23 empirical quantiles of the standardised residual left after the terms; scale(r) = max(0.5, 1.4826 * median of the 20 absolute daily changes ending at r); phi, level, the two-year training window, the minimum of 60 pairs and the refit every 21 decision days are the base model's",
+  "pairs": "direct (training_pairs = 'direct'), every term read at the target day. The estimation routine is decorated with repo_model.one_step_guard.guard_one_step_fit: on direct pairs it needs no allow-list entry. No entry is added to one_step_guard.ONE_STEP_ALLOW_LIST"
+ },
+ "terms": {
+  "of_s3": "#1145's, unchanged: month_end, quarter_end, tax_date, settlement_coupon, settlement_bill, dom_19_23 and post_month_end_window, each a 0/1 flag of the target row read at the target day",
+  "iorb_window": "#1115's flag, unchanged: 1 where the target row is the day an IORB change takes effect or one of the two panel days after it, read from `iorb_announced_change_bps` of those rows; a scheduled field, readable by a decision `lead` rows before only for the rows T - j with j >= lead - 1 (asof rule 2), so at leads 1 to 3 and absent at leads 4 and 5",
+  "iorb_signed": "the signed `iorb_announced_change_bps` of the window, over 25 bp: the sum of the column over the rows of the window the lead can read (the rows the flag reads; a window holds at most one change). A 25 bp cut is -1, a 25 bp hike +1, a 75 bp hike +3. It is zero outside the window. The column is `announced_iorb.announced_iorb_features` at the 16:00 decision, keyed on the announcement time, so a note announced after the decision instant is never in it. The unit of 25 bp is a scaling of the regressor (the ridge acts on the coefficient in these units), not a threshold",
+  "iorb_technical": "1 where a change in that window is a technical adjustment by `setup_diagnostic.is_technical` (not a multiple of 25 bp), else 0. The six technical changes of the announcement table are 2018-06-14 (+20), 2018-12-20 (+20), 2019-05-02 (-5), 2019-09-19 (-30), 2020-01-30 (+5) and 2021-06-17 (+5)",
+  "availability": "as the flag already has: the same rows at the same leads. Both new terms are functions of one scheduled field of the target row, so they are absent at leads 4 and 5 and are read at lead 1 from the target row and the two rows after the change, at lead 2 from the one and two rows after, at lead 3 from the second row after. `IorbTable.read` applies `spread_mr_calendar.require_public`, which raises LookAheadError for a row not public at the decision",
+  "interpretation": "'the signed `iorb_announced_change_bps` at the target day' is read as the column over the same window rows the flag `iorb_window` reads (the day of the change and the two rows after), so the signed value carries the change through the window and has the flag's availability at every lead. The narrower reading (the column of the target row alone, j = 0) would be readable at lead 1 only; it is not tried (the variant count). Marked as a question on the page",
+  "min_flagged": "a term enters a lead's fit only if at least 3 of that lead's training pairs carry a non-zero value; otherwise its effect is 0 at that refit and lead (#1115's rule, applied to the two new terms as to the flags)"
+ },
+ "arms": [
+  {
+   "name": "mr_cal_a_base",
+   "role": "(a) base: #941 mad 20, floor 0.5; the comparator",
+   "location_terms": [],
+   "extra_terms": [],
+   "ridge": null,
+   "robust": false
+  },
+  {
+   "name": "sc_s3_robust",
+   "role": "(s3) (s1) with a Huber fit and a heavier ridge; the H5 candidate; the comparator",
+   "location_terms": ["month_end", "quarter_end", "tax_date", "settlement_coupon", "settlement_bill", "dom_19_23", "post_month_end_window"],
+   "extra_terms": [],
+   "ridge": 5.0,
+   "robust": true
+  },
+  {
+   "name": "sc_s3_iorbs",
+   "role": "(s3+IORBs) (s3) with the signed announced IORB change and a technical-adjustment indicator beside iorb_window",
+   "location_terms": ["month_end", "quarter_end", "tax_date", "settlement_coupon", "settlement_bill", "dom_19_23", "iorb_window", "post_month_end_window"],
+   "extra_terms": ["iorb_signed", "iorb_technical"],
+   "ridge": 5.0,
+   "robust": true
+  }
+ ],
+ "estimation": {
+  "units": "the target of every fit is y_i = r_i / scale(o_i), the standardised residual of pair i (as arm (a) defines the raw residual r_i); an effect is a number of scale units and the effect in bp on a forecast is that number times the term's regressor times scale(anchor) of the decision, read afresh each day",
+  "s3": "#1145's, unchanged: Huber iteratively re-weighted least squares (start from the ridge least-squares fit; sigma = max(1.4826 * median |r - median(r)|, 1e-6), threshold 1.345 sigma, weights 1 where |r| <= c and c / |r| beyond, a weighted ridge fit, at most 50 passes, stop when no coefficient moves by 1e-8), ridge 5.0 pseudo-days on every term coefficient and none on the intercept; the intercept is dropped; the pool is the 23 empirical quantiles of the unweighted z_i = y_i - sum_j beta_j x_ij",
+  "s3_iorbs": "(s3) with iorb_window, iorb_signed and iorb_technical added to the design after the seven flags: the same Huber iteration and ridge of 5.0 on every term coefficient; the pool is z_i = y_i - sum_j beta_j x_ij over all entering terms; the forecast shift is sum_j beta_j x_j(T) with x_signed and x_technical read from the target row by IorbTable.read. The Huber threshold is relative to the current residuals, so an outlier rate-change day (2019, 2020) is down-weighted, not removed from the pool",
+  "refit": "every 21 decision days with the base fit, as the base model, #1145 and #1196 do; between refits the effects, the pools and the factors are kept and last, level, k, the anchor, scale(anchor), the flags and the two IORB terms of T are read afresh",
+  "isolation": "(s3+IORBs) against (s3) isolates the three IORB terms (the window flag, the signed change and the technical indicator) on the robust fit; the pair does not separate the flag from the two terms beside it, which the ruling declares together"
+ },
+ "references": {
+  "benchmarks": "B1, B1' (repo_model.b1_calendar, #960; reported beside B1 in every table, B1 stays the protocol's benchmark) and B2 of scoring protocol v1",
+  "pairs": "(s3+IORBs) against (a), (s3), B1, B1' and B2; (s3) against (a), B1, B1' and B2",
+  "gbm": "gbm_funding is not compared (its walks are a long run for Eleonora's Mac and the ruling does not list it)"
+ },
+ "scoring": {
+  "scorer": "repo_model.scoring_protocol (#655), the development tier: no verdict, no registration",
+  "days": "decision days with a forecast of every model, whose five targets fall on or before 2025-12-31; no day after 2025-12-31 is read; the scored days pass lockbox.require_unlocked",
+  "outcomes": "the panel's spread_bps at the target day",
+  "measures": [
+   "grid CRPS (23 levels), by lead and the mean over leads 1..5 (primary)",
+   "upper-tail twCRPS, weight 1{z > 0 bp}, by lead and the mean over leads (key secondary)"
+  ],
+  "paired": "skill = mean(d) / mean(S(benchmark)) with d = S(benchmark) - S(candidate), positive favours the candidate; scoring_protocol.paired_tests, the studentized stationary bootstrap (ruling 1), mean block 10 business days, 10,000 draws, seed 1227; two-sided 90% interval, so the lower end is the one-sided 95% bound. Both the skill interval and the studentized interval on mean d (bp) are reported for every tested row",
+  "reading": "a reading is taken from the mean-d bound (Eleonora's ruling on #1009, 20 October 2026): the arm is read better than a reference when the lower end of the 90% interval of mean d is above zero, worse when the upper end is below zero, otherwise undecided. A row whose bound was not computed reads 'no reading' (#1215). The reading the skill interval alone would give is listed beside it when it differs. Lens C's caveat (the lag-10 HAC standard error is understated about 2x after 2020) is stated on the page",
+  "min_days": "a group of fewer than 20 days is listed and not tested",
+  "iorb_window_rows": "the target-day type iorb_window is named in the tables like every other type (78 days in 2018-2025 under #1196's count). Beside it, the window days are split by the kind of change they carry (technical or not) and by regime, with the mean score of (a), (s3) and (s3+IORBs) on each; these small groups are listed and not tested",
+  "pressure_day_types": "the benchmarks (B2's pools) and the mean-reversion level read the pressure-day types of the month-end turn record in force since #1161 (repo_model.turn_days.IN_FORCE is True), as every scoring entry point on main does; (a) and (s3) therefore score on the benchmark days main now has them, not as on the page of #1196 (see amendment 1)",
+  "not_scored": "the calibration of the q95 and the bands (the 2026 development days and the calibration check are #1229), the Politis-White block (not in the ruling) and gbm_funding"
+ },
+ "splits": {
+  "regime": "SplitDeclaration.regime of the target day (metadata/evaluation_splits.json): 2018-19, 2020, 2021-23, 2024, 2025-26",
+  "target_day_type": "by the target day: month_end, quarter_end, tax_date, settlement (coupon or bill settling), fomc_day, iorb_window, dom_19_23, post_month_end_window, ordinary, and calendar_days (any of them). The groups overlap; ordinary is a day with none of the flags",
+  "lead": "h = 1..5",
+  "unit": "every split is on the target day: a target day's score is the mean over the leads that forecast it and it belongs to the group of its own date"
+ },
+ "counts": "the page states the number of IORB changes in the announcement table (29), how many are technical (6), how many fall in each regime, and how many the column can show a decision (the 2020-03-16 cut, announced on the Sunday after the Friday decision, is never in the column), all taken from result.json, which the script computes from the announcement table and the column",
+ "adoption": "The arm replaces (s3) as the H5 candidate only if it beats it; that is Eleonora's decision on this page's evidence. The page tabulates the pooled skill over (s3) with its intervals, the regimes read as gain, loss and undecided on the mean-d bound, and the reading on ordinary, calendar and IORB-window days, and names no threshold of its own. Nothing in this study is a verdict. The arm counts toward the variant count",
+ "reading_rules": [
+  "The arm's gain over a reference is read as present on a split when the 90% interval of mean d excludes zero on the positive side, and as a loss when it excludes zero on the negative side; otherwise as undecided. A point estimate alone is not read. The skill interval's reading is listed beside it where it differs.",
+  "A pooled figure is never read without the regime and target-day-type splits beside it; a gain pooled and a loss in 2018-19 or on ordinary days is reported as mixed.",
+  "There are 29 IORB changes and 6 technical ones; the count is small, and most of the technical changes fall in 2018-19, so the regime split is read with that in mind and the technical indicator's effect is a handful of days.",
+  "Lens C's caveat is stated on the page: the lag-10 HAC standard error is understated about 2x after 2020, so an interval that excludes zero after 2020 is narrower than it should be.",
+  "The page says this is a further look at 2018-2025 after (s3) was chosen on it; a gain is evidence for a question, with the selection noted.",
+  "Nothing in this study is a verdict, and the page says so. A kill applies only to a result that is not provisional; the arm reads the calendar at the target day on direct pairs, so its class is not provisional. The issue declares no kill rule.",
+  "The page ends with a marked question for Eleonora with numbered options and a default: nothing is adopted and no claim changes."
+ ],
+ "questions": [
+  "Whether the arm replaces (s3) as the H5 candidate is Eleonora's.",
+  "The reading of 'the signed change at the target day' as the window rows the flag reads (the narrower reading, the target row alone, is readable at lead 1 only and was not tried).",
+  "The unit of 25 bp for the signed regressor: a scaling, not tuned."
+ ],
+ "limits": {
+  "last_day": "2025-12-31",
+  "arms": 1,
+  "gbm_funding_declaration": "unchanged",
+  "preregistration": "scripts/final_test_preregistration.py is not touched",
+  "allow_list": "repo_model.one_step_guard.ONE_STEP_ALLOW_LIST is not changed"
+ },
+ "long_run": "cloud, under two hours (about 40 minutes on 4 cores for #1196's three arms and the larger set of tests; this study has one arm, no calibration and no Politis-White block)",
+ "amendments": [
+  {
+   "number": 1,
+   "what": "The sentence of scoring.pressure_day_types that said (a) and (s3) reproduce #1196's figures was replaced by the one above: they score on the benchmark days main now has, so they are not the figures of #1196's page.",
+   "why": "The first run of the scoring script scored more decision days than #1196's page, and (a), (s3) and the benchmarks have higher means on it. The cause is #1198, merged after #1196: it put the B2 thin-pool record in force, so B2 now forecasts the year-end days of 2018 that it refused when #1196 was scored (the dropped days are listed in `notes.benchmark_missing` of both records). The sentence was a description of the comparator, not a choice.",
+   "made": "after the first result file was written and read (its counts of the IORB changes then also gained two fields, which the page uses); before the page was generated. No arm, term, test, split, seed, reading rule or day range changes, and the script's code that decides a score is unchanged."
+  }
+ ]
+}

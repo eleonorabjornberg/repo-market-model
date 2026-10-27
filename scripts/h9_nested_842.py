@@ -372,7 +372,7 @@ def score_command(args) -> int:
     }
     # decision-day attributes
     state = as_of_state(args.panel, days)
-    kinds = {(d, h): splits.reporting_day_type(calendar[position[d] + h], row_of[calendar[position[d] + h]].values) for d in days for h in HORIZONS}
+    kinds = {(d, h): turn_days.reporting_day_type(splits, calendar[position[d] + h], row_of[calendar[position[d] + h]].values) for d in days for h in HORIZONS}
     always = lambda d, h: True
     groups: Dict[str, Tuple[List[date], object]] = {"pooled": (list(days), always)}
     for label in splits.regime_labels:
@@ -577,6 +577,10 @@ def report_command(args) -> int:
     return 0
 
 
+from repo_model import turn_days  # noqa: E402
+
+
+@turn_days.with_legacy_flag
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     sub = parser.add_subparsers(dest="command", required=True)

@@ -36,6 +36,11 @@ from repo_model.splits import LookAheadError
 
 import test_protocol_benchmarks as tpb
 
+import legacy_day_types
+
+# this module reproduces legacy figures: the pre-#1135 day types (see tests/legacy_day_types.py)
+setUpModule, tearDownModule = legacy_day_types.setUpModule, legacy_day_types.tearDownModule
+
 
 def panel_and_settings():
     panel = tpb.published_panel()["rows"]

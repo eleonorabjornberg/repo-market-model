@@ -705,7 +705,7 @@ def score_command(args) -> int:
     row_of = {row.date: row for row in rows}
 
     def kind_of(day: date) -> str:
-        return splits.reporting_day_type(day, row_of[day].values)
+        return turn_days.reporting_day_type(splits, day, row_of[day].values)
 
     kinds = sorted({kind_of(calendar[position[d] + h]) for d in days for h in HORIZONS})
     by_type: Dict[str, dict] = {}
@@ -1034,6 +1034,10 @@ def add_score_commands(sub) -> None:
     report.set_defaults(func=report_command)
 
 
+from repo_model import turn_days  # noqa: E402
+
+
+@turn_days.with_legacy_flag
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = parser.add_subparsers(dest="command", required=True)
