@@ -403,6 +403,178 @@ class TestDeskTestMarks(unittest.TestCase):
         self.assertAlmostEqual(accepted[date(2020, 6, 17)], 4.5)
 
 
+class TestAfternoonPatternRule(unittest.TestCase):
+    """#938: the afternoon ~$100 mn operation is a test trade, not take-up (Eleonora, ruling on #860 of 19 October 2026,
+    read by her ruling of 20 October 2026 on #938).
+
+    An overnight `Repo` operation with no note is a test trade if it was released at 13:29 or 13:30, its main line
+    (the line with the most accepted) is USD 90-130 million, and every other line that accepted anything is under
+    USD 10 million (`ingest.PATTERN_*`). The rule reads only fields of the operation's own results release
+    (`releaseTime`, `details`, `note`, `term`), never a list of dates or ids. The main line's own rate must be one rate:
+    when it states `percentLowRate` and `percentHighRate` they must be equal; a Full Allotment line states none and
+    counts (a marked question for Eleonora on #938). A `Repo` operation with a `releaseTime` that is not HH:MM, or a
+    detail line with no numeric `amtAccepted`, raises `ValueError`. The operation still happened, so its date keeps
+    a row at zero (as for #802); `fed_repo_accepted`, `repo_ops_accepting`, `repo_rate` and `srf_total_accepted` follow.
+
+    Recorded mutations (CLAUDE.md), 22 October 2026, in a disposable copy, `src/repo_model/ingest.py`,
+    `_is_afternoon_test_trade`:
+    `if release.zfill(5) not in PATTERN_RELEASE_TIMES:` mutated to `if release == "":` (the release time ignored):
+    `test_a_morning_operation_is_take_up` then fails with `AssertionError` (`0.0 != 0.1`, release 08:15);
+    `if side >= PATTERN_SIDE_LINE_MAX:` mutated to `if side > PATTERN_SIDE_LINE_MAX:` (a $10 mn line passed as
+    small): `test_a_side_line_of_ten_million_or_more_is_take_up` then fails with `AssertionError`
+    (`0.0 != 0.11`, lines 100 mn and 10 mn).
+    """
+
+    @staticmethod
+    def afternoon(day, lines, *, release="13:30", rates=(4.5,), note="", term="Overnight", method="Multiple Price"):
+        accepted = sum(lines)
+        details = []
+        for number, amount in enumerate(lines):
+            line = {"securityType": ("Treasury", "Agency", "Mortgage-Backed")[number % 3], "amtSubmitted": amount, "amtAccepted": amount}
+            rate = rates[min(number, len(rates) - 1)] if rates else None
+            if rate is not None and amount:
+                line.update({"percentLowRate": rate, "percentHighRate": rate, "percentWeightedAverageRate": rate})
+            details.append(line)
+        record = operation(day, accepted, term=term, note=note)
+        record.update({"releaseTime": release, "closeTime": "13:45", "operationMethod": method, "details": details})
+        return record
+
+    def taken(self, record):
+        rows = by_series(rows_for(record))
+        day = date.fromisoformat(record["operationDate"])
+        return rows["repo_accepted"][day].value
+
+    def test_the_band_and_the_times_are_the_ruled_ones(self):
+        self.assertEqual(ingest.PATTERN_RELEASE_TIMES, ("13:29", "13:30"))
+        self.assertEqual((ingest.PATTERN_BAND_MIN, ingest.PATTERN_BAND_MAX), (90_000_000, 130_000_000))
+        self.assertEqual(ingest.PATTERN_SIDE_LINE_MAX, 10_000_000)
+
+    def test_one_afternoon_line_in_the_band_is_a_test_trade(self):
+        for release in ("13:30", "13:29"):
+            with self.subTest(release=release):
+                rows = by_series(rows_for(self.afternoon("2024-03-07", [110_000_000], release=release)))
+                self.assertEqual(rows["repo_accepted"][date(2024, 3, 7)].value, 0.0)
+                self.assertEqual(rows["repo_ops_accepting"][date(2024, 3, 7)].value, 0.0)
+                self.assertNotIn(date(2024, 3, 7), rows.get("repo_rate", {}))
+                self.assertAlmostEqual(rows["repo_submitted"][date(2024, 3, 7)].value, 0.110)
+
+    def test_side_lines_under_ten_million_are_ignored(self):
+        for lines in ([102_000_000, 2_000_000, 2_000_000], [112_000_000, 1_000_000], [9_999_000, 100_000_000]):
+            with self.subTest(lines=lines):
+                self.assertEqual(self.taken(self.afternoon("2024-02-22", lines)), 0.0)
+
+    def test_the_band_edges_are_inside(self):
+        for amount in (90_000_000, 130_000_000, 97_000_000):
+            with self.subTest(amount=amount):
+                self.assertEqual(self.taken(self.afternoon("2024-07-09", [amount])), 0.0)
+
+    def test_a_main_line_outside_the_band_is_take_up(self):
+        for amount in (89_999_000, 130_001_000, 7_500_000 * 20 + 1_000_000, 2 * BN):
+            with self.subTest(amount=amount):
+                self.assertAlmostEqual(self.taken(self.afternoon("2024-07-09", [amount])), amount / 1e9)
+
+    def test_a_morning_operation_is_take_up(self):
+        for release in ("08:15", "10:00", "13:28", "13:31", "14:00"):
+            with self.subTest(release=release):
+                self.assertAlmostEqual(self.taken(self.afternoon("2026-04-08", [100_000_000], release=release)), 0.1)
+
+    def test_a_side_line_of_ten_million_or_more_is_take_up(self):
+        for lines in ([100_000_000, 10_000_000], [10_000_000, 100_000_000], [100_000_000, 40_000_000]):
+            with self.subTest(lines=lines):
+                self.assertAlmostEqual(self.taken(self.afternoon("2025-04-30", lines)), sum(lines) / 1e9)
+
+    def test_a_note_keeps_the_operation_as_take_up(self):
+        self.assertAlmostEqual(self.taken(self.afternoon("2024-03-07", [110_000_000], note="Operation upsized")), 0.11)
+
+    def test_a_term_repo_is_take_up(self):
+        record = self.afternoon("2024-03-07", [110_000_000], term="Term")
+        record["maturityDate"] = "2024-03-14"
+        self.assertAlmostEqual(self.taken(record), 0.11)
+
+    def test_a_main_line_with_two_rates_is_take_up(self):
+        record = self.afternoon("2024-03-07", [110_000_000])
+        record["details"][0].update({"percentLowRate": 4.4, "percentHighRate": 4.5})
+        self.assertAlmostEqual(self.taken(record), 0.11)
+
+    def test_a_full_allotment_line_with_no_rate_counts(self):
+        record = self.afternoon("2026-02-10", [100_000_000], rates=(), method="Full Allotment")
+        self.assertEqual(self.taken(record), 0.0)
+
+    def test_a_desk_test_is_still_dropped_before_this_rule(self):
+        record = self.afternoon("2025-02-26", [48_000_000, 15_000_000, 31_000_000], release="10:00", note="Small Value Exercise")
+        self.assertEqual(rows_for(record), [])
+
+    def test_an_afternoon_test_trade_beside_real_take_up_is_dropped_alone(self):
+        rows = by_series(
+            rows_for(
+                self.afternoon("2025-09-09", [100_000_000, 1_000_000]),
+                self.afternoon("2025-09-09", [2 * BN], release="10:00"),
+            )
+        )
+        self.assertAlmostEqual(rows["repo_accepted"][date(2025, 9, 9)].value, 2.0)
+        self.assertEqual(rows["repo_ops_accepting"][date(2025, 9, 9)].value, 1.0)
+
+    def test_a_reverse_repo_is_not_read_by_it(self):
+        record = self.afternoon("2024-03-07", [110_000_000])
+        record["operationType"] = "Reverse Repo"
+        self.assertFalse(ingest._is_afternoon_test_trade(record))
+
+    def test_an_operation_with_no_release_time_is_take_up(self):
+        record = self.afternoon("2024-03-07", [110_000_000])
+        del record["releaseTime"]
+        self.assertAlmostEqual(self.taken(record), 0.11)
+
+    def test_a_release_time_that_is_not_a_clock_time_is_refused(self):
+        for bad in ("afternoon", "1330", 1330, True):
+            record = self.afternoon("2024-03-07", [110_000_000])
+            record["releaseTime"] = bad
+            with self.subTest(release=bad), self.assertRaises(ValueError):
+                rows_for(record)
+
+    def test_a_detail_line_with_no_numeric_amount_is_refused(self):
+        for bad in ("100000000", None, True):
+            record = self.afternoon("2024-03-07", [110_000_000, 1_000_000])
+            record["details"][1]["amtAccepted"] = bad
+            with self.subTest(amount=bad), self.assertRaises(ValueError):
+                rows_for(record)
+
+    def test_the_srf_total_reads_the_rule(self):
+        operations = [
+            self.afternoon("2024-03-07", [110_000_000]),
+            self.afternoon("2024-03-08", [3 * BN], release="10:00"),
+            self.afternoon("2026-04-08", [100_000_000], release="08:15"),
+        ]
+        payload = json.dumps({"repo": {"operations": operations}}).encode()
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "srf.json"
+            path.write_bytes(payload)
+            artifact = SnapshotArtifact(
+                source_id=ingest.NYFED_SRF_SOURCE_ID, path=path,
+                retrieved_at="2026-10-08T20:51:05+00:00", sha256=hashlib.sha256(payload).hexdigest(),
+                url=ingest.NYFED_RP_RESULTS_URL, byte_count=len(payload),
+            )
+            rows = {r.ref_date: r.value for r in ingest._nyfed_srf_rows(artifact, payload)}
+        self.assertEqual(rows[date(2024, 3, 7)], 0.0)
+        self.assertAlmostEqual(rows[date(2024, 3, 8)], 3.0)
+        self.assertAlmostEqual(rows[date(2026, 4, 8)], 0.1)
+
+    def test_the_tracked_snapshots_hold_exactly_the_listed_test_trades(self):
+        found = []
+        for path in sorted((SNAPSHOTS / "nyfed_repo_ops").glob("*.json")):
+            if path.name.endswith(".manifest.json"):
+                continue
+            for record in ingest._nyfed_operations(json.loads(path.read_bytes())):
+                if isinstance(record, dict) and ingest._is_afternoon_test_trade(record):
+                    found.append(record["operationId"])
+        self.assertEqual(len(found), len(set(found)))
+        self.assertEqual(len(found), 32)
+        self.assertNotIn("RP 043025 2", found)
+        self.assertNotIn("RP 040826 25", found)
+        self.assertNotIn("RP 071526 25", found)
+        self.assertIn("RP 022224 2", found)
+        self.assertIn("RP 070825 3", found)
+
+
 def ingest_series(operations):
     """`series_from_snapshots`'s shape, built from operation records as the parser reads them."""
 

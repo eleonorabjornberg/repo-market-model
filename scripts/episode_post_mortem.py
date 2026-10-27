@@ -69,6 +69,16 @@ from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
 from repo_model.lockbox import require_unlocked  # noqa: E402
 from repo_model.splits import LookAheadError  # noqa: E402
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_READS = {
+    "as_of_series": (
+        "not_entry",
+        "reads each scored day's as-of inputs for the descriptive episode post-mortem (#474); "
+        "compares nothing, and walks _as_of_folds, which refuses a locked day "
+        "(tests/test_episode_post_mortem.py)",
+    ),
+}
+
 SPLITS = REPO / "metadata" / "evaluation_splits.json"
 LAST_DAY = date(2025, 12, 31)
 MINIMUM_HISTORY = 61

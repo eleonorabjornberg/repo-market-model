@@ -46,6 +46,16 @@ from repo_model.scarcity import (  # noqa: E402
     with_reserve_scarcity_state,
 )
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_READS = {
+    "states_command": (
+        "not_entry",
+        "tabulates the filtered state against #115's state on the fold grid (#384); scores nothing, "
+        "it ends at the declared last scored day through _as_of_folds, which calls "
+        "require_unlocked, and drops every row after that day before it starts",
+    ),
+}
+
 DECLARATION = REPO / "metadata" / "pressure_track_m.json"
 REGISTRY = REPO / "metadata" / "sources.json"
 

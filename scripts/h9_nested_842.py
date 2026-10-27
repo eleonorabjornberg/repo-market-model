@@ -42,6 +42,18 @@ from datetime import date
 from pathlib import Path
 from typing import Dict, List, Mapping, Optional, Sequence, Tuple
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_READS = {
+    "decision_forecasts": (
+        "not_entry",
+        "rebuilds the fold grid and the fit instants #706's walks used, from dates and the registry "
+        "alone, to key a target's laws by decision day (H9 step 3, #842); fits and scores nothing, "
+        "and `walk_command` calls require_unlocked, with `target_forecasts.attach` refusing a "
+        "locked decision or target day, before any fit (tests/test_h9_nested_842_script.py, "
+        "LockedDayTests)",
+    ),
+}
+
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
@@ -360,7 +372,7 @@ def score_command(args) -> int:
     }
     # decision-day attributes
     state = as_of_state(args.panel, days)
-    kinds = {(d, h): splits.reporting_day_type(calendar[position[d] + h], row_of[calendar[position[d] + h]].values) for d in days for h in HORIZONS}
+    kinds = {(d, h): turn_days.reporting_day_type(splits, calendar[position[d] + h], row_of[calendar[position[d] + h]].values) for d in days for h in HORIZONS}
     always = lambda d, h: True
     groups: Dict[str, Tuple[List[date], object]] = {"pooled": (list(days), always)}
     for label in splits.regime_labels:
@@ -565,6 +577,10 @@ def report_command(args) -> int:
     return 0
 
 
+from repo_model import turn_days  # noqa: E402
+
+
+@turn_days.with_legacy_flag
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     sub = parser.add_subparsers(dest="command", required=True)

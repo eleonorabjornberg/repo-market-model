@@ -262,7 +262,7 @@ def score_command(args) -> int:
     bench_files = {h: json.loads((args.walks / f"exceed_h{h}.json").read_text(encoding="utf-8")) for h in HORIZONS}
     sd.SEED = SEED_634
     kinds = {
-        (d, h): splits.reporting_day_type(calendar[position[d] + h], row_of[calendar[position[d] + h]].values)
+        (d, h): turn_days.reporting_day_type(splits, calendar[position[d] + h], row_of[calendar[position[d] + h]].values)
         for d in days for h in HORIZONS
     }
     brier: dict = {}
@@ -418,6 +418,10 @@ def report_command(args) -> int:
     return 0
 
 
+from repo_model import turn_days  # noqa: E402
+
+
+@turn_days.with_legacy_flag
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = parser.add_subparsers(dest="command", required=True)

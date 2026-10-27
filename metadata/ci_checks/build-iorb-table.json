@@ -1,0 +1,8 @@
+{
+  "command": [
+    "scripts/build_iorb_table.py",
+    "--check"
+  ],
+  "where": "suite",
+  "pre_review": false
+}

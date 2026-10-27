@@ -50,6 +50,16 @@ from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
 from repo_model.lockbox import require_unlocked  # noqa: E402
 from repo_model.splits import LookAheadError  # noqa: E402
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_READS = {
+    "served_row": (
+        "not_entry",
+        "reads one target's information set for a named day and checks both guards (#931); scores "
+        "nothing; the named days (`alignment_days` in the declaration) all end on or before "
+        "2025-12-31",
+    ),
+}
+
 DECLARATION = REPO / "metadata" / "aligned_pairs_931.json"
 SPLITS = REPO / "metadata" / "evaluation_splits.json"
 SOURCES = REPO / "metadata" / "sources.json"
@@ -354,7 +364,7 @@ def score_command(args) -> int:
     names = ["B1", "B2", *MODELS]
 
     def kind_of(day: date) -> str:
-        return day_type(splits.reporting_day_type(day, row_of[day].values), row_of[day].values)
+        return day_type(turn_days.reporting_day_type(splits, day, row_of[day].values), row_of[day].values)
 
     kinds = sorted({kind_of(calendar[position[d] + LEAD]) for d in days})
     jobs, shells = [], {}
@@ -512,6 +522,10 @@ def report_command(args) -> int:
     return 0
 
 
+from repo_model import turn_days  # noqa: E402
+
+
+@turn_days.with_legacy_flag
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     sub = parser.add_subparsers(dest="command", required=True)

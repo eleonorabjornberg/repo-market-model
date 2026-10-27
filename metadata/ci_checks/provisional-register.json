@@ -1,0 +1,8 @@
+{
+  "command": [
+    "scripts/provisional_register.py",
+    "--check"
+  ],
+  "where": "ci:pages",
+  "pre_review": false
+}

@@ -22,6 +22,17 @@ sys.path.insert(0, str(REPO / "src"))
 
 from repo_model.exploration import EXPLORATORY_END, NEAR_BLIND_START, panel_end  # noqa: E402
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_READS = {
+    "read_all": (
+        "not_entry",
+        "reads each derived series as of the decision instant on the lead-1 fold grid, for the "
+        "exploratory screen of #631; selects no model and scores no forecast, calls "
+        "lockbox.require_unlocked on every day before it reads one, and its `run` refuses a panel "
+        "that runs past 2025-12-31 (tests/test_derived_features_631.py)",
+    ),
+}
+
 DECLARATION = REPO / "metadata" / "derived_features_631.json"
 CANDIDATES = REPO / "metadata" / "pressure_judge" / "candidates"
 

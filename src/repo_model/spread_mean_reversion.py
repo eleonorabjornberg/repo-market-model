@@ -27,11 +27,12 @@ from dataclasses import dataclass
 from datetime import date, time
 from typing import Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
+from . import turn_days
 from . import protocol_benchmarks as pb
 from .data import DailyObservation
 from .evaluation_splits import SplitDeclaration
 from .scoring_protocol import GRID, HORIZONS, ProtocolError
-from .splits import SplitError
+from .splits import LookAheadError, SplitError
 
 #: The level is the median of this many ordinary days.
 LEVEL_DAYS = 10
@@ -80,7 +81,7 @@ def ordinary_levels(panel: Sequence[DailyObservation], splits: SplitDeclaration)
     recent: List[float] = []
     out: List[Optional[float]] = []
     for row in panel:
-        if splits.reporting_day_type(row.date, row.values) == "ordinary":
+        if turn_days.reporting_day_type(splits, row.date, row.values) == "ordinary":
             recent.append(row.spread_bps)
             if len(recent) > LEVEL_DAYS:
                 recent.pop(0)
@@ -256,6 +257,8 @@ def walk(
         except InsufficientHistory:
             skipped.append(day)
             continue
+        except LookAheadError:
+            raise  # a guard trip is never "no public row yet"
         except SplitError:
             # The first rows of the panel have no public row at their decision instant; later ones must.
             if current is not None:

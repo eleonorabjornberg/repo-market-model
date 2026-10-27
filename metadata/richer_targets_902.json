@@ -1,0 +1,84 @@
+{
+  "status": "declared by the pull request that closes #902 before any score was computed; step 2 of H9, a sensitivity measurement on development data, not a record and not a verdict (scoring protocol v1 section 1). Nothing is published, no target joins any published declaration, no day after 2025-12-31 is read (docs/decisions/lockbox.md), no rule changes, the live record and pin do not move, and no declaration that moves a published figure is edited",
+  "issue": 902,
+  "hypothesis": "H9 (secondary goal), step 2 of docs/research/hypotheses/H9.md",
+  "rulings": [
+    "Eleonora, 22 October 2026 (relayed by the orchestrating session; comment 6350222095 on #902): the H5 candidate is #941's scaled mean reversion; #902 is redone on it",
+    "Eleonora, 17 October 2026, ruling on #798, option (b): report H5's and H9's figures with and without decision day 2019-09-18",
+    "Eleonora, 22 October 2026 (relayed; queue issue #46): every new H5 scoring page reports B1' beside B1, pooled, by regime and by day type; B1 stays the protocol's benchmark",
+    "Eleonora, 21 October 2026: #906 (the same cut on the gradient-boosted walks) closed unmerged as provisional under calendar first"
+  ],
+  "panel": {
+    "sha256": "26c51093de80bc1c5f6cc4e9e3742fd6606160e4c6ba0db2fa19d6fcbf3e1313",
+    "built_by": "the commands of scripts/richer_targets_902.py's docstring, the panel #706 declared"
+  },
+  "variants": [
+    {
+      "name": "spread_mr_fhs_mad20_f0.5",
+      "estimator": "mad",
+      "window_rows": 20,
+      "floor": 0.5,
+      "role": "the single candidate: #941's declared variant, unchanged (structural block for the variant count; moves no figure)"
+    }
+  ],
+  "targets": [
+    "bgcr_dispersion_bps",
+    "on_rrp_change_bn",
+    "sofr_dispersion_bps"
+  ],
+  "targets_from": {
+    "path": "metadata/richer_targets_706.json",
+    "sha256": "dae63cf22f61485a829ab720fa505f3743d23c511b4cf483371d4f93c53d4c71",
+    "rule": "#706's four-part rule, unchanged"
+  },
+  "model": {
+    "name": "spread_mr_fhs_mad20_f0.5",
+    "class": "repo_model.spread_mr_fhs, the variant of metadata/fhs_scale_941.json: scale estimator mad, window 20 rows, floor 0.5",
+    "declaration": {
+      "path": "metadata/fhs_scale_941.json",
+      "sha256": "e00afb8f251ddf1f60c84988b8809a8ee8cc6ada43408a45de4a65c657f5af51"
+    },
+    "label": "the target, put in the slot the model reads as SOFR - IORB (richer_targets.as_target) under the release lag of the target's own sources (richer_targets.swap_target_fields), as #706 did",
+    "refit_every": 21,
+    "decision_time": "16:00",
+    "horizons": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "inputs": "the target's own history only: no calendar column, no other input (provisional under calendar first)",
+    "units": "the scale floor of 0.5 is #941's, written in bp; for on_rrp_change_bn the target is in USD bn and the floor is 0.5 bn. Declared as it is, not tuned (a marked question on the pull request)"
+  },
+  "benchmarks": {
+    "B1": "richer_targets.b1_quantiles, #706's, unchanged",
+    "B2": "richer_targets.b2_quantiles, #706's, unchanged",
+    "B1p": {
+      "what": "B1', repo_model.b1_calendar.b1_calendar_forecast (#960), read on the target's series (as_target); a reference row, not a benchmark of the protocol",
+      "declaration": {
+        "path": "metadata/b1_calendar_960.json",
+        "sha256": "e191b86db3818b77dbce401a6e66ddcd6f597ac0cccffdce5b15b3af4f5cee2f"
+      },
+      "missing": "a decision day B1' cannot build is left out of every column and listed"
+    },
+    "missing_forecast": "a lead the model has no law for is filled by B1 (scoring_protocol.fill_missing)"
+  },
+  "scoring": {
+    "scorer": "scripts/richer_targets_706.py score_target, unchanged in what it computes (two optional arguments added: the day to drop, further benchmarks)",
+    "score": "scoring_protocol.grid_crps on the 23 levels, the mean over leads 1 to 5 per decision day",
+    "interval": "scoring_protocol.paired_tests through spread_distribution_634.pair_table: stationary bootstrap, mean block 10, 10000 draws, seed 634, one-sided 95% (the lower bound of the two-sided 90% interval); the pre-onset AUC resamples onsets, 2000 draws, seed 706. Both are #706's",
+    "splits": {
+      "state": "the as-of scarcity state of the decision day: ample or scarce",
+      "day_type": "SplitDeclaration.reporting_day_type of the target day"
+    },
+    "last_target_day": "2025-12-31"
+  },
+  "dropped_day": "2019-09-18",
+  "dropped_day_reading": "a decision day, as in #805 (scripts/h5_splits_805.py EXCLUDED_DAY): left out of every cut after the benchmarks are built; in the pre-onset AUC the day whose decision day it is is the lead-1 target of the next row",
+  "with_column": "the scorer run on the same walks with nothing dropped. `score` also runs the scorer with no extra benchmark and refuses unless the B1, B2 and model columns of that run are the 'with' column's, so the added benchmark and argument change no figure",
+  "reading": {
+    "sign_change": "a cell whose one-sided 95% lower bound of the skill over a benchmark changes sign when the day is dropped, listed one per line",
+    "kill_criterion": "any reading against H9's kill criterion (docs/research/hypotheses/H9.md) is a marked question for Eleonora, not a statement of the page. The model reads no calendar column, so the result is provisional and closes no question"
+  }
+}

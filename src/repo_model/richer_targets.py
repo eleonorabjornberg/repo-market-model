@@ -48,6 +48,17 @@ from .metrics import stationary_bootstrap_indices
 from .protocol_benchmarks import _require_public, empirical_quantiles, years_before
 from .scoring_protocol import GRID, ProtocolError, _prefix, _resampled_sum, _segments, grid_crps
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_READS = {
+    "as_of_rows": (
+        "not_entry",
+        "reads each target column as of the decision instant at each lead, on the rows it is given, "
+        "for the exploratory H9 screen (#639); selects no model and scores no forecast, and the "
+        "screen's `run` passes it only days that went through lockbox.require_unlocked "
+        "(tests/test_richer_targets.py)",
+    ),
+}
+
 __all__ = [
     "COLUMN_FIELDS",
     "LEADS",

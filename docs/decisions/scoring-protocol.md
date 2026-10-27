@@ -19,6 +19,30 @@ count. The words are otherwise unchanged.
 **Implemented by:** `repo_model.scoring_protocol` (sections 3, 5, 6 and 11) and `repo_model.protocol_benchmarks`
 (section 4), tested on the synthetic suite `tests/test_scoring_protocol_synthetic.py` (H1, section 9).
 
+## Critical values in force
+
+**Status: in force since 21 October 2026 (PR #1078; Eleonora's `GO #1073`, 22 October 2026, finding #1110).** Eleonora ruled on 21 October 2026,
+relayed by the orchestrating session on #1064, that the critical values in force are the ones before #878, with no
+per-leg value, and that draft amendments 1 to 3 below (#878, #886, #953) are set aside until H1 is recalibrated on
+the #1027 candidate (the #1050 conditions); all three were calibrated on series from models that do not read calendar
+days. <https://github.com/eleonorabjornberg/repo-market-model/issues/1064#issuecomment-6318943223>
+
+On #1065 she ruled that draft amendment 3's B2-leg value (1.701) is not adopted.
+<https://github.com/eleonorabjornberg/repo-market-model/issues/1065#issuecomment-6318943641>
+
+The values, as `repo_model.scoring_protocol.CRITICAL_VALUES` holds them (three decimals), and no per-leg value
+(`B2_LEG_CRITICAL_VALUES` is empty, so the leg against B2 reads the same value):
+
+- `B2-B1`, 60 days: none
+- `B2-B1`, 125 days: 3.419
+- `B2-B1`, 250 days: 2.426
+- `B3-B1 (five levels)`, 60 days: none
+- `B3-B1 (five levels)`, 125 days: 9.501
+- `B3-B1 (five levels)`, 250 days: 5.455
+
+`tests/test_protocol_values_in_force.py` fails if these lines and the code disagree. The text of the draft amendments
+below is not edited.
+
 ## Rulings on the implementation (13 October 2026, PR #660)
 
 Eleonora ruled on the questions the implementing pull request asked. The ruling was relayed by the orchestrating
@@ -207,6 +231,75 @@ from 2020-04-03 are the ones the protocol's coverage work (#699) and #886 use; #
 circular blocks of the history (`window_t_statistics`) as her ruling says; draft amendment 2 (#886) drew stationary-bootstrap
 windows, and the two do not give the same values. Draft amendments 1 and 2 are not additive to this one: if she adopts this
 draft, their efficacy values are superseded.
+
+
+## Draft amendment 4: passing the coverage tests is a registration requirement (#1130)
+
+**Status: a fourth draft, by the pull request that closes #1130, for Eleonora to review and merge. Nothing here is in force
+until she merges it** (§13: this record is merged by her, not under delegated review; the change is of kind (a), a
+demonstration). It follows her ruling of 22 October 2026 on PR #998, option a, relayed by the orchestrating session: passing
+the coverage tests becomes a registration requirement. Merging it is her own GitHub action, and a relayed ruling does not
+authorise it; the owner attestation cites her own `GO` when she gives it. Until she merges it, §2 stands as written,
+`scoring_protocol.COVERAGE_REQUIREMENT_IN_FORCE` is False, and `enforce_coverage_requirement` returns without checking
+anything. It does not touch §3 to §6, the critical values or any verdict.
+
+**The demonstration (kind (a)).** The synthetic world of #961 (PR #998, development data, no verdict): a forecaster whose
+bands are too narrow beats calibrated forecasters on grid CRPS and is ranked first by the rule without the ideal forecaster
+in the field, and fails coverage in every lead and regime cell; a forecaster calibrated over the whole path (pooled,
+persistence) passes the pooled cells and fails by regime. CRPS rewards sharpness the coverage tests catch. The page is
+`docs/research/coverage-gate-961-result.md` on that pull request, and it is the only evidence here.
+
+**The amendment.** §2 gains one item. Before its first confirmation day a candidate (primary and secondary) registers with
+its coverage report, read on its development walk-forward forecasts only (§1: never a verdict, never a locked day):
+
+- Kupiec (unconditional coverage) and Christoffersen (independence) at q05/q95 and q01/q99, for each lead h = 1 to 5 and each
+  regime, from `repo_model.coverage_tests`;
+- both hit rules reported, per her ruling of 22 October 2026 on #998: a hit is `y` beyond the quantile (`strict`: `y < q`
+  below, `y > q` above) or `y` at or beyond it (`tie_counts`); a randomised tie rule is a further reporting option (answer 4);
+- the candidate passes when no cell fails either test, at the level and family the answers below set.
+
+The check is `repo_model.scoring_protocol.coverage_cells` (reporting) and `enforce_coverage_requirement` (the requirement,
+inert until the flag is set by a follow-up directive after she merges this record). Registration stays her attested action;
+the code does not register anything.
+
+### Her answers (22 October 2026, PR #1137, relayed by the orchestrating session) and the one question left open
+
+Her answers 1, 2, 3 and 5 are the defaults below; 4 is left to a measurement. They are recorded here as a draft; they bind
+only once she merges this record.
+
+The reported size of the unmodified gate is why 1 to 3 were asked: on 2,000-day paths of a calibrated forecaster, the gate as
+#961 declared it (Kupiec per cell at 1%, no thinning) failed it on 54% of paths, almost all of it Kupiec at the longer leads,
+because the errors of an h-step forecast made on consecutive days overlap and the hits are dependent. Thinning Kupiec to every
+h-th day brought that to 20% (post hoc, not declared), still far above 1%.
+
+1. **Leads above 1: thinned days.** Kupiec and independence on every h-th decision day at lead h (`method="thinned"`). The
+   HAC variant (`method="hac"`) stays implemented and reported-only; its size is unmeasured.
+2. **Family-wise level: Holm over the family at 5%** (`family="holm"`, `alpha=0.05`, the protocol's `holm`). The family is
+   all tests of the hit rule the requirement reads. Its size is unmeasured here.
+3. **The 54%: the requirement stays off until a size simulation clears the chosen design.** `COVERAGE_REQUIREMENT_IN_FORCE`
+   stays False until a follow-up simulation shows that the design of answers 1, 2 and 4 fails a calibrated forecaster on no more
+   than its family-wise level (5%). A later directive sets the flag, after her own merge of this record and her `GO`.
+4. **Which hit rule the requirement reads: open, decided by the size simulation.** A whole-bp target has mass points, and a
+   deterministic rule is mis-sized for a perfect forecaster when outcomes tie the quantile (five-lens review, Lens C point F).
+   The simulation measures the size of three rules: `strict` (`y` beyond `q`), `tie_counts` (`y` at or beyond `q`) and a
+   **randomised tie rule** (a tie counts as a hit with the probability the forecast's own distribution assigns it, as in the
+   randomised PIT of Czado, Gneiting and Held 2009; `coverage_tests.randomised_hit_sequence`, a reporting option, inert, with
+   caller-supplied draws). The requirement reads the rule the simulation shows a calibrated forecaster passes. Both
+   deterministic rules stay reported whatever it finds. Until the simulation has run, `enforce_coverage_requirement` takes the
+   rule as a required argument and nothing here names one; `coverage_cells` does not yet report the randomised rule (it needs
+   the forecast's tie probabilities, which the simulation's directive supplies).
+5. **The regime split: the protocol's existing development-figure split,** with the labels supplied by the caller. No new
+   definition of a regime; a different split is her ruling and a change to the labels, not to the code.
+
+**The follow-up directive** (filed for her to queue; see the issue linked from PR #1137): the size simulation, on calibrated
+forecasters over a whole-bp target with mass points, at the answers above, measuring family-wise size (Holm at 5%, thinned) for
+each of the three hit rules and, for power, the too-narrow forecaster of #961. Its result names the rule the requirement reads
+and whether the design may be put in force; setting the flag is a further step under her `GO`.
+
+What was not checked: the candidate (`gbm_funding`, B3, the direct-pairs twin) has not been run through the check; that
+needs walks and runs on her Mac under the long-run rule if she wants it. The size of the thinned, Holm design and of every hit
+rule is unmeasured until the follow-up runs.
+
 
 ---
 

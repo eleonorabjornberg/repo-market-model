@@ -289,16 +289,35 @@ def run_command(args) -> int:
     return 0
 
 
-def crps_command(args) -> int:
-    from repo_model import cli
+def crps_argv(panel, registry, output, control_features, columns, training_pairs=None):
+    """The `compare --loss crps` argument list: the control's features against the same plus `columns`.
 
-    columns, window, lag = spec(args.run)
+    `training_pairs` (#1071) is passed to both arms or to neither, so the paired difference measures the added columns and
+    not a change of pairing; `cli compare` refuses a nested comparison with mixed pairing.
+    """
 
     def side(letter, features):
         out = ["--model-" + letter, "gbm", "--calibration-" + letter, "conformal_pid_nested"]
         for name in features:
             out += ["--feature-" + letter, name]
+        if training_pairs is not None:
+            out += ["--training-pairs-" + letter, training_pairs]
         return out
+
+    return [
+        "compare", str(panel),
+        "--registry", str(registry), "--decision-time", "16:00",
+        "--minimum-history", str(v1.MINIMUM_HISTORY), "--refit-every", str(v1.REFIT_EVERY),
+        "--end", END.isoformat(), "--splits", str(SPLITS), "--loss", "crps",
+        *side("a", control_features), *side("b", tuple(control_features) + tuple(columns)),
+        "--report", str(output),
+    ]
+
+
+def crps_command(args) -> int:
+    from repo_model import cli
+
+    columns, window, lag = spec(args.run)
 
     with tempfile.TemporaryDirectory() as scratch:
         panel = args.panel
@@ -314,14 +333,7 @@ def crps_command(args) -> int:
                         writer.writerow(line)
         registry = Path(scratch) / "sources.json"
         registry.write_text(json.dumps(_registry(lag), indent=2), encoding="utf-8")
-        argv = [
-            "compare", str(panel),
-            "--registry", str(registry), "--decision-time", "16:00",
-            "--minimum-history", str(v1.MINIMUM_HISTORY), "--refit-every", str(v1.REFIT_EVERY),
-            "--end", END.isoformat(), "--splits", str(SPLITS), "--loss", "crps",
-            *side("a", v1.GBM_FEATURES), *side("b", v1.GBM_FEATURES + columns),
-            "--report", str(args.output),
-        ]
+        argv = crps_argv(panel, registry, args.output, v1.GBM_FEATURES, columns, args.training_pairs)
         with switched_on():
             status = cli.main(argv)
     document = json.loads(args.output.read_text())
@@ -828,6 +840,11 @@ def main(argv=None) -> int:
     four.add_argument("--panel", type=Path, required=True)
     four.add_argument("--run", choices=[n for n in run_names() if "@" not in n or n.split("@")[1] in ("lag1", "backfill", "1d")], required=True)
     four.add_argument("--output", type=Path, required=True)
+    four.add_argument(
+        "--training-pairs", choices=("direct",), default=None,
+        help="train both arms on direct pairs (#1071): the control is then the published features fitted on direct pairs, "
+        "and the difference measures the run's columns, not a change of pairing; one-step pairs when not given",
+    )
     four.set_defaults(handler=crps_command)
     pair = sub.add_parser("pair", help="one run's paired comparisons at one horizon, into RUNS")
     pair.add_argument("--panel", type=Path, required=True)

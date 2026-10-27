@@ -1,0 +1,8 @@
+{
+  "command": [
+    "scripts/every_day_steps_687.py",
+    "check"
+  ],
+  "where": "suite",
+  "pre_review": false
+}

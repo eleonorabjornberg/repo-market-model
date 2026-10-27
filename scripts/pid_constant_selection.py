@@ -71,6 +71,21 @@ from repo_model.evaluation_splits import (  # noqa: E402
 from repo_model.ingest import load_source_registry  # noqa: E402
 from repo_model.metrics import crps_from_quantiles  # noqa: E402
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_CRPS = {
+    "per_day": (
+        "delegates",
+        "a per-day loss of the walk `select` runs; scores the days "
+        "`baseline.rolling_persistence_backtest` walks, which refuses a locked day through "
+        "`_as_of_folds`",
+    ),
+    "select": (
+        "delegates",
+        "scores the days `baseline.rolling_persistence_backtest` walks, which refuses a locked day "
+        "through `_as_of_folds`",
+    ),
+}
+
 METHODS = ("nested_pid", "fixed_pid", "cv_plus")
 NOMINAL = 0.90
 

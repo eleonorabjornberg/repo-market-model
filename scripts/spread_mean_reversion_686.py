@@ -42,6 +42,20 @@ from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
 from repo_model.metrics import _quantile, crps_from_quantiles  # noqa: E402
 from repo_model.splits import LookAheadError  # noqa: E402
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_CRPS = {
+    "five_level_cells": (
+        "guard",
+        "the five-level CRPS of the mean-reversion walk's cells: `require_unlocked` on every "
+        "decision and target day before any cell is computed (#686)",
+    ),
+    "published_cells": (
+        "guard",
+        "the five-level CRPS of the published distribution's cells on the same days: "
+        "`require_unlocked` on every target day before any cell is computed (#686)",
+    ),
+}
+
 DECLARATION = REPO / "metadata" / "spread_distribution_686.json"
 SPLITS = REPO / "metadata" / "evaluation_splits.json"
 SOURCES = REPO / "metadata" / "sources.json"
@@ -166,7 +180,7 @@ class Frame:
         return self.splits.regime(day)
 
     def day_type(self, day: date) -> str:
-        return self.splits.reporting_day_type(day, self.values[day])
+        return turn_days.reporting_day_type(self.splits, day, self.values[day])
 
 
 def build_frame(panel, splits, registry, declaration) -> Tuple[Frame, dict, dict]:
@@ -678,6 +692,10 @@ def page(args) -> int:
     return 0
 
 
+from repo_model import turn_days  # noqa: E402
+
+
+@turn_days.with_legacy_flag
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = parser.add_subparsers(dest="command", required=True)

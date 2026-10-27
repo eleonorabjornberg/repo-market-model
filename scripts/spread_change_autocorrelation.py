@@ -67,6 +67,15 @@ from repo_model.baseline import _as_of_folds, panel_sha256
 from repo_model.data import load_daily_panel
 from repo_model.ingest import load_source_registry
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_READS = {
+    "main": (
+        "entry",
+        "walks the fold grid to score; its runner is in SCRIPT_ENTRY_POINTS in "
+        "tests/test_lockbox.py",
+    ),
+}
+
 #: The gbm and threshold comparisons' declaration; persistence's gap is priced
 #: over the same set in every published CRPS record.
 DEFAULT_FEATURES = ("spread_bps", "sofr_volume", "sofr_p25", "sofr_p75")

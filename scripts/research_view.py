@@ -36,7 +36,19 @@ PROGRESS = "docs/research/milestones.json"
 HYPOTHESES = "docs/research/hypotheses"
 TAGLINES = "docs/research/taglines.json"
 REGISTER = provisional_register.REGISTER
-INPUTS = (PLAN, LOG, PROGRESS, HYPOTHESES, TAGLINES, REGISTER)
+#: The committed records the development standings are read from (#1020): the step 4 record names the candidate; the
+#: #960 score holds the paired grid-CRPS figures, and its declaration says how the intervals were drawn.
+STEP4 = "docs/pivot/evidence/h5-step4/score.json"
+STANDINGS = "docs/pivot/evidence/b1-calendar-960/score.json"
+STANDINGS_DECLARATION = "metadata/b1_calendar_960.json"
+#: The current H5 candidate (#1152): a small committed record of Eleonora's ruling. The standings read the candidate
+#: from it and fall back to the step 4 record only when it is absent. Its scores are #1145's `result.json` (#1173).
+CANDIDATE = "docs/research/h5-candidate.json"
+CANDIDATE_SCORES = "docs/research/state-calendar-1145/result.json"
+#: Every source the page is built from: the one list a new input is added to (#1059). `LOG` and `HYPOTHESES` are
+#: directories; `input_files` expands them, and `emit_visual.py` stamps the page with the digest of each.
+INPUTS = (PLAN, LOG, PROGRESS, HYPOTHESES, TAGLINES, REGISTER, STEP4, STANDINGS, STANDINGS_DECLARATION,
+          CANDIDATE, CANDIDATE_SCORES)
 
 DEV_LABEL = "development, not a verdict"
 #: The mark on a figure from a registered result (#1028). It names no issue number: the page is for a lay reader.
@@ -80,6 +92,13 @@ def inline(text):
     out = esc(lay(text) or "")
     out = re.sub(r"`([^`]+)`", r"<code>\1</code>", out)
     return re.sub(r"\*\*([^*]+)\*\*", r"<b>\1</b>", out)
+
+
+def input_files(repo):
+    """The tracked files the page is digested from: the files of `INPUTS`, then the hypothesis manuals. The log is not
+    here: it is built from its entry files (#928), and `log_digest` is its digest."""
+    files = [rel for rel in INPUTS if rel not in (LOG, HYPOTHESES)]
+    return files + sorted(str(p.relative_to(repo)) for p in (Path(repo) / HYPOTHESES).glob("H*.md"))
 
 
 def read(repo, rel):
@@ -338,14 +357,270 @@ def summary_html(hypotheses, links):
 
 def provisional_mark():
     """The mark on a figure from a registered result (#1028), linked to the register."""
-    return (f'<span class="rs-tag rs-prov">{esc(PROVISIONAL_LABEL)}</span> '
-            f'<a href="{BLOB}{REGISTER}">register</a>')
+    return (f'<span class="rs-tag rs-prov">{esc(PROVISIONAL_LABEL)} &middot; '
+            f'<a href="{BLOB}{REGISTER}">register</a></span>')
 
 
-def best_html(final, provisional=False):
+#: The models of the standings table, in order, with the name the page prints for each.
+STANDING_MODELS = (("B1", "B1"), ("B1_prime", "B1&prime;"), ("spread_mr_ctx", "spread_mr_ctx"))
+#: The two groups of the #960 record the table shows: its pooled figure and its headline (ordinary targets).
+STANDING_GROUPS = (("pooled", "all decision days", "all days"), ("target_type", "ordinary", "ordinary targets"))
+
+
+#: The benchmarks the candidate's standings are set beside (#1152), in order, with the name the page prints.
+CANDIDATE_BENCHMARKS = (("B1", "B1"), ("B1_prime", "B1&prime;"), ("B2", "B2"), ("gbm_funding", "gbm_funding"),
+                        ("spread_mr_ctx", "spread_mr_ctx"))
+#: The two groups of #1115's record the headline table shows: its pooled figure and ordinary targets.
+CANDIDATE_GROUPS = (("pooled", "all decision days", "all decision days"), ("target_day_type", "ordinary", "ordinary targets"))
+#: The splits of the second table: by regime and by target-day type (the protocol's split of a development figure).
+CANDIDATE_SPLITS = (("regime", "by regime"), ("target_day_type", "by target-day type"))
+#: What the page calls each evidence page of the candidate record: the page is for a lay reader, so no issue number.
+EVIDENCE_NAMES = {1145: "state-scaled calendar study", 1115: "calendar-terms study",
+                  1141: "walk-forward calibration study"}
+SPLIT_BENCHMARKS = (("B1", "B1"), ("B1_prime", "B1&prime;"))
+
+
+def read_mean_d(interval):
+    """The reading of a row from the interval on mean d, as the protocol reads it (ruling on #1009).
+
+    d = S(benchmark) - S(candidate): better when the lower end is above zero, worse when the upper end is below
+    zero, no difference otherwise. The two-sided 90% interval is the pair of one-sided 95% bounds.
+    """
+    if not interval:
+        return NOT_MEASURED
+    lo, hi = interval
+    return "better" if lo > 0 else "worse" if hi < 0 else "no difference"
+
+
+def _pair(group, model, bench):
+    """One paired row of #1115's record, copied as it stands: mean d with its interval, skill with its interval."""
+    pair = (((group or {}).get("grid_crps") or {}).get("vs") or {}).get(model, {}).get(bench)
+    if not pair:
+        return None
+    return {"d": pair["difference"], "d_interval": pair.get("difference_interval"),
+            "skill": pair["skill"], "skill_interval": pair.get("skill_interval")}
+
+
+def candidate_standings(root):
+    """The standings of the candidate `CANDIDATE` names, scored from the committed record it points to, or None.
+
+    Nothing is computed: every mean, difference, skill and interval is copied from the record. None when the record
+    does not hold the model it names, or the candidate file cannot be read.
+    """
+    try:
+        rec = json.loads((root / CANDIDATE).read_text(encoding="utf-8"))
+        scores_path = rec["scores"]["record"]
+        score = json.loads((root / scores_path).read_text(encoding="utf-8"))
+        model = rec["scores"]["model"]
+        name = rec["candidate"]
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+    if model not in score.get("models", ()):
+        return None
+    declared = rec["scores"].get("benchmarks")
+    pairs = [(x["key"], x["label"]) for x in declared] if declared else CANDIDATE_BENCHMARKS
+    benches = [(b, shown) for b, shown in pairs if b in score["models"]]
+    groups = []
+    for key, label, caption in CANDIDATE_GROUPS:
+        group = (score.get("groups") or {}).get(key, {}).get(label)
+        means = ((group or {}).get("grid_crps") or {}).get("means")
+        if not means or model not in means:
+            continue
+        rows = {b: {"mean": means.get(b), "pair": _pair(group, model, b)} for b, _ in benches}
+        groups.append({"caption": caption, "days": group["days"], "own": means[model], "rows": rows})
+    if not groups:
+        return None
+    splits = []
+    for key, caption in CANDIDATE_SPLITS:
+        rows = []
+        for label, group in (score.get("groups") or {}).get(key, {}).items():
+            means = ((group or {}).get("grid_crps") or {}).get("means") or {}
+            if model not in means:
+                continue
+            rows.append({"label": label, "days": group["days"], "own": means[model],
+                         "pairs": {b: _pair(group, model, b) for b, _ in SPLIT_BENCHMARKS}})
+        splits.append({"caption": caption, "rows": rows})
+    return {"kind": "candidate", "candidate": name, "benchmarks": benches, "groups": groups, "splits": splits,
+            "first": score["notes"]["first"], "last": score["notes"]["last"], "date": rec["date"],
+            "ruling": rec["ruling"], "replaces": rec.get("replaces"), "note": rec.get("note"),
+            "description": rec.get("description"), "provisional": rec.get("provisional", True),
+            "missing": list(rec["scores"].get("not_supplied") or ()),
+            "evidence": list(rec.get("evidence") or []), "record": scores_path, "file": CANDIDATE}
+
+
+def standings(repo):
+    """The development standings of the H5 candidate, read from committed records, or None.
+
+    The candidate is the one `CANDIDATE` names (#1152); only when that file is absent does the step 4 record name it
+    (#1020). Nothing is computed: every mean, skill and interval is copied from a committed record, the interval type
+    from its declaration. None when no record names a candidate or the scoring record does not score it.
+    """
+    root = Path(repo)
+    if (root / CANDIDATE).exists():
+        return candidate_standings(root)
+    try:
+        step4 = json.loads((root / STEP4).read_text(encoding="utf-8"))
+        score = json.loads((root / STANDINGS).read_text(encoding="utf-8"))
+        declaration = json.loads((root / STANDINGS_DECLARATION).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    name = step4.get("best_candidate")
+    if not name or name not in score.get("models", ()):
+        return None
+    groups = []
+    for key, label, caption in STANDING_GROUPS:
+        group = (score.get("groups") or {}).get(key, {}).get(label)
+        metrics = ((group or {}).get("metrics") or {}).get("grid_crps")
+        if not metrics:
+            continue
+        rows = {}
+        for model, _ in ((name, name),) + tuple((m, m) for m, _ in STANDING_MODELS):
+            pair = metrics["pairs"].get(f"{name} vs {model}")
+            rows[model] = {"mean": metrics["means"].get(model),
+                           "skill": pair["skill"] if pair else None,
+                           "interval": pair.get("skill_interval") if pair else None}
+        groups.append({"caption": caption, "days": group["days"], "rows": rows})
+    if not groups:
+        return None
+    return {"candidate": name, "groups": groups, "first": score["notes"]["first"], "last": score["notes"]["last"],
+            "interval": declaration["scoring"]["interval"], "rules": list(score.get("reading_rules") or []),
+            "record": STANDINGS, "step4": STEP4}
+
+
+def candidate_standings_html(st):
+    """The standings of the candidate the committed ruling record names (#1152): mean d with its interval and reading."""
+    name = esc(st["candidate"])
+
+    def mean_d(pair):
+        if not pair:
+            return NOT_MEASURED
+        lo = pair["d_interval"]
+        text = f'{pair["d"]:+.2f}' + (f' [{lo[0]:+.2f}, {lo[1]:+.2f}]' if lo else " (no interval)")
+        return f'{text}, {read_mean_d(lo)}'
+
+    def skill(pair):
+        if not pair:
+            return NOT_MEASURED
+        lo = pair["skill_interval"]
+        return f'{100 * pair["skill"]:+.1f}%' + (f' [{100 * lo[0]:+.1f}%, {100 * lo[1]:+.1f}%]' if lo else "")
+
+    def mean(x):
+        return NOT_MEASURED if x is None else f"{x:.2f}"
+
+    head = "".join(f'<th scope="col">Grid CRPS, {esc(g["caption"])} ({g["days"]} days)</th>'
+                   f'<th scope="col">d = benchmark &minus; {name}, bp [90%], read</th>'
+                   f'<th scope="col">{name}&rsquo;s skill [90%]</th>' for g in st["groups"])
+    body = []
+    for b, shown in st["benchmarks"]:
+        cells = "".join(f'<td>{mean(g["rows"][b]["mean"])}</td><td>{mean_d(g["rows"][b]["pair"])}</td>'
+                        f'<td>{skill(g["rows"][b]["pair"])}</td>' for g in st["groups"])
+        body.append(f'<tr><th scope="row">{shown}</th>{cells}</tr>')
+    body.append(f'<tr><th scope="row">{name}</th>' + "".join(
+        f'<td>{mean(g["own"])}</td><td>&mdash;</td><td>&mdash;</td>' for g in st["groups"]) + '</tr>')
+    split_head = "".join(f'<th scope="col">d against {shown} (bp) [90%], read</th>' for _, shown in SPLIT_BENCHMARKS)
+    split_body = []
+    for split in st["splits"]:
+        split_body.append(f'<tr><th scope="rowgroup" colspan="{3 + len(SPLIT_BENCHMARKS)}">'
+                          f'{esc(split["caption"].capitalize())}</th></tr>')
+        for row in split["rows"]:
+            split_body.append(
+                f'<tr><th scope="row">{esc(row["label"])}</th><td>{row["days"]}</td><td>{mean(row["own"])}</td>'
+                + "".join(f'<td>{mean_d(row["pairs"][b])}</td>' for b, _ in SPLIT_BENCHMARKS) + '</tr>')
+    beside = ", ".join(shown for _, shown in st["benchmarks"][:-1]) + " and " + st["benchmarks"][-1][1]
+    missing = ("".join(f"No row compares it with {esc(b)}: its walks were not supplied to the study that scored it. "
+                       for b in st.get("missing") or ()))
+    if st.get("provisional", True):
+        mark = " " + provisional_mark()
+        caveat = ('The candidate reads no calendar column, so every figure here is provisional until it is re-run with '
+                  'calendar terms read at the target day; it is the best variant of its study, chosen after seeing the '
+                  'development days, so the figures are optimistic for it. ')
+    else:
+        mark = ""
+        caveat = ('The candidate reads the calendar at the target day on direct pairs, so its figures are not provisional '
+                  'on that account; it was chosen after seeing the development days, so they are optimistic for it. ')
+    links = ", ".join(
+        f'<a href="{BLOB}{esc(e["page"])}">{esc(EVIDENCE_NAMES.get(e["issue"], "the study"))}</a>'
+        + (f' (<a href="{BLOB}{esc(e["mean_d_page"])}">read on the mean-d bound</a>)' if e.get("mean_d_page") else "")
+        for e in st["evidence"])
+    return (
+        '<p><span class="runin">The development standings.</span> '
+        f'The H5 candidate is <b>{name}</b>, {esc(st["description"] or "the scaled mean reversion of the volatility-scaling study")}. '
+        f'<a href="{esc(st["ruling"])}">Eleonora ruled on {esc(st["date"])}</a> that it replaces '
+        f'{esc(st["replaces"] or "the previous candidate")}; the committed record is <code>{esc(st["file"])}</code> '
+        f'and the evidence pages are {links}. Nothing is registered: registration remains her own action. '
+        f'The tables set it beside {beside} on the decision days '
+        f'{esc(st["first"])} to {esc(st["last"])}, from the record <code>{esc(st["record"])}</code>; '
+        'every figure is copied from it. Mean grid CRPS in bp over horizons one to five, lower is better. '
+        'd is the benchmark&rsquo;s score minus the candidate&rsquo;s, positive favouring the candidate; the '
+        'interval is the studentized stationary bootstrap&rsquo;s two-sided 90% interval, whose ends are the one-sided '
+        '95% bounds, and the reading follows the bound on mean d as the protocol does: better when the lower end is '
+        'above zero, worse when the upper end is below, no difference otherwise. The skill interval is drawn '
+        'separately and can fall on the other side of zero (Eleonora&rsquo;s ruling on which interval is read), so it is shown for reference and not read. '
+        f'{missing}<span class="rs-tag">{esc(DEV_LABEL)}</span>{mark}</p>'
+        f'<table class="rs-standings"><thead><tr><th scope="col">Model</th>{head}</tr></thead>'
+        f'<tbody>{"".join(body)}</tbody></table>'
+        '<p class="rs-note"><b>Lens C&rsquo;s caveat.</b> B1&prime; is Lens C&rsquo;s calendar-aware persistence: '
+        'B1 with its changes pooled by the target day&rsquo;s type. B1 stays the protocol&rsquo;s benchmark, '
+        'but B1 alone is not the honest baseline, so the candidate&rsquo;s gain over B1&prime; is the one to weigh. '
+        f'{caveat}The split below is the protocol&rsquo;s: a pooled figure alone is not a result.</p>'
+        f'<table class="rs-standings"><thead><tr><th scope="col">Split</th><th scope="col">Days</th>'
+        f'<th scope="col">{name}&rsquo;s grid CRPS</th>{split_head}</tr></thead>'
+        f'<tbody>{"".join(split_body)}</tbody></table>')
+
+
+def standings_html(st):
+    """The development standings paragraph and table (#1020), or the plain "not measured" when nothing names a candidate."""
+    if st and st.get("kind") == "candidate":
+        return candidate_standings_html(st)
+    if not st:
+        return ('<p><span class="runin">The development standings.</span> '
+                f'<span class="rs-nm">{NOT_MEASURED}</span>: no committed record names a candidate scored beside '
+                f'B1, B1&prime; and spread_mr_ctx. When one does, it appears here, labelled &ldquo;{esc(DEV_LABEL)}&rdquo;.</p>')
+    name = st["candidate"]
+
+    def pct(x):
+        return NOT_MEASURED if x is None else f"{100 * x:+.1f}%"
+
+    def skill(row):
+        if row["skill"] is None:
+            return NOT_MEASURED
+        lo = row["interval"]
+        return pct(row["skill"]) + (f" [{pct(lo[0])}, {pct(lo[1])}]" if lo else " (no interval)")
+
+    def mean(row):
+        return NOT_MEASURED if row["mean"] is None else f'{row["mean"]:.2f}'
+
+    mark = provisional_mark()
+    head = "".join(f'<th scope="col">Grid CRPS, {esc(g["caption"])} ({g["days"]} days)</th>'
+                   f'<th scope="col">{esc(name)}&rsquo;s skill against it</th>' for g in st["groups"])
+    body = []
+    for model, shown in STANDING_MODELS + ((name, esc(name)),):
+        cells = []
+        for g in st["groups"]:
+            row = g["rows"].get(model) or {"mean": None, "skill": None, "interval": None}
+            own = model == name
+            cells.append(f'<td>{mean(row)}</td><td>{"&mdash;" if own else skill(row)}</td>')
+        body.append(f'<tr><th scope="row">{shown}</th>{"".join(cells)}</tr>')
+    rules = "".join(f"<li>{esc(rule)}</li>" for rule in st["rules"])
+    return (
+        '<p><span class="runin">The development standings.</span> '
+        f'The step 4 record (<code>{esc(st["step4"])}</code>) names <b>{esc(name)}</b> as its best candidate. '
+        f'The table sets it beside B1, B1&prime; (B1 with its changes pooled by the target day&rsquo;s type) and '
+        f'spread_mr_ctx, on the decision days {esc(st["first"])} to {esc(st["last"])}, from the record '
+        f'<code>{esc(st["record"])}</code>. No one of them is the leader: B1 alone is not the honest baseline. '
+        f'Mean grid CRPS in bp, lower is better; skill is the share of the benchmark&rsquo;s mean score removed, '
+        f'positive favours {esc(name)}. Intervals as recorded: {esc(st["interval"])}. '
+        f'<span class="rs-tag">{esc(DEV_LABEL)}</span> {mark}</p>'
+        f'<table class="rs-standings"><thead><tr><th scope="col">Model</th>{head}</tr></thead>'
+        f'<tbody>{"".join(body)}</tbody></table>'
+        + (f'<p class="rs-note">The record&rsquo;s own reading rules:</p><ul>{rules}</ul>' if rules else ""))
+
+
+def best_html(final, provisional=False, standing=None):
     """The incumbent and the development leader (#645 §2). `final` is the page's final-test payload.
 
-    `provisional` marks the incumbent's figures when the register registers them (#1028).
+    `provisional` marks the incumbent's figures when the register registers them (#1028). `standing` is
+    `standings(repo)` (#1020): the development standings of the candidate the step 4 record names.
     """
     mark = f' {provisional_mark()}' if provisional else ""
     figs = (f'On the {final["days"]} days {final["first"]} to {final["last"]} the published declaration scored '
@@ -369,10 +644,7 @@ def best_html(final, provisional=False):
         + callouts +
         '<p><span class="runin">The incumbent.</span> '
         f'{esc(figs)} <span class="rs-tag">{esc(DEV_LABEL)}</span>{mark}</p>'
-        '<p><span class="runin">The development leader.</span> '
-        f'<span class="rs-nm">{NOT_MEASURED}</span>: no committed evidence names one by the protocol&rsquo;s primary '
-        'score (grid CRPS over h = 1&ndash;5). When one does, it appears here beside the incumbent, labelled '
-        f'&ldquo;{esc(DEV_LABEL)}&rdquo;.</p>'
+        + standings_html(standing) +
         f'<p class="rs-note">The incumbent&rsquo;s figures are from the published record <code>{esc(final["record"])}</code>, '
         'read by the final-test section below; this page scores nothing itself.</p>'
         '<aside class="rs-q"><b>Question for Eleonora.</b> The default rule shown here is the best registered '
@@ -465,6 +737,6 @@ def fills(repo, final):
     hypotheses = load(repo)
     links = load_critical_path(repo, hypotheses)
     incumbent = provisional_register.marks_incumbent(provisional_register.load(repo))
-    return {"research_summary": summary_html(hypotheses, links), "research_best": best_html(final, incumbent),
+    return {"research_summary": summary_html(hypotheses, links), "research_best": best_html(final, incumbent, standings(repo)),
             "research_steps": steps_html(),
             "research_hypotheses": hypotheses_html(hypotheses)}, payload(hypotheses)

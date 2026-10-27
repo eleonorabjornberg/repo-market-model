@@ -63,6 +63,20 @@ from . import contract
 from .data import DailyObservation, exceeds_bp
 from .metrics import stationary_bootstrap_interval
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_READS = {
+    "own_leg_states": (
+        "entry",
+        "scores days through the fold loop; its runner is in LIBRARY_ENTRY_POINTS in "
+        "tests/test_lockbox.py",
+    ),
+    "pressure_days_by_state": (
+        "entry",
+        "scores days through the fold loop; its runner is in LIBRARY_ENTRY_POINTS in "
+        "tests/test_lockbox.py",
+    ),
+}
+
 __all__ = [
     "BOOTSTRAP_BLOCK_LENGTH",
     "BOOTSTRAP_LEVEL",

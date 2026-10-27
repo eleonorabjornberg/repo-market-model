@@ -16,6 +16,10 @@ Recorded mutation (the new leakage guard; run on `test_a_future_spread_moves_no_
   whose target is the row after the anchor, which was not public at the decision instant, is trained on. Both tests failed with
   `LookAheadError` ("... reads ..., after ..., the last row public at the decision instant", raised by
   `protocol_benchmarks._require_public`); restored, both pass.
+
+Recorded mutation (a guard trip at the start of a walk, code review): `walk`'s `except LookAheadError: raise` removed, so
+the `except SplitError` branch skips the day while no fit exists yet. `test_a_guard_trip_before_the_first_fit_is_raised_not_skipped`
+failed with `AssertionError: LookAheadError not raised`; restored, it passes.
 """
 
 from __future__ import annotations
@@ -23,6 +27,7 @@ from __future__ import annotations
 import dataclasses
 import math
 import unittest
+import unittest.mock
 
 from repo_model import protocol_benchmarks as pb
 from repo_model import scoring_protocol as sp
@@ -30,6 +35,11 @@ from repo_model import spread_mean_reversion as smr
 from repo_model.splits import LookAheadError
 
 import test_protocol_benchmarks as tpb
+
+import legacy_day_types
+
+# this module reproduces legacy figures: the pre-#1135 day types (see tests/legacy_day_types.py)
+setUpModule, tearDownModule = legacy_day_types.setUpModule, legacy_day_types.tearDownModule
 
 
 def panel_and_settings():
@@ -198,6 +208,14 @@ class WalkTests(unittest.TestCase):
         early = smr.walk(self.panel, [row.date for row in self.panel[:30]], **self.settings)
         self.assertEqual(early.forecasts, {})
         self.assertEqual(len(early.skipped), 30)
+
+    def test_a_guard_trip_before_the_first_fit_is_raised_not_skipped(self):
+        def tripped(*args, **kwargs):
+            raise LookAheadError("a read after the decision instant")
+
+        with unittest.mock.patch.object(smr, "fit", tripped):
+            with self.assertRaises(LookAheadError):
+                smr.walk(self.panel, self.days[:3], **self.settings)
 
 
 class ExceedanceTests(unittest.TestCase):

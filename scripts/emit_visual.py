@@ -138,6 +138,15 @@ from repo_model.scarcity import (  # noqa: E402
 )
 from repo_model.splits import LookAheadError  # noqa: E402
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_READS = {
+    "newcomer_n2": (
+        "not_entry",
+        "draws the scored grid on the explorer's N2 (#143); scores and compares nothing, and leaves "
+        "locked days out of every count through `counted` (tests/test_visual.py, NewcomerN2Tests)",
+    ),
+}
+
 _spec = importlib.util.spec_from_file_location("research_view", ROOT / "scripts" / "research_view.py")
 research_view = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(research_view)
@@ -266,6 +275,7 @@ NEWCOMER_VIEWS = (
     ("n3", "When does it happen?", "Scarce cash and the calendar"),
     ("n4", "Who lends to whom", "The market map"),
     ("n5", "A quarter-end squeeze", "Step by step"),
+    ("n6", "What the data show", "Three findings about the market"),
 )
 
 #: The minimum history of the published declarations: the scored grid starts at
@@ -425,6 +435,15 @@ class VisualError(ValueError):
 
 def sha256(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def research_inputs(repo):
+    """The digest of each input of the research sections: every file `research_view.input_files` names, so a new input is
+    added to `research_view.INPUTS` alone (#1059). The log is built from its entry files (#928): its digest is that of
+    the assembly, not of a tracked file."""
+    repo = Path(repo)
+    return {rel: sha256(repo / rel) for rel in research_view.input_files(repo)} | {
+        "docs/research/log.md": research_view.log_digest(repo)}
 
 
 def read_json(rel, repo):
@@ -663,6 +682,28 @@ def use_limitation_fill(repo):
         raise VisualError(f"{USE_LIMITATION} must carry exactly one blockquote line under '## Plain-English "
                           f"version'; found {len(found)}")
     return {"use_limitation": html.escape(found[0], quote=False)}
+
+
+def market_findings_fills(repo):
+    """`{{n6_lede}}` and `{{n6_body}}`: the three market findings of #1177, rendered by `scripts/market_findings_1177.py`
+    from `docs/research/market-findings-1177/result.json` and `docs/research/state-calendar-1145/result.json`.
+    No figure is typed here or in the template."""
+    spec = importlib.util.spec_from_file_location("market_findings_1177_for_visual",
+                                                  Path(repo) / "scripts" / "market_findings_1177.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    try:
+        data = module.load_findings(Path(repo) / "docs/research/market-findings-1177/result.json",
+                                    Path(repo) / "docs/research/state-calendar-1145/result.json")
+    except (OSError, ValueError, KeyError) as exc:
+        raise VisualError(f"N6, the market findings: {exc}") from exc
+
+    def link(path, label=None):
+        if not (Path(repo) / path).exists():
+            raise VisualError(f"N6 links to {path}, which does not exist")
+        return f'<a href="{BLOB}{path}">{html.escape(label or path)}</a>'
+
+    return {"n6_lede": html.escape(module.explorer_lede(data)), "n6_body": module.explorer_html(data, link)}
 
 
 def fill(template, fills):
@@ -3362,6 +3403,7 @@ def generate(repo, commit=None):
     n5, n5_fills = newcomer_n5([dict(r) for r in rows], locked, chosen, registry, decision, n5_snaps, tag_map,
                                n4["tags"], notes)
     fills.update(n5_fills)
+    fills.update(market_findings_fills(repo))
     fills.update(dfn_fills(glossary))
     note = parse_note(repo, notes["implementation_note"])
     last = rows[-1]
@@ -3459,14 +3501,8 @@ def generate(repo, commit=None):
                      "inputs": {**inputs, MAP: sha256(repo / MAP), ISSUES: sha256(repo / ISSUES),
                                 **on_rrp_snapshots, **n5_digests}}
     final_provenance = dict(provenance, inputs={FINAL_TEST: sha256(repo / FINAL_TEST)})
-    research_provenance = dict(provenance, inputs={
-        rel: sha256(repo / rel) for rel in (research_view.PLAN, research_view.PROGRESS, research_view.TAGLINES,
-                                            research_view.REGISTER,
-                                            *sorted(str(p.relative_to(repo)) for p in
-                                                    (repo / research_view.HYPOTHESES).glob("H*.md")))}
-        # The log is built from its entry files (#928): its digest is that of the assembly, not of a tracked file.
-        | {"docs/research/log.md": research_view.log_digest(repo)},
-        incumbent_from=f"{DATA_DIR}/final_test.json")
+    research_provenance = dict(provenance, inputs=research_inputs(repo),
+                               incumbent_from=f"{DATA_DIR}/final_test.json")
     daily_provenance = dict(provenance, inputs={rel: sha256(repo / rel) for rel in daily["records"]})
     own = {"research": research_provenance, "model": model_provenance, "final_test": final_provenance, "forecast_daily": daily_provenance, "newcomer_n3": n3_provenance, "newcomer_n4": n4_provenance,
            "newcomer_band": band_provenance, "newcomer_n5": n5_provenance}

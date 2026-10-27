@@ -412,7 +412,7 @@ def score_command(args) -> int:
         return STATE_LABELS[int(value)] if value is not None else "unknown"
 
     def kind_of(day: date) -> str:
-        return splits.reporting_day_type(day, row_of[day].values)
+        return turn_days.reporting_day_type(splits, day, row_of[day].values)
 
     def cells_of(fc: Mapping[date, Mapping[int, Sequence[float]]], lead: int) -> List[Cell]:
         return [
@@ -634,6 +634,10 @@ def report_command(args) -> int:
     return 0
 
 
+from repo_model import turn_days  # noqa: E402
+
+
+@turn_days.with_legacy_flag
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = parser.add_subparsers(dest="command", required=True)

@@ -117,6 +117,31 @@ from repo_model.data import audit_panel, load_daily_panel  # noqa: E402
 from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
 from repo_model.metrics import crps_from_quantiles  # noqa: E402
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_CRPS = {
+    "_crps": (
+        "delegates",
+        "one loss; scores the days `final_test_opening.distribution_walk` walks, which calls "
+        "lockbox.require_unlocked before any fit",
+    ),
+    "assemble_command": (
+        "delegates",
+        "assembles blocks over days scores the days `final_test_opening.distribution_walk` walks, "
+        "which calls lockbox.require_unlocked before any fit",
+    ),
+    "paired_against": (
+        "delegates",
+        "pairs the losses of `window_block`'s days; scores the days "
+        "`final_test_opening.distribution_walk` walks, which calls lockbox.require_unlocked before "
+        "any fit",
+    ),
+    "window_block": (
+        "delegates",
+        "a block over days scores the days `final_test_opening.distribution_walk` walks, which "
+        "calls lockbox.require_unlocked before any fit",
+    ),
+}
+
 
 def _script(name):
     spec = importlib.util.spec_from_file_location(f"v2_{name}", REPO / "scripts" / f"{name}.py")

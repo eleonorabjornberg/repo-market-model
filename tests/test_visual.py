@@ -167,6 +167,42 @@ def published_records():
     return emit_visual.run_records(ROOT)
 
 
+class CompanionLinkTests(unittest.TestCase):
+    """The page links the companion projects once in "Start here" and once in the footer (#1240); plain.html once.
+
+    Link only: the page quotes nothing from the other projects.
+    """
+
+    LIQUIDITY = "https://eleonorabjornberg.github.io/repo-market-liquidity/"
+    SPILLOVERS = "https://eleonorabjornberg.github.io/repo-market-spillovers/findings.html"
+
+    @classmethod
+    def setUpClass(cls):
+        built_outputs.ensure()
+        cls.page = (ROOT / emit_visual.PAGE).read_text(encoding="utf-8")
+        cls.plain = (ROOT / "site/plain.html").read_text(encoding="utf-8")
+
+    def _region(self, text, start, end):
+        a = text.index(start)
+        return text[a:text.index(end, a)]
+
+    def test_each_link_once_in_start_here_and_once_in_the_footer(self):
+        start = self._region(self.page, 'id="companion-start"', "</div>")
+        foot = self._region(self.page, "<footer>", "</footer>")
+        for name, region in (("start here", start), ("footer", foot)):
+            for url in (self.LIQUIDITY, self.SPILLOVERS):
+                with self.subTest(place=name, url=url):
+                    self.assertEqual(region.count(f'href="{url}"'), 1)
+        self.assertIn("Phase 3: repo-market-liquidity (its own results page)", start)
+        self.assertIn("repo-market-spillovers: does repo stress spread to wider markets? (findings)", start)
+        for url in (self.LIQUIDITY, self.SPILLOVERS):
+            self.assertEqual(self.page.count(f'href="{url}"'), 2)
+
+    def test_the_plain_page_links_them_once(self):
+        for url in (self.LIQUIDITY, self.SPILLOVERS):
+            self.assertEqual(self.plain.count(f'href="{url}"'), 1)
+
+
 class ModelChapterTests(unittest.TestCase):
     """Chapters 5 to 7 (#118): every figure comes from a published record in docs/runs/."""
 
@@ -678,6 +714,33 @@ class NewcomerPageTests(unittest.TestCase):
         self.assertLess(readme.index("</picture>", figure), readme.index(link))
         self.assertLess(readme.index(link), readme.index("<!-- generated:"))
         self.assertIn('<div id="start">', newcomer_block(self.page))
+
+    def test_readme_overview_figure_and_lead_state_the_distribution_goal(self):
+        """#1174 (H5): the overview figure and the lead ask for the distribution of SOFR - IORB in bp, read with
+        calendar days at the target day, and show the 5 bp line as one reading of it, in both themes.
+
+        Recorded mutation: restoring the old figure and README (the output box "The chance tomorrow's rate is > 5 bp
+        above") made this test fail with AssertionError: 'distribution' not found in the old alt text and figure.
+        """
+        figures = ROOT / "docs/figures"
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        for name in ("overview-light.svg", "overview-dark.svg"):
+            with self.subTest(figure=name):
+                svg = (figures / name).read_text(encoding="utf-8")
+                label = re.search(r'aria-label="([^"]+)"', svg).group(1)
+                for text in (svg, label):
+                    self.assertIn("distribution", text)
+                    self.assertIn("5 bp", text)
+                self.assertIn("calendar", label)
+                self.assertIn("calendar", svg.lower())
+                self.assertNotIn("The chance tomorrow", svg)
+        alt = re.search(r'<img alt="([^"]+)" src="docs/figures/overview-light.svg"', readme).group(1)
+        for word in ("distribution", "calendar", "5 bp"):
+            self.assertIn(word, alt)
+        lead = readme.split("**Live site:**")[0]
+        question = lead.index("**what")
+        self.assertIn("distribution", lead[question:lead.index("**", question + 2) + 2])
+        self.assertLess(lead.index("distribution", question), lead.index("5 bp", question))
 
     def test_every_static_button_has_an_accessible_name(self):
         for attrs, body in re.findall(r"<button([^>]*)>(.*?)</button>", self.page, re.S):

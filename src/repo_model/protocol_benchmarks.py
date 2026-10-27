@@ -38,11 +38,22 @@ from datetime import date, time
 from pathlib import Path
 from typing import Dict, Iterable, List, Mapping, Sequence, Tuple
 
+from . import turn_days
 from .asof import InformationRule
 from .data import DailyObservation
 from .evaluation_splits import SplitDeclaration
 from .scoring_protocol import GRID, HORIZONS, ProtocolError
 from .splits import LookAheadError
+
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_READS = {
+    "_anchor": (
+        "not_entry",
+        "reads the last public row for a benchmark forecast of protocol v1 (#655); makes a "
+        "forecast, scores nothing: the forecast is scored only through scoring_protocol.day_scores, "
+        "which calls require_unlocked on every scored day",
+    ),
+}
 
 #: §4: B1's trailing window and B2's, in years before the decision day.
 B1_YEARS = 2
@@ -181,22 +192,47 @@ def b2_forecast(
     decision_time: time,
     splits: SplitDeclaration,
 ) -> Dict[int, List[float]]:
-    """§4 B2: the trailing year's spreads on days of the target's type, per lead.
+    """§4 B2: the trailing year's spreads on days of the target's type, per lead, with the thin-pool fallback.
 
-    The target's type is read from its own calendar columns, which are known in advance;
-    every sampled row's from its own.
+    While the record `docs/decisions/b2-thin-pool.md` is in force (`b2_pool.IN_FORCE`, #1155, put in force by #1198) a
+    target whose type has fewer than `b2_pool.POOL_MIN` rows in the trailing year reads the next step of its declared chain
+    (`b2_pool.CHAINS`), and a first year-end is forecast instead of refused. Otherwise it is `b2_forecast_no_minimum`.
+    """
+
+    from . import b2_pool  # b2_pool imports this module
+
+    if b2_pool.IN_FORCE:
+        return b2_pool.b2_fallback_forecast(
+            panel, decision_index, registry=registry, decision_time=decision_time, splits=splits,
+            pool_min=b2_pool.POOL_MIN,
+        )
+    return b2_forecast_no_minimum(panel, decision_index, registry=registry, decision_time=decision_time, splits=splits)
+
+
+def b2_forecast_no_minimum(
+    panel: Sequence[DailyObservation],
+    decision_index: int,
+    *,
+    registry: Mapping[str, Mapping[str, object]],
+    decision_time: time,
+    splits: SplitDeclaration,
+) -> Dict[int, List[float]]:
+    """§4 B2 as it stood before #1155 was in force: the trailing year's spreads on days of the target's type, per lead.
+
+    No minimum pool: a type with no row in the window raises `ProtocolError`. The target's type is read from its own
+    calendar columns, which are known in advance; every sampled row's from its own.
     """
 
     anchor = _anchor(panel, decision_index, registry, decision_time)
     dates = [row.date for row in panel]
     first = _window_start(panel, decision_index, B2_YEARS)
     kinds = {
-        s: splits.reporting_day_type(panel[s].date, panel[s].values) for s in range(first, anchor + 1)
+        s: turn_days.reporting_day_type(splits, panel[s].date, panel[s].values) for s in range(first, anchor + 1)
     }
     out = {}
     for h in HORIZONS:
         target = panel[decision_index + h]
-        kind = splits.reporting_day_type(target.date, target.values)
+        kind = turn_days.reporting_day_type(splits, target.date, target.values)
         rows = [s for s, value in kinds.items() if value == kind]
         if not rows:
             raise ProtocolError(

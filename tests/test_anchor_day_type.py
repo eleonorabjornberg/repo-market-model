@@ -19,6 +19,11 @@ from datetime import date
 import benchmark_simulation as sim
 from repo_model.anchor_day_type import anchor_day_type, anchor_day_types
 
+import legacy_day_types
+
+# this module reproduces legacy figures: the pre-#1135 day types (see tests/legacy_day_types.py)
+setUpModule, tearDownModule = legacy_day_types.setUpModule, legacy_day_types.tearDownModule
+
 REGISTRY, SPLITS, DECISION = sim.REGISTRY, sim.SPLITS, sim.DECISION
 
 

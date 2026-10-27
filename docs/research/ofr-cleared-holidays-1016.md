@@ -122,3 +122,15 @@ PYTHONPATH=src python3 scripts/ofr_cleared_holidays_1016.py page --screen OUT/sc
 ```
 
 The screen takes half a minute; each run of the paired test about a minute, the whole set under half an hour.
+
+## Note (#1071): the `crps` command above no longer runs on main, and the figures are provisional
+
+**Development data, not a verdict; nothing above is edited.** The distribution side of #187's test (the `crps` command in "Reproduce", and the table "CRPS, horizon 1" above) fits both arms of `compare --loss crps` on one-step pairs. Both arms read `treasury_settlement`, a scheduled field served from the target row, so it was learned one row off at lead 1 (class b of the [provisional register](provisional-calendar-register.md); this page's result (#1035) and #968's (#988) are both listed there). Since the one-step guard (#947) the command is refused: the candidate arm's regressors are not on the allow-list, and it exits with `fit_gradient_boosted_quantiles trains on one-step pairs ... 'treasury_settlement' ... is served from the scored row itself`. The figure above stays as published, one-step and provisional.
+
+The working replacement on main runs both arms on direct pairs, so the control is the published features fitted on direct pairs and the difference measures the added column and not a change of pairing:
+
+```
+PYTHONPATH=src python3 scripts/dvp_segment_inputs.py --government-open-days crps --panel DVP25.csv --run ofr_dvp_minus_bgcr_bp@1d --training-pairs direct --output OUT/runs/crps_ofr_dvp_minus_bgcr_bp@1d.json
+```
+
+(`--training-pairs` applies to both arms; `cli compare` refuses a nested comparison whose arms name different pairings.) On the same panel (`DVP25.csv` `608f872d…`), the CRPS difference at h = 1, control minus candidate, over 1263 origins, is +0.0158 bp (90% stationary-bootstrap interval [+0.0037, +0.0276]; CRPS 1.1547 control, 1.1388 candidate), against +0.0101 bp [-0.0044, +0.0243] on one-step pairs above. By day type the means are +0.0111 ordinary (1074 days), +0.0332 month-end, +0.0366 tax dates and +0.1083 quarter-end (21 days, interval [-0.1205, +0.4046]); by regime, +0.0026 in 2021-23 and +0.0671 in 2025-26 (interval [+0.0233, +0.1141]). The direct-pairs figure is a development figure on the sample the page already used; it is not a confirmation, and what it means for the screen's verdict is not settled here. The other commands of "Reproduce" (the paired Brier runs and the `gbm` step) were not re-run for this note.

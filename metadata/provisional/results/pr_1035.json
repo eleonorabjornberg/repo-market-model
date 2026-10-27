@@ -1,0 +1,15 @@
+{
+  "order": 224,
+  "directive": 1016,
+  "pull_request": 1035,
+  "hypothesis": "H3",
+  "result": "The OFR cleared-repo lag counted on government-open days",
+  "declarations": [],
+  "model": "`gbm` on the published funding features plus `ofr_dvp_minus_bgcr_bp@1d`, against the same without it (#187's paired test, `docs/research/ofr-cleared-holidays-1016/gbm.json`)",
+  "pairing": "one_step",
+  "class": "b",
+  "on_the_page": [
+    "2026-10-20-model-01035-H3-step1"
+  ],
+  "concluded": "The lookahead on three market days is closed; the paired test is no effect; `treasury_settlement` is trained one row off at lead 1 in both arms."
+}

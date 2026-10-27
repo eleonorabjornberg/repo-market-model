@@ -50,6 +50,17 @@ from repo_model.data import DailyObservation, audit_panel, exceeds_bp, load_dail
 from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
 from repo_model.lockbox import require_unlocked  # noqa: E402
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_READS = {
+    "read_inputs": (
+        "not_entry",
+        "reads the scored days' inputs as of the decision instant on the lead-1 fold grid, for the "
+        "exploratory screen of #688; selects no model and scores no forecast, calls "
+        "lockbox.require_unlocked on every day before it reads one, and `refuse_locked` is tested "
+        "(tests/test_near_threshold_688.py)",
+    ),
+}
+
 DECLARATION = REPO / "metadata" / "near_threshold_688.json"
 SPLITS = REPO / "metadata" / "evaluation_splits.json"
 SOURCES = REPO / "metadata" / "sources.json"
@@ -721,7 +732,7 @@ def score_command(args) -> int:
     document["by_regime"] = by_regime
 
     def kind_of(day: date) -> str:
-        return splits.reporting_day_type(day, row_of[day].values)
+        return turn_days.reporting_day_type(splits, day, row_of[day].values)
 
     by_type = {}
     for kind in sorted({kind_of(calendar[position[d] + h]) for d in days for h in HORIZONS}):
@@ -930,6 +941,10 @@ def report_command(args) -> int:
     return 0
 
 
+from repo_model import turn_days  # noqa: E402
+
+
+@turn_days.with_legacy_flag
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     commands = parser.add_subparsers(dest="command", required=True)

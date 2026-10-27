@@ -14,11 +14,14 @@ on:
 permissions:
   contents: read
 
-# A superseded push (force-push, rapid follow-up commit) makes the in-progress
-# run worthless; stop it instead of stacking up jobs.
+# A superseded pull-request run (force-push, rapid follow-up commit) is worthless; stop it
+# instead of stacking up jobs. A push to main is never cancelled (#1168): its run is the only
+# check of the range `event.before..sha` (the owner-attestation step below), and a cancelled
+# run left such ranges unchecked. Each push gets a group of its own commit, since a shared
+# group keeps one pending run and cancels the older pending ones.
 concurrency:
-  group: tests-${{ github.ref }}
-  cancel-in-progress: true
+  group: tests-${{ github.event_name == 'push' && github.sha || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 # On a pull request the classes declared in tests/nightly.py (the slowest ones,
 # #858) skip with their reason printed. A push to main and the nightly schedule
@@ -98,35 +101,15 @@ jobs:
         with:
           python-version: "3.11"
 
-      # The results page is built on main and never committed (#928); this
-      # builds it from the tree, which refuses a page the inputs cannot produce,
-      # and refuses a tracked copy.
-      - name: Check the results page builds and is not committed
+      # The checks are declared one file each under `metadata/ci_checks/` with `where: ci:pages` (#1059), so a
+      # new generator check is a new file, not an edit here. They are: the results page builds and is not committed
+      # (#928), the progress page builds and is not committed (#928, #637), the provisional register's tables are
+      # current (#1028), and every test module is in exactly one shard (#927). All of them run, and the step
+      # fails if any did.
+      - name: Run the declared generated-page checks
         env:
           PYTHONDONTWRITEBYTECODE: "1"
-          PYTHONPATH: src
-        run: python3 -B scripts/emit_visual.py --check
-
-      # The progress page and its data are built on main and never committed
-      # (#928, #637); this builds them from the tree, which refuses evidence
-      # the page cannot read, and refuses a tracked copy.
-      - name: Check the progress page builds and is not committed
-        env:
-          PYTHONDONTWRITEBYTECODE: "1"
-        run: python3 -B scripts/emit_progress.py --check
-
-      # The provisional register's tables are generated from one file per
-      # row under metadata/provisional/ (#1028); this refuses a stale page.
-      - name: Check the provisional register is current
-        env:
-          PYTHONDONTWRITEBYTECODE: "1"
-        run: python3 -B scripts/provisional_register.py --check
-
-      # Every test module is in exactly one shard (#927).
-      - name: Check every test module is in a shard
-        env:
-          PYTHONDONTWRITEBYTECODE: "1"
-        run: python3 -B scripts/ci_shards.py check
+        run: python3 -B scripts/ci_checks.py run ci:pages
 
   suite:
     # The one required check for the suite.
@@ -179,7 +162,8 @@ jobs:
     # fit with the same numpy and scikit-learn; pyproject.toml's bounds admit
     # them.
     #
-    # On a pull request, the modules that skip without the extra, and nothing else:
+    # On a pull request, the modules that skip without the extra, and nothing else, in
+    # `ML_SHARDS` shards balanced by `tests/ci_shard_weights.json` (#1096):
     # `scripts/ci_shards.py ml-modules` finds them by reading the test sources (a call
     # to `require_extra`, a `find_spec` probe for numpy or sklearn, or a helper
     # imported from such a module), so a new module that skips for want of the
@@ -194,7 +178,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: ${{ fromJSON(github.event_name == 'pull_request' && '[1]' || '[1, 2, 3, 4, 5, 6]') }}
+        shard: ${{ fromJSON(github.event_name == 'pull_request' && '[1, 2, 3]' || '[1, 2, 3, 4, 5, 6]') }}
     steps:
       # The whole history, not a depth-1 clone: the results page and
       # docs/status.json are stamped with the latest commit that changed an
@@ -224,7 +208,7 @@ jobs:
             # Subtests marked `skip_if_fast` in test_ml (refit sweeps, never a
             # leakage, availability or staleness guard) skip here and run on
             # every push and on the schedule (directive 05, Do 4).
-            REPO_MODEL_SKIP_SLOW=1 python3 -B -m unittest $(python3 scripts/ci_shards.py ml-modules) -v
+            REPO_MODEL_SKIP_SLOW=1 python3 -B -m unittest $(python3 scripts/ci_shards.py ml-modules --shard ${{ matrix.shard }}) -v
           else
             python3 -B -m unittest $(python3 scripts/ci_shards.py modules --shard ${{ matrix.shard }}) -v
           fi
@@ -309,7 +293,7 @@ jobs:
     # job fetches it. With no binding change and no new citation it fetches
     # nothing.
     name: owner attestation
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' || github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -329,4 +313,16 @@ jobs:
           PYTHONDONTWRITEBYTECODE: "1"
           GH_TOKEN: ${{ github.token }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
-        run: python3 -B scripts/owner_attested.py check --base "$BASE_SHA"
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        if: github.event_name == 'pull_request'
+        run: python3 -B scripts/owner_attested.py check --base "$BASE_SHA" --merge-ref --pr "$PR_NUMBER"
+
+      # A push to main re-runs the check over the pushed range, so a pull request whose CI ran before a path
+      # became binding cannot merge a binding change unchecked (#1110, #1122). It fails the push, and main, red.
+      - name: Pushed commits cite an owner-attested comment
+        if: github.event_name == 'push'
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+          GH_TOKEN: ${{ github.token }}
+          BEFORE_SHA: ${{ github.event.before }}
+        run: python3 -B scripts/owner_attested.py check --push-before "$BEFORE_SHA" --head "$GITHUB_SHA"

@@ -1,6 +1,6 @@
 """Refuse a calendar or scheduled regressor in a one-step pair (#947, Eleonora's ruling of 19 October 2026).
 
-`asof` rule 2 serves the calendar columns (`contract.CALENDAR_FEATURES`) and every field a source declares in
+`asof` rule 2 serves the columns written about the target day (`target_day_columns.TARGET_DAY_COLUMNS`: the calendar columns and the FOMC meeting columns) and every field a source declares in
 `scheduled_availability` from the scored row `T` itself. A one-step fitter trains each target on the row before it:
 row `p` against `spread(p + 1)`. A calendar or scheduled column therefore trains one row off from the row it is
 served on (finding #914): the flag that marks a quarter-end learns the reversal the day *after* the turn.
@@ -17,17 +17,18 @@ from __future__ import annotations
 import functools
 import inspect
 import json
+from datetime import date
 from pathlib import Path
 from types import MappingProxyType
 from typing import Dict, List, Mapping, NamedTuple, Optional, Sequence, Tuple
 
 from .asof import _scheduled_blocks
 from .contract import (
-    CALENDAR_FEATURES,
     COMPOSED_FEATURES,
     DERIVED_FEATURES,
     FEATURE_FIELDS,
 )
+from .target_day_columns import TARGET_DAY_COLUMNS
 
 __all__ = [
     "FrozenDeclaration",
@@ -49,6 +50,9 @@ class FrozenDeclaration(NamedTuple):
     fitter: str
     regressors: Tuple[str, ...]
     reason: str
+    #: The last day the exemption stands, or `None` for a frozen declaration that must reproduce for good. The guard
+    #: does not read it (a fit never depends on the clock); `tests/test_one_step_guard.py` fails once it has passed.
+    expires: Optional[date] = None
 
 
 #: The published distribution's inputs at h = 1 (`scripts/live_record.py`, `published_features(1)`): `CRPS_FEATURES` of
@@ -57,6 +61,22 @@ class FrozenDeclaration(NamedTuple):
 _PUBLISHED_AT_H1 = (
     "reserve_balances", "sofr_p25", "sofr_p75", "sofr_volume", "tbill_13w", "tbill_4w", "tga",
     "treasury_settlement",
+)
+
+#: `gbm_funding_cal_aligned` of `scripts/aligned_calendar_1027.py` (#1027): `variant_features(ALIGNED, h)` less the target.
+#: Its one-step fit runs on a frame whose calendar and scheduled columns were moved up one row (`align_columns`), so
+#: row p carries the target row's values; the script checks that before every fit (`require_aligned`).
+_PUBLISHED_AT_H2 = tuple(name for name in _PUBLISHED_AT_H1 if name != "treasury_settlement")
+_ALIGNED_1027_TARGET_ROW_H1 = (
+    "quarter_end", "days_to_month_end", "tax_date", "treasury_settlement_coupons", "treasury_settlement_bills",
+)
+_ALIGNED_1027_TARGET_ROW_H2 = ("quarter_end", "days_to_month_end", "tax_date")
+_ALIGNED_1027_OBSERVED = ("net_settlement", "net_settlement_due_5d")
+_ALIGNED_1027_REASON = (
+    "gbm_funding_cal_aligned (#1027, scripts/aligned_calendar_1027.py): one-step pairs on a frame whose calendar and "
+    "scheduled columns are read from the target row, so they train on the day they are served on; the script refuses "
+    "a frame that is not so aligned. Allowed by Eleonora on 21 October 2026, in chat (relayed on PR #1036), for the "
+    "#1027 comparison only, with an end date."
 )
 
 #: The exemptions, by name. Pinned by `tests/test_one_step_guard.py`.
@@ -73,6 +93,27 @@ ONE_STEP_ALLOW_LIST: Mapping[str, FrozenDeclaration] = MappingProxyType(
             _PUBLISHED_AT_H1,
             "gbm_funding, the control of metadata/spread_distribution_634.json: the phase 2 gbm on the published "
             "features at the 23 levels, a declaration whose figures must reproduce",
+        ),
+        "pressure_model_v2": FrozenDeclaration(
+            "fit_depth_limited_quantiles",
+            _PUBLISHED_AT_H1,
+            "pressure model v2 (scripts/pressure_model_v2.py, CHOSEN_FOURTH 'base'): depth-3 trees on the published h = 1 "
+            "inputs, logged in the live record, whose agreement must reproduce until it is scored. Already provisional "
+            "(class a+b) in docs/research/provisional-calendar-register.md. Allowed by Eleonora on 20 October 2026, in "
+            "chat, on PR #1042: option (a), with an end date, the live record's first scoring date",
+            expires=date(2027, 4, 1),
+        ),
+        "aligned_calendar_1027_h1": FrozenDeclaration(
+            "fit_gradient_boosted_quantiles",
+            _PUBLISHED_AT_H1 + _ALIGNED_1027_TARGET_ROW_H1 + _ALIGNED_1027_OBSERVED,
+            _ALIGNED_1027_REASON + " Lead 1.",
+            expires=date(2026, 11, 15),
+        ),
+        "aligned_calendar_1027_h2_to_h5": FrozenDeclaration(
+            "fit_gradient_boosted_quantiles",
+            _PUBLISHED_AT_H2 + _ALIGNED_1027_TARGET_ROW_H2 + _ALIGNED_1027_OBSERVED,
+            _ALIGNED_1027_REASON + " Leads 2 to 5, which share one set of inputs.",
+            expires=date(2026, 11, 15),
         ),
     }
 )
@@ -112,7 +153,7 @@ def one_step_refusals(
     found: Dict[str, str] = {}
     for name in regressors:
         for leaf in _leaves(str(name)):
-            if leaf in CALENDAR_FEATURES:
+            if leaf in TARGET_DAY_COLUMNS:
                 found[str(name)] = f"calendar column {leaf!r}"
                 break
             pairs = [pair for pair in FEATURE_FIELDS.get(leaf, ()) if pair in scheduled]
@@ -157,6 +198,10 @@ def guard_one_step_fit(function):
     Eleonora's ruling of 20 October 2026). The fitter still refuses a calendar or scheduled regressor on every
     one-step fit, with the same `ValueError`; a direct fit is not checked. A call whose `regressors` cannot be read
     as names goes through, for the fitter's own validation to refuse.
+
+    A fitter that wraps a guarded one (`ml.fit_depth_limited_quantiles`) is decorated too, so it is checked under
+    its own name: the inner check alone sees the inner name and would match that fitter's allow-list entries.
+    `training_pairs` is read whether it is a named parameter or passed through `**settings`.
     """
 
     signature = inspect.signature(function)
@@ -168,7 +213,11 @@ def guard_one_step_fit(function):
             names = tuple(str(name) for name in bound.arguments["regressors"])
         except (TypeError, KeyError):
             return function(*args, **kwargs)
-        if bound.arguments.get("training_pairs") != "direct":
+        pairs = bound.arguments.get("training_pairs")
+        for parameter in signature.parameters.values():
+            if parameter.kind is inspect.Parameter.VAR_KEYWORD:
+                pairs = bound.arguments.get(parameter.name, {}).get("training_pairs", pairs)
+        if pairs != "direct":
             check_one_step_regressors(function.__name__, names)
         return function(*args, **kwargs)
 

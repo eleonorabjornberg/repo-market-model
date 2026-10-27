@@ -43,6 +43,7 @@ def _load(name: str):
     return module
 
 
+from repo_model import turn_days  # noqa: E402
 from repo_model import b1_calendar as b1c, protocol_benchmarks as pb, scoring_protocol as sp  # noqa: E402
 from repo_model.baseline import panel_sha256  # noqa: E402
 from repo_model.data import load_daily_panel  # noqa: E402
@@ -167,7 +168,7 @@ def groupings(frame) -> Dict[str, Tuple[str, Dict]]:
     anchors = {}
     for d in days:
         a = pb._anchor(frame.panel, frame.position[d], frame.registry, DECISION_TIME)
-        anchors[d] = frame.splits.reporting_day_type(frame.panel[a].date, frame.panel[a].values)
+        anchors[d] = turn_days.reporting_day_type(frame.splits, frame.panel[a].date, frame.panel[a].values)
     return {
         "regime": ("target", {t: frame.regime(t) for t in targets}),
         "target_type": ("target", {t: frame.day_type(t) for t in targets}),

@@ -34,7 +34,6 @@ import importlib.util
 import json
 import math
 import multiprocessing
-import random
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -45,11 +44,25 @@ from typing import Dict, List, Optional, Sequence, Tuple
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
-from repo_model import lockbox, protocol_benchmarks as pb, scoring_protocol as sp  # noqa: E402
+from repo_model import lockbox, protocol_benchmarks as pb, scoring_protocol as sp, turn_days  # noqa: E402
 from repo_model.data import audit_panel, load_daily_panel  # noqa: E402
 from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
-from repo_model.metrics import crps_trapezoid_from_quantiles, stationary_bootstrap_indices  # noqa: E402
+from repo_model.metrics import crps_trapezoid_from_quantiles  # noqa: E402
+# The pooled workers live in src: a spawn pool (macOS) imports them by name (#1090).
+from repo_model.scaled_score_workers import (  # noqa: E402,F401
+    CALIBRATION_SEED, LOOK_FRACTIONS, Design, _init, calibrate, candidate, run_path,
+)
 from repo_model.splits import LookAheadError  # noqa: E402
+
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_CRPS = {
+    "build_pool": (
+        "guard",
+        "B1's and B2's grid and trapezoid CRPS cells of the scaled-score study: `require_unlocked` "
+        "on every decision and target day, and `require_study_window` on every target, before any "
+        "cell is computed (#967)",
+    ),
+}
 
 RESEARCH = REPO / "docs" / "research"
 DECLARATION = REPO / "metadata" / "scaled_score_967.json"
@@ -68,12 +81,14 @@ DECISION_TIME = "16:00:00"
 TRAILING = 252
 SCALE_LAG = 6
 MIN_CELLS = 20
-KINDS = ("month_end", "quarter_end", "tax_date", "ordinary")
+#: The pressure-day types a cell can carry: the retired two-day labels of the declared splits, and the turn labels of the record in
+#: force (#1135), which `scripts/spread_mean_reversion_686.Frame.day_type` reads since #1224. A type with fewer than `MIN_CELLS` cells in
+#: the window takes the median of all of them, so a label a run never produces changes nothing.
+KINDS = ("month_end", "quarter_end", "tax_date", "ordinary") + tuple(
+    label for label in turn_days.LABELS if label not in ("tax_date", "ordinary"))
 
-LOOK_FRACTIONS = (0.24, 0.5, 1.0)
 OLD_WINDOW = 60
 WINDOWS = 20_000
-CALIBRATION_SEED = 1
 PATHS = 2_000
 SEED = 967
 SCENARIO_STRIDE = 1_000_003
@@ -89,20 +104,6 @@ SCENARIOS = (
 SCENARIO_NAMES = {0.03: "3%", 0.05: "5%", 0.075: "7.5%", 0.10: "10%", 0.15: "15%", 0.20: "20%", 0.30: "30%"}
 MDE_GRID = (0.03, 0.05, 0.075, 0.10, 0.15, 0.20, 0.30)
 TARGET_POWER = 0.80
-
-
-@dataclass(frozen=True)
-class Design:
-    id: str
-    days: int
-    leads: Tuple[int, ...]
-    scale: str  # "raw", "new" (this study's), "old" (#733's D4 scale)
-    score: str = "grid"  # "grid" or "trapezoid"
-
-    @property
-    def checkpoints(self) -> Tuple[int, int, int]:
-        first, second = (int(fraction * self.days + 0.5) for fraction in LOOK_FRACTIONS[:2])
-        return first, second, self.days
 
 
 DESIGNS = (
@@ -292,77 +293,10 @@ def design_series(pool: Pool, design: Design, scales, trap_scales) -> Tuple[List
     return dates, b, e
 
 
-def candidate(b: Sequence[float], e: Sequence[float], delta: float, noise: float = 1.0) -> List[float]:
-    centre = sum(e) / len(e)
-    return [delta * x + noise * (y - centre) for x, y in zip(b, e)]
-
-
 # -- the calibration --------------------------------------------------------------------------------------------------------
 
 
-def calibrate(job) -> Tuple[str, Dict[str, object]]:
-    """The design's critical value at each look after the first: the contiguous windows of the series `e` the paths are built
-    on (S(B1) - S(B2), positive where B2 is better), and, beside it, the stationary-10 windows of #886.
-
-    `job` is `(design, e, windows)`, or `(design, e, windows, -1.0)` for the orientation #999 used, which calibrated on
-    `-e` while the paths used `e` (finding #1000); only the row check of #1013 asks for it."""
-
-    design, e, windows = job[:3]
-    sign = job[3] if len(job) > 3 else 1.0
-    cc = _load("contiguous_calibration_963")
-    looks = design.checkpoints
-    levels = sp.nominal_levels(looks)
-    series = [sign * v for v in e]
-    contiguous, stationary, counts = {}, {}, {}
-    for k, n in enumerate(looks[1:], start=1):
-        ordered = cc.contiguous_window_statistics(series, days=n)
-        contiguous[str(n)] = sp._bound(ordered, 1.0 - levels[k], len(ordered))
-        counts[str(n)] = len(ordered)
-        with cc.stationary_windows():
-            ordered = sp.window_t_statistics(series, days=n, windows=windows, seed=CALIBRATION_SEED, block=sp.BLOCK_LENGTH)
-        stationary[str(n)] = sp._bound(ordered, 1.0 - levels[k], len(ordered))
-    return design.id, {"checkpoints": list(looks), "nominal_levels": list(levels), "critical": contiguous,
-                       "critical_stationary": stationary, "windows": counts, "series_days": len(e)}
-
-
 # -- the paths --------------------------------------------------------------------------------------------------------------
-
-_DATA: Dict[str, object] = {}
-
-
-def _init(histories, critical):
-    _DATA["histories"] = histories
-    _DATA["critical"] = critical
-
-
-def run_path(job) -> Tuple[Optional[int], Optional[int]]:
-    """One path: the look at which the bound is first above zero, and the first at which the gated rule also holds."""
-
-    design, delta, seed, generator = job
-    b, e = _DATA["histories"][design.id]
-    critical = _DATA["critical"][design.id]
-    x = candidate(b, e, delta)
-    rng = random.Random(seed)
-    if generator == "stationary":
-        index = list(stationary_bootstrap_indices(len(b), sp.BLOCK_LENGTH, rng))[: design.days]
-    else:
-        index = []
-        while len(index) < design.days:
-            start = rng.randrange(len(b))
-            index.extend((start + k) % len(b) for k in range(sp.WINDOW_BLOCK))
-        index = index[: design.days]
-    xs, bs = [x[i] for i in index], [b[i] for i in index]
-    ungated = gated = None
-    for n in design.checkpoints[1:]:
-        part = xs[:n]
-        mean = sum(part) / n
-        if mean - critical[str(n)] * sp._standard_error(part, sp.HAC_LAG, "a path") > 0.0:
-            if ungated is None:
-                ungated = n
-            if gated is None and mean / (sum(bs[:n]) / n) >= MME:
-                gated = n
-    return ungated, gated
-
 
 def summarize(design: Design, results, paths: int) -> Dict[str, object]:
     def share(position, upto):
@@ -630,6 +564,7 @@ def check_command(_args) -> int:
     return 0
 
 
+@turn_days.with_legacy_flag
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = parser.add_subparsers(dest="command", required=True)

@@ -1,0 +1,15 @@
+{
+  "order": 340,
+  "directive": 1022,
+  "pull_request": 1108,
+  "hypothesis": "H1",
+  "result": "The block length after April 2020, without 2019-09-18",
+  "declarations": [],
+  "model": "`gbm_funding` as a series",
+  "pairing": "one_step",
+  "class": "series",
+  "on_the_page": [
+    "2026-10-22-model-01022-H1-step3"
+  ],
+  "concluded": "The block stays 10: post-2020-04 the automatic block is 10.2 against B1 and 64.9 against B2."
+}
