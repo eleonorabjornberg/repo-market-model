@@ -11,9 +11,9 @@ non-turn day at full allotment is clipped at the line, as (s3c) clips it; a day 
 real register and the real day types around the year end (26 December is not a turn, the last business day is `year_end`); the refusal of
 an unknown label; the margin is (s3c)'s.
 
-Recorded mutation (data guard, #1265): in `s3c_turn_cap.capped_quantiles`, the `if day_type not in turn_days.LABELS: raise ValueError(...)`
+Recorded mutation (data guard, #1265): in `s3c_turn_cap.is_turn`, the `if day_type not in turn_days.LABELS: raise ValueError(...)`
 check was deleted. `LabelTests.test_a_label_that_is_not_in_force_is_refused` then failed with `AssertionError` (`ValueError` not raised
-for `month_end`); restored, it passes. Second mutation (the rule itself): `day_type in turn_days.TURN_LABELS` was changed to
+for `month_end`); restored, it passes. Second mutation (the rule itself): `return day_type in turn_days.TURN_LABELS` was changed to
 `day_type not in turn_days.TURN_LABELS`; `TurnDayTests.test_a_turn_day_at_full_allotment_is_s3_itself` then failed with `AssertionError`.
 """
 
