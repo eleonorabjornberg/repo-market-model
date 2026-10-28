@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import csv
 import hashlib
+import importlib.util
 import json
 import re
 import sys
@@ -29,8 +30,10 @@ from repo_model import asof, sifma_mbs
 from repo_model.splits import LookAheadError
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "scripts"))
-import build_sifma_table_1276 as builder  # noqa: E402
+_spec = importlib.util.spec_from_file_location("build_sifma_table_1276", ROOT / "scripts" / "build_sifma_table_1276.py")
+builder = importlib.util.module_from_spec(_spec)
+sys.modules["build_sifma_table_1276"] = builder
+_spec.loader.exec_module(builder)
 
 DECLARATION = json.loads((ROOT / "metadata" / "sifma_mbs_1276.json").read_text(encoding="utf-8"))
 CAPTURES = {e["capture_timestamp"] + "|" + e["url"]: e for e in json.loads((ROOT / "data" / "sifma-wayback-1276" / "manifest.json").read_text(encoding="utf-8"))}

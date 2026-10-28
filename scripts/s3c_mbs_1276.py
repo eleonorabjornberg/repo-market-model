@@ -464,7 +464,7 @@ def source_lines(src: Mapping[str, object]) -> List[str]:
            "| year | public from (UTC, the archive's capture) | settlement dates A / B / C / D |", "|---|---|---|"]
     for year, v in src["years"].items():
         stamp = v["public_from_utc"]
-        out.append(f"| {year} | {'not shown by any capture: the indicators are 0' if stamp is None else stamp.replace('+00:00', ' UTC').replace('T', ' ')} | "
+        out.append(f"| {year} | {'not shown by any capture: the indicators are 0' if stamp is None else stamp.replace('+00:00', '').replace('T', ' ') + ' UTC'} | "
                    + " / ".join(str(v["dates_by_class"][kl]) for kl in sifma_mbs.CLASSES) + " |")
     return out
 
