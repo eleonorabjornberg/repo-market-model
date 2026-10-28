@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/s3c_gse_roll_1287.json",
+  "script": "scripts/s3c_gse_roll_1287.py",
+  "pairing": "direct",
+  "why": "(s3c-gse-roll): (s3c-gse) with the payment-day roll, the 25th's value read on the first business day on or after the 25th. (s3) itself reads the calendar columns at the target day on direct pairs (training_pairs = direct; the estimation routine is guarded by one_step_guard with no allow-list entry), the rolled ramp is a function of the target row's own date and the market holiday table alone (public in advance), served from the target row (asof rule 2) in the slot of the flag it replaces, and the cap is a transform of the forecast quantiles after the walk that fits nothing; no gradient-boosted fit is called, so the study is not provisional; the SRF line and the full-allotment flag are scheduled_availability fields read from metadata/policy_events.json as public at the decision instant (metadata/srf_cap_1241.json, unchanged); no outcome is an input"
+}
