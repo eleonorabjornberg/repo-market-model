@@ -1,0 +1,90 @@
+[
+  {
+    "bytes": 30347,
+    "capture_timestamp": "20171121230024",
+    "file": "20171121230024-5c9f2523-mbs-notification-and-settlement-dates",
+    "sha256": "9cb41d7b36239921432faf9a35442ab53731530318f9b7e70a9f74159e6abcdb",
+    "url": "https://www.sifma.org/resources/general/mbs-notification-and-settlement-dates/",
+    "year": "2017"
+  },
+  {
+    "bytes": 30547,
+    "capture_timestamp": "20180115134038",
+    "file": "20180115134038-5c9f2523-mbs-notification-and-settlement-dates",
+    "sha256": "b15cb68c7f315c7f4dacbc211ba45753f199280ba8a5ff7f7f9c48985995e456",
+    "url": "https://www.sifma.org/resources/general/mbs-notification-and-settlement-dates/",
+    "year": "2018"
+  },
+  {
+    "bytes": 33618,
+    "capture_timestamp": "20190820193252",
+    "file": "20190820193252-5c9f2523-mbs-notification-and-settlement-dates",
+    "sha256": "7cb514e03e5a14f3a64f3aaea88d8758307809ade37b1fb912503a167a121616",
+    "url": "https://www.sifma.org/resources/general/mbs-notification-and-settlement-dates/",
+    "year": "2019"
+  },
+  {
+    "bytes": 38471,
+    "capture_timestamp": "20200814145053",
+    "file": "20200814145053-5c9f2523-mbs-notification-and-settlement-dates",
+    "sha256": "0c4bd97e630bb0c23950e053f34f76b2b8aeb550118422350444d405540ea739",
+    "url": "https://www.sifma.org/resources/general/mbs-notification-and-settlement-dates/",
+    "year": "2020"
+  },
+  {
+    "bytes": 53731,
+    "capture_timestamp": "20210617001720",
+    "file": "20210617001720-5c9f2523-mbs-notification-and-settlement-dates",
+    "sha256": "6a2980589a213f228b3c978a5692868db17e9cc3e582d1e7333717f64e0a9655",
+    "url": "https://www.sifma.org/resources/general/mbs-notification-and-settlement-dates/",
+    "year": "2021"
+  },
+  {
+    "bytes": 55119,
+    "capture_timestamp": "20220208212949",
+    "file": "20220208212949-5c9f2523-mbs-notification-and-settlement-dates",
+    "sha256": "1917a92a2cad00f30798e46604e708d0f9a4f1d2bd80635bbeed5104cd477def",
+    "url": "https://www.sifma.org/resources/general/mbs-notification-and-settlement-dates/",
+    "year": "2022"
+  },
+  {
+    "bytes": 25582,
+    "capture_timestamp": "20230314184406",
+    "file": "20230314184406-5c9f2523-mbs-notification-and-settlement-dates",
+    "sha256": "1c5c511914055755f03bd609b6f8e25cf4505ee992fac39131e3ad1ad6622440",
+    "url": "https://www.sifma.org/resources/general/mbs-notification-and-settlement-dates/",
+    "year": "2023"
+  },
+  {
+    "bytes": 80912,
+    "capture_timestamp": "20240227185545",
+    "file": "20240227185545-5c9f2523-mbs-notification-and-settlement-dates",
+    "sha256": "ca094bec93e4f3f052ec215590eef8e1b8486a17e334a804149eacaf49eef846",
+    "url": "https://www.sifma.org/resources/general/mbs-notification-and-settlement-dates/",
+    "year": "2024"
+  },
+  {
+    "bytes": 93140,
+    "capture_timestamp": "20250119110844",
+    "file": "20250119110844-5c9f2523-mbs-notification-and-settlement-dates",
+    "sha256": "9fecfdee3c99b373b370640daa1cb3f7ff2484127467565cb0ae71ea909ae0ae",
+    "url": "https://www.sifma.org/resources/general/mbs-notification-and-settlement-dates/",
+    "year": "2025"
+  },
+  {
+    "bytes": 171931,
+    "capture_timestamp": "20260306152332",
+    "file": "20260306152332-5c9f2523-mbs-notification-and-settlement-dates",
+    "sha256": "6082fa37299bd28f78f3be472d26c36bc0ac184e0d6f2f0079eb475e573ae477",
+    "url": "https://www.sifma.org/resources/general/mbs-notification-and-settlement-dates/",
+    "year": "2026"
+  },
+  {
+    "bytes": 28592,
+    "capture_timestamp": "20250724121315",
+    "file": "20250724121315-9d247468-TBA_Market_Governance-MBS_Notification_Settlement_Dates_.xlsx",
+    "sha256": "0771fcef5c7eddebdca7f306690796e8166be2c0a8343a2beee8b8bfdebeab48",
+    "url": "https://www.sifma.org/wp-content/uploads/2024/04/TBA_Market_Governance-MBS_Notification_Settlement_Dates_.xlsx",
+    "year": "2025"
+  }
+]
