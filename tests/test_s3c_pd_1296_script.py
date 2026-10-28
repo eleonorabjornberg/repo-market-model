@@ -229,11 +229,15 @@ class GroupTests(unittest.TestCase):
         base = walk_of(frame, values={})
         walk = cc.PdWalk(base.forecasts, base.s3, base.values, base.scales, {date(2025, 12, 1): {h: est for h in sp.HORIZONS}},
                          {x: date(2025, 12, 1) for x in frame.days}, ())
-        week = cc.latest_public_week(levels, frame.days[0])
-        expected = st.stdev([levels[w] for w in levels if 0 < (week - w).days <= 7 * cc.TRAILING_WEEKS])
+        expected = []
+        for d in frame.days:
+            week = cc.latest_defined_week(levels, d)
+            expected.append(st.stdev([levels[w] for w in levels if 0 < (week - w).days <= 7 * cc.TRAILING_WEEKS and levels[w] is not None]))
         out = script.fitted_effect(frame, walk, levels)["standard_unit_usd_bn"]
-        self.assertGreater(out["decision_days"], 0)
-        self.assertAlmostEqual(out["min"], expected, places=9)
+        self.assertEqual(out["decision_days"], len(frame.days))
+        self.assertAlmostEqual(out["min"], min(expected), places=9)
+        self.assertAlmostEqual(out["max"], max(expected), places=9)
+        self.assertAlmostEqual(out["mean"], st.fmean(expected), places=9)
 
 
 class PageTests(unittest.TestCase):
