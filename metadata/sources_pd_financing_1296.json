@@ -1,0 +1,86 @@
+{
+ "status": "declared by the pull request that closes #1296 before any score was computed. It declares one source that is not in metadata/sources.json, and it is not a registry edit: metadata/sources.json is pinned under the final-test pre-registration (#1276, #1241) and does not change. `proposed_registry_entry` is the entry the source would have if Eleonora asks for it to be registered; nothing reads the registry for it. Adding the source is her decision, taken in her ruling of 28 October 2026 (chat, relayed on #1296).",
+ "issue": 1296,
+ "ledger": "item 72 on #1116",
+ "source_id": "nyfed_pd_financing",
+ "access": "public",
+ "provider": "Federal Reserve Bank of New York, Primary Dealer Statistics (report FR 2004)",
+ "series_behind_the_chart": {
+  "chart": "Office of Financial Research, Short-term Funding Monitor, market digest 'Primary dealer reverse repo and securities borrowing by tenor' (chart 22): https://www.financialresearch.gov/short-term-funding-monitor/market-digests/tenor/chart-22/",
+  "chart_mnemonics": "NYPD-PD_RRP_T_OO-A, NYPD-PD_RRP_T_L30-A, NYPD-PD_RRP_T_GE30-A, NYPD-PD_SB_T_OO-A, NYPD-PD_SB_T_L30-A, NYPD-PD_SB_T_GE30-A (read from the page's own markup on 28 October 2026): reverse repurchase agreements and securities borrowed on Treasury collateral, by tenor (overnight and open, under 30 days, 30 days or more)",
+  "what_the_ofr_serves": "the OFR is a re-publisher of the New York Fed's FR 2004 weekly statistics (its metadata: 'Federal Reserve Bank of New York Primary Dealer Statistics', observation frequency weekly, start 2015-01-07, last update 2026-10-23 13:30:01 on the query of 28 October 2026). Its data API serves the reverse-repo mnemonics (NYPD-PD_RRP_T_*, NYPD-PD_RRP_T_TOT-A) only to 2021-12-29 and the securities-borrowed ones to 2026-10-14, so the OFR route cannot supply the reverse-repo leg for the 2026 days. The New York Fed's own API serves both legs to the current week, and is the primary source the OFR draws on.",
+  "chosen": "the New York Fed's four Treasury totals, which are the tenor-free sums of the chart's Treasury rows, in the form the New York Fed publishes them: reverse repurchase agreements on U.S. Treasury securities excluding TIPS (PDSIRRA-UTSETTOT) and on TIPS (PDSIRRA-UTSTTOT), and securities borrowed on the same two classes (PDSIOSB-UTSETTOT, PDSIOSB-UTSTTOT). Compared on 28 October 2026 with the OFR's own totals, week by week where neither side is withheld: the sum of the two reverse-repo totals equals NYPD-PD_RRP_T_TOT-A (2015 to 2021, the only years the OFR serves) on 364 of 365 weeks, the exception being the week of 2021-01-06; the securities-borrowed pair equals NYPD-PD_SB_T_TOT-A on 535 of 561 weeks, and the 26 weeks that differ all fall from 2022-01-05 to 2025-10-15, the New York Fed sum being larger (by about USD 4.5 to 5.3 billion in the first weeks of 2022). The differences are stated on the page and are not resolved here."
+ },
+ "units": "USD millions in the file; the level is read in USD billions (the sum of the four totals over 1,000)",
+ "frequency": "weekly",
+ "as_of_week": "each observation is dated by its as-of date, a Wednesday, and reports the position on that Wednesday (the New York Fed's 'previous week's statistics' on the Thursday it is released)",
+ "release": {
+  "day_and_time": "Thursdays at approximately 4:15 p.m. America/New_York, with the previous week's statistics",
+  "evidence": {
+   "url": "https://www.newyorkfed.org/markets/counterparties/primary-dealers-statistics",
+   "text": "Data are updated on Thursdays at approximately 4:15 p.m. with the previous week's statistics.",
+   "snapshot": "tests/fixtures/snapshots/nyfed-pd-financing/primary-dealers-statistics.html (sha256 and retrieval instant in manifest.json, keyid release-page); the test test_the_release_page_states_the_day_and_time_the_declaration_cites reads the sentence from the tracked bytes",
+   "agreement": "the registry already dates the other FR 2004 series (nyfed_fr2004) as published on the Thursday of the following week, six business days after the Wednesday, from the same release schedule; the declared instant here is the same"
+  },
+  "declared_instant": "6 market business days after the as-of Wednesday, at 16:30 America/New_York: the Thursday of the following week, a holiday moving it to the next business day (metadata/market_holidays.json). 16:30 is the conservative instant within the release day against the page's 'approximately 4:15 p.m.', and it is the instant the registry declares for nyfed_fr2004",
+  "consequence": "a decision at 16:00 on the release Thursday cannot read that week: the first decision that can is the next business day's. The release-day instant is tested (tests/test_s3c_pd.py, ReleaseDayTests)",
+  "not_established": "the page says 'approximately' and no archive of past release times was read; the earlier of the two readings (4:15 p.m.) would not change any decision, since the decision instant is 16:00 and both fall after it"
+ },
+ "transform": {
+  "level": "the sum of the four totals, in USD billions; a week with any of the four withheld ('*', confidentiality) has no level: no observation, never 0",
+  "state": "the z-score of the latest public week's level against the TRAILING weeks before it: (level - mean) / stdev (sample) over the defined levels of the 52 as-of weeks before the latest public week",
+  "trailing_weeks": 52,
+  "minimum_trailing_weeks": 26,
+  "undefined_when": "the latest public week has no level; fewer than 26 of the 52 weeks before it have one; or their standard deviation is not positive",
+  "no_carry": "no older week is carried in place of a withheld latest week (a staleness rule would be a threshold nobody has set); the term is 0 on such a day, as an unknown scarcity state reads 0 in (s3)",
+  "declared_before_any_score": true,
+  "not_tuned": "one transform, declared here; the alternatives named in the directive (a 13-week change) were not tried"
+ },
+ "limitations": [
+  "The tracked snapshot is the latest revised vintage of each series as the New York Fed API served it on the retrieval date (manifest.json), not first prints. The series are not known to be revised often, but no first-print vintage was read, so a revision after the release is not excluded.",
+  "A figure the New York Fed withheld for confidentiality is '*'. In the tracked files 94 weeks of PDSIRRA-UTSETTOT, 13 of PDSIRRA-UTSTTOT and 69 of PDSIOSB-UTSTTOT are withheld (counted by the tests and the page from the files), so a week with a level is about two weeks in three since 2018. The last three weeks of the tracked file are '*' for PDSIRRA-UTSETTOT; whether they are a withholding or a not-yet-filled value cannot be told from the file.",
+  "The Treasury rows are used, as the chart's mnemonics are (T). Other collateral classes (agency, MBS, corporate, equities) are not in the level."
+ ],
+ "proposed_registry_entry": {
+  "access": "public",
+  "availability_provenance": {
+   "note": "Read on the New York Fed's Primary Dealer Statistics page on 28 October 2026 by the pull request that closes #1296 (the page is tracked beside the series, tests/fixtures/snapshots/nyfed-pd-financing/primary-dealers-statistics.html): 'Data are updated on Thursdays at approximately 4:15 p.m. with the previous week's statistics.' A human-supplied reading of a page, not a fetched release log.",
+   "publication": "New York Fed Primary Dealer Statistics: the FR 2004 series for a Wednesday as-of date is published on the Thursday of the following week at approximately 4:15 p.m. ET; 16:30 ET is the conservative instant within that publication day, as for nyfed_fr2004."
+  },
+  "coverage": [
+   "primary dealer reverse repurchase agreements, U.S. Treasury securities excluding TIPS and TIPS",
+   "primary dealer securities borrowed, U.S. Treasury securities excluding TIPS and TIPS"
+  ],
+  "field_frequencies": {
+   "PDSIOSB-UTSETTOT": "weekly",
+   "PDSIOSB-UTSTTOT": "weekly",
+   "PDSIRRA-UTSETTOT": "weekly",
+   "PDSIRRA-UTSTTOT": "weekly"
+  },
+  "fields": [
+   "PDSIRRA-UTSETTOT",
+   "PDSIRRA-UTSTTOT",
+   "PDSIOSB-UTSETTOT",
+   "PDSIOSB-UTSTTOT"
+  ],
+  "frequency": "weekly",
+  "limitation": "One row per series per as-of date. A value of '*' is a figure the New York Fed withheld for confidentiality: it yields no observation, never 0.0. The snapshot is the latest revised vintage, not first prints.",
+  "provider": "Federal Reserve Bank of New York",
+  "release_lag": {
+   "available_time": "16:30",
+   "basis": "ref_date",
+   "days": 6,
+   "note": "Six business days from a Wednesday as-of date is the Thursday of the following week (2026-08-26 becomes available 2026-09-03), at 16:30 America/New_York, the conservative instant within the release day against the page's 'approximately 4:15 p.m.'. Business days are counted on metadata/market_holidays.json. The same declaration as nyfed_fr2004's, from the same release schedule.",
+   "timezone": "America/New_York",
+   "unit": "business_days",
+   "worst_case_calendar_days": 12
+  },
+  "structural_zeros": [],
+  "structural_zeros_reviewed": false,
+  "reviewed_note": "Structural-zero semantics have not been reviewed against the FR 2004 reporting instructions; the empty declaration is not a finding.",
+  "url": "https://www.newyorkfed.org/markets/counterparties/primary-dealers-statistics"
+ },
+ "registry_status": "not registered. metadata/sources.json is unchanged; the final-test pre-registration's checksums do not move. The question whether to register the source is hers (marked on the result page).",
+ "fetch": "scripts/fetch_pd_financing_1296.py fetch <keyid>, one plain GET per series of https://markets.newyorkfed.org/api/pd/get/<keyid>.json; `check` verifies the tracked bytes offline",
+ "lockbox": "the tracked series run to the as-of week of 2026-10-14, released after the lockbox cut-off. No scored day reads a week released after its own decision instant (read_level raises LookAheadError), and the study refuses every decision day after 2026-09-03"
+}
