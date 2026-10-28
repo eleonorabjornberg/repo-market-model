@@ -1,0 +1,73 @@
+{
+ "status": "declared by the pull request that closes #1276 before any score was computed; a development study, never a verdict. (s3c) stays the H5 candidate until Eleonora rules on the result. Nothing is registered or published: no record in docs/runs/ is edited, the live record and its pin do not change, no declaration already merged changes, docs/research/h5-candidate.json, `gbm_funding`'s declaration, `scripts/final_test_preregistration.py`, metadata/sources.json and repo_model.one_step_guard.ONE_STEP_ALLOW_LIST do not change, no day after 2026-09-03 is read and no lockbox day is scored. The new source's availability is declared in metadata/sifma_mbs_1276.json, committed with this file before any score. Amendments made after a number was computed are listed in `amendments`; there are none.",
+ "issue": 1276,
+ "ledger": "item 68 on #1116",
+ "ruling": "Eleonora, 27 October 2026, about 3:25 pm ET, chat, relayed on #1276: queue four arms on (s3c) (net settlement, a GSE-cycle ramp, spike-sized carryover, MBS settlement days), one directive each, independent of each other; adding the source is her decision, taken in this ruling. The issue body was edited at 3:45 pm ET; this declaration follows the current body. Her ruling of about 5:15 pm ET on #1276 (option 1) sent the publication evidence to the Internet Archive's captures. The result page, the log entry and the pull request cite no source for the idea beyond her ruling and compare with no outside figure.",
+ "hypothesis": "H5 (primary goal): the SOFR - IORB spread distribution in bp. Step 3, an arm on the candidate (s3c). Development tier",
+ "target": "spread_bps at the scored day, in basis points, as a 23-quantile distribution at each lead h = 1..5 (scoring_protocol.GRID)",
+ "why": "Agency MBS settlement days may move GC through the month. (s3c) has no MBS term. SIFMA publishes the monthly settlement dates of the agency MBS classes (A to D) well ahead.",
+ "source": {
+  "availability": "metadata/sifma_mbs_1276.json (the scheduled_availability block, the per-year public_from taken from the archive's captures, and the rule)",
+  "table": "data/sifma-mbs-settlement/settlement_dates.csv, built by scripts/build_sifma_table_1276.py from data/sifma-wayback-1276/ (checksums in both manifests); module repo_model.sifma_mbs",
+  "metadata_sources_json": "not edited: any change to it moves the checksums pinned by the final-test pre-registration (test_final_test_freeze, test_live_score_freeze), as #1241 found. The entry is prepared in metadata/sifma_mbs_1276.json (`proposed_registry_entry`); adding it with the pre-registration re-pinned is Eleonora's (marked question 1)",
+  "publication_evidence": "a year's dates are public from the earliest archived capture that shows its calendar (a label or the table); a year no capture shows is never public (its indicators are 0) and nothing is guessed. 2018, 2019, 2022 and 2023 have no such capture; 2020, 2021, 2024, 2025, 2026 and 2027 do. Marked question 2 asks whether to widen this",
+  "revisions": "the workbook the 2017 to 2024 dates are read from was captured on 2025-07-24 and carries SIFMA's later corrections; marked question 2 names it"
+ },
+ "candidate": {
+  "name": "sc_s3c_mbs",
+  "label": "(s3c-mbs)",
+  "definition": "(s3c) with indicator terms added to (s3)'s fit: one 0/1 indicator per class, mbs_a to mbs_d, 1 on a target day that is a settlement day of that class when the day's year was public at the decision instant (else 0). If a class has fewer than 20 settlement days in the window, the four classes pool into one indicator, mbs_any, that is 1 on a settlement day of any class. Every other term, the Huber fit, the ridge of 5 and the SRF cap at full allotment (margin 0 bp, repo_model.s3c_candidate) are (s3c)'s and are not changed",
+  "module": "repo_model.s3c_mbs (MbsTable, class_counts, must_pool, fit_mbs_terms, forecast_leads, walk) and repo_model.sifma_mbs (the source); the cap, the line and the full-allotment flag are repo_model.s3c_candidate's and repo_model.srf_line's, unchanged",
+  "window_for_pooling": "the development window: the panel's rows with date up to 2025-12-31, each counted once per class when its indicator, read at lead 1 (the decision the row before), is 1; the settlement days of a year that was not public are not counted. A class below 20 pools all four. The counts and the outcome are in result.json and on the page, and the study states which it used",
+  "units": "the indicators are 0/1 columns like the other flag terms of (s3), in standardised units: the target is raw / scale(origin), the coefficient is the effect in scale units, and the effect in bp is the coefficient times the scale at the decision's anchor. A forecast adds scale(anchor) * sum(coefficient_k * indicator_k) to every quantile",
+  "entry": "an indicator enters a lead's fit when at least 3 training pairs (MIN_FLAGGED, as for the flag terms) carry it; the intercept is dropped, so the pool keeps the ordinary-day centre. Where none enters, the estimate is spread_mr_state_calendar.fit_state_terms' on the same pairs, element for element",
+  "information_set": "a new availability rule, in metadata/sifma_mbs_1276.json. The indicator of target row r read at lead h is that of the date of r under the rule at the decision instant of row r - h (16:00 on its day); a training pair reads what its own decision could read, as repo_model.s3c_net.NetSizeTable does. A date of a year no capture shows reads 0 at every instant; a date of a year with a capture reads 1 only from the capture's instant, converted from the archive's UTC stamp to America/New_York. All leads are read, each by the same per-date rule: a calendar public before the decision is as public at lead 5 as at lead 1. Leakage test with one recorded mutation: tests/test_sifma_mbs.py (the rule) and tests/test_s3c_mbs.py (the table and the walk)",
+  "pairs": "direct: the indicators are read at the target row (training_pairs = 'direct'); fit_mbs_terms is guarded by one_step_guard with no allow-list entry; the provisional-register row is metadata/provisional/cleared/s3c_mbs_1276.json",
+  "margin_bp": 0.0
+ },
+ "frame": {
+  "windows": "the development window (targets up to 2025-12-31, as #1145, #1241 and #1255) and the 2026 development days (targets 2026-01-02 to 2026-09-03, the near-blind tier open since GO #151, as #1229, #1252 and #1255), the frames of scripts/s3c_candidate_1255.py, loaded as they are",
+  "walk": "(s3)'s walk is #1229's and #1255's (every decision day from the start of the panel, refit every 21 decision days, direct pairs); the arm is walked on the same days with the same refit schedule, and (s3) re-forecast inside it must equal the frame's (s3) cell for cell or the run stops",
+  "guards": "a scored decision day or target day passes lockbox.require_unlocked through spread_mean_reversion_686.require_scored_days with the last day 2026-09-03; the blind tier (from 2026-09-04) and every lockbox day are refused",
+  "reproduction": "(s3) and (s3c) of the frames are #1255's; the pooled means are compared with docs/research/s3c-candidate-1255/result.json and the difference stated on the page"
+ },
+ "arms": [
+  {"name": "sc_s3_robust", "role": "(s3) of #1145; reference", "margin_bp": null},
+  {"name": "sc_s3c", "role": "(s3c), the H5 candidate; reference", "margin_bp": 0.0},
+  {"name": "sc_s3c_mbs", "role": "(s3c-mbs), (s3c) with the agency MBS class settlement-day indicators", "margin_bp": 0.0}
+ ],
+ "models": ["B1", "B1_prime", "B2", "sc_s3_robust", "sc_s3c", "sc_s3c_mbs"],
+ "primary": {
+  "metric": "grid CRPS (23 levels) averaged over leads h = 1..5",
+  "key_secondary": "upper-tail twCRPS (weight 1{z > 0 bp})",
+  "pressure_probability": "the Brier score of P(spread > +5 bp), the probability read off the 23 quantiles as 1 - F(floor(tau) + 0.5), F linear between them (spread_mean_reversion.exceedance), the event strict and on whole basis points (data.exceeds_bp)",
+  "comparisons": "(s3c-mbs) paired with (s3c) and with (s3), and against B1, B1' and B2",
+  "calibration": "the 90% band coverage (closed band q05 to q95) of (s3c-mbs) beside (s3c)'s and (s3)'s, pooled, by regime, by lead and on the days the terms are non-zero; means, not tested"
+ },
+ "scoring": {
+  "scorer": "repo_model.scoring_protocol (#655), the development tier: no verdict, no registration",
+  "test": "scoring_protocol.paired_tests, the studentized stationary bootstrap (ruling 1), mean block 10 business days, 10,000 draws, seed 1276, two-sided 90% interval (the lower end is the one-sided 95% bound); the skill interval and the studentized interval on mean d are reported for every tested row; where the studentized bound cannot be computed the unstudentized percentile interval of mean d is given beside it, with no reading taken from it",
+  "reading": "a reading is taken from the mean-d bound (her ruling on #1009): the arm is read better than a reference when the lower end of the 90% interval of mean d is above zero, worse when the upper end is below zero, otherwise undecided. Lens C's caveat (the lag-10 HAC standard error is understated about 2x after 2020) is stated on the page",
+  "splits": "pooled; by regime; by pressure-day type of the target day; by lead; by calendar target-day type and target month (as #1255 has them); and the target days on which the changed terms are non-zero (a settlement day of some class, read at lead 1) against the other target days, and each class's settlement days against the other days (a group of fewer than 20 days is listed and not tested). The intervals of a group of target days keep the current method (the group's days, scattered, resampled in date order as if consecutive), which #1221 questions and #1228 will decide",
+  "identical_groups": "a group in which an arm's score equals the reference's on every day is listed as identical and not tested against it",
+  "seed": 1276
+ },
+ "fitted_effect": "the fitted effect of each indicator in bp, by regime: on each (decision day, lead) cell where the indicator is 1, coefficient (of the refit in force) * the scale at the decision's anchor; the count, the mean, the smallest and the largest, by the regime of the target day, for each class (or the pooled indicator); and the coefficient of each refit, summarised by the regime of the refit day (the median, the range and the number of refits in which the indicator is active)",
+ "reading_rules": [
+  "A figure is a check on days that were already seen. Nothing here is a verdict, nothing is registered and no choice is made on it; (s3c) stays the candidate until she rules on the result.",
+  "A gain or loss is read from the 90% interval of mean d excluding zero; otherwise undecided. A point estimate alone is not read.",
+  "A pooled figure is never read without the regime, pressure-day-type and settlement-day splits beside it. The settlement days are few in the years the archive shows; the page states the counts.",
+  "The page says plainly in which years the indicators can be non-zero under the availability rule, and that in every other year the arm is (s3c) up to the refit of the fit.",
+  "The page cites no source for the idea beyond her ruling and compares with no outside figure.",
+  "The page ends with marked questions for Eleonora with numbered options and defaults that change no claim."
+ ],
+ "limits": {
+  "last_day": "2026-09-03",
+  "named_candidate": "unchanged; docs/research/h5-candidate.json is not changed",
+  "preregistration": "scripts/final_test_preregistration.py is not touched; test_final_test_freeze and test_live_score_freeze are run before the push",
+  "allow_list": "repo_model.one_step_guard.ONE_STEP_ALLOW_LIST is not changed",
+  "sources": "metadata/sources.json is not changed; no declaration already merged is changed; docs/runs/ is not touched"
+ },
+ "long_run": "cloud; one walk of (s3) and of the arm over the whole panel (minutes) and the paired tests of one arm against five references on two windows, about two dozen groups and four metrics (the longer part; #1255's was well under two hours on 4 cores). If the measured time says otherwise, the run goes to the Mac as a `needs-mac:` comment",
+ "amendments": []
+}

@@ -56,11 +56,13 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--out", default="data/sifma-wayback-1276")
     parser.add_argument("--base", default="https://web.archive.org")
+    parser.add_argument("--url", action="append", default=None,
+                        help="a URL to list and fetch the earliest capture per year of (repeatable; default: the three URLs of this module)")
     args = parser.parse_args(argv)
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
     manifest = []
-    for url in URLS:
+    for url in (args.url or URLS):
         rows = captures(args.base, url)
         print(f"{len(rows)} captures of {url}")
         for year, row in earliest_per_year(rows).items():
