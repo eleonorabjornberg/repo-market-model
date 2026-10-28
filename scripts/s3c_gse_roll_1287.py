@@ -62,7 +62,13 @@ from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
 from repo_model.exploration import require_exploratory_window  # noqa: E402
 
 #: #1274's script, as it stands (and through it #1255's, #1241's and #1229's), loaded under an alias of its own.
+_before = dict(sys.modules)
 m74 = _load("s3c_gse_1274", "s3c_gse_1274_in_1287")
+#: Loading #1274's script loads #1255's and #1241's under fixed aliases; put back any copy another module had registered under the same alias, so
+#: that its worker pool still pickles its own functions (the aliases are only pickling names).
+for _name, _module in _before.items():
+    if sys.modules.get(_name) is not _module:
+        sys.modules[_name] = _module
 k, c, s686, s761, d1222 = m74.k, m74.c, m74.s686, m74.s761, m74.d1222
 
 DECLARATION = REPO / "metadata" / "s3c_gse_roll_1287.json"

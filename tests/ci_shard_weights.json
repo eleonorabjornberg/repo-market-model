@@ -211,6 +211,8 @@
  "test_risk_date_spread": 5.4,
  "test_risk_date_spread_693_script": 0.1,
  "test_risk_dates": 0.1,
+ "test_s3c_gse_roll": 3.0,
+ "test_s3c_gse_roll_1287_script": 60.0,
  "test_satiation": 0.5,
  "test_satiation_distance": 2.5,
  "test_scaled_score_1013": 0.1,
