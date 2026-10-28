@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html class="no-js" lang="en-us">
+  <head>
+    <meta charset="utf-8"/><script type="text/javascript">(window.NREUM||(NREUM={})).init={ajax:{deny_list:["bam.nr-data.net"]}};(window.NREUM||(NREUM={})).loader_config={licenseKey:"3ef9a156d0",applicationID:"34563399"};;/*! For license information please see nr-loader-rum-1.278.2.min.js.LICENSE.txt */
+(()=>{var e,t,r={122:(e,t,r)=>{"use strict";r.d(t,{a:()=>i});var n=r(944);function i(e,t){try{if(!e||"object"!=typeof e)return(0,n.R)(3);if(!t||"object"!=typeof t)return(0,n.R)(4);const r=Object.create(Object.getPrototypeOf(t),Object.getOwnPropertyDescriptors(t)),o=0===Object.keys(r).length?e:r;for(let a in o)if(void 0!==e[a])try{if(null===e[a]){r[a]=null;continue}Array.isArray(e[a])&&Array.isArray(t[a])?r[a]=Array.from(new Set([...e[a],...t[a]])):"object"==typeof e[a]&&"object"==typeof t[a]?r[a]=i(e[a],t[a]):r[a]=e[a]}catch(e){(0,n.R)(1,e)}return r}catch(e){(0,n.R)(2,e)}}},555:(e,t,r)=>{"use strict";r.d(t,{Vp:()=>c,fn:()=>s,x1:()=>u});var n=r(384),i=r(122);const o={beacon:n.NT.beacon,errorBeacon:n.NT.errorBeacon,licenseKey:void 0,applicationID:void 0,sa:void 0,queueTime:void 0,applicationTime:void 0,ttGuid:void 0,user:void 0,account:void 0,product:void 0,extra:void 0,jsAttributes:{},userAttributes:void 0,atts:void 0,transactionName:void 0,tNamePlain:void 0},a={};function s(e){try{const t=c(e);return!!t.licenseKey&&!!t.errorBeacon&&!!t.applicationID}catch(e){return!1}}function c(e){if(!e)throw new Error("All info objects require an agent identifier!");if(!a[e])throw new Error("Info for ".concat(e," was never set"));return a[e]}function u(e,t){if(!e)throw new Error("All info objects require an agent identifier!");a[e]=(0,i.a)(t,o);const r=(0,n.nY)(e);r&&(r.info=a[e])}},217:(e,t,r)=>{"use strict";r.d(t,{D0:()=>h,gD:()=>b,xN:()=>v});r(860).K7.genericEvents;const n="experimental.marks",i="experimental.measures",o="experimental.resources";var a=r(993);const s=e=>{if(!e||"string"!=typeof e)return!1;try{document.createDocumentFragment().querySelector(e)}catch{return!1}return!0};var c=r(614),u=r(944),l=r(384),d=r(122);const f="[data-nr-mask]",g=()=>{const e={feature_flags:[],experimental:{marks:!1,measures:!1,resources:!1},mask_selector:"*",block_selector:"[data-nr-block]",mask_input_options:{color:!1,date:!1,"datetime-local":!1,email:!1,month:!1,number:!1,range:!1,search:!1,tel:!1,text:!1,time:!1,url:!1,week:!1,textarea:!1,select:!1,password:!0}};return{ajax:{deny_list:void 0,block_internal:!0,enabled:!0,autoStart:!0},distributed_tracing:{enabled:void 0,exclude_newrelic_header:void 0,cors_use_newrelic_header:void 0,cors_use_tracecontext_headers:void 0,allowed_origins:void 0},get feature_flags(){return e.feature_flags},set feature_flags(t){e.feature_flags=t},generic_events:{enabled:!0,autoStart:!0},harvest:{interval:30},jserrors:{enabled:!0,autoStart:!0},logging:{enabled:!0,autoStart:!0,level:a.p_.INFO},metrics:{enabled:!0,autoStart:!0},obfuscate:void 0,page_action:{enabled:!0},page_view_event:{enabled:!0,autoStart:!0},page_view_timing:{enabled:!0,autoStart:!0},performance:{get capture_marks(){return e.feature_flags.includes(n)||e.experimental.marks},set capture_marks(t){e.experimental.marks=t},get capture_measures(){return e.feature_flags.includes(i)||e.experimental.measures},set capture_measures(t){e.experimental.measures=t},resources:{get enabled(){return e.feature_flags.includes(o)||e.experimental.resources},set enabled(t){e.experimental.resources=t},asset_types:[],first_party_domains:[],ignore_newrelic:!0}},privacy:{cookies_enabled:!0},proxy:{assets:void 0,beacon:void 0},session:{expiresMs:c.wk,inactiveMs:c.BB},session_replay:{autoStart:!0,enabled:!1,preload:!1,sampling_rate:10,error_sampling_rate:100,collect_fonts:!1,inline_images:!1,fix_stylesheets:!0,mask_all_inputs:!0,get mask_text_selector(){return e.mask_selector},set mask_text_selector(t){s(t)?e.mask_selector="".concat(t,",").concat(f):""===t||null===t?e.mask_selector=f:(0,u.R)(5,t)},get block_class(){return"nr-block"},get ignore_class(){return"nr-ignore"},get mask_text_class(){return"nr-mask"},get block_selector(){return e.block_selector},set block_selector(t){s(t)?e.block_selector+=",".concat(t):""!==t&&(0,u.R)(6,t)},get mask_input_options(){return e.mask_input_options},set mask_input_options(t){t&&"object"==typeof t?e.mask_input_options={...t,password:!0}:(0,u.R)(7,t)}},session_trace:{enabled:!0,autoStart:!0},soft_navigations:{enabled:!0,autoStart:!0},spa:{enabled:!0,autoStart:!0},ssl:void 0,user_actions:{enabled:!0}}},p={},m="All configuration objects require an agent identifier!";function h(e){if(!e)throw new Error(m);if(!p[e])throw new Error("Configuration for ".concat(e," was never set"));return p[e]}function v(e,t){if(!e)throw new Error(m);p[e]=(0,d.a)(t,g());const r=(0,l.nY)(e);r&&(r.init=p[e])}function b(e,t){if(!e)throw new Error(m);var r=h(e);if(r){for(var n=t.split("."),i=0;i<n.length-1;i++)if("object"!=typeof(r=r[n[i]]))return;r=r[n[n.length-1]]}return r}},371:(e,t,r)=>{"use strict";r.d(t,{V:()=>f,f:()=>d});var n=r(122),i=r(384),o=r(154),a=r(324);let s=0;const c={buildEnv:a.F3,distMethod:a.Xs,version:a.xv,originTime:o.WN},u={customTransaction:void 0,disabled:!1,isolatedBacklog:!1,loaderType:void 0,maxBytes:3e4,onerror:void 0,ptid:void 0,releaseIds:{},appMetadata:{},session:void 0,denyList:void 0,timeKeeper:void 0,obfuscator:void 0,harvester:void 0},l={};function d(e){if(!e)throw new Error("All runtime objects require an agent identifier!");if(!l[e])throw new Error("Runtime for ".concat(e," was never set"));return l[e]}function f(e,t){if(!e)throw new Error("All runtime objects require an agent identifier!");l[e]={...(0,n.a)(t,u),...c},Object.hasOwnProperty.call(l[e],"harvestCount")||Object.defineProperty(l[e],"harvestCount",{get:()=>++s});const r=(0,i.nY)(e);r&&(r.runtime=l[e])}},324:(e,t,r)=>{"use strict";r.d(t,{F3:()=>i,Xs:()=>o,xv:()=>n});const n="1.278.2",i="PROD",o="CDN"},154:(e,t,r)=>{"use strict";r.d(t,{OF:()=>c,RI:()=>i,WN:()=>l,bv:()=>o,gm:()=>a,mw:()=>s,sb:()=>u});var n=r(863);const i="undefined"!=typeof window&&!!window.document,o="undefined"!=typeof WorkerGlobalScope&&("undefined"!=typeof self&&self instanceof WorkerGlobalScope&&self.navigator instanceof WorkerNavigator||"undefined"!=typeof globalThis&&globalThis instanceof WorkerGlobalScope&&globalThis.navigator instanceof WorkerNavigator),a=i?window:"undefined"!=typeof WorkerGlobalScope&&("undefined"!=typeof self&&self instanceof WorkerGlobalScope&&self||"undefined"!=typeof globalThis&&globalThis instanceof WorkerGlobalScope&&globalThis),s=Boolean("hidden"===a?.document?.visibilityState),c=/iPad|iPhone|iPod/.test(a.navigator?.userAgent),u=c&&"undefined"==typeof SharedWorker,l=((()=>{const e=a.navigator?.userAgent?.match(/Firefox[/\s](\d+\.\d+)/);Array.isArray(e)&&e.length>=2&&e[1]})(),Date.now()-(0,n.t)())},687:(e,t,r)=>{"use strict";r.d(t,{Ak:()=>c,Ze:()=>d,x3:()=>u});var n=r(836),i=r(606),o=r(860),a=r(646);const s={};function c(e,t){const r={staged:!1,priority:o.P3[t]||0};l(e),s[e].get(t)||s[e].set(t,r)}function u(e,t){e&&s[e]&&(s[e].get(t)&&s[e].delete(t),g(e,t,!1),s[e].size&&f(e))}function l(e){if(!e)throw new Error("agentIdentifier required");s[e]||(s[e]=new Map)}function d(e="",t="feature",r=!1){if(l(e),!e||!s[e].get(t)||r)return g(e,t);s[e].get(t).staged=!0,f(e)}function f(e){const t=Array.from(s[e]);t.every((([e,t])=>t.staged))&&(t.sort(((e,t)=>e[1].priority-t[1].priority)),t.forEach((([t])=>{s[e].delete(t),g(e,t)})))}function g(e,t,r=!0){const o=e?n.ee.get(e):n.ee,s=i.i.handlers;if(!o.aborted&&o.backlog&&s){if(r){const e=o.backlog[t],r=s[t];if(r){for(let t=0;e&&t<e.length;++t)p(e[t],r);Object.entries(r).forEach((([e,t])=>{Object.values(t||{}).forEach((t=>{t[0]?.on&&t[0]?.context()instanceof a.y&&t[0].on(e,t[1])}))}))}}o.isolatedBacklog||delete s[t],o.backlog[t]=null,o.emit("drain-"+t,[])}}function p(e,t){var r=e[1];Object.values(t[r]||{}).forEach((t=>{var r=e[0];if(t[0]===r){var n=t[1],i=e[3],o=e[2];n.apply(i,o)}}))}},836:(e,t,r)=>{"use strict";r.d(t,{P:()=>c,ee:()=>u});var n=r(384),i=r(990),o=r(371),a=r(646),s=r(607);const c="nr@context:".concat(s.W),u=function e(t,r){var n={},s={},l={},d=!1;try{d=16===r.length&&(0,o.f)(r).isolatedBacklog}catch(e){}var f={on:p,addEventListener:p,removeEventListener:function(e,t){var r=n[e];if(!r)return;for(var i=0;i<r.length;i++)r[i]===t&&r.splice(i,1)},emit:function(e,r,n,i,o){!1!==o&&(o=!0);if(u.aborted&&!i)return;t&&o&&t.emit(e,r,n);for(var a=g(n),c=m(e),l=c.length,d=0;d<l;d++)c[d].apply(a,r);var p=v()[s[e]];p&&p.push([f,e,r,a]);return a},get:h,listeners:m,context:g,buffer:function(e,t){const r=v();if(t=t||"feature",f.aborted)return;Object.entries(e||{}).forEach((([e,n])=>{s[n]=t,t in r||(r[t]=[])}))},abort:function(){f._aborted=!0,Object.keys(f.backlog).forEach((e=>{delete f.backlog[e]}))},isBuffering:function(e){return!!v()[s[e]]},debugId:r,backlog:d?{}:t&&"object"==typeof t.backlog?t.backlog:{},isolatedBacklog:d};return Object.defineProperty(f,"aborted",{get:()=>{let e=f._aborted||!1;return e||(t&&(e=t.aborted),e)}}),f;function g(e){return e&&e instanceof a.y?e:e?(0,i.I)(e,c,(()=>new a.y(c))):new a.y(c)}function p(e,t){n[e]=m(e).concat(t)}function m(e){return n[e]||[]}function h(t){return l[t]=l[t]||e(f,t)}function v(){return f.backlog}}(void 0,"globalEE"),l=(0,n.Zm)();l.ee||(l.ee=u)},646:(e,t,r)=>{"use strict";r.d(t,{y:()=>n});class n{constructor(e){this.contextId=e}}},908:(e,t,r)=>{"use strict";r.d(t,{d:()=>n,p:()=>i});var n=r(836).ee.get("handle");function i(e,t,r,i,o){o?(o.buffer([e],i),o.emit(e,t,r)):(n.buffer([e],i),n.emit(e,t,r))}},606:(e,t,r)=>{"use strict";r.d(t,{i:()=>o});var n=r(908);o.on=a;var i=o.handlers={};function o(e,t,r,o){a(o||n.d,i,e,t,r)}function a(e,t,r,i,o){o||(o="feature"),e||(e=n.d);var a=t[o]=t[o]||{};(a[r]=a[r]||[]).push([e,i])}},878:(e,t,r)=>{"use strict";function n(e,t){return{capture:e,passive:!1,signal:t}}function i(e,t,r=!1,i){window.addEventListener(e,t,n(r,i))}function o(e,t,r=!1,i){document.addEventListener(e,t,n(r,i))}r.d(t,{DD:()=>o,jT:()=>n,sp:()=>i})},607:(e,t,r)=>{"use strict";r.d(t,{W:()=>n});const n=(0,r(566).bz)()},566:(e,t,r)=>{"use strict";r.d(t,{LA:()=>s,bz:()=>a});var n=r(154);const i="xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx";function o(e,t){return e?15&e[t]:16*Math.random()|0}function a(){const e=n.gm?.crypto||n.gm?.msCrypto;let t,r=0;return e&&e.getRandomValues&&(t=e.getRandomValues(new Uint8Array(30))),i.split("").map((e=>"x"===e?o(t,r++).toString(16):"y"===e?(3&o()|8).toString(16):e)).join("")}function s(e){const t=n.gm?.crypto||n.gm?.msCrypto;let r,i=0;t&&t.getRandomValues&&(r=t.getRandomValues(new Uint8Array(e)));const a=[];for(var s=0;s<e;s++)a.push(o(r,i++).toString(16));return a.join("")}},614:(e,t,r)=>{"use strict";r.d(t,{BB:()=>a,H3:()=>n,g:()=>u,iL:()=>c,tS:()=>s,uh:()=>i,wk:()=>o});const n="NRBA",i="SESSION",o=144e5,a=18e5,s={STARTED:"session-started",PAUSE:"session-pause",RESET:"session-reset",RESUME:"session-resume",UPDATE:"session-update"},c={SAME_TAB:"same-tab",CROSS_TAB:"cross-tab"},u={OFF:0,FULL:1,ERROR:2}},863:(e,t,r)=>{"use strict";function n(){return Math.floor(performance.now())}r.d(t,{t:()=>n})},944:(e,t,r)=>{"use strict";function n(e,t){"function"==typeof console.debug&&console.debug("New Relic Warning: https://github.com/newrelic/newrelic-browser-agent/blob/main/docs/warning-codes.md#".concat(e),t)}r.d(t,{R:()=>n})},284:(e,t,r)=>{"use strict";r.d(t,{t:()=>c,B:()=>s});var n=r(836),i=r(154);const o="newrelic";const a=new Set,s={};function c(e,t){const r=n.ee.get(t);s[t]??={},e&&"object"==typeof e&&(a.has(t)||(r.emit("rumresp",[e]),s[t]=e,a.add(t),function(e={}){try{i.gm.dispatchEvent(new CustomEvent(o,{detail:e}))}catch(e){}}({loaded:!0})))}},990:(e,t,r)=>{"use strict";r.d(t,{I:()=>i});var n=Object.prototype.hasOwnProperty;function i(e,t,r){if(n.call(e,t))return e[t];var i=r();if(Object.defineProperty&&Object.keys)try{return Object.defineProperty(e,t,{value:i,writable:!0,enumerable:!1}),i}catch(e){}return e[t]=i,i}},389:(e,t,r)=>{"use strict";function n(e,t=500,r={}){const n=r?.leading||!1;let i;return(...r)=>{n&&void 0===i&&(e.apply(this,r),i=setTimeout((()=>{i=clearTimeout(i)}),t)),n||(clearTimeout(i),i=setTimeout((()=>{e.apply(this,r)}),t))}}function i(e){let t=!1;return(...r)=>{t||(t=!0,e.apply(this,r))}}r.d(t,{J:()=>i,s:()=>n})},289:(e,t,r)=>{"use strict";r.d(t,{GG:()=>o,sB:()=>a});var n=r(878);function i(){return"undefined"==typeof document||"complete"===document.readyState}function o(e,t){if(i())return e();(0,n.sp)("load",e,t)}function a(e){if(i())return e();(0,n.DD)("DOMContentLoaded",e)}},384:(e,t,r)=>{"use strict";r.d(t,{NT:()=>o,US:()=>l,Zm:()=>a,bQ:()=>c,dV:()=>s,nY:()=>u,pV:()=>d});var n=r(154),i=r(863);const o={beacon:"bam.nr-data.net",errorBeacon:"bam.nr-data.net"};function a(){return n.gm.NREUM||(n.gm.NREUM={}),void 0===n.gm.newrelic&&(n.gm.newrelic=n.gm.NREUM),n.gm.NREUM}function s(){let e=a();return e.o||(e.o={ST:n.gm.setTimeout,SI:n.gm.setImmediate,CT:n.gm.clearTimeout,XHR:n.gm.XMLHttpRequest,REQ:n.gm.Request,EV:n.gm.Event,PR:n.gm.Promise,MO:n.gm.MutationObserver,FETCH:n.gm.fetch,WS:n.gm.WebSocket}),e}function c(e,t){let r=a();r.initializedAgents??={},t.initializedAt={ms:(0,i.t)(),date:new Date},r.initializedAgents[e]=t}function u(e){let t=a();return t.initializedAgents?.[e]}function l(e,t){a()[e]=t}function d(){return function(){let e=a();const t=e.info||{};e.info={beacon:o.beacon,errorBeacon:o.errorBeacon,...t}}(),function(){let e=a();const t=e.init||{};e.init={...t}}(),s(),function(){let e=a();const t=e.loader_config||{};e.loader_config={...t}}(),a()}},843:(e,t,r)=>{"use strict";r.d(t,{u:()=>i});var n=r(878);function i(e,t=!1,r,i){(0,n.DD)("visibilitychange",(function(){if(t)return void("hidden"===document.visibilityState&&e());e(document.visibilityState)}),r,i)}},434:(e,t,r)=>{"use strict";r.d(t,{Jt:()=>o,YM:()=>c});var n=r(836),i=r(607);const o="nr@original:".concat(i.W);var a=Object.prototype.hasOwnProperty,s=!1;function c(e,t){return e||(e=n.ee),r.inPlace=function(e,t,n,i,o){n||(n="");const a="-"===n.charAt(0);for(let s=0;s<t.length;s++){const c=t[s],u=e[c];l(u)||(e[c]=r(u,a?c+n:n,i,c,o))}},r.flag=o,r;function r(t,r,n,s,c){return l(t)?t:(r||(r=""),nrWrapper[o]=t,function(e,t,r){if(Object.defineProperty&&Object.keys)try{return Object.keys(e).forEach((function(r){Object.defineProperty(t,r,{get:function(){return e[r]},set:function(t){return e[r]=t,t}})})),t}catch(e){u([e],r)}for(var n in e)a.call(e,n)&&(t[n]=e[n])}(t,nrWrapper,e),nrWrapper);function nrWrapper(){var o,a,l,d;try{a=this,o=[...arguments],l="function"==typeof n?n(o,a):n||{}}catch(t){u([t,"",[o,a,s],l],e)}i(r+"start",[o,a,s],l,c);try{return d=t.apply(a,o)}catch(e){throw i(r+"err",[o,a,e],l,c),e}finally{i(r+"end",[o,a,d],l,c)}}}function i(r,n,i,o){if(!s||t){var a=s;s=!0;try{e.emit(r,n,i,t,o)}catch(t){u([t,r,n,i],e)}s=a}}}function u(e,t){t||(t=n.ee);try{t.emit("internal-error",e)}catch(e){}}function l(e){return!(e&&"function"==typeof e&&e.apply&&!e[o])}},993:(e,t,r)=>{"use strict";r.d(t,{ET:()=>o,p_:()=>i});var n=r(860);const i={ERROR:"ERROR",WARN:"WARN",INFO:"INFO",DEBUG:"DEBUG",TRACE:"TRACE"},o="log";n.K7.logging},969:(e,t,r)=>{"use strict";r.d(t,{TZ:()=>n,XG:()=>s,rs:()=>i,xV:()=>a,z_:()=>o});const n=r(860).K7.metrics,i="sm",o="cm",a="storeSupportabilityMetrics",s="storeEventMetrics"},630:(e,t,r)=>{"use strict";r.d(t,{T:()=>n});const n=r(860).K7.pageViewEvent},782:(e,t,r)=>{"use strict";r.d(t,{T:()=>n});const n=r(860).K7.pageViewTiming},344:(e,t,r)=>{"use strict";r.d(t,{G4:()=>i});var n=r(614);r(860).K7.sessionReplay;const i={RECORD:"recordReplay",PAUSE:"pauseReplay",REPLAY_RUNNING:"replayRunning",ERROR_DURING_REPLAY:"errorDuringReplay"};n.g.ERROR,n.g.FULL,n.g.OFF},234:(e,t,r)=>{"use strict";r.d(t,{W:()=>o});var n=r(836),i=r(687);class o{constructor(e,t){this.agentIdentifier=e,this.ee=n.ee.get(e),this.featureName=t,this.blocked=!1}deregisterDrain(){(0,i.x3)(this.agentIdentifier,this.featureName)}}},603:(e,t,r)=>{"use strict";r.d(t,{j:()=>K});var n=r(860),i=r(555),o=r(371),a=r(908),s=r(836),c=r(687),u=r(289),l=r(154),d=r(944),f=r(969),g=r(384),p=r(344);const m=["setErrorHandler","finished","addToTrace","addRelease","recordCustomEvent","addPageAction","setCurrentRouteName","setPageViewName","setCustomAttribute","interaction","noticeError","setUserId","setApplicationVersion","start",p.G4.RECORD,p.G4.PAUSE,"log","wrapLogger"],h=["setErrorHandler","finished","addToTrace","addRelease"];var v=r(863),b=r(614),y=r(993);var w=r(646),A=r(434);const R=new Map;function _(e,t,r,n){if("object"!=typeof t||!t||"string"!=typeof r||!r||"function"!=typeof t[r])return(0,d.R)(29);const i=function(e){return(e||s.ee).get("logger")}(e),o=(0,A.YM)(i),a=new w.y(s.P);a.level=n.level,a.customAttributes=n.customAttributes;const c=t[r]?.[A.Jt]||t[r];return R.set(c,a),o.inPlace(t,[r],"wrap-logger-",(()=>R.get(c))),i}function E(){const e=(0,g.pV)();m.forEach((t=>{e[t]=(...r)=>function(t,...r){let n=[];return Object.values(e.initializedAgents).forEach((e=>{e&&e.api?e.exposed&&e.api[t]&&n.push(e.api[t](...r)):(0,d.R)(38,t)})),n.length>1?n:n[0]}(t,...r)}))}const x={};function N(e,t,g=!1){t||(0,c.Ak)(e,"api");const m={};var w=s.ee.get(e),A=w.get("tracer");x[e]=b.g.OFF,w.on(p.G4.REPLAY_RUNNING,(t=>{x[e]=t}));var R="api-",E=R+"ixn-";function N(t,r,n,o){const a=(0,i.Vp)(e);return null===r?delete a.jsAttributes[t]:(0,i.x1)(e,{...a,jsAttributes:{...a.jsAttributes,[t]:r}}),j(R,n,!0,o||null===r?"session":void 0)(t,r)}function k(){}m.log=function(e,{customAttributes:t={},level:r=y.p_.INFO}={}){(0,a.p)(f.xV,["API/log/called"],void 0,n.K7.metrics,w),function(e,t,r={},i=y.p_.INFO){(0,a.p)(f.xV,["API/logging/".concat(i.toLowerCase(),"/called")],void 0,n.K7.metrics,e),(0,a.p)(y.ET,[(0,v.t)(),t,r,i],void 0,n.K7.logging,e)}(w,e,t,r)},m.wrapLogger=(e,t,{customAttributes:r={},level:i=y.p_.INFO}={})=>{(0,a.p)(f.xV,["API/wrapLogger/called"],void 0,n.K7.metrics,w),_(w,e,t,{customAttributes:r,level:i})},h.forEach((e=>{m[e]=j(R,e,!0,"api")})),m.addPageAction=j(R,"addPageAction",!0,n.K7.genericEvents),m.recordCustomEvent=j(R,"recordCustomEvent",!0,n.K7.genericEvents),m.setPageViewName=function(t,r){if("string"==typeof t)return"/"!==t.charAt(0)&&(t="/"+t),(0,o.f)(e).customTransaction=(r||"http://custom.transaction")+t,j(R,"setPageViewName",!0)()},m.setCustomAttribute=function(e,t,r=!1){if("string"==typeof e){if(["string","number","boolean"].includes(typeof t)||null===t)return N(e,t,"setCustomAttribute",r);(0,d.R)(40,typeof t)}else(0,d.R)(39,typeof e)},m.setUserId=function(e){if("string"==typeof e||null===e)return N("enduser.id",e,"setUserId",!0);(0,d.R)(41,typeof e)},m.setApplicationVersion=function(e){if("string"==typeof e||null===e)return N("application.version",e,"setApplicationVersion",!1);(0,d.R)(42,typeof e)},m.start=()=>{try{(0,a.p)(f.xV,["API/start/called"],void 0,n.K7.metrics,w),w.emit("manual-start-all")}catch(e){(0,d.R)(23,e)}},m[p.G4.RECORD]=function(){(0,a.p)(f.xV,["API/recordReplay/called"],void 0,n.K7.metrics,w),(0,a.p)(p.G4.RECORD,[],void 0,n.K7.sessionReplay,w)},m[p.G4.PAUSE]=function(){(0,a.p)(f.xV,["API/pauseReplay/called"],void 0,n.K7.metrics,w),(0,a.p)(p.G4.PAUSE,[],void 0,n.K7.sessionReplay,w)},m.interaction=function(e){return(new k).get("object"==typeof e?e:{})};const T=k.prototype={createTracer:function(e,t){var r={},i=this,o="function"==typeof t;return(0,a.p)(f.xV,["API/createTracer/called"],void 0,n.K7.metrics,w),g||(0,a.p)(E+"tracer",[(0,v.t)(),e,r],i,n.K7.spa,w),function(){if(A.emit((o?"":"no-")+"fn-start",[(0,v.t)(),i,o],r),o)try{return t.apply(this,arguments)}catch(e){const t="string"==typeof e?new Error(e):e;throw A.emit("fn-err",[arguments,this,t],r),t}finally{A.emit("fn-end",[(0,v.t)()],r)}}}};function j(e,t,r,i){return function(){return(0,a.p)(f.xV,["API/"+t+"/called"],void 0,n.K7.metrics,w),i&&(0,a.p)(e+t,[r?(0,v.t)():performance.now(),...arguments],r?null:this,i,w),r?void 0:this}}function I(){r.e(296).then(r.bind(r,778)).then((({setAPI:t})=>{t(e),(0,c.Ze)(e,"api")})).catch((e=>{(0,d.R)(27,e),w.abort()}))}return["actionText","setName","setAttribute","save","ignore","onEnd","getContext","end","get"].forEach((e=>{T[e]=j(E,e,void 0,g?n.K7.softNav:n.K7.spa)})),m.setCurrentRouteName=g?j(E,"routeName",void 0,n.K7.softNav):j(R,"routeName",!0,n.K7.spa),m.noticeError=function(t,r){"string"==typeof t&&(t=new Error(t)),(0,a.p)(f.xV,["API/noticeError/called"],void 0,n.K7.metrics,w),(0,a.p)("err",[t,(0,v.t)(),!1,r,!!x[e]],void 0,n.K7.jserrors,w)},l.RI?(0,u.GG)((()=>I()),!0):I(),m}var k=r(217),T=r(122);const j={accountID:void 0,trustKey:void 0,agentID:void 0,licenseKey:void 0,applicationID:void 0,xpid:void 0},I={};var S=r(284);const O=e=>{const t=e.startsWith("http");e+="/",r.p=t?e:"https://"+e};let P=!1;function K(e,t={},r,n){let{init:a,info:c,loader_config:u,runtime:d={},exposed:f=!0}=t;d.loaderType=r;const p=(0,g.pV)();c||(a=p.init,c=p.info,u=p.loader_config),(0,k.xN)(e.agentIdentifier,a||{}),function(e,t){if(!e)throw new Error("All loader-config objects require an agent identifier!");I[e]=(0,T.a)(t,j);const r=(0,g.nY)(e);r&&(r.loader_config=I[e])}(e.agentIdentifier,u||{}),c.jsAttributes??={},l.bv&&(c.jsAttributes.isWorker=!0),(0,i.x1)(e.agentIdentifier,c);const m=(0,k.D0)(e.agentIdentifier),h=[c.beacon,c.errorBeacon];P||(m.proxy.assets&&(O(m.proxy.assets),h.push(m.proxy.assets)),m.proxy.beacon&&h.push(m.proxy.beacon),E(),(0,g.US)("activatedFeatures",S.B),e.runSoftNavOverSpa&&=!0===m.soft_navigations.enabled&&m.feature_flags.includes("soft_nav")),d.denyList=[...m.ajax.deny_list||[],...m.ajax.block_internal?h:[]],d.ptid=e.agentIdentifier,(0,o.V)(e.agentIdentifier,d),e.ee=s.ee.get(e.agentIdentifier),void 0===e.api&&(e.api=N(e.agentIdentifier,n,e.runSoftNavOverSpa)),void 0===e.exposed&&(e.exposed=f),P=!0}},374:(e,t,r)=>{r.nc=(()=>{try{return document?.currentScript?.nonce}catch(e){}return""})()},860:(e,t,r)=>{"use strict";r.d(t,{$J:()=>u,K7:()=>s,P3:()=>c,XX:()=>i,qY:()=>n,v4:()=>a});const n="events",i="jserrors",o="browser/blobs",a="rum",s={ajax:"ajax",genericEvents:"generic_events",jserrors:i,logging:"logging",metrics:"metrics",pageAction:"page_action",pageViewEvent:"page_view_event",pageViewTiming:"page_view_timing",sessionReplay:"session_replay",sessionTrace:"session_trace",softNav:"soft_navigations",spa:"spa"},c={[s.pageViewEvent]:1,[s.pageViewTiming]:2,[s.metrics]:3,[s.jserrors]:4,[s.spa]:5,[s.ajax]:6,[s.sessionTrace]:7,[s.softNav]:8,[s.sessionReplay]:9,[s.logging]:10,[s.genericEvents]:11},u={[s.pageViewEvent]:a,[s.pageViewTiming]:n,[s.ajax]:n,[s.spa]:n,[s.softNav]:n,[s.metrics]:i,[s.jserrors]:i,[s.sessionTrace]:o,[s.sessionReplay]:o,[s.logging]:"browser/logs",[s.genericEvents]:"ins"}}},n={};function i(e){var t=n[e];if(void 0!==t)return t.exports;var o=n[e]={exports:{}};return r[e](o,o.exports,i),o.exports}i.m=r,i.d=(e,t)=>{for(var r in t)i.o(t,r)&&!i.o(e,r)&&Object.defineProperty(e,r,{enumerable:!0,get:t[r]})},i.f={},i.e=e=>Promise.all(Object.keys(i.f).reduce(((t,r)=>(i.f[r](e,t),t)),[])),i.u=e=>"nr-rum-1.278.2.min.js",i.o=(e,t)=>Object.prototype.hasOwnProperty.call(e,t),e={},t="NRBA-1.278.2.PROD:",i.l=(r,n,o,a)=>{if(e[r])e[r].push(n);else{var s,c;if(void 0!==o)for(var u=document.getElementsByTagName("script"),l=0;l<u.length;l++){var d=u[l];if(d.getAttribute("src")==r||d.getAttribute("data-webpack")==t+o){s=d;break}}if(!s){c=!0;var f={296:"sha512-CcLAdQT8vALDxC7qTmG3sMahdpDdoEgt5RoRndTIgP2G6iyOIFCnudUJJ4fWvi2ByZdRAiIvGuuv1EqTRojiZw=="};(s=document.createElement("script")).charset="utf-8",s.timeout=120,i.nc&&s.setAttribute("nonce",i.nc),s.setAttribute("data-webpack",t+o),s.src=r,0!==s.src.indexOf(window.location.origin+"/")&&(s.crossOrigin="anonymous"),f[a]&&(s.integrity=f[a])}e[r]=[n];var g=(t,n)=>{s.onerror=s.onload=null,clearTimeout(p);var i=e[r];if(delete e[r],s.parentNode&&s.parentNode.removeChild(s),i&&i.forEach((e=>e(n))),t)return t(n)},p=setTimeout(g.bind(null,void 0,{type:"timeout",target:s}),12e4);s.onerror=g.bind(null,s.onerror),s.onload=g.bind(null,s.onload),c&&document.head.appendChild(s)}},i.r=e=>{"undefined"!=typeof Symbol&&Symbol.toStringTag&&Object.defineProperty(e,Symbol.toStringTag,{value:"Module"}),Object.defineProperty(e,"__esModule",{value:!0})},i.p="https://js-agent.newrelic.com/",(()=>{var e={840:0,374:0};i.f.j=(t,r)=>{var n=i.o(e,t)?e[t]:void 0;if(0!==n)if(n)r.push(n[2]);else{var o=new Promise(((r,i)=>n=e[t]=[r,i]));r.push(n[2]=o);var a=i.p+i.u(t),s=new Error;i.l(a,(r=>{if(i.o(e,t)&&(0!==(n=e[t])&&(e[t]=void 0),n)){var o=r&&("load"===r.type?"missing":r.type),a=r&&r.target&&r.target.src;s.message="Loading chunk "+t+" failed.\n("+o+": "+a+")",s.name="ChunkLoadError",s.type=o,s.request=a,n[1](s)}}),"chunk-"+t,t)}};var t=(t,r)=>{var n,o,[a,s,c]=r,u=0;if(a.some((t=>0!==e[t]))){for(n in s)i.o(s,n)&&(i.m[n]=s[n]);if(c)c(i)}for(t&&t(r);u<a.length;u++)o=a[u],i.o(e,o)&&e[o]&&e[o][0](),e[o]=0},r=self["webpackChunk:NRBA-1.278.2.PROD"]=self["webpackChunk:NRBA-1.278.2.PROD"]||[];r.forEach(t.bind(null,0)),r.push=t.bind(null,r.push.bind(r))})(),(()=>{"use strict";i(374);var e=i(944),t=i(344),r=i(566);class n{agentIdentifier;constructor(e=(0,r.LA)(16)){this.agentIdentifier=e}#e(t,...r){if("function"==typeof this.api?.[t])return this.api[t](...r);(0,e.R)(35,t)}addPageAction(e,t){return this.#e("addPageAction",e,t)}recordCustomEvent(e,t){return this.#e("recordCustomEvent",e,t)}setPageViewName(e,t){return this.#e("setPageViewName",e,t)}setCustomAttribute(e,t,r){return this.#e("setCustomAttribute",e,t,r)}noticeError(e,t){return this.#e("noticeError",e,t)}setUserId(e){return this.#e("setUserId",e)}setApplicationVersion(e){return this.#e("setApplicationVersion",e)}setErrorHandler(e){return this.#e("setErrorHandler",e)}addRelease(e,t){return this.#e("addRelease",e,t)}log(e,t){return this.#e("log",e,t)}}class o extends n{#e(t,...r){if("function"==typeof this.api?.[t])return this.api[t](...r);(0,e.R)(35,t)}start(){return this.#e("start")}finished(e){return this.#e("finished",e)}recordReplay(){return this.#e(t.G4.RECORD)}pauseReplay(){return this.#e(t.G4.PAUSE)}addToTrace(e){return this.#e("addToTrace",e)}setCurrentRouteName(e){return this.#e("setCurrentRouteName",e)}interaction(){return this.#e("interaction")}wrapLogger(e,t,r){return this.#e("wrapLogger",e,t,r)}}var a=i(860),s=i(217);const c=Object.values(a.K7);function u(e){const t={};return c.forEach((r=>{t[r]=function(e,t){return!0===(0,s.gD)(t,"".concat(e,".enabled"))}(r,e)})),t}var l=i(603);var d=i(687),f=i(234),g=i(289),p=i(154),m=i(384);const h=e=>p.RI&&!0===(0,s.gD)(e,"privacy.cookies_enabled");function v(e){return!!(0,m.dV)().o.MO&&h(e)&&!0===(0,s.gD)(e,"session_trace.enabled")}var b=i(389);class y extends f.W{constructor(e,t,r=!0){super(e.agentIdentifier,t),this.auto=r,this.abortHandler=void 0,this.featAggregate=void 0,this.onAggregateImported=void 0,!1===e.init[this.featureName].autoStart&&(this.auto=!1),this.auto?(0,d.Ak)(e.agentIdentifier,t):this.ee.on("manual-start-all",(0,b.J)((()=>{(0,d.Ak)(e.agentIdentifier,this.featureName),this.auto=!0,this.importAggregator(e)})))}importAggregator(t,r={}){if(this.featAggregate||!this.auto)return;let n;this.onAggregateImported=new Promise((e=>{n=e}));const o=async()=>{let o;try{if(h(this.agentIdentifier)){const{setupAgentSession:e}=await i.e(296).then(i.bind(i,861));o=e(t)}}catch(t){(0,e.R)(20,t),this.ee.emit("internal-error",[t]),this.featureName===a.K7.sessionReplay&&this.abortHandler?.()}try{if(!this.#t(this.featureName,o))return(0,d.Ze)(this.agentIdentifier,this.featureName),void n(!1);const{lazyFeatureLoader:e}=await i.e(296).then(i.bind(i,103)),{Aggregate:a}=await e(this.featureName,"aggregate");this.featAggregate=new a(t,r),t.runtime.harvester.initializedAggregates.push(this.featAggregate),n(!0)}catch(t){(0,e.R)(34,t),this.abortHandler?.(),(0,d.Ze)(this.agentIdentifier,this.featureName,!0),n(!1),this.ee&&this.ee.abort()}};p.RI?(0,g.GG)((()=>o()),!0):o()}#t(e,t){switch(e){case a.K7.sessionReplay:return v(this.agentIdentifier)&&!!t;case a.K7.sessionTrace:return!!t;default:return!0}}}var w=i(630);class A extends y{static featureName=w.T;constructor(e,t=!0){super(e,w.T,t),this.importAggregator(e)}}var R=i(908),_=i(843),E=i(878),x=i(782),N=i(863);class k extends y{static featureName=x.T;constructor(e,t=!0){super(e,x.T,t),p.RI&&((0,_.u)((()=>(0,R.p)("docHidden",[(0,N.t)()],void 0,x.T,this.ee)),!0),(0,E.sp)("pagehide",(()=>(0,R.p)("winPagehide",[(0,N.t)()],void 0,x.T,this.ee))),this.importAggregator(e))}}var T=i(969);class j extends y{static featureName=T.TZ;constructor(e,t=!0){super(e,T.TZ,t),this.importAggregator(e)}}new class extends o{constructor(t,r){super(r),p.gm?(this.features={},(0,m.bQ)(this.agentIdentifier,this),this.desiredFeatures=new Set(t.features||[]),this.desiredFeatures.add(A),this.runSoftNavOverSpa=[...this.desiredFeatures].some((e=>e.featureName===a.K7.softNav)),(0,l.j)(this,t,t.loaderType||"agent"),this.run()):(0,e.R)(21)}get config(){return{info:this.info,init:this.init,loader_config:this.loader_config,runtime:this.runtime}}run(){try{const t=u(this.agentIdentifier),r=[...this.desiredFeatures];r.sort(((e,t)=>a.P3[e.featureName]-a.P3[t.featureName])),r.forEach((r=>{if(!t[r.featureName]&&r.featureName!==a.K7.pageViewEvent)return;if(this.runSoftNavOverSpa&&r.featureName===a.K7.spa)return;if(!this.runSoftNavOverSpa&&r.featureName===a.K7.softNav)return;const n=function(e){switch(e){case a.K7.ajax:return[a.K7.jserrors];case a.K7.sessionTrace:return[a.K7.ajax,a.K7.pageViewEvent];case a.K7.sessionReplay:return[a.K7.sessionTrace];case a.K7.pageViewTiming:return[a.K7.pageViewEvent];default:return[]}}(r.featureName).filter((e=>!(e in this.features)));n.length>0&&(0,e.R)(36,{targetFeature:r.featureName,missingDependencies:n}),this.features[r.featureName]=new r(this)}))}catch(t){(0,e.R)(22,t);for(const e in this.features)this.features[e].abortHandler?.();const r=(0,m.Zm)();delete r.initializedAgents[this.agentIdentifier]?.api,delete r.initializedAgents[this.agentIdentifier]?.features,delete this.sharedAggregator;return r.ee.get(this.agentIdentifier).abort(),!1}}}({features:[A,k,j],loaderType:"lite"})})()})();</script>
+    <meta content="" name="description"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Favicons -->
+    <link rel="icon" href="https://www.sifma.org/wp-content/themes/sifma-wp-theme/static/img/favicon/favicon.png">
+            <script>
+    (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+    (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+    m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+    })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+    ga('create', 'UA-841774-1', 'auto');
+    ga('send', 'pageview');
+    </script>
+                <title>
+                  MBS Notification and Settlement Dates - SIFMA - MBS Notification and Settlement Dates - SIFMA
+              </title>
+    <meta name='robots' content='index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1' />
+	<style>img:is([sizes="auto" i], [sizes^="auto," i]) { contain-intrinsic-size: 3000px 1500px }</style>
+	<script id="cookie-law-info-gcm-var-js">
+var _ckyGcm = {"status":true,"default_settings":[{"analytics":"denied","advertisement":"denied","functional":"denied","necessary":"granted","ad_user_data":"denied","ad_personalization":"denied","regions":"All"}],"wait_for_update":2000,"url_passthrough":false,"ads_data_redaction":false};
+</script>
+<script id="cookie-law-info-gcm-js" type="text/javascript" src="https://www.sifma.org/wp-content/plugins/cookie-law-info/lite/frontend/js/gcm.min.js"></script>
+<script id="cookieyes" type="text/javascript" src="https://cdn-cookieyes.com/client_data/6616c2a9959abe9b3bdee0dd/script.js"></script>
+	<!-- This site is optimized with the Yoast SEO Premium plugin v22.7 (Yoast SEO v24.0) - https://yoast.com/wordpress/plugins/seo/ -->
+	<meta name="description" content="SIFMA is the go-to resource for expert market insights, industry policy and education. Here, you will find our positions on legislation and regulation, industry data and analysis, and resources for effective and resilient capital markets. www.sifma.org" />
+	<link rel="canonical" href="https://www.sifma.org/resources/general/mbs-notification-and-settlement-dates/" />
+	<meta property="og:locale" content="en_US" />
+	<meta property="og:type" content="article" />
+	<meta property="og:title" content="MBS Notification and Settlement Dates" />
+	<meta property="og:description" content="Next year’s notification and settlement dates for mortgage-backed securities are shown in the table below; previous dates may be found in the file linked below the table. For inquiries, please contact Chris Killian." />
+	<meta property="og:url" content="https://www.sifma.org/resources/general/mbs-notification-and-settlement-dates/" />
+	<meta property="og:site_name" content="SIFMA" />
+	<meta property="article:modified_time" content="2025-01-13T17:05:34+00:00" />
+	<meta property="og:image" content="https://www.sifma.org/wp-content/uploads/2017/12/sifma-logo-HR.jpg" />
+	<meta property="og:image:width" content="1819" />
+	<meta property="og:image:height" content="878" />
+	<meta property="og:image:type" content="image/jpeg" />
+	<meta name="twitter:card" content="summary_large_image" />
+	<meta name="twitter:site" content="@sifma" />
+	<meta name="twitter:label1" content="Est. reading time" />
+	<meta name="twitter:data1" content="1 minute" />
+	<script type="application/ld+json" class="yoast-schema-graph">{"@context":"https://schema.org","@graph":[{"@type":"WebPage","@id":"https://www.sifma.org/resources/general/mbs-notification-and-settlement-dates/","url":"https://www.sifma.org/resources/general/mbs-notification-and-settlement-dates/","name":"MBS Notification and Settlement Dates - SIFMA","isPartOf":{"@id":"https://www.sifma.org/#website"},"datePublished":"2024-08-12T14:18:22+00:00","dateModified":"2025-01-13T17:05:34+00:00","description":"SIFMA is the go-to resource for expert market insights, industry policy and education. Here, you will find our positions on legislation and regulation, industry data and analysis, and resources for effective and resilient capital markets. www.sifma.org","breadcrumb":{"@id":"https://www.sifma.org/resources/general/mbs-notification-and-settlement-dates/#breadcrumb"},"inLanguage":"en-US","potentialAction":[{"@type":"ReadAction","target":["https://www.sifma.org/resources/general/mbs-notification-and-settlement-dates/"]}]},{"@type":"BreadcrumbList","@id":"https://www.sifma.org/resources/general/mbs-notification-and-settlement-dates/#breadcrumb","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://www.sifma.org/"},{"@type":"ListItem","position":2,"name":"General Resources","item":"https://www.sifma.org/resources/archive/general/"},{"@type":"ListItem","position":3,"name":"MBS Notification and Settlement Dates"}]},{"@type":"WebSite","@id":"https://www.sifma.org/#website","url":"https://www.sifma.org/","name":"SIFMA","description":"Invested in America","publisher":{"@id":"https://www.sifma.org/#organization"},"potentialAction":[{"@type":"SearchAction","target":{"@type":"EntryPoint","urlTemplate":"https://www.sifma.org/?s={search_term_string}"},"query-input":{"@type":"PropertyValueSpecification","valueRequired":true,"valueName":"search_term_string"}}],"inLanguage":"en-US"},{"@type":"Organization","@id":"https://www.sifma.org/#organization","name":"SIFMA","url":"https://www.sifma.org/","logo":{"@type":"ImageObject","inLanguage":"en-US","@id":"https://www.sifma.org/#/schema/logo/image/","url":"https://www.sifma.org/wp-content/uploads/2022/09/27820a3e7fd367baf15c0045378b1168_400x400.jpeg","contentUrl":"https://www.sifma.org/wp-content/uploads/2022/09/27820a3e7fd367baf15c0045378b1168_400x400.jpeg","width":400,"height":400,"caption":"SIFMA"},"image":{"@id":"https://www.sifma.org/#/schema/logo/image/"},"sameAs":["https://x.com/sifma","https://www.linkedin.com/company/sifma/"]}]}</script>
+	<!-- / Yoast SEO Premium plugin. -->
+
+
+<link rel='dns-prefetch' href='//js.hs-scripts.com' />
+<link rel='dns-prefetch' href='//www.sifma.org' />
+<link rel='dns-prefetch' href='//unpkg.com' />
+<link rel='dns-prefetch' href='//ajax.googleapis.com' />
+<link rel='stylesheet' id='mfb-css' href='https://www.sifma.org/wp-content/themes/sifma-wp-theme/static/css/mfb.css?ver=6.7.1' type='text/css' media='all' />
+<link rel='stylesheet' id='ionicons-css' href='//unpkg.com/ionicons@4.5.10-0/dist/css/ionicons.min.css?ver=6.7.1' type='text/css' media='all' />
+<link rel='stylesheet' id='wp-block-library-css' href='https://www.sifma.org/wp-includes/css/dist/block-library/style.min.css?ver=6.7.1' type='text/css' media='all' />
+<style id='classic-theme-styles-inline-css' type='text/css'>
+/*! This file is auto-generated */
+.wp-block-button__link{color:#fff;background-color:#32373c;border-radius:9999px;box-shadow:none;text-decoration:none;padding:calc(.667em + 2px) calc(1.333em + 2px);font-size:1.125em}.wp-block-file__button{background:#32373c;color:#fff;text-decoration:none}
+</style>
+<style id='global-styles-inline-css' type='text/css'>
+:root{--wp--preset--aspect-ratio--square: 1;--wp--preset--aspect-ratio--4-3: 4/3;--wp--preset--aspect-ratio--3-4: 3/4;--wp--preset--aspect-ratio--3-2: 3/2;--wp--preset--aspect-ratio--2-3: 2/3;--wp--preset--aspect-ratio--16-9: 16/9;--wp--preset--aspect-ratio--9-16: 9/16;--wp--preset--color--black: #000000;--wp--preset--color--cyan-bluish-gray: #abb8c3;--wp--preset--color--white: #ffffff;--wp--preset--color--pale-pink: #f78da7;--wp--preset--color--vivid-red: #cf2e2e;--wp--preset--color--luminous-vivid-orange: #ff6900;--wp--preset--color--luminous-vivid-amber: #fcb900;--wp--preset--color--light-green-cyan: #7bdcb5;--wp--preset--color--vivid-green-cyan: #00d084;--wp--preset--color--pale-cyan-blue: #8ed1fc;--wp--preset--color--vivid-cyan-blue: #0693e3;--wp--preset--color--vivid-purple: #9b51e0;--wp--preset--gradient--vivid-cyan-blue-to-vivid-purple: linear-gradient(135deg,rgba(6,147,227,1) 0%,rgb(155,81,224) 100%);--wp--preset--gradient--light-green-cyan-to-vivid-green-cyan: linear-gradient(135deg,rgb(122,220,180) 0%,rgb(0,208,130) 100%);--wp--preset--gradient--luminous-vivid-amber-to-luminous-vivid-orange: linear-gradient(135deg,rgba(252,185,0,1) 0%,rgba(255,105,0,1) 100%);--wp--preset--gradient--luminous-vivid-orange-to-vivid-red: linear-gradient(135deg,rgba(255,105,0,1) 0%,rgb(207,46,46) 100%);--wp--preset--gradient--very-light-gray-to-cyan-bluish-gray: linear-gradient(135deg,rgb(238,238,238) 0%,rgb(169,184,195) 100%);--wp--preset--gradient--cool-to-warm-spectrum: linear-gradient(135deg,rgb(74,234,220) 0%,rgb(151,120,209) 20%,rgb(207,42,186) 40%,rgb(238,44,130) 60%,rgb(251,105,98) 80%,rgb(254,248,76) 100%);--wp--preset--gradient--blush-light-purple: linear-gradient(135deg,rgb(255,206,236) 0%,rgb(152,150,240) 100%);--wp--preset--gradient--blush-bordeaux: linear-gradient(135deg,rgb(254,205,165) 0%,rgb(254,45,45) 50%,rgb(107,0,62) 100%);--wp--preset--gradient--luminous-dusk: linear-gradient(135deg,rgb(255,203,112) 0%,rgb(199,81,192) 50%,rgb(65,88,208) 100%);--wp--preset--gradient--pale-ocean: linear-gradient(135deg,rgb(255,245,203) 0%,rgb(182,227,212) 50%,rgb(51,167,181) 100%);--wp--preset--gradient--electric-grass: linear-gradient(135deg,rgb(202,248,128) 0%,rgb(113,206,126) 100%);--wp--preset--gradient--midnight: linear-gradient(135deg,rgb(2,3,129) 0%,rgb(40,116,252) 100%);--wp--preset--font-size--small: 13px;--wp--preset--font-size--medium: 20px;--wp--preset--font-size--large: 36px;--wp--preset--font-size--x-large: 42px;--wp--preset--spacing--20: 0.44rem;--wp--preset--spacing--30: 0.67rem;--wp--preset--spacing--40: 1rem;--wp--preset--spacing--50: 1.5rem;--wp--preset--spacing--60: 2.25rem;--wp--preset--spacing--70: 3.38rem;--wp--preset--spacing--80: 5.06rem;--wp--preset--shadow--natural: 6px 6px 9px rgba(0, 0, 0, 0.2);--wp--preset--shadow--deep: 12px 12px 50px rgba(0, 0, 0, 0.4);--wp--preset--shadow--sharp: 6px 6px 0px rgba(0, 0, 0, 0.2);--wp--preset--shadow--outlined: 6px 6px 0px -3px rgba(255, 255, 255, 1), 6px 6px rgba(0, 0, 0, 1);--wp--preset--shadow--crisp: 6px 6px 0px rgba(0, 0, 0, 1);}:where(.is-layout-flex){gap: 0.5em;}:where(.is-layout-grid){gap: 0.5em;}body .is-layout-flex{display: flex;}.is-layout-flex{flex-wrap: wrap;align-items: center;}.is-layout-flex > :is(*, div){margin: 0;}body .is-layout-grid{display: grid;}.is-layout-grid > :is(*, div){margin: 0;}:where(.wp-block-columns.is-layout-flex){gap: 2em;}:where(.wp-block-columns.is-layout-grid){gap: 2em;}:where(.wp-block-post-template.is-layout-flex){gap: 1.25em;}:where(.wp-block-post-template.is-layout-grid){gap: 1.25em;}.has-black-color{color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-color{color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-color{color: var(--wp--preset--color--white) !important;}.has-pale-pink-color{color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-color{color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-color{color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-color{color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-color{color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-color{color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-color{color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-color{color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-color{color: var(--wp--preset--color--vivid-purple) !important;}.has-black-background-color{background-color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-background-color{background-color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-background-color{background-color: var(--wp--preset--color--white) !important;}.has-pale-pink-background-color{background-color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-background-color{background-color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-background-color{background-color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-background-color{background-color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-background-color{background-color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-background-color{background-color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-background-color{background-color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-background-color{background-color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-background-color{background-color: var(--wp--preset--color--vivid-purple) !important;}.has-black-border-color{border-color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-border-color{border-color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-border-color{border-color: var(--wp--preset--color--white) !important;}.has-pale-pink-border-color{border-color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-border-color{border-color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-border-color{border-color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-border-color{border-color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-border-color{border-color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-border-color{border-color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-border-color{border-color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-border-color{border-color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-border-color{border-color: var(--wp--preset--color--vivid-purple) !important;}.has-vivid-cyan-blue-to-vivid-purple-gradient-background{background: var(--wp--preset--gradient--vivid-cyan-blue-to-vivid-purple) !important;}.has-light-green-cyan-to-vivid-green-cyan-gradient-background{background: var(--wp--preset--gradient--light-green-cyan-to-vivid-green-cyan) !important;}.has-luminous-vivid-amber-to-luminous-vivid-orange-gradient-background{background: var(--wp--preset--gradient--luminous-vivid-amber-to-luminous-vivid-orange) !important;}.has-luminous-vivid-orange-to-vivid-red-gradient-background{background: var(--wp--preset--gradient--luminous-vivid-orange-to-vivid-red) !important;}.has-very-light-gray-to-cyan-bluish-gray-gradient-background{background: var(--wp--preset--gradient--very-light-gray-to-cyan-bluish-gray) !important;}.has-cool-to-warm-spectrum-gradient-background{background: var(--wp--preset--gradient--cool-to-warm-spectrum) !important;}.has-blush-light-purple-gradient-background{background: var(--wp--preset--gradient--blush-light-purple) !important;}.has-blush-bordeaux-gradient-background{background: var(--wp--preset--gradient--blush-bordeaux) !important;}.has-luminous-dusk-gradient-background{background: var(--wp--preset--gradient--luminous-dusk) !important;}.has-pale-ocean-gradient-background{background: var(--wp--preset--gradient--pale-ocean) !important;}.has-electric-grass-gradient-background{background: var(--wp--preset--gradient--electric-grass) !important;}.has-midnight-gradient-background{background: var(--wp--preset--gradient--midnight) !important;}.has-small-font-size{font-size: var(--wp--preset--font-size--small) !important;}.has-medium-font-size{font-size: var(--wp--preset--font-size--medium) !important;}.has-large-font-size{font-size: var(--wp--preset--font-size--large) !important;}.has-x-large-font-size{font-size: var(--wp--preset--font-size--x-large) !important;}
+:where(.wp-block-post-template.is-layout-flex){gap: 1.25em;}:where(.wp-block-post-template.is-layout-grid){gap: 1.25em;}
+:where(.wp-block-columns.is-layout-flex){gap: 2em;}:where(.wp-block-columns.is-layout-grid){gap: 2em;}
+:root :where(.wp-block-pullquote){font-size: 1.5em;line-height: 1.6;}
+</style>
+<link rel='stylesheet' id='tablepress-default-css' href='https://www.sifma.org/wp-content/plugins/tablepress/css/build/default.css?ver=3.0.1' type='text/css' media='all' />
+<style id='tablepress-default-inline-css' type='text/css'>
+.tablepress-id-1 thead th,.tablepress-id-1 tfoot th{background-color:#992a82;color:#fff}.tablepress-id-1 .odd td{background-color:#f7f7f7}.tablepress-id-1 .even td{background-color:#c6e7f4}.tablepress-id-1,.tablepress-id-1 tr,.tablepress-id-1 tbody td,.tablepress-id-1 thead th,.tablepress-id-1 tfoot th{border:none}.tablepress-id-1 tbody td{color:#464748}
+</style>
+<link rel='stylesheet' id='sifma-theme-css' href='https://www.sifma.org/wp-content/themes/sifma-wp-theme/static/css/style.css?ver=1736673225' type='text/css' media='screen' />
+<link rel='stylesheet' id='sifma-theme-print-css' href='https://www.sifma.org/wp-content/themes/sifma-wp-theme/static/css/print.css?ver=1736673225' type='text/css' media='print' />
+<link rel='stylesheet' id='custom-css-css' href='https://www.sifma.org/wp-content/themes/sifma-wp-theme/static/css/custom.css?ver=1736673225' type='text/css' media='screen' />
+<link rel="https://api.w.org/" href="https://www.sifma.org/wp-json/" /><link rel="alternate" title="JSON" type="application/json" href="https://www.sifma.org/wp-json/wp/v2/general_resource/145257" /><link rel="EditURI" type="application/rsd+xml" title="RSD" href="https://www.sifma.org/xmlrpc.php?rsd" />
+<link rel='shortlink' href='https://www.sifma.org/?p=145257' />
+<link rel="alternate" title="oEmbed (JSON)" type="application/json+oembed" href="https://www.sifma.org/wp-json/oembed/1.0/embed?url=https%3A%2F%2Fwww.sifma.org%2Fresources%2Fgeneral%2Fmbs-notification-and-settlement-dates%2F" />
+<link rel="alternate" title="oEmbed (XML)" type="text/xml+oembed" href="https://www.sifma.org/wp-json/oembed/1.0/embed?url=https%3A%2F%2Fwww.sifma.org%2Fresources%2Fgeneral%2Fmbs-notification-and-settlement-dates%2F&#038;format=xml" />
+		<style type="text/css">
+						ol.footnotes>li {list-style-type:decimal;}
+						ol.footnotes { color:#666666; }
+ol.footnotes li { font-size:80%; }
+		</style>
+		<!--<script type="text/javascript"> adroll_adv_id = "ON4Y3CJ4MFFZTEQOUVUIDC"; adroll_pix_id = "SN5AP4M6EJGBPFOKJGV4L2"; adroll_version = "2.0"; (function(w, d, e, o, a) { w.__adroll_loaded = true; w.adroll = w.adroll || []; w.adroll.f = [ 'setProperties', 'identify', 'track' ]; var roundtripUrl = https://s.adroll.com/j/ + adroll_adv_id + "/roundtrip.js"; for (a = 0; a < w.adroll.f.length; a++) { w.adroll[w.adroll.f[a]] = w.adroll[w.adroll.f[a]] || (function(n) { return function() { w.adroll.push([ n, arguments ]) } })(w.adroll.f[a]) } e = d.createElement('script'); o = d.getElementsByTagName('script')[0]; e.async = 1; e.src = roundtripUrl; o.parentNode.insertBefore(e, o); })(window, document); adroll.track("pageView"); </script> -->
+
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-W6ZGFJK');</script>
+<!-- End Google Tag Manager -->			<!-- DO NOT COPY THIS SNIPPET! Start of Page Analytics Tracking for HubSpot WordPress plugin v11.1.75-->
+			<script class="hsq-set-content-id" data-content-id="blog-post">
+				var _hsq = _hsq || [];
+				_hsq.push(["setContentType", "blog-post"]);
+			</script>
+			<!-- DO NOT COPY THIS SNIPPET! End of Page Analytics Tracking for HubSpot WordPress plugin -->
+			<script type="text/javascript">var algolia = {"debug":false,"application_id":"V44ZNN2GQQ","search_api_key":"24dfca6f113a3cdc7b775048aa8b5197","powered_by_enabled":true,"query":"","autocomplete":{"sources":[{"index_id":"posts_event","index_name":"prod_wp_posts_event","label":"Events","admin_name":"Events","position":10,"max_suggestions":5,"tmpl_suggestion":"autocomplete-post-suggestion","enabled":true}],"input_selector":"input[name='s']:not('.no-autocomplete')"},"indices":{"searchable_posts":{"name":"prod_wp_searchable_posts","id":"searchable_posts","enabled":true,"replicas":[]},"posts_event":{"name":"prod_wp_posts_event","id":"posts_event","enabled":true,"replicas":[]}}};</script><style id="uagb-style-conditional-extension">@media (min-width: 1025px){body .uag-hide-desktop.uagb-google-map__wrap,body .uag-hide-desktop{display:none !important}}@media (min-width: 768px) and (max-width: 1024px){body .uag-hide-tab.uagb-google-map__wrap,body .uag-hide-tab{display:none !important}}@media (max-width: 767px){body .uag-hide-mob.uagb-google-map__wrap,body .uag-hide-mob{display:none !important}}</style><style id="uagb-style-frontend-145257">.uag-blocks-common-selector{z-index:var(--z-index-desktop) !important}@media (max-width: 976px){.uag-blocks-common-selector{z-index:var(--z-index-tablet) !important}}@media (max-width: 767px){.uag-blocks-common-selector{z-index:var(--z-index-mobile) !important}}
+</style>		<style type="text/css" id="wp-custom-css">
+			/* TESTING OUT FLIPING IMAGE AND CONTENT IN RESULTS GRID */
+
+ .tease-search__download-wrap {
+	 display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+}
+.tease-search__download-wrap .download-icon{
+	padding-bottom:0;
+}
+ .tease-search__download-wrap .download-icon svg{
+	position:relative;
+}
+@media (min-width: 1200px) {
+    .tease-search__download-wrap {
+        width: 100%;
+        max-width: 150px;
+    }
+	.tease-search__content {
+        padding-left: 1.68%;
+        padding-right: 1.68%;
+        width: 100%;
+    }
+}
+@media (min-width: 768px) {
+    .tease-search__content {
+        -webkit-box-ordinal-group: 3;
+        -webkit-order: 2;
+        -ms-flex-order: 2;
+        order: 2;
+    }
+	    .tease-search__image {
+        -webkit-box-ordinal-group: 4;
+        -webkit-order: 3;
+        -ms-flex-order: 3;
+        order: 3;
+				padding-right:1.5%;
+				padding-left: 1.5%;
+    }
+}
+
+
+/* END TEST */
+
+/* NEW FEATURED BUTTONS GRID */
+.featured-button-links{
+	display:flex;
+	row-gap: 20px;
+	flex-wrap: wrap;
+	column-gap: 20px;
+	padding-bottom: 30px;
+}
+
+/* END BUTTONS GRID */
+
+
+
+
+
+
+.page-id-776216 .l--main,
+.page-id-776220 .l--main{
+    width: initial;
+}
+
+.footer__meta-list--last .footer__meta-list-item--link {
+     color: #302825; 
+}
+
+.report-chapter-1 .landing-header__subhead {
+    font-weight: 700;
+    position: absolute;
+    top: 105px;
+    left: 190px;
+    font-size: -webkit-calc(30 * (100vw - 100px)/(1800 - 100))!important;
+    font-size: calc(30 * (100vw - 100px)/(1800 - 100))!important;
+}
+
+@media only screen and (max-width: 768px) {
+	#sifma-chapter-graphic {
+		display: none;
+	}
+	/*.sifma-toc {
+		display: none;
+	}*/
+	
+}
+.general_resource-template-default .landing-header__heading {
+	font-size: 35px !important;
+}
+.general_resource-template-default .landing-header__subhead {
+	font-size: 18px !important;
+}
+@media only screen and (max-width: 768px) {
+	.home-stat {
+		font-size: 60px !important;
+	}
+}
+
+.ais-count-sort {
+	margin-top: 15px;
+}
+
+.page-template-page-podcast-landing .ais-count-sort {
+	margin-top: 0px;
+}
+
+.postid-143826 pre {
+	display: none;
+}
+
+
+@media (min-width: 1200px) {
+.page-template-page-podcast-landing .tease-search__image {
+    width: 15.5% !important;
+}
+	
+.page-id-115899 .tease-search__image {
+    width: 15.5% !important;
+}
+}
+
+.page-template-page-podcast-landing .tease-search__image {
+    min-width: 15.5% !important;
+}
+
+.page-id-115899 .tease-search__image {
+    min-width: 15.5% !important;
+}
+
+
+.board-wrapper {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.board-wrapper .headshot {
+	font-size: 14px;
+	line-height: 24px;
+	margin-right: 20px;
+}
+
+.board-wrapper .headshot img {
+	margin-right: 20px;
+	margin-top: 0;
+}
+
+.headshot {
+	margin-bottom: 30px
+}
+
+.headshot img {
+	height: 150px;
+	object-fit: cover;
+	object-position: top;
+}
+
+
+.page-id-130415 .l--main {
+    width: initial;
+}
+
+@media (max-width: 1200px) {
+	.board-wrapper {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+}
+
+iframe {
+	width: 640px !important;
+	height: 400px !important;
+}
+
+@media (max-width: 768px) {
+iframe {
+	width: 100% !important;
+	height: 300px !important;
+}
+
+}
+@media (min-width: 768px) {
+#mobile-side-scroll {
+	display:none;
+}
+
+}
+/* TIMER CSS FOR T+1 */
+.timer{
+	justify-self:center;
+}
+ #timer_section{
+     display:flex;
+     justify-content: space-evenly;
+flex-wrap: wrap;
+   }
+   #timer_section .timer_wrapper{
+      padding: 30px;
+   }
+   #timer_section .timer_wrapper h2{
+      text-align:center;
+      font-weight: bold;
+      font-size: 30px;
+      margin-bottom: 0;
+   }
+   #timer_section .timer{
+     display:flex;
+   }
+   #timer_section .timer div{
+     text-align:center;
+     padding: 10px;
+     font-size: 2rem;
+   }
+   #timer_section .timer div span{
+       display:block;
+     font-size: 18px;
+   }
+.timer-wrapper>h2{
+	text-align:center;
+}
+
+
+/*########################
+remove extra padding below podcasts ##############*/
+div[id^="buzzsprout-player-"]>iframe{
+	height: 200px !important;
+}
+iframe[id^="buzzsprout-player-"]{
+	height: 200px !important;
+}
+/*HIDE CTA ON SPECIFIC ISSUE/*/
+.term-485 .base-cta{
+	display:none;
+}
+
+body p, li{
+	font-family: real-text, ariel, sans-serif;
+	font-size: 16px;
+}
+
+
+/*########################
+STYLE BUTTONS AND CONTAINERS ON LISTING PAGES ##############*/
+.content_index_page-template-default .featured-button-links .base-button--link {
+	min-width: 250px !important;
+}
+
+.page-template-page-aggregate .featured-button-links .base-button--link {
+	min-width: 250px !important;
+
+}
+
+.content_index_page-template-default .index-header__text{
+	width: 100%
+}
+
+.content_index_page-template-default .index-header__text p{
+	width: 80%
+}
+
+.page-template-page-aggregate .index-header__text{
+	width: 100%
+}
+
+
+.page-template-page-aggregate .index-header__text p{
+	width: 80%
+}
+
+.general_resource-template-default .uagb-is-root-container{margin-left: 17% !important;}		</style>
+		
+  </head>
+  <body class="general_resource-template-default single single-general_resource postid-145257 has-blocks ">
+    <!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-NVT8WFQ"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+        <svg display="none" width="0" height="0" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+      <defs>
+        <symbol id="arrows" viewBox="0 0 20 20">
+          <path d="M10 1l-5 7h10l-5-7zM10 19l5-7h-10l5 7z"></path>
+        </symbol>
+        <symbol id="check" viewBox="0 0 39 32">
+          <path d="M12.571 20.113l-7.542-7.542-5.028 5.028 12.571 12.571 25.142-25.142-5.028-5.028-20.113 20.113z"></path>
+        </symbol>
+        <symbol id="download" viewBox="0 0 26 32">
+          <path fill="#f1f7e8" d="M0 0h21.227l4.373 4.373v27.627h-25.6z"></path>
+          <path fill="#68a30c" d="M5.511 22.4c0.178 0 0.32 0.036 0.498 0.071 0.142 0.036 0.284 0.107 0.391 0.213s0.213 0.213 0.249 0.391c0.071 0.142 0.107 0.32 0.107 0.533 0 0.249-0.036 0.462-0.107 0.604s-0.142 0.284-0.284 0.391c-0.107 0.107-0.249 0.178-0.356 0.213-0.142 0.036-0.284 0.071-0.391 0.071h-0.853v-2.489h0.747zM5.12 22.72v1.849h0.498c0.071 0 0.178 0 0.284-0.036s0.178-0.071 0.249-0.142c0.071-0.071 0.142-0.178 0.178-0.284s0.071-0.284 0.071-0.462c0-0.107 0-0.249-0.036-0.356s-0.071-0.213-0.142-0.284c-0.071-0.071-0.142-0.142-0.249-0.178s-0.249-0.071-0.391-0.071h-0.462zM8 23.004c0.142 0 0.249 0.036 0.356 0.071s0.213 0.107 0.284 0.213c0.071 0.071 0.142 0.178 0.178 0.32 0.071 0.107 0.071 0.213 0.071 0.356s-0.036 0.284-0.071 0.391c-0.036 0.107-0.107 0.213-0.178 0.32-0.071 0.071-0.178 0.142-0.284 0.213-0.107 0.036-0.249 0.071-0.391 0.071s-0.284-0.036-0.391-0.071-0.213-0.107-0.284-0.213c-0.071-0.071-0.142-0.178-0.178-0.32s0-0.249 0-0.391c0-0.142 0.036-0.284 0.071-0.391s0.107-0.213 0.178-0.32c0.071-0.071 0.178-0.142 0.284-0.213 0.107-0.036 0.213-0.036 0.356-0.036zM8 23.289c-0.178 0-0.284 0.071-0.391 0.178s-0.142 0.284-0.142 0.498c0 0.213 0.036 0.391 0.142 0.498s0.213 0.178 0.391 0.178c0.178 0 0.284-0.071 0.391-0.178s0.142-0.284 0.142-0.498c0-0.213-0.036-0.356-0.142-0.498s-0.213-0.178-0.391-0.178zM11.164 24.889h-0.427l-0.356-1.387-0.356 1.387h-0.427l-0.533-1.849h0.391l0.356 1.458 0.356-1.458h0.391l0.391 1.458 0.356-1.458h0.356l-0.498 1.849zM12.942 23.004c0.213 0 0.356 0.071 0.462 0.178s0.178 0.284 0.178 0.533v1.173h-0.356v-1.28c0-0.071-0.036-0.107-0.071-0.178s-0.071-0.071-0.107-0.107-0.107-0.036-0.178-0.036-0.142 0-0.178 0.036-0.107 0.071-0.142 0.107c-0.036 0.036-0.071 0.107-0.107 0.178s-0.036 0.142-0.036 0.213v1.067h-0.356v-1.849h0.356v0.249c0.071-0.107 0.142-0.178 0.249-0.213 0.071-0.071 0.178-0.071 0.284-0.071zM14.436 24.391v0.107c0 0.036 0 0.036 0.036 0.071l0.036 0.036h0.178v0.284c-0.071 0-0.142 0.036-0.178 0.036-0.142 0-0.213-0.036-0.284-0.107s-0.107-0.178-0.107-0.356v-2.062h0.356v1.991zM15.893 23.004c0.142 0 0.249 0.036 0.356 0.071s0.213 0.107 0.284 0.213c0.071 0.071 0.142 0.178 0.178 0.32 0.036 0.107 0.071 0.249 0.071 0.391s-0.036 0.284-0.071 0.391c-0.036 0.107-0.107 0.213-0.178 0.32-0.071 0.071-0.178 0.142-0.284 0.213-0.107 0.036-0.249 0.071-0.391 0.071s-0.284-0.036-0.391-0.071-0.213-0.107-0.284-0.213c-0.071-0.071-0.142-0.178-0.178-0.32-0.036-0.107-0.071-0.249-0.071-0.391s0.036-0.284 0.071-0.391c0.036-0.107 0.107-0.213 0.178-0.32 0.071-0.071 0.178-0.142 0.284-0.213s0.284-0.071 0.427-0.071zM15.893 23.289c-0.178 0-0.284 0.071-0.391 0.178s-0.142 0.284-0.142 0.498c0 0.213 0.036 0.391 0.142 0.498s0.213 0.178 0.391 0.178c0.178 0 0.284-0.071 0.391-0.178s0.142-0.284 0.142-0.498c0-0.213-0.036-0.356-0.142-0.498-0.107-0.107-0.249-0.178-0.391-0.178zM17.92 23.004c0.142 0 0.249 0 0.356 0.036s0.178 0.071 0.213 0.107c0.071 0.036 0.107 0.107 0.142 0.178s0.036 0.142 0.036 0.249v1.138c0 0.071 0.036 0.142 0.036 0.213h-0.356c0-0.036-0.036-0.071-0.036-0.107v-0.107c-0.071 0.107-0.178 0.142-0.284 0.178s-0.213 0.071-0.32 0.071-0.178 0-0.284-0.036-0.142-0.071-0.213-0.107c-0.036-0.036-0.107-0.107-0.107-0.178s-0.036-0.142-0.036-0.213c0-0.178 0.071-0.284 0.178-0.391s0.284-0.178 0.569-0.213l0.462-0.071v-0.249c0-0.036-0.036-0.071-0.071-0.107s-0.071-0.036-0.107-0.071-0.107 0-0.178 0c-0.142 0-0.249 0.036-0.32 0.071s-0.107 0.142-0.107 0.249h-0.356c0-0.107 0.036-0.178 0.071-0.249s0.071-0.142 0.142-0.178c0.071-0.036 0.142-0.071 0.249-0.107 0.107-0.107 0.213-0.107 0.32-0.107zM17.956 24c-0.178 0.036-0.284 0.071-0.356 0.107s-0.107 0.142-0.107 0.213c0 0.071 0.036 0.142 0.071 0.213s0.142 0.071 0.249 0.071c0.071 0 0.142 0 0.178-0.036 0.071-0.036 0.107-0.036 0.178-0.071 0.036-0.036 0.071-0.071 0.107-0.142s0.036-0.107 0.036-0.178v-0.249l-0.356 0.071zM20.8 24.889h-0.356v-0.213c-0.071 0.107-0.142 0.178-0.249 0.213s-0.213 0.071-0.284 0.071c-0.142 0-0.249-0.036-0.356-0.071s-0.178-0.107-0.249-0.213c-0.071-0.071-0.142-0.178-0.178-0.32s-0.071-0.249-0.071-0.391c0-0.142 0.036-0.284 0.071-0.391s0.107-0.213 0.178-0.32c0.071-0.071 0.142-0.142 0.249-0.213 0.107-0.036 0.213-0.071 0.356-0.071s0.249 0.036 0.32 0.071c0.071 0.036 0.178 0.107 0.213 0.178v-0.818h0.356v2.489zM19.947 23.289c-0.178 0-0.284 0.071-0.391 0.178-0.071 0.107-0.142 0.284-0.142 0.498s0.036 0.391 0.142 0.498c0.071 0.107 0.213 0.178 0.391 0.178 0.071 0 0.142 0 0.213-0.036s0.107-0.071 0.142-0.142l0.107-0.213c0.036-0.071 0.036-0.178 0.036-0.284s0-0.213-0.036-0.284l-0.107-0.213c-0.036-0.071-0.107-0.107-0.142-0.142-0.071 0-0.142-0.036-0.213-0.036z"></path>
+          <path d="M12.302 17.138l-1.778-1.778-0.747 0.747 3.022 3.022 3.022-3.022-0.747-0.747-1.742 1.707v-9.422h-1.067l0.036 9.493z"></path>
+          <path d="M21.227 0h-21.227v32h25.6v-27.627l-4.373-4.373zM25.244 31.644h-24.889v-31.289h20.622v4.267h4.267v27.022z"></path>
+        </symbol>
+        <symbol id="inline-download" viewBox="0 0 16 32">
+          <path d="M0.865 29.117h14.414v2.883h-14.414zM6.631 20.757l-4.613-4.613-2.018 2.018 8.072 8.072 8.072-8.072-2.018-2.018-4.613 4.613v-20.757h-2.883z"></path>
+        </symbol>
+        <symbol id="minus" viewBox="0 0 18 18">
+          <path d="M0,8h18v2H0V8z"></path>
+        </symbol>
+        <symbol id="plus" viewBox="0 0 18 18">
+        <path d="M10 8V0H8v8H0v2h8v8h2v-8h8V8h-8z"></path>
+        </symbol>
+        <symbol id="back-button" viewBox="0 0 19 10">
+        <path fill="#B8ABA7" d="M4.94974747,4 L19,4 L19,5.13756313 L19,9.27512627 L17,9.27512627 L17,6 L4.94974747,6 L4.94974747,9.89949494 L-9.82769421e-13,4.94974747 L4.94974747,-7.37188088e-14 L4.94974747,4 Z"/>
+      </symbol>
+      </defs>
+    </svg>
+
+    <a name="top" aria-hidden="true"></a>
+    <div class="wrapper">
+
+      <header class="l--header-site" role="banner">
+
+  <div class="header-inner">
+
+    <div class="site-branding">
+  <a href="https://www.sifma.org" class="site-branding--link-svg" title="Home">
+    <span class="visually-hidden">SIFMA</span>
+    <svg class="site-branding--svg site-branding--dark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 219.4 106.3">
+  <path class="site-branding__text" d="M31.4 60.7V49.1h1.7c1.9 6.7 5.4 10 10.5 10 2.2 0 3.8-.7 4.9-2 1.1-1.3 1.6-2.8 1.6-4.4 0-1.8-.6-3.4-1.7-4.5-1.2-1.2-3.5-2.6-6.9-4.3-3.6-1.8-6.1-3.5-7.7-5.2-1.6-1.7-2.3-3.7-2.3-6.2 0-2.3.8-4.6 2.5-6.7s4-3.2 7-3.2c3.1 0 5.6 1.3 7.7 3.8.4-.4 1-1.5 1.7-3.2H52v10.9h-1.6c-.6-2.6-1.7-4.9-3.4-6.8s-3.6-2.8-5.9-2.8c-1.7 0-3.1.5-4.2 1.6s-1.6 2.3-1.6 3.7c0 1.6.6 2.9 1.8 4 1.2 1.2 3.4 2.5 6.6 3.9 4.9 2.2 7.9 4.4 9 6.5s1.6 4.2 1.6 6.1c0 3.1-1 5.6-3 7.5s-4.6 2.9-7.7 2.9c-3.3 0-6.2-1.3-8.7-4-.8.9-1.4 2.1-1.9 3.7h-1.6v.3zM71.1 22.7v24.7c0 3.8.1 6.2.2 7.1.1 1 .5 1.7 1.3 2.2.7.5 2 .8 3.9.8h.9v2H58.2v-2h1.5c2 0 3.4-.3 4-.9.6-.6 1-1.3 1.1-2.1.1-.8.2-3.2.2-7.2V36.7c0-4.2-.2-6.7-.6-7.6s-.9-1.5-1.6-1.7c-.6-.2-1.8-.3-3.4-.3h-1.2v-2c5.1-.5 9.1-1.3 11.9-2.3l1-.1zM101 24.2v2h-7.4v21.3c0 3.8 0 6.2.2 7.1.1 1 .5 1.7 1.2 2.2s2 .8 3.9.8h1.9v2H81.6v-2c2 0 3.4-.2 4.1-.6.8-.4 1.2-1 1.4-1.8.2-.8.3-3.4.3-7.7V26.1h-6.6v-2h6.6v-3.2c0-3.6.1-6.3.4-8.3s1.1-4 2.4-6.1 3-3.7 5.1-4.8c2-1.1 4.4-1.7 7.2-1.7 3.4 0 6.1.7 8.2 2.1 2 1.4 3.1 2.9 3.1 4.3 0 .8-.3 1.5-.9 2.1-.6.5-1.3.8-2 .8-1.5 0-2.9-1.2-4.2-3.5-1.4-2.6-3.2-3.9-5.5-3.9-1.8 0-3.4.7-4.8 2S94.2 6.8 94 8.8c-.3 2-.4 6.2-.4 12.6v2.7h7.4v.1z"/>
+  <path class="site-branding__text" d="M115.9 22.7h.4c.8 1.9 1.2 4.4 1.2 7.4 1.9-2.5 4-4.3 6.2-5.6 2.2-1.2 4.6-1.9 7.2-1.9 2.9 0 5.3.7 7.1 2s3.1 3.3 3.8 6c2.2-2.7 4.4-4.6 6.7-6 2.3-1.3 4.7-2 7.1-2 2.7 0 5.1.6 7 1.9s3.1 2.7 3.5 4.3.6 4.2.6 7.8v10.6c0 4.1.1 6.6.2 7.5.2.9.6 1.6 1.4 2 .8.4 2.2.6 4.3.6v2h-17.7v-2c1.9 0 3.2-.2 4-.6.8-.4 1.2-1.1 1.4-1.9.2-.9.3-3.4.3-7.6V35.6c0-2.4-.1-4.2-.4-5.4-.3-1.2-1-2.3-2.1-3.1-1.2-.9-2.7-1.3-4.5-1.3-1.9 0-3.8.6-5.6 1.9-1.9 1.3-3.8 3.2-5.7 5.8v14c0 3.8 0 6.2.2 7.1.1 1 .5 1.7 1.2 2.2s2 .8 3.8.8v2h-17.1v-2c1.9 0 3.3-.2 4-.6.8-.4 1.2-1 1.4-1.9.2-.8.3-3.4.3-7.7v-9.8c0-3.1-.1-5.4-.4-6.8-.2-1.4-1-2.6-2.2-3.6s-2.8-1.5-4.6-1.5-3.6.6-5.5 1.7c-1.9 1.2-3.8 2.9-5.7 5.2v14.8c0 3.9.1 6.3.2 7.3s.5 1.7 1.3 2.2c.7.5 2.1.7 4 .7v2h-17.3v-2c1.9 0 3.2-.2 4-.6.8-.4 1.2-1 1.4-1.9.2-.8.3-3.4.3-7.7V36.8c0-4-.1-6.5-.2-7.4s-.6-1.6-1.3-2.1c-.8-.5-2.1-.7-4.1-.7v-2c3.9-.3 7.2-1 9.9-1.9M211.4 53.1c-.5 2.8-1.7 4.2-3.3 4.1-1.2 0-2-.4-2.3-1.4-.3-.9-.5-3.1-.5-6.4V35.1c0-3-.4-5.2-1-6.7-.6-1.4-2-2.7-4-3.9-2-1.1-4.8-1.7-8.5-1.7-4.9 0-8.6.9-10.9 2.8-2.3 1.9-3.5 3.7-3.5 5.3 0 1.7.8 2.5 2.6 2.5 1.9 0 3.1-1.5 3.6-4.4.4-2.9 2.9-4.3 7.2-4.3 2.1 0 3.9.4 5.2 1.3 1.4.8 2.2 1.8 2.5 2.9.3 1.1.5 2.8.5 5.3v1.7l-6.7 2.7c-5.1 2.1-9.1 4.3-12 6.5-2.9 2.2-4.4 4.8-4.4 7.8 0 2.3.9 4.1 2.6 5.5 1.7 1.4 3.8 2.1 6.2 2.1 1.9 0 4-.6 6.4-1.6 2.4-1 5-2.6 7.9-4.6.3 2 1.1 3.6 2.2 4.6 1.1 1.1 2.6 1.6 4.6 1.6 4.5 0 6.9-2.5 7.2-7.4h-1.6zm-12.6-1c-2.2 1.8-4.2 3.1-6 4s-3.3 1.3-4.7 1.3c-1.5 0-2.7-.6-3.7-1.7-.9-1.1-1.4-2.6-1.4-4.4 0-4.6 3.7-8.4 11.2-11.4l4.6-1.9h.1-.1v14.1z"/>
+  <path class="site-branding__ribbon-bottom" fill="#A8C179" d="M219.4 74.2H29.5v32.1"/>
+  <path class="site-branding__ribbon-left" fill="#78A22F" d="M0 79.9l29.5 26.4V74.2L0 47.7"/>
+  <path class="site-branding__text" d="M63.6 7.8c0 1.2.4 2.1 1.2 2.9.8.8 1.7 1.2 2.8 1.2 1.1 0 2-.4 2.8-1.2s1.2-1.7 1.2-2.9c0-1.1-.4-2-1.2-2.9-.8-.8-1.7-1.2-2.8-1.2-1.1 0-2 .4-2.8 1.2-.8.9-1.2 1.8-1.2 2.9z"/>
+</svg>
+  </a>
+</div> <!-- /.site-branding -->
+
+    <div class="nav-toggle">
+
+      <a class="nav-toggle--link" href="#">
+        <span class="nav-toggle-text">
+          <span class="nav-toggle__icon"></span>
+          <span class="nav-toggle__menu">Menu</span>
+          <span class="nav-toggle__close">Close</span>
+        </span>
+      </a>
+
+    </div> <!-- /.nav-toggle -->
+
+    <div class="site-navigation">
+
+      <nav class="nav-menu__main">
+        <ul class="nav-menu__main-list">
+                      <li class="nav-menu__item ">
+              <a href="https://www.sifma.org/resources/" class="nav-menu--link"><span class="nav-menu--text">Advocacy &#038; Resources</span></a>
+            </li>
+                      <li class="nav-menu__item ">
+              <a href="https://www.sifma.org/about/" class="nav-menu--link"><span class="nav-menu--text">About</span></a>
+            </li>
+                      <li class="nav-menu__item ">
+              <a href="https://events.sifma.org" class="nav-menu--link"><span class="nav-menu--text">Events</span></a>
+            </li>
+                      <li class="nav-menu__item ">
+              <a href="https://www.sifma.org/for-members/" class="nav-menu--link"><span class="nav-menu--text">For Members</span></a>
+            </li>
+                      <li class="nav-menu__item nav-menu__item--join">
+              <a href="https://live-sifm.pantheonsite.io/join" class="nav-menu--link"><span class="nav-menu--text">Join SIFMA</span></a>
+            </li>
+                  </ul>
+      </nav> <!-- /.nav-menu__main -->
+
+      <div class="site-navigation__search">
+
+        <p class="site-navigation__search-text">
+          <input id="sifma-search" autocapitalize="off" autocomplete="off" autocorrect="off" placeholder="Search all of sifma.org" role="textbox" spellcheck="false" type="search" value="" 
+            class="ais-search-box--input site-navigation__search-text--link">
+          <svg width="18px" height="18px" viewBox="0 0 18 18" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" class="search__svg search-icon site-navigation__search--svg">
+  <path d="M15.635252,17.7737058 L11.4083518,13.5468055 C10.2499367,14.3061937 8.86468474,14.7490413 7.37065413,14.7490413 C3.29635326,14.7490413 0,11.4465016 0,7.37065413 C0,3.30253972 3.2942911,0 7.37065413,0 C11.438253,0 14.7407927,3.30253972 14.7407927,7.37065413 C14.7407927,8.79199381 14.3402193,10.1195055 13.6473355,11.2408017 L17.9046526,15.4981188 C18.1304584,15.7177382 17.9407403,16.2636935 17.4880975,16.7147897 L16.8534695,17.3509642 C16.4003112,17.8041226 15.8548714,17.9933252 15.635252,17.7737058 Z M12.2904382,7.37065413 C12.2904382,4.65170401 10.0890887,2.44880794 7.36859197,2.44880794 C4.64964185,2.44880794 2.44055932,4.64964185 2.44055932,7.37065413 C2.44055932,10.0890887 4.64964185,12.2981712 7.36859197,12.2981712 C10.0870266,12.2981712 12.2904382,10.0911509 12.2904382,7.37065413 Z"></path>
+</svg>
+
+        <script type="text/javascript">
+        window.onload = function() {
+          var input = document.getElementById("sifma-search");
+          input.addEventListener("keyup", function(event) {
+              if (event.keyCode === 13 && this.value) {
+                  event.preventDefault();
+                  window.location = "/search/?aq="+this.value;
+              }
+          });
+        }        
+        </script>          
+
+<!---
+          <a href="/search" class="site-navigation__search-text--link"><strong>Search</strong> all of sifma.org
+          <svg width="18px" height="18px" viewBox="0 0 18 18" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" class="search__svg search-icon site-navigation__search--svg">
+  <path d="M15.635252,17.7737058 L11.4083518,13.5468055 C10.2499367,14.3061937 8.86468474,14.7490413 7.37065413,14.7490413 C3.29635326,14.7490413 0,11.4465016 0,7.37065413 C0,3.30253972 3.2942911,0 7.37065413,0 C11.438253,0 14.7407927,3.30253972 14.7407927,7.37065413 C14.7407927,8.79199381 14.3402193,10.1195055 13.6473355,11.2408017 L17.9046526,15.4981188 C18.1304584,15.7177382 17.9407403,16.2636935 17.4880975,16.7147897 L16.8534695,17.3509642 C16.4003112,17.8041226 15.8548714,17.9933252 15.635252,17.7737058 Z M12.2904382,7.37065413 C12.2904382,4.65170401 10.0890887,2.44880794 7.36859197,2.44880794 C4.64964185,2.44880794 2.44055932,4.64964185 2.44055932,7.37065413 C2.44055932,10.0890887 4.64964185,12.2981712 7.36859197,12.2981712 C10.0870266,12.2981712 12.2904382,10.0911509 12.2904382,7.37065413 Z"></path>
+</svg>
+--->
+          </a>
+        </p>
+
+      </div> <!-- /.site-navigation__search -->
+
+    </div> <!-- /.site-navigation -->
+
+  </div> <!-- /.header-inner -->
+
+</header> <!-- /.l--header -->
+
+
+      
+      <section class="l--content" role="main">
+
+        
+<div class="base-breadcrumb base-breadcrumb--back">
+
+  <p class="base-breadcrumb__text base-breadcrumb__text--back">
+          <a href="../" class="base-breadcrumb__text--link">
+          <svg width="16px" height="16px" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" class="arrow-back__svg base-breadcrumb__text--back-svg">
+  <circle stroke-width="1" fill="none" cx="8" cy="8" r="7.5"></circle>
+  <polygon stroke="none" fill-rule="evenodd" points="8.449 5.182 6.26 7.525 11.969 7.525 11.969 8.493 6.26 8.493 8.449 10.836 7.657 11.518 4.5 8.009 7.657 4.5"></polygon>
+</svg>
+      Back to
+      <strong>
+         General Resources
+              </strong>
+    </a>
+  </p>
+
+</div>
+
+  <header class="landing-header">
+    <div class="landing-header-inner">
+              <h1 class="landing-header__heading">
+          MBS Notification and Settlement Dates
+        </h1>
+					<p>Next year’s notification and settlement dates for mortgage-backed securities are shown in the table below; previous dates may be found in the file linked below the table. For inquiries, please contact <a href="/cdn-cgi/l/email-protection#68480b03010404010906281b010e050946071a0f">Chris Killian</a>.</p>
+
+
+
+<table id="tablepress-29-no-2" class="tablepress tablepress-id-29">
+<thead>
+<tr class="row-1">
+	<th class="column-1">Settlement Month</th><th class="column-2">Date Type</th><th class="column-3">Class A</th><th class="column-4">Class B</th><th class="column-5">Class C</th><th class="column-6">Class D</th>
+</tr>
+</thead>
+<tbody class="row-striping row-hover">
+<tr class="row-2">
+	<td class="column-1">Jan-25</td><td class="column-2">Notification</td><td class="column-3">1/10/2025</td><td class="column-4">1/14/2025</td><td class="column-5">1/16/2025</td><td class="column-6">1/21/2025</td>
+</tr>
+<tr class="row-3">
+	<td class="column-1">Jan-25</td><td class="column-2">Settlement</td><td class="column-3">1/14/2025</td><td class="column-4">1/16/2025</td><td class="column-5">1/21/2025</td><td class="column-6">1/23/2025</td>
+</tr>
+<tr class="row-4">
+	<td class="column-1">Feb-25</td><td class="column-2">Notification</td><td class="column-3">2/11/2025</td><td class="column-4">2/13/2025</td><td class="column-5">2/18/2025</td><td class="column-6">2/21/2025</td>
+</tr>
+<tr class="row-5">
+	<td class="column-1">Feb-25</td><td class="column-2">Settlement</td><td class="column-3">2/13/2025</td><td class="column-4">2/18/2025</td><td class="column-5">2/20/2025</td><td class="column-6">2/25/2025</td>
+</tr>
+<tr class="row-6">
+	<td class="column-1">Mar-25</td><td class="column-2">Notification</td><td class="column-3">3/11/2025</td><td class="column-4">3/14/2025</td><td class="column-5">3/18/2025</td><td class="column-6">3/20/2025</td>
+</tr>
+<tr class="row-7">
+	<td class="column-1">Mar-25</td><td class="column-2">Settlement</td><td class="column-3">3/13/2025</td><td class="column-4">3/18/2025</td><td class="column-5">3/20/2025</td><td class="column-6">3/24/2025</td>
+</tr>
+<tr class="row-8">
+	<td class="column-1">Apr-25</td><td class="column-2">Notification</td><td class="column-3">4/10/2025</td><td class="column-4">4/14/2025</td><td class="column-5">4/16/2025</td><td class="column-6">4/22/2025</td>
+</tr>
+<tr class="row-9">
+	<td class="column-1">Apr-25</td><td class="column-2">Settlement</td><td class="column-3">4/14/2025</td><td class="column-4">4/16/2025</td><td class="column-5">4/21/2025</td><td class="column-6">4/24/2025</td>
+</tr>
+<tr class="row-10">
+	<td class="column-1">May-25</td><td class="column-2">Notification</td><td class="column-3">5/9/2025</td><td class="column-4">5/13/2025</td><td class="column-5">5/16/2025</td><td class="column-6">5/20/2025</td>
+</tr>
+<tr class="row-11">
+	<td class="column-1">May-25</td><td class="column-2">Settlement</td><td class="column-3">5/13/2025</td><td class="column-4">5/15/2025</td><td class="column-5">5/20/2025</td><td class="column-6">5/22/2025</td>
+</tr>
+<tr class="row-12">
+	<td class="column-1">Jun-25</td><td class="column-2">Notification</td><td class="column-3">6/10/2025</td><td class="column-4">6/16/2025</td><td class="column-5">6/18/2025</td><td class="column-6">6/24/2025</td>
+</tr>
+<tr class="row-13">
+	<td class="column-1">Jun-25</td><td class="column-2">Settlement</td><td class="column-3">6/12/2025</td><td class="column-4">6/18/2025</td><td class="column-5">6/23/2025</td><td class="column-6">6/26/2025</td>
+</tr>
+<tr class="row-14">
+	<td class="column-1">Jul-25</td><td class="column-2">Notification</td><td class="column-3">7/10/2025</td><td class="column-4">7/15/2025</td><td class="column-5">7/17/2025</td><td class="column-6">7/22/2025</td>
+</tr>
+<tr class="row-15">
+	<td class="column-1">Jul-25</td><td class="column-2">Settlement</td><td class="column-3">7/14/2025</td><td class="column-4">7/17/2025</td><td class="column-5">7/21/2025</td><td class="column-6">7/24/2025</td>
+</tr>
+<tr class="row-16">
+	<td class="column-1">Aug-25</td><td class="column-2">Notification</td><td class="column-3">8/11/2025</td><td class="column-4">8/14/2025</td><td class="column-5">8/18/2025</td><td class="column-6">8/21/2025</td>
+</tr>
+<tr class="row-17">
+	<td class="column-1">Aug-25</td><td class="column-2">Settlement</td><td class="column-3">8/13/2025</td><td class="column-4">8/18/2025</td><td class="column-5">8/20/2025</td><td class="column-6">8/25/2025</td>
+</tr>
+<tr class="row-18">
+	<td class="column-1">Sep-25</td><td class="column-2">Notification</td><td class="column-3">9/11/2025</td><td class="column-4">9/16/2025</td><td class="column-5">9/18/2025</td><td class="column-6">9/23/2025</td>
+</tr>
+<tr class="row-19">
+	<td class="column-1">Sep-25</td><td class="column-2">Settlement</td><td class="column-3">9/15/2025</td><td class="column-4">9/18/2025</td><td class="column-5">9/22/2025</td><td class="column-6">9/25/2025</td>
+</tr>
+<tr class="row-20">
+	<td class="column-1">Oct-25</td><td class="column-2">Notification</td><td class="column-3">10/9/2025</td><td class="column-4">10/14/2025</td><td class="column-5">10/16/2025</td><td class="column-6">10/21/2025</td>
+</tr>
+<tr class="row-21">
+	<td class="column-1">Oct-25</td><td class="column-2">Settlement</td><td class="column-3">10/14/2025</td><td class="column-4">10/16/2025</td><td class="column-5">10/20/2025</td><td class="column-6">10/23/2025</td>
+</tr>
+<tr class="row-22">
+	<td class="column-1">Nov-25</td><td class="column-2">Notification</td><td class="column-3">11/10/2025</td><td class="column-4">11/14/2025</td><td class="column-5">11/18/2025</td><td class="column-6">11/20/2025</td>
+</tr>
+<tr class="row-23">
+	<td class="column-1">Nov-25</td><td class="column-2">Settlement</td><td class="column-3">11/13/2025</td><td class="column-4">11/18/2025</td><td class="column-5">11/20/2025</td><td class="column-6">11/24/2025</td>
+</tr>
+<tr class="row-24">
+	<td class="column-1">Dec-25</td><td class="column-2">Notification</td><td class="column-3">12/9/2025</td><td class="column-4">12/12/2025</td><td class="column-5">12/16/2025</td><td class="column-6">12/18/2025</td>
+</tr>
+<tr class="row-25">
+	<td class="column-1">Dec-25</td><td class="column-2">Settlement</td><td class="column-3">12/11/2025</td><td class="column-4">12/16/2025</td><td class="column-5">12/18/2025</td><td class="column-6">12/22/2025</td>
+</tr>
+</tbody>
+</table>
+<!-- #tablepress-29-no-2 from cache -->
+
+		          </div> <!-- /.base-header-inner -->
+  </header> <!-- /.base-header -->
+
+  <div class="base-sections">
+          <section class="base-section">
+        <div class="l--full">
+          <h3 class="base-section-heading" id=""></h3>
+        </div>
+        <div class="l--main">
+          
+        </div>
+        <div class="l--right">
+          <ul class="base-button__list">
+                      </ul>
+        </div>
+      </section>
+    
+    
+    <div class="base-section base-section-links__resources">
+      
+
+<h2 class="base-section-links__heading">Download XLSX</h2>
+<ul class="base-section-links">
+      <li class="base-section-link--download">
+    <div class="base-section-link__main">
+      <span class="base-section-link__type">PDF</span>
+      <h3 class="base-section-link__title">
+                  MBS Notification and Settlement Dates
+              </h3>
+      <p class="base-section-link__desc">(updated for 2025)</p>
+    </div>
+    <a class="base-section-link__download download-icon" href="https://www.sifma.org/wp-content/uploads/2023/06/SIFMASettlementDatesCalendarFinal2024-2.xlsx">
+      <svg><use xlink:href="#download"/></svg>
+      <span class="visually-hidden">Download MBS Notification and Settlement Dates</span>
+    </a>
+  </li>
+    </ul>
+
+    </div>
+  </div> <!-- /.base-sections -->
+
+
+      </section> <!-- /.l--content -->
+
+    </div>
+
+          <footer class="l--footer" id="footer">
+
+  <div class="footer-main">
+    <div class="footer-left">
+      <h3 class="footer__classification footer__classification--about">About SIFMA</h3>
+      <div class="footer__summary"><p>SIFMA is the voice of the U.S. securities industry. We advocate for effective and resilient capital markets.</p>
+</div>
+
+      <h4 class="footer__classification">SIFMA is a member of the GFMA Alliance</h4>
+      <a class="footer__association" href="http://www.gfma.org/">
+        <img class="footer__association-logo" src="https://www.sifma.org/wp-content/themes/sifma-wp-theme/static/img/gfma.png" alt="Global Financial Markets Association">
+      </a>
+      <a class="footer__association" href="/">
+        <img class="footer__association-logo" src="https://www.sifma.org/wp-content/themes/sifma-wp-theme/static/img/sifma.png" alt="Securities Industry and Financial Markets Association">
+      </a>
+      <a class="footer__association" href="https://www.afme.eu/">
+        <img class="footer__association-logo" src="https://www.sifma.org/wp-content/themes/sifma-wp-theme/static/img/afme.png" alt="Association for Financial Markets in Europe">
+      </a>
+      <a class="footer__association" href="http://www.asifma.org/">
+        <img class="footer__association-logo" src="https://www.sifma.org/wp-content/themes/sifma-wp-theme/static/img/asifma.png" alt="Asia Securities Industry & Financial Markets Association">
+      </a>
+    </div>
+    <div class="footer-resource-links">
+                  <div class="footer-resource-links__list">
+          <h4 class="footer__classification footer-resource-links__list-header">Sifma Essentials</h4>
+          <ul class="footer__meta-list">
+                        <li class="footer__meta-list-item">
+              <a href="https://www.sifma.org/resources/archive/news/" class="footer__meta-list-item--link">Newsroom</a>
+            </li>
+                        <li class="footer__meta-list-item">
+              <a href="/resources/research" class="footer__meta-list-item--link">Research</a>
+            </li>
+                        <li class="footer__meta-list-item">
+              <a href="https://my.sifma.org/SIFMA-Store" class="footer__meta-list-item--link">Store</a>
+            </li>
+                        <li class="footer__meta-list-item">
+              <a href="https://www.sifma.org/resources/archive/submissions/" class="footer__meta-list-item--link">Submissions</a>
+            </li>
+                        <li class="footer__meta-list-item">
+              <a href="https://www.sifma.org/market-practices-model-documentation/" class="footer__meta-list-item--link">Market Practices &amp; Model Documentation</a>
+            </li>
+                        
+                        
+          </ul>
+
+        </div> <!-- /.footer-resource-links__list -->
+                    <div class="footer-resource-links__list">
+          <h4 class="footer__classification footer-resource-links__list-header">Follow Us</h4>
+          <ul class="footer__meta-list">
+                        <li class="footer__meta-list-item">
+              <a href="http://linkedin.com/company/sifma" class="footer__meta-list-item--link">LinkedIn</a>
+            </li>
+                        <li class="footer__meta-list-item">
+              <a href="https://www.instagram.com/sifmapics/" class="footer__meta-list-item--link">Instagram</a>
+            </li>
+                        <li class="footer__meta-list-item">
+              <a href="https://www.sifma.org/about/contact-us/" class="footer__meta-list-item--link">Contact Us</a>
+            </li>
+                        
+                          <li class="footer__meta-list-item">
+                <a href="https://my.sifma.org/My-Account/My-Profile" target="_new" class="footer__meta-list-item--link">Manage Profile</a>
+              </li>
+                        
+          </ul>
+
+        </div> <!-- /.footer-resource-links__list -->
+                    <div class="footer-resource-links__list">
+          <h4 class="footer__classification footer-resource-links__list-header">Sifma Initiatives</h4>
+          <ul class="footer__meta-list">
+                        <li class="footer__meta-list-item">
+              <a href="http://www.stockmarketgame.org/" class="footer__meta-list-item--link">The Stock Market Game</a>
+            </li>
+                        <li class="footer__meta-list-item">
+              <a href="http://www.projectinvested.com/" class="footer__meta-list-item--link">Project:Invested</a>
+            </li>
+                        <li class="footer__meta-list-item">
+              <a href="https://www.sifma.org/about/sifma-invest/" class="footer__meta-list-item--link">SIFMA Invest!</a>
+            </li>
+                        
+                        
+          </ul>
+
+        </div> <!-- /.footer-resource-links__list -->
+            
+              <div class="footer-resource-links__list">
+          <h4 class="footer__classification footer-resource-links__list-header">Important Links</h4>
+          <ul class="footer__meta-list footer__meta-list--last">
+                        <li class="footer__meta-list-item">
+              <a href="https://www.sifma.org/terms-of-use/" class="footer__meta-list-item--link">Terms of Use</a>
+            </li>
+                        <li class="footer__meta-list-item">
+              <a href="https://www.sifma.org/privacy/" class="footer__meta-list-item--link">Privacy Policy</a>
+            </li>
+                        <li class="footer__meta-list-item">
+              <a href="http://www.sifmaemergency.org/" class="footer__meta-list-item--link">Emergency Alerts</a>
+            </li>
+                      </ul>
+        </div> <!-- /.footer-resource-links__list -->
+          </div> <!-- /.footer-resource-links -->
+  </div> <!-- /.footer-top -->
+
+  <div class="footer-subscribe">
+    <div class="newsletter-subscribe">
+      <!-- API Key : f93f02fe33ce7c404e6c67ddecb362d2 -->
+      <div class="newsletter-subscribe__header-box">
+        <div class="newsletter-subscribe__header-box__text"><span>Get daily news on the capital markets</span><span class="arrow"></span>
+        </div>
+      </div>
+      <div class="newsletter-subscribe__subscribe" >
+        <input id="newsletter-subscribe__input" autocapitalize="off" autocomplete="off" autocorrect="off" placeholder="Enter email address" role="textbox" spellcheck="false" type="search" value="">
+        <div class="subscribe--button">
+          <a id="newsletter-subscribe__button" class="base-cta__button--link">Subscribe</a>
+        </div>
+      </div>
+      <div class="newsletter-subscribe__message" style="display:none">
+        Thank you for subscribing!
+      </div>      
+    </div>    
+  </div> <!-- /.footer-subscribe -->
+
+  <div class="footer-bottom">
+
+    <p class="footer__copyright">© 2025 Securities Industry and Financial Markets Association</p>
+
+    <p class="footer__back-to-top">
+      <a href="#top" class="footer__back-to-top--link">Back to top</a>
+    </p>
+
+  </div> <!-- /.footer-bottom -->
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script></script>
+
+<script type="text/javascript"> _linkedin_partner_id = "463961"; window._linkedin_data_partner_ids = window._linkedin_data_partner_ids || []; window._linkedin_data_partner_ids.push(_linkedin_partner_id); </script><script type="text/javascript"> (function(){var s = document.getElementsByTagName("script")[0]; var b = document.createElement("script"); b.type = "text/javascript";b.async = true; b.src = "https://snap.licdn.com/li.lms-analytics/insight.min.js"; s.parentNode.insertBefore(b, s);})(); </script> <noscript> <img height="1" width="1" style="display:none;" alt="" src="https://dc.ads.linkedin.com/collect/?pid=463961&fmt=gif" /> </noscript>
+
+</footer>    
+    <div class="grid">
+  <div class="grid-inner">
+    <div><span></span></div>
+    <div><span></span></div>
+    <div><span></span></div>
+    <div><span></span></div>
+    <div><span></span></div>
+    <div><span></span></div>
+    <div><span></span></div>
+    <div><span></span></div>
+    <div><span></span></div>
+    <div><span></span></div>
+    <div><span></span></div>
+    <div><span></span></div>
+  </div>
+</div>
+    <!--<script type="text/javascript" src="//analytics.clickdimensions.com/ts.js" > </script>
+<script type="text/javascript">
+var cdAnalytics = new clickdimensions.Analytics('analytics.clickdimensions.com');
+cdAnalytics.setAccountKey('aR92iZZnbXUG9GXCBZIyYh');
+cdAnalytics.setDomain('sifma.org');
+cdAnalytics.setScore(typeof(cdScore) == "undefined" ? 0 : (cdScore == 0 ? null : cdScore));
+cdAnalytics.trackPage();
+</script> -->
+
+<style>
+	 #ais-facets #facet-research-area,
+	 #ais-facets #facet-associated-committees{
+		display:none;
+	}
+</style><script type="text/javascript" id="leadin-script-loader-js-js-extra">
+/* <![CDATA[ */
+var leadin_wordpress = {"userRole":"visitor","pageType":"post","leadinPluginVersion":"11.1.75"};
+/* ]]> */
+</script>
+<script type="text/javascript" src="https://js.hs-scripts.com/21512775.js?integration=WordPress&amp;ver=11.1.75" id="leadin-script-loader-js-js"></script>
+<script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js?ver=3.1.0" id="jquery-js"></script>
+<script type="text/javascript" src="https://www.sifma.org/wp-includes/js/jquery/ui/core.min.js?ver=1.13.3" id="jquery-ui-core-js"></script>
+<script type="text/javascript" id="popup-maker-site-js-extra">
+/* <![CDATA[ */
+var pum_vars = {"version":"1.20.3","pm_dir_url":"https:\/\/www.sifma.org\/wp-content\/plugins\/popup-maker\/","ajaxurl":"https:\/\/www.sifma.org\/wp-admin\/admin-ajax.php","restapi":"https:\/\/www.sifma.org\/wp-json\/pum\/v1","rest_nonce":null,"default_theme":"220733","debug_mode":"","disable_tracking":"","home_url":"\/","message_position":"top","core_sub_forms_enabled":"1","popups":[],"cookie_domain":"","analytics_route":"analytics","analytics_api":"https:\/\/www.sifma.org\/wp-json\/pum\/v1"};
+var pum_sub_vars = {"ajaxurl":"https:\/\/www.sifma.org\/wp-admin\/admin-ajax.php","message_position":"top"};
+var pum_popups = [];
+/* ]]> */
+</script>
+<script type="text/javascript" src="//www.sifma.org/wp-content/uploads/pum/pum-site-scripts.js?defer&amp;generated=1734451225&amp;ver=1.20.3" id="popup-maker-site-js"></script>
+<script type="text/javascript" src="https://www.sifma.org/wp-content/plugins/popup-maker-forced-interaction/assets/scripts/popup-maker-forced-interaction-site.min.js?defer&amp;ver=1.0" id="popup-maker-forced-interaction-site-js"></script>
+<script type="text/javascript" src="https://www.sifma.org/wp-content/themes/sifma-wp-theme/static/js/dist/mfb.js?ver=6.7.1" id="mfb-js"></script>
+<script type="text/javascript" src="https://www.sifma.org/wp-content/themes/sifma-wp-theme/static/js/dist/custom.js?ver=6.7.1" id="custom-js"></script>
+<script type="text/javascript" src="//unpkg.com/ionicons@4.5.10-0/dist/ionicons/ionicons.js?ver=6.7.1" id="ionicons-js"></script>
+<script type="text/javascript" src="https://www.sifma.org/wp-content/themes/sifma-wp-theme/static/js/dist/modernizr.js?ver=3.2.0" id="modernizr-js"></script>
+<script type="text/javascript" src="https://www.sifma.org/wp-content/themes/sifma-wp-theme/static/js/dist/manifest.js?ver=1736673225" id="manifest-js"></script>
+<script type="text/javascript" src="https://www.sifma.org/wp-content/themes/sifma-wp-theme/static/js/dist/vendor.js?ver=1736673225" id="vendor-js"></script>
+<script type="text/javascript" id="script.js-js-extra">
+/* <![CDATA[ */
+var scriptvars = {"ajax_url":"https:\/\/www.sifma.org\/wp-admin\/admin-ajax.php","query_vars":"{\"general_resource\":\"mbs-notification-and-settlement-dates\",\"post_type\":\"general_resource\",\"name\":\"mbs-notification-and-settlement-dates\"}","post_id":"145257"};
+/* ]]> */
+</script>
+<script type="text/javascript" src="https://www.sifma.org/wp-content/themes/sifma-wp-theme/static/js/dist/script.js?ver=1736673225" id="script.js-js"></script>
+<script type="text/javascript" src="https://www.sifma.org/wp-includes/js/jquery/jquery.min.js?ver=3.7.1" id="jquery-core-js"></script>
+<script type="text/javascript" src="https://www.sifma.org/wp-content/plugins/tablepress/js/jquery.datatables.min.js?ver=3.0.1" id="tablepress-datatables-js"></script>
+<script type="text/javascript" id="tablepress-datatables-js-after">
+/* <![CDATA[ */
+var DT_TP = {};
+jQuery(($)=>{
+var DT_language={"en_US":{}};
+DT_TP['29'] = new DataTable('#tablepress-29',{language:DT_language['en_US'],ordering:false,paging:false,searching:false,info:false});
+DT_TP['29_no_2'] = new DataTable('#tablepress-29-no-2',{language:DT_language['en_US'],ordering:false,paging:false,searching:false,info:false});
+});
+/* ]]> */
+</script>
+
+          <script type="text/javascript">window.NREUM||(NREUM={});NREUM.info={"beacon":"bam.nr-data.net","licenseKey":"3ef9a156d0","applicationID":"34563399","transactionName":"Z1VVN0dRDxZVARUKDF4fdgBBWQ4LGxEIDQRcVQ==","queueTime":0,"applicationTime":529,"atts":"SxJWQQ9LHBg=","errorBeacon":"bam.nr-data.net","agent":""}</script></body>
+</html>

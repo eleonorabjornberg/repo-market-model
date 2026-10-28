@@ -1,0 +1,31 @@
+{
+  "source": "SIFMA, agency MBS class settlement dates (classes A to D), from the Internet Archive's captures",
+  "path": "data/sifma-mbs-settlement/settlement_dates.csv",
+  "sha256": "50cf8a0bed92fcec31f647d54f9af570de9d6501000989cb35280a2887b016ee",
+  "byte_count": 53943,
+  "built_by": "scripts/build_sifma_table_1276.py",
+  "note": "Every row is read from the three captures below by the script; `--check` rebuilds it. Whether a date was public at an instant is not in this table: it is the declaration metadata/sifma_mbs_1276.json. The workbook is the 2025 capture of the file as SIFMA then served it, which carries SIFMA's later corrections (its own notes of 3/11/2021, 7/15/21, 3/24/2022 and 10/12/2022): the dates of the earlier years are those of the corrected file, not necessarily as first posted.",
+  "inputs": [
+    {
+      "path": "data/sifma-wayback-1276/20250724121315-9d247468-TBA_Market_Governance-MBS_Notification_Settlement_Dates_.xlsx",
+      "url": "https://www.sifma.org/wp-content/uploads/2024/04/TBA_Market_Governance-MBS_Notification_Settlement_Dates_.xlsx",
+      "capture_timestamp": "20250724121315",
+      "sha256": "0771fcef5c7eddebdca7f306690796e8166be2c0a8343a2beee8b8bfdebeab48",
+      "byte_count": 28592
+    },
+    {
+      "path": "data/sifma-wayback-1276/20250119110844-5c9f2523-mbs-notification-and-settlement-dates",
+      "url": "https://www.sifma.org/resources/general/mbs-notification-and-settlement-dates/",
+      "capture_timestamp": "20250119110844",
+      "sha256": "9fecfdee3c99b373b370640daa1cb3f7ff2484127467565cb0ae71ea909ae0ae",
+      "byte_count": 93140
+    },
+    {
+      "path": "data/sifma-wayback-1276/20260306152332-5c9f2523-mbs-notification-and-settlement-dates",
+      "url": "https://www.sifma.org/resources/general/mbs-notification-and-settlement-dates/",
+      "capture_timestamp": "20260306152332",
+      "sha256": "6082fa37299bd28f78f3be472d26c36bc0ac184e0d6f2f0079eb475e573ae477",
+      "byte_count": 171931
+    }
+  ]
+}

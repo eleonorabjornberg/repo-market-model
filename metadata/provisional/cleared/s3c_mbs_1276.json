@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/s3c_mbs_1276.json",
+  "script": "scripts/s3c_mbs_1276.py",
+  "pairing": "direct",
+  "why": "(s3c-mbs): (s3c) with indicators for the settlement days of the agency MBS classes A to D. (s3) itself reads the calendar columns at the target day on direct pairs (training_pairs = direct; the estimation routines are guarded by one_step_guard with no allow-list entry), and the added indicators are functions of the target row's own date and of the source's availability (SIFMA's settlement calendar, public from the archive's capture of its year, else 0; metadata/sifma_mbs_1276.json), read at the target row on direct pairs; no gradient-boosted fit is called, so the study is not provisional; the SRF line and the full-allotment flag are scheduled_availability fields read from metadata/policy_events.json as public at the decision instant (metadata/srf_cap_1241.json, unchanged); no outcome is an input"
+}

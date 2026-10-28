@@ -1,0 +1,64 @@
+{
+ "status": "declared by the pull request that closes #1276 before any score was computed. The availability declaration of a new source, SIFMA's agency MBS class settlement dates (classes A to D). It is kept in this file and not in metadata/sources.json, because an edit of metadata/sources.json moves the checksums pinned by the final-test pre-registration (tests/test_final_test_freeze.py and tests/test_live_score_freeze.py fail on any change to it) and #1241 declared its SRF availability in its own file for the same reason. Whether the source also goes into metadata/sources.json was her question 3 on the pull request; she ruled (a) on 28 October 2026: the declaration stays in this file. `proposed_registry_entry` below is the entry that would go there, not applied.",
+ "issue": 1276,
+ "source_id": "sifma_mbs_settlement",
+ "provider": "SIFMA (Securities Industry and Financial Markets Association)",
+ "url": "https://www.sifma.org/resources/general/mbs-notification-and-settlement-dates/",
+ "ruling": "Eleonora, 27 October 2026, about 3:25 pm ET, chat, relayed: adding the source is her decision, taken in this ruling (the directive's Build, item 1). Her ruling of about 5:15 pm ET on #1276 (option 1) sent the publication evidence to the Wayback captures, which the Mac fetched (data/sifma-wayback-1276/, manifest.json, 11 captures). Her rulings of 28 October 2026 (comment 6478349160 on PR #1282): Q1 (b), re-declare `public_from` from the captures of the older workbooks; Q2 (b), check the first-posted dates against the corrected file; Q3 (a), this file. The Mac fetched the older workbooks (data/sifma-wayback-1276-workbooks/, manifest.json): one capture of four URLs, the 2023/03 workbook captured 2025-07-21.",
+ "table": {
+  "path": "data/sifma-mbs-settlement/settlement_dates.csv",
+  "manifest": "data/sifma-mbs-settlement/settlement_dates.csv.manifest.json",
+  "built_by": "scripts/build_sifma_table_1276.py (`--check` rebuilds it from the tracked captures)",
+  "content": "one row per (class, settlement date), classes A to D, 2018-01 to 2027-12, 48 dates a year (one per class per calendar month); read from the 2025-07-24 capture of the workbook (2017 to 2024), the 2025-01-19 page capture (2025) and the 2026-03-06 page capture (2026 and 2027), and from nothing else",
+  "limits": "the workbook is the file as SIFMA served it on 2025-07-24, which carries SIFMA's later corrections (its own notes: 'Updated 3/11/2021', 'Update 7/15/21 - C settle adjusted to 6/22/22', 'update 3/24/2022', 'update 10/12/2022'; the last two correct notification dates only). The dates of the years before are therefore those of the corrected file, not necessarily as first posted; the Mac's second fetch (28 October 2026) found one other workbook capture, the 2023/03 workbook of 2025-07-21, and no capture of the 2017/06, 2023/06 or 2024/02 workbook URLs; its three sheets are cell for cell the 2025-07-24 workbook's (tests/test_sifma_mbs.py), so no settlement date of 2018 to 2024 differs between the two captures, and no capture earlier than July 2025 holds a date, so the first-posted dates cannot be checked further (her question 2, ruling b)"
+ },
+ "fields": {
+  "A": "mbs_settlement_class_a",
+  "B": "mbs_settlement_class_b",
+  "C": "mbs_settlement_class_c",
+  "D": "mbs_settlement_class_d"
+ },
+ "scheduled_availability": {
+  "basis": "announced_before_ref_date",
+  "unit": "business_days",
+  "days": 1,
+  "available_time": "16:00",
+  "timezone": "America/New_York",
+  "fields": ["mbs_settlement_class_a", "mbs_settlement_class_b", "mbs_settlement_class_c", "mbs_settlement_class_d"],
+  "evidence": "A settlement date is public at a decision instant only if the calendar of its year was already published at that instant, and the only evidence of when is the Internet Archive's captures of SIFMA's page (data/sifma-wayback-1276/manifest.json) and of one workbook (data/sifma-wayback-1276-workbooks/manifest.json), which `public_from` below lists by year with the capture's timestamp (UTC, as the archive stamps it) and what in the capture shows the year's calendar. A year whose calendar no capture shows has `null`: none of its dates is public at any instant (the indicator is 0), and nothing is guessed. A year with a capture is public from the capture's instant, so a date of that year that falls before the capture is not public either (every decision that can target it was made before the capture). The block's `days: 1` and `available_time` are the earliest the registry's shape can say (a decision reads a date the business day before it at 16:00, the published records' decision time); the per-year `public_from` is the stricter, and it is the one the code applies (repo_model.sifma_mbs.public_at). The declared dates read by a decision are all later than the capture, so a calendar read at lead 2 to 5 is as public as one read at lead 1: the code applies the same per-date rule at every lead.",
+  "note": "16:00 is the published records' decision time. The captures' timestamps are the earliest instants the archive proves the calendar was public, not the instants SIFMA published it, which were earlier: the declaration is therefore conservative in the direction of not reading a date."
+ },
+ "public_from": {
+  "2018": {"capture_timestamp": "20250721210954", "capture": "data/sifma-wayback-1276-workbooks/20250721210954-68466cfc-SIFMASettlementDatesCalendarFinal2024.xlsx", "evidence": "the workbook https://www.sifma.org/wp-content/uploads/2023/03/SIFMASettlementDatesCalendarFinal2024.xlsx as captured on 2025-07-21 (21:09:54 UTC) holds the settlement dates of 2018 (sheet 2017-2021). It is the only capture of any workbook earlier than the 2025-07-24 one, and it falls after every date of 2018: the year is shown as public from this instant, so no decision that can target a date of 2018 reads it and the indicators of 2018 stay 0. The archive holds no earlier capture of this workbook (the Mac fetch of 28 October 2026 returned one capture of four URLs)."},
+  "2019": {"capture_timestamp": "20250721210954", "capture": "data/sifma-wayback-1276-workbooks/20250721210954-68466cfc-SIFMASettlementDatesCalendarFinal2024.xlsx", "evidence": "the workbook https://www.sifma.org/wp-content/uploads/2023/03/SIFMASettlementDatesCalendarFinal2024.xlsx as captured on 2025-07-21 (21:09:54 UTC) holds the settlement dates of 2019 (sheet 2017-2021). It is the only capture of any workbook earlier than the 2025-07-24 one, and it falls after every date of 2019: the year is shown as public from this instant, so no decision that can target a date of 2019 reads it and the indicators of 2019 stay 0. The archive holds no earlier capture of this workbook (the Mac fetch of 28 October 2026 returned one capture of four URLs)."},
+  "2020": {"capture_timestamp": "20190820193252", "capture": "data/sifma-wayback-1276/20190820193252-5c9f2523-mbs-notification-and-settlement-dates", "evidence": "the page capture of 2019-08-20 (19:32:52 UTC) carries the label '(updated for 2020)' on the download of the calendar"},
+  "2021": {"capture_timestamp": "20200814145053", "capture": "data/sifma-wayback-1276/20200814145053-5c9f2523-mbs-notification-and-settlement-dates", "evidence": "the page capture of 2020-08-14 (14:50:53 UTC) carries the label '(updated for 2021)'"},
+  "2022": {"capture_timestamp": "20250721210954", "capture": "data/sifma-wayback-1276-workbooks/20250721210954-68466cfc-SIFMASettlementDatesCalendarFinal2024.xlsx", "evidence": "the workbook https://www.sifma.org/wp-content/uploads/2023/03/SIFMASettlementDatesCalendarFinal2024.xlsx as captured on 2025-07-21 (21:09:54 UTC) holds the settlement dates of 2022 (sheet 2022-2023). It is the only capture of any workbook earlier than the 2025-07-24 one, and it falls after every date of 2022: the year is shown as public from this instant, so no decision that can target a date of 2022 reads it and the indicators of 2022 stay 0. The archive holds no earlier capture of this workbook (the Mac fetch of 28 October 2026 returned one capture of four URLs)."},
+  "2023": {"capture_timestamp": "20250721210954", "capture": "data/sifma-wayback-1276-workbooks/20250721210954-68466cfc-SIFMASettlementDatesCalendarFinal2024.xlsx", "evidence": "the workbook https://www.sifma.org/wp-content/uploads/2023/03/SIFMASettlementDatesCalendarFinal2024.xlsx as captured on 2025-07-21 (21:09:54 UTC) holds the settlement dates of 2023 (sheet 2022-2023). It is the only capture of any workbook earlier than the 2025-07-24 one, and it falls after every date of 2023: the year is shown as public from this instant, so no decision that can target a date of 2023 reads it and the indicators of 2023 stay 0. The archive holds no earlier capture of this workbook (the Mac fetch of 28 October 2026 returned one capture of four URLs)."},
+  "2024": {"capture_timestamp": "20230314184406", "capture": "data/sifma-wayback-1276/20230314184406-5c9f2523-mbs-notification-and-settlement-dates", "evidence": "the page capture of 2023-03-14 (18:44:06 UTC) carries the label '(updated for 2024)' and links the file SIFMASettlementDatesCalendarFinal2024.xlsx, uploaded under /2023/03/"},
+  "2025": {"capture_timestamp": "20250119110844", "capture": "data/sifma-wayback-1276/20250119110844-5c9f2523-mbs-notification-and-settlement-dates", "evidence": "the page capture of 2025-01-19 (11:08:44 UTC) shows the table of the 2025 dates and the label '(updated for 2025)'. The January 2025 dates of classes A and B (1/14 and 1/16) fall before it and are not public; C and D (1/21 and 1/23) are"},
+  "2026": {"capture_timestamp": "20260306152332", "capture": "data/sifma-wayback-1276/20260306152332-5c9f2523-mbs-notification-and-settlement-dates", "evidence": "the page capture of 2026-03-06 (15:23:32 UTC) shows the table of the 2026 and 2027 dates and 'Published on: January 29, 2026'. The date on the page is the page's own statement, not an archived instant, so the capture's timestamp is used; January and February 2026 and the first days of March are therefore not public"},
+  "2027": {"capture_timestamp": "20260306152332", "capture": "data/sifma-wayback-1276/20260306152332-5c9f2523-mbs-notification-and-settlement-dates", "evidence": "the same capture: the table of the 2027 dates and the label '(updated for 2027)'"}
+ },
+ "rule": "A date `d` of class `k` is read as 1 by a decision made at instant `I` (16:00 America/New_York on the decision day) when `d` is in the table and `public_from[year(d)]` is not null and is at or before `I`; otherwise it is read as 0. A forecast of target day `T` at lead `h` is made on the decision `h` panel rows before `T`; a training pair reads the indicator of its own target row at the decision `h` rows before it. Nothing else is read: no date from a later capture, no date of a year that has none, and no stale date in place of a missing one.",
+ "proposed_registry_entry": {
+  "access": "public",
+  "coverage": ["agency MBS class A to D settlement dates"],
+  "field_frequencies": {"mbs_settlement_class_a": "event", "mbs_settlement_class_b": "event", "mbs_settlement_class_c": "event", "mbs_settlement_class_d": "event"},
+  "fields": ["mbs_settlement_class_a", "mbs_settlement_class_b", "mbs_settlement_class_c", "mbs_settlement_class_d"],
+  "frequency": "event",
+  "identities": [],
+  "limitation": "Not a panel column. src/repo_model/sifma_mbs.py reads data/sifma-mbs-settlement/settlement_dates.csv and the per-year public_from of metadata/sifma_mbs_1276.json; added by directive #1276.",
+  "provider": "SIFMA",
+  "url": "https://www.sifma.org/resources/general/mbs-notification-and-settlement-dates/",
+  "note": "the scheduled_availability block above, with the same fields; not applied: metadata/sources.json is pinned"
+ },
+ "amendments": [
+  {
+   "date": "2026-10-28",
+   "by": "the pull request that closes #1276, resumed under Eleonora's rulings of 28 October 2026 (Q1 b), before the second scoring pass: the first pass (declaration commit ac517270) is superseded by it",
+   "what": "public_from of 2018, 2019, 2022 and 2023 changes from null to 20250721210954, the capture of the 2023/03 workbook that holds those years' dates. Nothing else changes. The three other workbook URLs the Mac tried returned no capture, so the years 2020, 2021, 2024 to 2027 keep the page captures they had.",
+   "why_it_is_not_tuning": "the dates are the archive's capture timestamp, read from data/sifma-wayback-1276-workbooks/manifest.json, not chosen; no score had been seen of the new declaration, and the new instant falls after every date of the four years, so no indicator changes."
+  }
+ ]
+}
