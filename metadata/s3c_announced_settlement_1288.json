@@ -1,0 +1,93 @@
+{
+ "status": "declared by the pull request that closes #1288 before any score was computed; a development study, never a verdict. (s3c) stays the H5 candidate until Eleonora rules on the result. Nothing is registered or published: no record in docs/runs/ is edited, the live record and its pin do not change, no declaration already merged changes, docs/research/h5-candidate.json, `gbm_funding`'s declaration, `scripts/final_test_preregistration.py`, metadata/sources.json, metadata/settlement_announcement_dating.json and docs/decisions/information-set.md do not change, no day after 2026-09-03 is scored and no lockbox day is scored. Amendments made after a number was computed are listed in `amendments`; there are none.",
+ "issue": 1288,
+ "avenue": "#1286",
+ "ledger": "item 71 on #1116",
+ "ruling": "Eleonora, 28 October 2026, about 11:20 am ET, chat, relayed on #1288: test avenue #1286 (option 1 of the 5 pm brief).",
+ "hypothesis": "H5 (primary goal): the SOFR - IORB spread distribution in bp. Step 3, an arm on the candidate (s3c). Development tier",
+ "target": "spread_bps at the scored day, in basis points, as a 23-quantile distribution at each lead h = 1..5 (scoring_protocol.GRID)",
+ "why": "(s3c)'s two settlement terms, `settlement_coupon` and `settlement_bill`, are scheduled fields of the target row (spread_mr_calendar.TERMS, scheduled = True, span (0,)). metadata/sources.json declares a settlement public at 15:00 on the panel day before it settles, so `readable_offsets` keeps the terms at lead 1 only. At leads 2 to 5, four of the five leads of the primary score, (s3c) cannot see a settlement that was announced days earlier. The announcement dating is built and measured (#541; metadata/settlement_announcement_dating.json, repo_model.settlement_dating) but not in force. The arms read it as a measurement.",
+ "candidates": [
+  {
+   "name": "sc_s3c_ann",
+   "label": "(s3c-ann)",
+   "definition": "(s3c) with its two settlement flags available at leads 2 to 5 when the auction was announced by the decision instant: for the forecast made at lead h on decision day D, the flag of the coupon (bill) term of target day T = D + h panel days is 1 when the offering amounts of the coupon (bill) auctions settling on T that had been announced by 16:00 on D sum to more than zero. Everything else is (s3)'s: the other terms, the Huber fit (k = 1.345), the ridge of 5, the pool of standardised residuals and the direct pairs; the SRF cap at the line from full allotment, margin 0 bp, is applied to its quantiles exactly as to (s3)'s (repo_model.s3c_candidate, unchanged). At lead 1 the arm is (s3c) cell for cell (the study checks it and refuses to write a record otherwise)",
+   "module": "repo_model.s3c_announced (ANN_ARM = sc.ARMS[2] renamed; AnnouncedTermTable); the fit is repo_model.spread_mr_state_calendar's, unchanged and not edited",
+   "legs": "coupon and bill legs are reported separately: two reference walks admit one leg alone at leads 2 to 5 ((s3c-ann-coupon) and (s3c-ann-bill)), and the score is split by the settlement-day type of the target (coupon, bill, neither) at each lead"
+  },
+  {
+   "name": "sc_s3c_ann_net",
+   "label": "(s3c-ann-net)",
+   "definition": "(s3c-ann), sized by #1273's net settlement: the two settlement terms enter as the signed net of the target day in units of USD 100 bn (repo_model.s3c_net.NET_ARM's form, sized = True with the scarcity state held at its maximum), the net of target day T as announced at the 16:00 decision instant of D = T - h, at every lead h = 1..5. A class announced only in part reads 0 until fully announced (repo_model.net_settlement, #679), and a cash management bill counts only from its own announcement (#738)",
+   "module": "repo_model.s3c_announced (ANN_NET_ARM, AnnouncedNetSizeTable); repo_model.s3c_net.NetSizeTable is the lead-1 reader of #1273 and is not edited",
+   "legs": "the fitted effect of the net bill and the net coupon term is reported separately, by lead and regime"
+  }
+ ],
+ "dating": {
+  "declaration": "metadata/settlement_announcement_dating.json (#541, Eleonora, 10 October 2026), read with repo_model.settlement_dating.load_result_dating and auction_results, unchanged: an auction's settlement date and offering amount are public from 12:00 America/New_York on its announcemt_date",
+  "source": "the Fiscal Data auctions snapshot the published panel builds its gross settlement columns from (tests/fixtures/snapshots/funding_inputs/treasury_auctions/), the same records as repo_model.net_settlement reads (metadata/net_settlement.json also stamps the announcement at 12:00)",
+  "instant": "16:00 America/New_York on the decision day, the published records' decision time. An announcement stamped 12:00 on or before the decision day is public at it; any decision instant from 12:00 to 23:59 gives the same sums, so the result does not depend on the 16:00 choice",
+  "bill_caveat": "Lens E's caveat (docs/reviews/2026-10-19-five-lens/lens-E-data-plumbing.md, item G, and the dating file's own evidence): Treasury publishes no clock time for an announcement, and the 12:00 instant for a cash management bill is unverified. A cash management bill is ad hoc, announced the same or the previous day, sometimes auctioned at 11:30 and settled at T+0 or T+1; if one is announced after 12:00 on the decision day the arm counts it too early. The bill leg is therefore read with that caveat, said on the page and not removed; the share of bill settlement days that carry a cash management bill is reported, and the bill leg is also reported without them (the days on which a cash management bill settles are a group of their own)",
+  "lead_1": "at lead 1 the arms read the panel's flags and #1273's net exactly as (s3c) and (s3c-net) do; the study compares the announced gross with the panel's gross columns on every scored target day and reports the days that differ (the dating declaration states they agree at h = 1)",
+  "new_read_path": "repo_model.s3c_announced.AnnouncedTermTable and AnnouncedNetSizeTable are new read paths; tests/test_s3c_announced.py holds their leakage test with one recorded mutation (the instant of the figure taken from the target day instead of the decision day; LookAheadError), and the test that the published asof rule and the live record's features still refuse a settlement column beyond lead 1",
+  "training": "a training pair reads the figure of its own decision, the target row less the lead, so a training figure and a forecast figure are the same function of the same announcements"
+ },
+ "references": [
+  {"name": "sc_s3c_net", "label": "(s3c-net)", "role": "#1273's arm: net settlement at lead 1 only, re-walked here on the same days; its pooled means must reproduce #1273's record"},
+  {"name": "sc_s3c_ann_coupon", "label": "(s3c-ann-coupon)", "role": "leg reference, not an arm: (s3c-ann) with the coupon flag announced at leads 2 to 5 and the bill flag at lead 1 only"},
+  {"name": "sc_s3c_ann_bill", "label": "(s3c-ann-bill)", "role": "leg reference, not an arm: (s3c-ann) with the bill flag announced at leads 2 to 5 and the coupon flag at lead 1 only"}
+ ],
+ "pairs": "direct: the settlement terms are read at the target day with training_pairs = 'direct' (spread_mr_state_calendar.fit_state_terms is guarded by one_step_guard with no allow-list entry; repo_model.one_step_guard.ONE_STEP_ALLOW_LIST is not changed); the provisional-register row is metadata/provisional/cleared/s3c_announced_settlement_1288.json",
+ "frame": {
+  "windows": "the two windows of #1255, loaded as #1255 loads them: the development window (decision days whose five targets fall on or before 2025-12-31; scripts/srf_cap_1241.py build_frame) and the 2026 development days (decision days whose five targets fall from 2026-01-02 to 2026-09-03, the near-blind tier open since GO #151; scripts/s3_2026_check_1222.py build_frame)",
+  "walk": "(s3) is #1145's walk (refit every 21 decision days, direct pairs); every walk of this study starts on the same first decision day and runs over the same decision days as #1255's, so the arms are compared on the same days. The study checks that (s3c-ann), (s3c-ann-net) and the leg references equal (s3c) cell for cell at lead 1, that its (s3c-net) walk reproduces #1273's pooled means and that (s3) and (s3c) reproduce #1255's, and refuses to write a record otherwise",
+  "guards": "a scored decision day or target day passes lockbox.require_unlocked through spread_mean_reversion_686.require_scored_days with the last day of the window; the blind tier (from 2026-09-04) and every lockbox day are refused; the announcement tables read only rows of the panel, which ends at the last unlocked day"
+ },
+ "arms": [
+  {"name": "sc_s3_robust", "role": "(s3) of #1145; reference", "margin_bp": null},
+  {"name": "sc_s3c", "role": "(s3c), the H5 candidate; reference", "margin_bp": 0.0},
+  {"name": "sc_s3c_net", "role": "(s3c-net) of #1273; reference", "margin_bp": 0.0},
+  {"name": "sc_s3c_ann", "role": "(s3c-ann), the first arm", "margin_bp": 0.0},
+  {"name": "sc_s3c_ann_net", "role": "(s3c-ann-net), the second arm", "margin_bp": 0.0},
+  {"name": "sc_s3c_ann_coupon", "role": "leg reference of (s3c-ann)", "margin_bp": 0.0},
+  {"name": "sc_s3c_ann_bill", "role": "leg reference of (s3c-ann)", "margin_bp": 0.0}
+ ],
+ "models": ["B1", "B1_prime", "B2", "sc_s3_robust", "sc_s3c", "sc_s3c_net", "sc_s3c_ann", "sc_s3c_ann_net", "sc_s3c_ann_coupon", "sc_s3c_ann_bill"],
+ "primary": {
+  "metric": "grid CRPS (23 levels) averaged over leads h = 1..5",
+  "key_secondary": "upper-tail twCRPS (weight 1{z > 0 bp})",
+  "pressure_probability": "the Brier score of P(spread > +5 bp), the probability read off the 23 quantiles as 1 - F(floor(tau) + 0.5), F linear between them (spread_mean_reversion.exceedance), the event strict and on whole basis points (data.exceeds_bp)",
+  "calibration": "the coverage of the central 90% band (q5 to q95, closed) of every model, beside (s3c)'s, pooled and by regime; a rate, reported as a mean and not tested",
+  "comparisons": "both arms paired with (s3c), (s3) and (s3c-net), and against B1, B1' and B2; (s3c-ann-net) also against (s3c-ann); each leg reference against (s3c) and the arm it belongs to"
+ },
+ "scoring": {
+  "scorer": "repo_model.scoring_protocol (#655), the development tier: no verdict, no registration",
+  "test": "scoring_protocol.paired_tests, the studentized stationary bootstrap (ruling 1), mean block 10 business days, 10,000 draws, seed 1288, two-sided 90% interval (the lower end is the one-sided 95% bound); the skill interval and the studentized interval on mean d are reported for every tested row; where the studentized bound cannot be computed (most of a group's days score alike) the unstudentized percentile interval of mean d is given beside it, with no reading taken from it",
+  "reading": "a reading is taken from the mean-d bound (her ruling on #1009): an arm is read better than a reference when the lower end of the 90% interval of mean d is above zero, worse when the upper end is below zero, otherwise undecided. Lens C's caveat (the lag-10 HAC standard error is understated about 2x after 2020) is stated on the page",
+  "splits": "pooled; by lead (the gain should sit at h = 2 to 5); by regime (the declared regimes); by pressure-day type of the target day (turn_days.reporting_day_type, the record in force); by calendar target-day type (#1115's groups); by target month (2026 window); by the settlement-day type of the target at each lead h = 1..5 (a coupon settlement day, a bill settlement day, a day with neither: the panel's gross settlement above zero on the target day); and, at each lead, by whether the changed term is non-zero at the decision (an announced coupon or bill settlement, or a non-zero announced net, on the target day) against the other decision days. The intervals of a group of target days keep the current method (the group's days, scattered, resampled in date order as if consecutive), which #1221 questions and #1228 will decide",
+  "identical_groups": "a group in which an arm's score equals the reference's on every day is listed as identical and not tested against it; a group of fewer than 20 days is listed and not tested",
+  "seed": 1288
+ },
+ "effect": {
+  "what": "the fitted effect of each changed term in bp: for (s3c-ann), bp per flagged settlement day (the standardised effect of the refit the forecast used times the scale at the anchor in bp, spread_mr_state_calendar.StateEstimate.effect), for (s3c-ann-net) bp per USD 100 bn of net settlement (repo_model.s3c_net.bp_per_100bn), at each lead 1..5",
+  "report": "by lead and by regime of the target day: the mean over the scored decision days, with the 90% stationary-bootstrap interval of that mean over decision days (an interval over days that share refits, not a sampling interval for the coefficient), the share of days on which the term was in the fit"
+ },
+ "reading_rules": [
+  "A figure is a check on days that were already seen. Nothing here is a verdict, nothing is registered and no choice is made on it; (s3c) stays the candidate until she rules on the result.",
+  "A gain or loss is read from the 90% interval of mean d excluding zero; otherwise undecided. A point estimate alone is not read.",
+  "A pooled figure is never read without the lead, regime and settlement-day-type splits beside it.",
+  "The announced terms act at leads 2 to 5; the lead-1 cells are (s3c)'s and (s3c-net)'s by construction, so the average over h = 1..5 is read beside the leads 2 to 5 rows.",
+  "The bill leg is read with Lens E's caveat on the announcement time of a cash management bill.",
+  "The page ends with marked questions for Eleonora with numbered options and defaults that change no claim."
+ ],
+ "limits": {
+  "last_day": "2026-09-03",
+  "named_candidate": "unchanged; docs/research/h5-candidate.json is not changed",
+  "preregistration": "scripts/final_test_preregistration.py is not touched; test_final_test_freeze and test_live_score_freeze are run before the push",
+  "allow_list": "repo_model.one_step_guard.ONE_STEP_ALLOW_LIST is not changed",
+  "sources": "metadata/sources.json, metadata/settlement_announcement_dating.json, metadata/net_settlement.json and docs/decisions/information-set.md are not changed; no declaration already merged and no page already merged (#1277's, #1279's) is changed; docs/runs/ is not touched; spread_mr_calendar, spread_mr_state_calendar and s3c_net are not edited",
+  "published_and_live_paths": "the published declaration and the live record still refuse a settlement column beyond lead 1: tests/test_s3c_announced.py shows asof's InformationRule and the live record's feature list at horizons 2 to 5, and (s3c)'s own TermTable at leads 2 to 5, still do not read it"
+ },
+ "long_run": "cloud first: five walks of (s3) per window with a different term table or arm (minutes each) and the paired tests of the two arms and the two leg references on about forty groups and three metrics per window (the longer part). If the measured time on a subset says the full run exceeds about two hours, the run goes to the Mac as a `needs-mac:` comment",
+ "amendments": []
+}
