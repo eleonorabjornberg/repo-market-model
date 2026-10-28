@@ -1,0 +1,8 @@
+{
+  "command": [
+    "scripts/fetch_pd_financing_1296.py",
+    "check"
+  ],
+  "where": "suite",
+  "pre_review": false
+}

@@ -459,6 +459,23 @@ class SnapshotAndDeclarationTests(unittest.TestCase):
             self.assertEqual(len(raw), item["byte_count"])
             self.assertTrue(item["url"].startswith("https://"))
 
+    def test_the_fetch_script_checks_the_tracked_bytes_offline(self):
+        import importlib.util
+
+        spec = importlib.util.spec_from_file_location("fetch_pd_financing_1296_in_test", ROOT / "scripts" / "fetch_pd_financing_1296.py")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        self.assertEqual(module.check(), 0)
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "tests" / "fixtures" / "snapshots").mkdir(parents=True)
+            import shutil
+
+            shutil.copytree(SNAPSHOT, root / "tests" / "fixtures" / "snapshots" / "nyfed-pd-financing")
+            target = root / "tests" / "fixtures" / "snapshots" / "nyfed-pd-financing" / "PDSIRRA-UTSTTOT.json"
+            target.write_bytes(target.read_bytes() + b" ")
+            self.assertEqual(module.check(root), 1)
+
     def test_the_release_page_states_the_day_and_time_the_declaration_cites(self):
         text = (SNAPSHOT / "primary-dealers-statistics.html").read_text(encoding="utf-8", errors="replace")
         self.assertIn("Data are updated on Thursdays at approximately 4:15 p.m. with the previous week's statistics", text)
