@@ -106,7 +106,8 @@ ANNOUNCED = "announced_gross"
 ANNOUNCED_NET = "announced_net"
 TYPE_LABELS = ("coupon settlement day", "bill settlement day", "bill settlement day with a cash management bill",
                "bill settlement day without one", "neither settles")
-DECLARED_LAG_NOTE = "announcement 12:00 on announcemt_date, decision 16:00"
+#: The splits the page prints against (s3c) and (s3c-net) only; the record holds every pairing.
+SHORT_SPLITS = ("regime", "pressure_day_type", "month", "target_day_type")
 FLAG_TITLES = {"settlement_bill": "bill flag", "settlement_coupon": "coupon flag"}
 NET_TITLES = {"settlement_bill": "net bill settlement", "settlement_coupon": "net coupon settlement"}
 
@@ -119,12 +120,11 @@ def committed_declaration(path: Path = DECLARATION) -> dict:
 
 def plan(candidate: str, split: str = "pooled") -> List[str]:
     """What an arm is tested against: both arms against (s3c), (s3), (s3c-net) and the benchmarks, (s3c-ann-net) also against (s3c-ann);
-    on the settlement-day and announced-term splits only against (s3c), (s3c-net) and, for (s3c-ann-net), (s3c-ann); a leg reference
-    against (s3c) alone."""
+    on the announced-term splits only against (s3c), (s3c-net) and, for (s3c-ann-net), (s3c-ann); a leg reference against (s3c) alone."""
 
     if candidate in LEGS:
         return [S3C]
-    narrow = split in (DAY_TYPE, ANNOUNCED, ANNOUNCED_NET)
+    narrow = split in (ANNOUNCED, ANNOUNCED_NET)
     if candidate == ANN:
         return [S3C, S3CN] if narrow else [S3C, S3, S3CN] + list(BENCHMARKS)
     if candidate == ANNNET:
@@ -649,8 +649,10 @@ def render(r: dict) -> str:
         "of a group of target days keep the **current method** (the group's days, scattered, resampled in date order as if consecutive), which #1221 "
         "questions and #1228 will decide; no reading of a day-type group is a finding. Where two arms differ on few days of a group, some resamples have "
         "no long-run variance: the bound is then not computed, the unstudentized interval of mean d is given beside it, and no reading is taken from "
-        "that. Groups of fewer than 20 days are listed with their means and not tested. The settlement-day-type and announced-term splits are tested "
-        "against (s3c) and (s3c-net) (and (s3c-ann) for the net arm) only; every other split against every reference.", "",
+        "that. Groups of fewer than 20 days are listed with their means and not tested. The announced-term splits are tested against (s3c) and "
+        "(s3c-net) (and (s3c-ann) for the net arm) only; every other split against every reference, the benchmarks included. For length, the page "
+        "prints the regime, pressure-day-type, month and calendar-day-type splits against (s3c) and (s3c-net) and the benchmark tables for the "
+        "lead, settlement-day-type, regime and pressure-day-type splits; the other pairings are in the record.", "",
         "**What kind of look this is.** The 2026 days were already seen by #845, by the #151 final test, by #1229, #1252, #1255 and #1273. This is a check "
         "on an arm queued by her ruling, not evidence for a verdict. The announced terms act at h = 2 to 5 only: the pooled figure averages four leads "
         "that can differ with one that cannot, so read the lead rows beside it.", ""]
@@ -681,7 +683,10 @@ def render(r: dict) -> str:
                              ("regime", "By regime"), ("pressure_day_type", "By pressure-day type of the target day"),
                              ("month", "By target month"), ("target_day_type", "By calendar target-day type")):
             for arm in ARMS:
-                for ref in [x for x in plan(arm, split) if x not in BENCHMARKS]:
+                shown = [x for x in plan(arm, split) if x not in BENCHMARKS]
+                if split in SHORT_SPLITS:
+                    shown = [x for x in shown if x in (S3C, S3CN)]
+                for ref in shown:
                     table = split_table(w, split, arm, ref)
                     if table:
                         out += [f"### {title}: {LABELS[arm]} against {LABELS[ref]}", ""] + table + [""]
@@ -692,7 +697,8 @@ def render(r: dict) -> str:
                         out += [f"### {title}: {LABELS[leg]} against {LABELS[S3C]}", ""] + table + [""]
         for ref in BENCHMARKS:
             for arm in ARMS:
-                for split, title in (("regime", "By regime"), ("pressure_day_type", "By pressure-day type")):
+                for split, title in (("lead", "By lead"), (DAY_TYPE, "By settlement-day type"), ("regime", "By regime"),
+                                     ("pressure_day_type", "By pressure-day type")):
                     table = split_table(w, split, arm, ref)
                     if table:
                         out += [f"### {title}: {LABELS[arm]} against {LABELS[ref]}", ""] + table + [""]
