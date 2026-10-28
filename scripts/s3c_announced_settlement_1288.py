@@ -106,9 +106,11 @@ ANNOUNCED = "announced_gross"
 ANNOUNCED_NET = "announced_net"
 TYPE_LABELS = ("coupon settlement day", "bill settlement day", "bill settlement day with a cash management bill",
                "bill settlement day without one", "neither settles")
-#: The splits the page prints against (s3c) and (s3c-net) only; the record holds every pairing.
-SHORT_SPLITS = ("regime", "pressure_day_type", "month", "target_day_type")
+#: The splits the page prints against (s3c), (s3c-net) and, for (s3c-ann-net), (s3c-ann) only; the record holds every pairing.
+SHORT_SPLITS = ("regime", "pressure_day_type", "month", "target_day_type", DAY_TYPE)
 FLAG_TITLES = {"settlement_bill": "bill flag", "settlement_coupon": "coupon flag"}
+#: The effect tables print the pooled row at every lead and the regime rows at this lead only; the record holds them all.
+REGIME_LEAD = "3"
 NET_TITLES = {"settlement_bill": "net bill settlement", "settlement_coupon": "net coupon settlement"}
 
 
@@ -594,6 +596,8 @@ def effect_table(by_lead: Mapping[str, Mapping[str, dict]], titles: Mapping[str,
     for lead in sorted(by_lead, key=int):
         eff = by_lead[lead]
         for name in sorted(eff, key=lambda x: (x != "all", x)):
+            if name != "all" and lead != REGIME_LEAD:
+                continue
             e = eff[name]
             parts = []
             for t in TERMS:
@@ -613,6 +617,28 @@ def headline(r: Mapping[str, object]) -> str:
             f"{text}, grid CRPS against (s3c): (s3c-ann) {cell(_vs(entry, 'grid_crps', ANN, S3C))}; "
             f"(s3c-ann-net) {cell(_vs(entry, 'grid_crps', ANNNET, S3C))}")
     return "; ".join(parts) + "."
+
+
+def summary(r: Mapping[str, object]) -> List[str]:
+    """The first screen: grid CRPS against (s3c) by lead for each arm and leg reference, in each window."""
+
+    out = ["## Summary: grid CRPS against (s3c), by lead", "",
+           "Skill and its 90% interval, the mean difference d and its studentized 90% interval, and the reading on the mean-d bound (positive favours "
+           "the arm). The lead-1 row is (s3c)'s own cell for the gross arm and the leg references (identical) and (s3c-net)'s for the net arm. "
+           "The full tables, with the other metrics and references, follow.", ""]
+    for window in WINDOWS:
+        w = r["windows"].get(window)
+        if w is None:
+            continue
+        out += [f"**{WINDOW_TITLES[window].split(' (')[0]}**", "",
+                "| lead | " + " | ".join(LABELS[x] for x in (ANN, ANNNET, ANNC, ANNB)) + " |", "|---|---|---|---|---|"]
+        for lead in LEADS:
+            g = w["groups"]["lead"][f"h={lead}"]
+            out.append(f"| h={lead} | " + " | ".join(cell(_vs(g, "grid_crps", x, S3C)) for x in (ANN, ANNNET, ANNC, ANNB)) + " |")
+        g = w["groups"]["pooled"]["all decision days"]
+        out.append("| pooled over h = 1..5 | " + " | ".join(cell(_vs(g, "grid_crps", x, S3C)) for x in (ANN, ANNNET, ANNC, ANNB)) + " |")
+        out.append("")
+    return out
 
 
 def render(r: dict) -> str:
@@ -637,10 +663,10 @@ def render(r: dict) -> str:
         "**The bill leg carries Lens E's caveat** (`docs/reviews/2026-10-19-five-lens/lens-E-data-plumbing.md`, item G). Treasury publishes no clock time "
         "for an announcement, and the 12:00 announcement time of a cash management bill is unverified: a cash management bill is ad hoc, announced the "
         "same or the previous day, sometimes auctioned at 11:30 and settled at T+0 or T+1. If one is announced after 12:00 the arm counts it too early, "
-        "and the bill leg's gain at h = 2 to 5 would be read from information a desk did not yet have. For a regular bill the announcement is at least "
-        "a day before the decision on the dates scored, so the 12:00 instant does not matter for it (any instant from 12:00 to 23:59 gives the same "
-        "sums at the 16:00 decision). The settlement-day-type tables below separate the bill settlement days with a cash management bill from those "
-        "without one.", "",
+        "and the bill leg's gain at h = 2 to 5 would be read from information a desk did not yet have. An announcement dated before the decision "
+        "day counts whatever its clock time; one dated the decision day itself counts only if it was made by 16:00, which the 12:00 stamp assumes "
+        "(any stamp from 12:00 to 15:59 gives the same sums). The page does not measure how many flags hang on a same-day announcement. The "
+        "settlement-day-type tables below separate the bill settlement days with a cash management bill from those without one.", "",
         f"Panel digest `{r['panel_sha256']}`. Studentized stationary bootstrap (ruling 1), mean block {sp.BLOCK_LENGTH} business days, "
         f"{r['draws']:,} draws, seed {r['seed']}, two-sided 90% interval (the lower end is the one-sided 95% bound). Positive mean d favours "
         "the arm named first in the table's heading. **A reading (gain, loss, undecided) is taken from the mean-d bound** (her ruling on #1009), with the "
@@ -651,11 +677,13 @@ def render(r: dict) -> str:
         "no long-run variance: the bound is then not computed, the unstudentized interval of mean d is given beside it, and no reading is taken from "
         "that. Groups of fewer than 20 days are listed with their means and not tested. The announced-term splits are tested against (s3c) and "
         "(s3c-net) (and (s3c-ann) for the net arm) only; every other split against every reference, the benchmarks included. For length, the page "
-        "prints the regime, pressure-day-type, month and calendar-day-type splits against (s3c) and (s3c-net) and the benchmark tables for the "
-        "lead, settlement-day-type, regime and pressure-day-type splits; the other pairings are in the record.", "",
+        "prints the regime, pressure-day-type, month, calendar-day-type and settlement-day-type splits against (s3c) and (s3c-net) (and (s3c-ann) "
+        "for the net arm) and the benchmark tables for the lead, settlement-day-type, regime and pressure-day-type splits; the other pairings are "
+        "in the record.", "",
         "**What kind of look this is.** The 2026 days were already seen by #845, by the #151 final test, by #1229, #1252, #1255 and #1273. This is a check "
         "on an arm queued by her ruling, not evidence for a verdict. The announced terms act at h = 2 to 5 only: the pooled figure averages four leads "
         "that can differ with one that cannot, so read the lead rows beside it.", ""]
+    out += summary(r)
     for window in WINDOWS:
         w = r["windows"].get(window)
         if w is None:
@@ -685,7 +713,7 @@ def render(r: dict) -> str:
             for arm in ARMS:
                 shown = [x for x in plan(arm, split) if x not in BENCHMARKS]
                 if split in SHORT_SPLITS:
-                    shown = [x for x in shown if x in (S3C, S3CN)]
+                    shown = [x for x in shown if x in (S3C, S3CN) or (arm == ANNNET and x == ANN)]
                 for ref in shown:
                     table = split_table(w, split, arm, ref)
                     if table:
@@ -712,7 +740,8 @@ def render(r: dict) -> str:
                 "", "The coupon leg alone ((s3c-ann-coupon)), bp when the coupon flag is 1:", ""] + effect_table(
                     w["effects"]["coupon_leg"], FLAG_TITLES, "bp") + [
                 "", "The bill leg alone ((s3c-ann-bill)), bp when the bill flag is 1:", ""] + effect_table(w["effects"]["bill_leg"], FLAG_TITLES, "bp") + [
-                "", "The effect is the standardised effect of the refit the forecast used times the scale at the anchor in bp. The interval is a bootstrap interval of the "
+                "", "The effect is the standardised effect of the refit the forecast used times the scale at the anchor in bp. The pooled row is printed at every lead "
+                "and the regime rows at h = 3 only (the record holds them all). The interval is a bootstrap interval of the "
                 "mean over decision days, which share refits; it is not a sampling interval for the coefficient. A term enters a fit only when at least three "
                 "training pairs carry it; the share of days in the fit is shown for the bill and the coupon term (a term of the other leg in a leg-reference walk is "
                 "not in its fit at h = 2 to 5 and reads 0 there).", ""]

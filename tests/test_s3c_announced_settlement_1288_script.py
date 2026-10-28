@@ -368,6 +368,7 @@ class EndToEndTests(unittest.TestCase):
 
     def test_the_page_names_the_bill_caveat_the_legs_and_ends_with_the_marked_questions(self):
         text = self.page.read_text(encoding="utf-8")
+        self.assertIn("## Summary: grid CRPS against (s3c), by lead", text)
         self.assertIn("Lens E", text)
         self.assertIn("cash management bill", text)
         self.assertIn("(s3c-ann-coupon)", text)
