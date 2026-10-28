@@ -219,6 +219,11 @@ class GroupTests(unittest.TestCase):
         summary = script.source_summary(table, public, {"A": 30, "B": 31, "C": 29, "D": 28}, False)
         self.assertEqual(summary["years"]["2020"]["dates_by_class"], {"A": 12, "B": 12, "C": 12, "D": 12})
         self.assertIsNone(summary["years"]["2019"]["public_from_utc"])
+        self.assertEqual(summary["years"]["2020"]["dates_after_capture_by_class"], {"A": 12, "B": 12, "C": 12, "D": 12})
+        self.assertEqual(summary["years"]["2019"]["dates_after_capture_by_class"], {"A": 0, "B": 0, "C": 0, "D": 0})
+        # a capture in the middle of January 2025 leaves the dates of that month before it unreadable
+        mid = script.source_summary(table, {2025: dt.datetime(2025, 1, 19, 11, 8, 44, tzinfo=sifma_mbs.UTC)}, {"A": 30, "B": 31, "C": 29, "D": 28}, False)
+        self.assertEqual(mid["years"]["2025"]["dates_after_capture_by_class"], {"A": 11, "B": 11, "C": 12, "D": 12})
         self.assertEqual(summary["terms"], list(mm.CLASS_TERMS))
         self.assertEqual(script.source_summary(table, public, {"A": 3, "B": 31, "C": 29, "D": 28}, True)["terms"], [mm.POOLED_TERM])
 
@@ -227,12 +232,12 @@ class PageTests(unittest.TestCase):
 
     def test_the_questions_are_marked_numbered_and_carry_a_default(self):
         text = "\n".join(script.question())
-        self.assertIn("Questions for Eleonora", text)
-        for number in (1, 2, 3):
-            self.assertIn(f"**Question {number}.", text)
-        self.assertEqual(text.count("(default)"), 2)
-        self.assertIn("1. ", text)
-        self.assertIn("2. ", text)
+        self.assertIn("Rulings applied, and the question that remains", text)
+        self.assertIn("**Question 1.", text)
+        self.assertNotIn("**Question 2.", text)  # her Q2 and Q3 were ruled on 28 October 2026
+        self.assertEqual(text.count("(default)"), 1)
+        for option in ("1. ", "2. ", "3. "):
+            self.assertIn(option, text)
         self.assertNotIn("GO #", text.replace("own `GO`", ""))
 
 
@@ -285,7 +290,7 @@ class EndToEndTests(unittest.TestCase):
     def test_the_page_states_where_the_indicators_act_and_ends_with_the_marked_questions(self):
         text = self.page.read_text(encoding="utf-8")
         self.assertIn("Where the indicators can be non-zero", text)
-        self.assertIn("## Questions for Eleonora", text)
+        self.assertIn("## Rulings applied, and the question that remains", text)
         self.assertIn("**Options**", text)
         self.assertIn("### 90% band coverage beside (s3c)'s", text)
         self.assertIn("The fitted effect of each indicator in bp, by regime", text)
