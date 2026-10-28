@@ -163,24 +163,42 @@
   "window_last": "2025-12-31",
   "years": {
    "2018": {
+    "dates_after_capture_by_class": {
+     "A": 0,
+     "B": 0,
+     "C": 0,
+     "D": 0
+    },
     "dates_by_class": {
      "A": 12,
      "B": 12,
      "C": 12,
      "D": 12
     },
-    "public_from_utc": null
+    "public_from_utc": "2025-07-21T21:09:54+00:00"
    },
    "2019": {
+    "dates_after_capture_by_class": {
+     "A": 0,
+     "B": 0,
+     "C": 0,
+     "D": 0
+    },
     "dates_by_class": {
      "A": 12,
      "B": 12,
      "C": 12,
      "D": 12
     },
-    "public_from_utc": null
+    "public_from_utc": "2025-07-21T21:09:54+00:00"
    },
    "2020": {
+    "dates_after_capture_by_class": {
+     "A": 12,
+     "B": 12,
+     "C": 12,
+     "D": 12
+    },
     "dates_by_class": {
      "A": 12,
      "B": 12,
@@ -190,6 +208,12 @@
     "public_from_utc": "2019-08-20T19:32:52+00:00"
    },
    "2021": {
+    "dates_after_capture_by_class": {
+     "A": 12,
+     "B": 12,
+     "C": 12,
+     "D": 12
+    },
     "dates_by_class": {
      "A": 12,
      "B": 12,
@@ -199,24 +223,42 @@
     "public_from_utc": "2020-08-14T14:50:53+00:00"
    },
    "2022": {
+    "dates_after_capture_by_class": {
+     "A": 0,
+     "B": 0,
+     "C": 0,
+     "D": 0
+    },
     "dates_by_class": {
      "A": 12,
      "B": 12,
      "C": 12,
      "D": 12
     },
-    "public_from_utc": null
+    "public_from_utc": "2025-07-21T21:09:54+00:00"
    },
    "2023": {
+    "dates_after_capture_by_class": {
+     "A": 0,
+     "B": 0,
+     "C": 0,
+     "D": 0
+    },
     "dates_by_class": {
      "A": 12,
      "B": 12,
      "C": 12,
      "D": 12
     },
-    "public_from_utc": null
+    "public_from_utc": "2025-07-21T21:09:54+00:00"
    },
    "2024": {
+    "dates_after_capture_by_class": {
+     "A": 12,
+     "B": 12,
+     "C": 12,
+     "D": 12
+    },
     "dates_by_class": {
      "A": 12,
      "B": 12,
@@ -226,6 +268,12 @@
     "public_from_utc": "2023-03-14T18:44:06+00:00"
    },
    "2025": {
+    "dates_after_capture_by_class": {
+     "A": 11,
+     "B": 11,
+     "C": 12,
+     "D": 12
+    },
     "dates_by_class": {
      "A": 12,
      "B": 12,
@@ -235,6 +283,12 @@
     "public_from_utc": "2025-01-19T11:08:44+00:00"
    },
    "2026": {
+    "dates_after_capture_by_class": {
+     "A": 10,
+     "B": 10,
+     "C": 10,
+     "D": 10
+    },
     "dates_by_class": {
      "A": 12,
      "B": 12,
@@ -244,6 +298,12 @@
     "public_from_utc": "2026-03-06T15:23:32+00:00"
    },
    "2027": {
+    "dates_after_capture_by_class": {
+     "A": 12,
+     "B": 12,
+     "C": 12,
+     "D": 12
+    },
     "dates_by_class": {
      "A": 12,
      "B": 12,

@@ -10,20 +10,20 @@ Panel digest `4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999`.
 
 **The source and when it is public.** Settlement days in the pooling window (the panel's rows to 2025-12-31, each read at lead 1, a year counted only where the archive shows it): class A 47, class B 47, class C 47, class D 48. The rule pools the classes into one indicator when a class has fewer than 20: **no class is below it, so the four indicators `mbs_a` to `mbs_d` were kept.**
 
-| year | public from (UTC, the archive's capture) | settlement dates A / B / C / D |
-|---|---|---|
-| 2018 | not shown by any capture: the indicators are 0 | 12 / 12 / 12 / 12 |
-| 2019 | not shown by any capture: the indicators are 0 | 12 / 12 / 12 / 12 |
-| 2020 | 2019-08-20 19:32:52 UTC | 12 / 12 / 12 / 12 |
-| 2021 | 2020-08-14 14:50:53 UTC | 12 / 12 / 12 / 12 |
-| 2022 | not shown by any capture: the indicators are 0 | 12 / 12 / 12 / 12 |
-| 2023 | not shown by any capture: the indicators are 0 | 12 / 12 / 12 / 12 |
-| 2024 | 2023-03-14 18:44:06 UTC | 12 / 12 / 12 / 12 |
-| 2025 | 2025-01-19 11:08:44 UTC | 12 / 12 / 12 / 12 |
-| 2026 | 2026-03-06 15:23:32 UTC | 12 / 12 / 12 / 12 |
-| 2027 | 2026-03-06 15:23:32 UTC | 12 / 12 / 12 / 12 |
+| year | public from (UTC, the archive's capture) | settlement dates A / B / C / D | of which after the capture (readable) A / B / C / D |
+|---|---|---|---|
+| 2018 | 2025-07-21 21:09:54 UTC | 12 / 12 / 12 / 12 | 0 / 0 / 0 / 0 |
+| 2019 | 2025-07-21 21:09:54 UTC | 12 / 12 / 12 / 12 | 0 / 0 / 0 / 0 |
+| 2020 | 2019-08-20 19:32:52 UTC | 12 / 12 / 12 / 12 | 12 / 12 / 12 / 12 |
+| 2021 | 2020-08-14 14:50:53 UTC | 12 / 12 / 12 / 12 | 12 / 12 / 12 / 12 |
+| 2022 | 2025-07-21 21:09:54 UTC | 12 / 12 / 12 / 12 | 0 / 0 / 0 / 0 |
+| 2023 | 2025-07-21 21:09:54 UTC | 12 / 12 / 12 / 12 | 0 / 0 / 0 / 0 |
+| 2024 | 2023-03-14 18:44:06 UTC | 12 / 12 / 12 / 12 | 12 / 12 / 12 / 12 |
+| 2025 | 2025-01-19 11:08:44 UTC | 12 / 12 / 12 / 12 | 11 / 11 / 12 / 12 |
+| 2026 | 2026-03-06 15:23:32 UTC | 12 / 12 / 12 / 12 | 10 / 10 / 10 / 10 |
+| 2027 | 2026-03-06 15:23:32 UTC | 12 / 12 / 12 / 12 | 12 / 12 / 12 / 12 |
 
-**Where the indicators can be non-zero.** An indicator is 1 only where the archive shows the year's calendar at the decision instant. The years it shows are 2020, 2021, 2024, 2025, 2026, 2027; for 2018, 2019, 2022, 2023 no capture shows the calendar, so every indicator is 0 there and (s3c-mbs) is (s3c) up to the refit of the fit. In the years the archive shows, a date is read only from the capture's instant on (a date earlier in the year than the capture is not read). The fit is trained on all the panel's days, so the days of the years with no capture, on which the classes did settle, enter it as days without a settlement; that bias, and what to do about it, is the first marked question below. The tables count the cells.
+**Where the indicators can be non-zero.** An indicator is 1 only where the archive shows the year's calendar at the decision instant. The years with a date a decision can read are 2020, 2021, 2024, 2025, 2026, 2027; for 2018, 2019, 2022, 2023 the only evidence is a capture that falls after every date of the year (the workbook of 2025-07-21; no earlier capture of any workbook holds a date) or none, so every indicator is 0 there and (s3c-mbs) is (s3c) up to the refit of the fit. In the other years a date is read only from the capture's instant on (a date earlier in the year than the capture is not read). The fit is trained on all the panel's days, so the days of the years with no readable date, on which the classes did settle, enter it as days without a settlement; that bias is the marked question below. The tables count the cells.
 
 ## The development window (targets up to 2025-12-31; #1145, #1241)
 
@@ -547,22 +547,14 @@ The 2026 development days: (s3) and (s3c) pooled means here against `docs/resear
 
 The development window: (s3) and (s3c) pooled means here against `docs/research/s3c-candidate-1255/result.json`: grid CRPS (s3c) 1.629218 against 1.629218 (difference +0.00e+00), (s3) 1.628829 against 1.628829 (difference +0.00e+00); upper-tail twCRPS (s3c) 0.860605 against 0.860605 (difference +0.00e+00), (s3) 0.860216 against 0.860216 (difference +0.00e+00). The frames and the walk are the same.
 
-## Questions for Eleonora (marked; defaults change no claim)
+## Rulings applied, and the question that remains
 
-**Question 1. How publication is established for the years the archive does not show.** The archive's captures show the calendar of 2020, 2021, 2024, 2025, 2026 and 2027; they do not show 2018, 2019, 2022 and 2023 (the page of those years carried no label of the years it covered, and the workbook itself was captured only in 2025). The declaration reads a year as public only from the earliest capture that shows it, and not at all where none does, so those four years carry no indicator. The cost is a fit that sees the classes settle on days it is told are ordinary.
+**Her rulings of 28 October 2026 (comment 6478349160 on PR #1282), applied.** Q1 (b): the Mac fetched the archive's captures of the older workbooks (`data/sifma-wayback-1276-workbooks/`); of four workbook URLs one had a capture, the 2023/03 workbook captured on 2025-07-21, so `public_from` of 2018, 2019, 2022 and 2023 is re-declared from it (declared before this score, `metadata/sifma_mbs_1276.json`, amendment of 2026-10-28) and the arm re-run. That capture falls after every date of those years, so no indicator changed and the figures reproduce the first pass's. The other years keep the page captures they had. Q2 (b): the 2017 to 2024 dates of this capture equal the 2025-07-24 workbook's cell for cell on all three sheets (`tests/test_sifma_mbs.py`), so no date differs between the two captures; both are the corrected file, and no capture earlier than July 2025 holds a date, so the first-posted dates of 2020 and 2021 cannot be checked further. Q3 (a): the declaration stays in `metadata/sifma_mbs_1276.json`.
 
-**Options** (the default applies if you have not answered by the next 5 pm batch):
-
-1. **Keep the declaration as it is** (default). Years with no capture are never public; the result stands as the conservative reading.
-2. **Send the Mac to fetch the archive's captures of the workbook files the page linked at each date** (the 2017/06, 2023/03, 2023/06 and 2024/02 workbooks, `scripts/sifma_wayback_fetch_1276.py --url ...`), then re-declare `public_from` from what they hold, with the first-posted dates of each year instead of the 2025 file's corrected ones, and re-run.
-3. **Read a year's label as covering the earlier years of the same workbook** (so the capture of 2019-08-20, labelled for 2020, would show 2019 and 2018 from that day, and the capture of 2023-03-14 would show 2022 and 2023 from that day). This adds almost no decision instants, since those years had mostly passed.
-4. **Drop the arm.**
-
-**Question 2. The dates of the earlier years are the corrected file's.** The workbook the 2017 to 2024 dates are read from was captured on 2025-07-24; SIFMA's own notes in it record corrections (3/11/2021, 7/15/21 for the Juneteenth settlement of 22 June 2022, and two typos of 2022 in notification dates). A date as first posted may differ from the one used for 2020 and 2021. Option 2 above is what would show it; the default accepts the file as captured.
-
-**Question 3. The source's place in the registry.** `metadata/sources.json` is not edited: any change to it moves the checksums pinned by the final-test pre-registration (`test_final_test_freeze` and `test_live_score_freeze` fail), as #1241 found for the SRF line. The availability is declared in `metadata/sifma_mbs_1276.json` and the registry entry is prepared there.
+**Question 1. The years the archive cannot date before they passed.** The indicators of 2018, 2019, 2022 and 2023 are 0, because the only evidence of their publication is a 2025 capture. The cost is a fit that sees the classes settle on days it is told are ordinary, in four of ten years.
 
 **Options** (the default applies if you have not answered by the next 5 pm batch):
 
-1. **Leave the source in its own declaration file** (default), as the SRF line is.
-2. **Add the entry to `metadata/sources.json` and re-pin the final-test pre-registration under your own `GO`** (an owner-attested change).
+1. **Accept the result as it stands** (default). The arm is read on 2020, 2021 and 2024 to 2026, the years the archive dates; nothing is guessed.
+2. **Read a year's label as covering the earlier years of the same workbook** (so the capture of 2019-08-20, labelled for 2020, would show 2019 and 2018 from that day, and the capture of 2023-03-14 would show 2022 and 2023). This adds almost no decision instants, since those years had mostly passed.
+3. **Drop the arm.**
