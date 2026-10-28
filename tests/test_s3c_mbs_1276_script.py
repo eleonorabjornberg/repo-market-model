@@ -90,11 +90,14 @@ class DeclarationTests(unittest.TestCase):
         self.assertIn("fewer than 20", declaration["candidate"]["definition"])
         self.assertEqual(mm.MIN_CLASS_DAYS, 20)
 
-    def test_the_availability_declaration_is_committed_and_names_the_years_the_archive_shows(self):
+    def test_the_availability_declaration_is_committed_and_dates_every_year_and_names_the_four_the_workbook_capture_dates(self):
         availability = script.committed_availability()
         self.assertEqual(availability["issue"], 1276)
-        shown = sorted(y for y, e in availability["public_from"].items() if e["capture_timestamp"] is not None)
-        self.assertEqual(shown, ["2020", "2021", "2024", "2025", "2026", "2027"])
+        dated = {y: e["capture_timestamp"] for y, e in availability["public_from"].items()}
+        self.assertEqual(sorted(dated), [str(y) for y in range(2018, 2028)])
+        # the four years only the 2025-07-21 workbook capture dates (after all their dates); the others a page capture
+        self.assertEqual(sorted(y for y, t in dated.items() if t == "20250721210954"), ["2018", "2019", "2022", "2023"])
+        self.assertEqual(sorted(y for y, t in dated.items() if t is None), [])
 
     def test_the_cleared_register_row_exists_for_the_declaration(self):
         row = json.loads((ROOT / "metadata" / "provisional" / "cleared" / "s3c_mbs_1276.json").read_text(encoding="utf-8"))
