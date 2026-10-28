@@ -47,7 +47,11 @@ sys.path.insert(0, str(REPO / "src"))
 def _load(name: str, alias: str):
     """Load `scripts/<name>.py` as a module registered under `alias`."""
 
-    spec = importlib.util.spec_from_file_location(alias, REPO / "scripts" / f"{name}.py")
+    path = REPO / "scripts" / f"{name}.py"
+    held = sys.modules.get(alias)
+    if held is not None and getattr(held, "__file__", None) == str(path):
+        return held  # another loader in this process already holds the alias: share it, so pickled task names stay one object (#1294)
+    spec = importlib.util.spec_from_file_location(alias, path)
     module = importlib.util.module_from_spec(spec)
     sys.modules[alias] = module
     spec.loader.exec_module(module)
