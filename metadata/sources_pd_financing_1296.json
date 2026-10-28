@@ -28,17 +28,17 @@
  },
  "transform": {
   "level": "the sum of the four totals, in USD billions; a week with any of the four withheld ('*', confidentiality) has no level: no observation, never 0",
-  "state": "the z-score of the latest public week's level against the TRAILING weeks before it: (level - mean) / stdev (sample) over the defined levels of the 52 as-of weeks before the latest public week",
+  "state": "the z-score of the latest public level against the weeks before it: (level - mean) / stdev (sample) over the defined levels of the 52 as-of weeks before the as-of week w* of that level; w* is the latest as-of week released at the decision instant that has a level",
   "trailing_weeks": 52,
-  "minimum_trailing_weeks": 26,
-  "undefined_when": "the latest public week has no level; fewer than 26 of the 52 weeks before it have one; or their standard deviation is not positive",
-  "no_carry": "no older week is carried in place of a withheld latest week (a staleness rule would be a threshold nobody has set); the term is 0 on such a day, as an unknown scarcity state reads 0 in (s3)",
+  "minimum_trailing_weeks": 13,
+  "undefined_when": "no released week has a level; fewer than 13 of the 52 weeks before w* have one; or their standard deviation is not positive. The term is then 0, as an unknown scarcity state reads 0 in (s3)",
+  "carry": "the latest public level is carried over withheld weeks, however many (the directive's 'latest public level'); the number of weeks between the latest public week and w* is reported on the page for every decision day with a state, and no limit is set on it, a limit being a threshold nobody has set. The minimum of 13 is a quarter of the year, chosen from how many weeks are withheld in 2025 and 2026 (data availability, read before any score) and not from any score",
   "declared_before_any_score": true,
   "not_tuned": "one transform, declared here; the alternatives named in the directive (a 13-week change) were not tried"
  },
  "limitations": [
   "The tracked snapshot is the latest revised vintage of each series as the New York Fed API served it on the retrieval date (manifest.json), not first prints. The series are not known to be revised often, but no first-print vintage was read, so a revision after the release is not excluded.",
-  "A figure the New York Fed withheld for confidentiality is '*'. In the tracked files 94 weeks of PDSIRRA-UTSETTOT, 13 of PDSIRRA-UTSTTOT and 69 of PDSIOSB-UTSTTOT are withheld (counted by the tests and the page from the files), so a week with a level is about two weeks in three since 2018. The last three weeks of the tracked file are '*' for PDSIRRA-UTSETTOT; whether they are a withholding or a not-yet-filled value cannot be told from the file.",
+  "A figure the New York Fed withheld for confidentiality is '*'. In the tracked files 94 weeks of PDSIRRA-UTSETTOT, 13 of PDSIRRA-UTSTTOT and 69 of PDSIOSB-UTSTTOT are withheld (counted by the tests and the page from the files), so a week with a level is about two weeks in three since 2018 and about one in two in 2025 and 2026. The last three weeks of the tracked file are '*' for PDSIRRA-UTSETTOT; whether they are a withholding or a not-yet-filled value cannot be told from the file.",
   "The Treasury rows are used, as the chart's mnemonics are (T). Other collateral classes (agency, MBS, corporate, equities) are not in the level."
  ],
  "proposed_registry_entry": {

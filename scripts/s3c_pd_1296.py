@@ -149,7 +149,7 @@ def cell_table(frame, forecasts) -> Dict[str, Dict[Tuple[date, int], float]]:
 # -- what the term did ---------------------------------------------------------------------------------------------------
 
 
-def term_use(frame, walk: s3c_pd.PdWalk, s3c, s3pd) -> dict:
+def term_use(frame, walk: s3c_pd.PdWalk, s3c, s3pd, levels=None) -> dict:
     """Where the state is defined and where the arm's forecast differs from (s3c)'s, by lead; the refits in which the term is active."""
 
     out: Dict[str, dict] = {str(h): {"cells": 0, "state_defined": 0, "differs_from_s3c": 0} for h in sp.HORIZONS}
@@ -166,6 +166,10 @@ def term_use(frame, walk: s3c_pd.PdWalk, s3c, s3pd) -> dict:
     out["refits_active"] = {str(h): sum(1 for r in used if walk.estimates[r][h].active) for h in sp.HORIZONS}
     out["decision_days"] = len(frame.days)
     out["days_with_state"] = sum(1 for d in frame.days if walk.values[d] is not None)
+    if levels is not None:
+        skipped = [s3c_pd.skipped_weeks(levels, d) for d in frame.days if walk.values[d] is not None]
+        out["skipped_weeks"] = ({"decision_days": len(skipped), "mean": statistics.fmean(skipped), "max": max(skipped),
+                                 "older_than_4_weeks": sum(1 for x in skipped if x > 4)} if skipped else None)
     return out
 
 
@@ -196,8 +200,8 @@ def fitted_effect(frame, walk: s3c_pd.PdWalk, levels) -> dict:
                    for h, v in sorted(coefficients.items())}
     units = []
     for d in frame.days:
-        week = s3c_pd.latest_public_week(levels, d)
-        if week is None or levels[week] is None:
+        week = s3c_pd.latest_defined_week(levels, d)
+        if week is None:
             continue
         trailing = [levels[w] for w in levels if 0 < (week - w).days <= 7 * s3c_pd.TRAILING_WEEKS and levels[w] is not None]
         if len(trailing) >= s3c_pd.MIN_TRAILING and statistics.stdev(trailing) > 0.0:
@@ -293,7 +297,7 @@ def run_window(window: str, panel, splits, registry, table, register, args, walk
             jobs.append((split, label, grain, metric, S3PD, tuple(members)))
     done = run_jobs(jobs, args.workers)
     result: dict = {"notes": notes, "refits": len(walk.estimates), "groups": {}, "skipped_groups": skipped,
-                    "term_use": term_use(frame, walk, s3c, s3pd), "fitted_effect": fitted_effect(frame, walk, levels)}
+                    "term_use": term_use(frame, walk, s3c, s3pd, levels), "fitted_effect": fitted_effect(frame, walk, levels)}
     for split, label, grain, members in groups:
         entry = result["groups"].setdefault(split, {}).setdefault(label, {"days": len(members)})
         for metric in METRIC_NAMES:
@@ -486,16 +490,17 @@ def render(r: dict) -> str:
         f"with their SHA-256 and retrieval instants in `manifest.json`. They run weekly (Wednesdays) from {lv['first']} to {lv['last']}; "
         f"{lv['with_level']:,} of {lv['weeks']:,} weeks have a level, because the New York Fed withholds ('*') some figures for confidentiality "
         "(weeks withheld by series: " + ", ".join(f"`{k}` {v}" for k, v in lv["withheld_by_series"].items()) + "). A week with any of the four withheld "
-        "has no level, and no older week is carried in its place, so the term is 0 on a decision day whose latest public week has no level. "
+        "has no level; the level read is that of the latest released week that has one, carried over the withheld weeks (how many is reported "
+        "below), and the term is 0 on a decision day with no state (fewer than " + str(lv["minimum_trailing_weeks"]) + " defined weeks in the year before the level read). "
         "**Release.** The New York Fed's page says: \"" + r["release_evidence"] + f"\" The declared instant is {lv['release_lag_business_days']} market "
         f"business days after the as-of Wednesday at {lv['release_time']} America/New_York, so a decision at 16:00 on the release Thursday reads the "
         "week before and the next business day's reads the new one (`tests/test_s3c_pd.py`). The page says \"approximately\" and no release archive was read. "
         "**Vintage.** The snapshot is the latest revised vintage the API served, not first prints. **Not the OFR route.** The Office of Financial Research "
         "chart the directive names draws on these series, but the OFR's data API serves the reverse-repo leg only to 2021-12-29, so the New York Fed's "
         "own API is used for both legs.", "",
-        "**What the share of defined days means.** Under the as-of rule a state exists on a decision day only when the latest public week has a level and "
-        "at least 26 of the 52 weeks before it do. The tables below count the decision days that have one; on the others (s3c-pd) differs from (s3c) "
-        "only through the refit.", ""]
+        "**What the share of defined days means.** A state exists on a decision day only when at least " + str(lv["minimum_trailing_weeks"]) + " of the " +
+        str(lv["trailing_weeks"]) + " weeks before the level read have a level. The tables below count the decision days that have one; on the others "
+        "(s3c-pd) differs from (s3c) only through the refit.", ""]
     for window in WINDOWS:
         w = r["windows"].get(window)
         if w is None:
@@ -507,6 +512,11 @@ def render(r: dict) -> str:
                 f"The state walk refit {r['walk']['refits']} times over the whole panel ({use['refits_in_use']} refits in use in this window).", "",
                 "### Mean scores (pooled)", ""] + mean_table(pooled) + ["", "### (s3c-pd) against each reference (pooled)", ""] + against_table(pooled) + [""]
         out += ["### Where the term acts", ""] + use_table(use) + [""]
+        if use.get("skipped_weeks"):
+            sk = use["skipped_weeks"]
+            out += [f"The level read is the latest public one, carried over weeks the New York Fed withheld: on the {sk['decision_days']:,} decision days with a state it is "
+                    f"{sk['mean']:.2f} weeks older than the latest public week on average (at most {sk['max']}), and {sk['older_than_4_weeks']:,} of those days read a level "
+                    "more than 4 weeks older than it.", ""]
         for split, title in (("regime", "By regime"), ("pressure_day_type", "By pressure-day type of the target day"), ("lead", "By lead"),
                              (CHANGED, "By whether the decision day has a state"), ("target_day_type", "By calendar target-day type"), ("month", "By target month")):
             table = split_table(w, split, S3C)
@@ -542,14 +552,14 @@ def question() -> List[str]:
         "**Question 1. Register the source?** The series is declared in `metadata/sources_pd_financing_1296.json` with a proposed registry entry; "
         "`metadata/sources.json` is unchanged because it is pinned under the final-test pre-registration (#1276, #1241). Registering it is a change to "
         "that file and to the pinned checksums, and is yours.", "",
-        "**Question 2. Some weeks have no level.** The New York Fed withholds some totals, so the state is undefined on the decision days "
-        "whose latest public week has no level, and the term is 0 there. Carrying the last defined level forward would give the term more days but needs "
-        "a staleness limit, which is a threshold nobody has set. The tables above count the days with a state.", "",
+        "**Question 2. Some weeks have no level, and the level read can be old.** The New York Fed withholds some totals, so the level read is carried over "
+        "withheld weeks without a limit on their number (the directive's 'latest public level', read literally), and a minimum of defined weeks in the "
+        "year decides whether a state exists. Both were declared from how many weeks are withheld, not from a score. A limit on the age of the level, "
+        "or a different minimum, is a threshold nobody has set. The tables above give the age of the level read and the days with a state.", "",
         "**Options** (the default applies if you have not answered by the next 5 pm batch):", "",
         "1. **Read the result as it stands, leave the source unregistered, queue nothing further on this input** (default). (s3c) stays the candidate; "
         "nothing changes.",
-        "2. **Queue a follow-up arm that carries the last defined level forward up to a limit you set**, declared as its own arm with its own staleness "
-        "rule and leakage test.",
+        "2. **Queue a follow-up arm with a limit on the age of the level you set**, declared as its own arm with its own staleness rule and leakage test.",
         "3. **Ask for the source to be registered** in a pull request that moves the pre-registration's checksums under your own GO.", ""]
 
 

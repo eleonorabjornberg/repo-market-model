@@ -10,12 +10,14 @@ of 5 and the SRF cap (`repo_model.s3c_candidate`) as they are, the way `repo_mod
 shows in "Primary dealer reverse repo and securities borrowing by tenor". A figure the New York Fed withheld for confidentiality (`*`) is no
 observation, never 0: a week with any of the four withheld has no level.
 
-**The state.** The state read by the decision on day `D` is the z-score of the latest public week's level against the weeks of the year
-before it: `(level - mean) / stdev` over the defined levels of the `TRAILING_WEEKS` as-of weeks before the latest public week, when at least
-`MIN_TRAILING` of them are defined and their standard deviation is positive; `None` otherwise, and `None` when the latest public week has no
-level. No older week is carried in its place (a staleness rule would be a threshold nobody has set): the term is 0 on such a day, as the
-scarcity state reads 0 when unknown (`spread_mr_state_calendar.standardised_shift`). The transform is declared in
-`metadata/s3c_pd_1296.json` before any score and is not tuned.
+**The state.** The state read by the decision on day `D` is the z-score of the latest public level against the weeks of the year before it:
+`w*` is the latest as-of week released at the decision instant that has a level (a week with a withheld total has none, so the latest public level
+may be older than the latest public week), and the state is `(level(w*) - mean) / stdev` over the defined levels of the `TRAILING_WEEKS` as-of weeks
+before `w*`, when at least `MIN_TRAILING` of them are defined and their standard deviation is positive; `None` otherwise (the term is then 0, as the
+scarcity state reads 0 when unknown, `spread_mr_state_calendar.standardised_shift`). The level is carried from `w*` however many withheld weeks lie
+between it and the latest public week; that number is reported (`skipped_weeks`) and no limit is set on it, which would be a threshold nobody has
+set. The transform is declared in `metadata/s3c_pd_1296.json` before any score and is not tuned; the New York Fed withholds many weeks of
+its largest total in 2025 and 2026, which is why the minimum is a quarter of the year and not a half.
 
 **Information set.** A week's figures are public once released: `release_instant(week)` is the declared lag after the as-of date, 6 business
 days on `metadata/market_holidays.json` (the Thursday of the following week) at 16:30 America/New_York, which is what the New York Fed's page
@@ -54,8 +56,8 @@ from .scoring_protocol import HORIZONS, ProtocolError
 from .splits import LookAheadError, SplitError
 
 __all__ = [
-    "ARM", "PD", "PdEstimate", "PdWalk", "SERIES", "decision_states", "fit_pd_terms", "forecast_leads", "load_levels", "read_level",
-    "release_instant", "state_at", "walk",
+    "ARM", "PD", "PdEstimate", "PdWalk", "SERIES", "decision_states", "fit_pd_terms", "forecast_leads", "latest_defined_week",
+    "latest_public_week", "load_levels", "public_weeks", "read_level", "release_instant", "skipped_weeks", "state_at", "walk",
 ]
 
 #: The four New York Fed totals whose sum is the level (USD millions in the file, USD billions here).
@@ -69,7 +71,7 @@ RELEASE_LAG_BUSINESS_DAYS = 6
 RELEASE_TIME = time(16, 30)
 #: The weeks before the latest public week that the standardisation looks back over, and the least number of them with a level.
 TRAILING_WEEKS = 52
-MIN_TRAILING = 26
+MIN_TRAILING = 13
 #: The term enters a lead's fit when at least this many training pairs have a state: the base model's minimum of training pairs.
 MIN_STATE_PAIRS = smr.MIN_PAIRS
 #: USD millions in the file to USD billions.
@@ -150,27 +152,50 @@ def read_level(levels: Mapping[date, Optional[float]], asof: date, decision_day:
     return levels[asof]
 
 
-def latest_public_week(levels: Mapping[date, Optional[float]], decision_day: date, *, decision_time: time = time(16, 0)) -> Optional[date]:
-    """The latest as-of week in the snapshot released at or before the decision instant, or `None`."""
+def public_weeks(levels: Mapping[date, Optional[float]], decision_day: date, *, decision_time: time = time(16, 0)) -> List[date]:
+    """The as-of weeks of the snapshot released at or before the decision instant (a withheld week is one of them), oldest first."""
 
     instant = datetime.combine(decision_day, decision_time)
     public = [week for week in levels if release_instant(week) <= instant]
-    return max(public) if public else None
+    return sorted(public)
+
+
+def latest_public_week(levels: Mapping[date, Optional[float]], decision_day: date, *, decision_time: time = time(16, 0)) -> Optional[date]:
+    """The latest as-of week in the snapshot released at or before the decision instant, or `None`."""
+
+    public = public_weeks(levels, decision_day, decision_time=decision_time)
+    return public[-1] if public else None
+
+
+def latest_defined_week(levels: Mapping[date, Optional[float]], decision_day: date, *, decision_time: time = time(16, 0)) -> Optional[date]:
+    """The latest as-of week released at or before the decision instant that has a level, or `None`."""
+
+    for week in reversed(public_weeks(levels, decision_day, decision_time=decision_time)):
+        if levels[week] is not None:
+            return week
+    return None
+
+
+def skipped_weeks(levels: Mapping[date, Optional[float]], decision_day: date, *, decision_time: time = time(16, 0)) -> Optional[int]:
+    """How many weeks older than the latest public week the latest public level is (0 when the latest public week has a level), or `None`."""
+
+    latest = latest_public_week(levels, decision_day, decision_time=decision_time)
+    defined = latest_defined_week(levels, decision_day, decision_time=decision_time)
+    return None if latest is None or defined is None else (latest - defined).days // 7
 
 
 def state_at(levels: Mapping[date, Optional[float]], decision_day: date, *, decision_time: time = time(16, 0)) -> Optional[float]:
-    """The state a decision on `decision_day` reads: the z-score of the latest public week's level against the year before it.
+    """The state a decision on `decision_day` reads: the z-score of the latest public level against the year before it.
 
-    `None` where the latest public week has no level, where fewer than `MIN_TRAILING` of the `TRAILING_WEEKS` weeks before it have one, or
-    where their standard deviation is not positive. Every week it reads is read through `read_level`, so none is released after the decision.
+    `None` where no public week has a level, where fewer than `MIN_TRAILING` of the `TRAILING_WEEKS` weeks before the latest public level have
+    one, or where their standard deviation is not positive. Every week it reads is read through `read_level`, so none is released after the
+    decision.
     """
 
-    week = latest_public_week(levels, decision_day, decision_time=decision_time)
+    week = latest_defined_week(levels, decision_day, decision_time=decision_time)
     if week is None:
         return None
     latest = read_level(levels, week, decision_day, decision_time=decision_time)
-    if latest is None:
-        return None
     earlier = [
         read_level(levels, w, decision_day, decision_time=decision_time)
         for w in levels if 0 < (week - w).days <= 7 * TRAILING_WEEKS

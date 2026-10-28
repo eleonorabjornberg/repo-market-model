@@ -4,9 +4,9 @@
 `repo_model.s3c_pd` is the arithmetic. What these tests pin: the level is the sum of the four declared New York Fed totals in USD billions
 and a withheld figure (`*`) is no observation, never 0; the release instant (6 market business days after the as-of Wednesday, 16:30, shifted
 by a holiday); that a week released after the decision instant is refused (`LookAheadError`) and that the decision on the release day itself,
-at 16:00, reads the week before it while the next business day's reads the new one; the state (the z-score of the latest public week's level
-against the year before it, `None` when the latest public week is withheld, when fewer than 26 of the 52 weeks before it have a level, or when
-their spread is zero, and no older week carried in its place); that a week nobody could yet read moves no state and no forecast and one that
+at 16:00, reads the week before it while the next business day's reads the new one; the state (the z-score of the latest public level
+against the year before it, `None` when fewer than 13 of the 52 weeks before it have a level, or when
+their spread is zero; the latest public level is carried over withheld weeks, and the number skipped is reported); that a week nobody could yet read moves no state and no forecast and one that
 was public does; that the fit recovers a planted effect, shrunk by the ridge, takes the state in standardised units as it is, and leaves every
 other term as (s3)'s fit has it; that where the term is not active the estimate and the forecast are (s3)'s, element for element; that the
 effect in bp is the coefficient times the state times the anchor's scale; that a training pair reads the state of its own decision day; that
@@ -15,12 +15,14 @@ the registry's own release-lag and provenance checks.
 
 Recorded mutations (each applied to the tree, confirmed by grep, the named test run, and reverted):
 
-* `latest_public_week`: `public = [week for week in levels if release_instant(week) <= instant]` replaced with
+* `public_weeks`: `public = [week for week in levels if release_instant(week) <= instant]` replaced with
   `public = [week for week in levels if release_instant(week).date() <= instant.date()]`, so the decision at 16:00 on the release day reads
-  the week released at 16:30 the same day. Five tests failed: `StateTests.test_a_week_nobody_could_yet_read_moves_no_state`,
-  `StateTests.test_a_withheld_latest_week_gives_no_state_and_no_older_week_is_carried`, `StateTests.test_the_states_table_keys_every_panel_day`
+  the week released at 16:30 the same day. Six tests failed: `StateTests.test_a_week_nobody_could_yet_read_moves_no_state`,
+  `StateTests.test_a_day_before_the_snapshot_has_no_state_and_the_last_scored_day_has_one`, `StateTests.test_the_states_table_keys_every_panel_day`
   and the `WalkTests` class set-up all with `LookAheadError` (raised by `read_level`, which `state_at` calls on every week it reads), and
-  `ReleaseDayTests.test_the_decision_on_the_release_day_reads_the_week_before` with `AssertionError` (`2026-05-27 != 2026-05-20`).
+  `ReleaseDayTests.test_the_decision_on_the_release_day_reads_the_week_before` and
+  `StateTests.test_a_withheld_latest_week_carries_the_latest_public_level_and_reports_the_weeks_skipped` with `AssertionError`
+  (`2026-05-27 != 2026-05-20`, `2025-02-26 != 2025-02-19`).
 * `read_level`: `if release_instant(asof) > instant:` replaced with `if release_instant(asof).date() > instant.date():`.
   `ReleaseDayTests.test_a_week_released_at_16_30_is_refused_at_16_00_the_same_day` failed with `AssertionError` (`LookAheadError` not raised).
 * `refit`: `values.append(sc.pair_state(states, dates, origin, lag, decision_index))` replaced with
@@ -190,19 +192,37 @@ class StateTests(unittest.TestCase):
         expected = (values[60] - statistics.fmean(trailing)) / statistics.stdev(trailing)
         self.assertAlmostEqual(pd.state_at(levels, day), expected, places=12)
 
-    def test_a_withheld_latest_week_gives_no_state_and_no_older_week_is_carried(self):
-        levels, _ = self.levels(withhold=(60,))
-        week = wednesdays(self.FIRST, 70)[60]
-        self.assertIsNone(pd.state_at(levels, self.decision_for(levels, week)))
-        # and the day before the withheld week is released the previous week's state is read
-        self.assertIsNotNone(pd.state_at(levels, pd.release_instant(week).date()))
+    def test_a_withheld_latest_week_carries_the_latest_public_level_and_reports_the_weeks_skipped(self):
+        levels, values = self.levels(withhold=(59, 60))
+        weeks = wednesdays(self.FIRST, 70)
+        day = self.decision_for(levels, weeks[60])
+        self.assertEqual(pd.latest_public_week(levels, day), weeks[60])
+        self.assertEqual(pd.latest_defined_week(levels, day), weeks[58])
+        self.assertEqual(pd.skipped_weeks(levels, day), 2)
+        trailing = [x for x in values[6:58] if x is not None]  # the 52 weeks before week 58
+        expected = (values[58] - statistics.fmean(trailing)) / statistics.stdev(trailing)
+        self.assertAlmostEqual(pd.state_at(levels, day), expected, places=12)
+        # the day before the withheld week is released, week 60 is not yet public: the same level, two weeks skipped less one
+        before = pd.release_instant(weeks[60]).date()
+        self.assertEqual(pd.latest_public_week(levels, before), weeks[59])
+        self.assertEqual(pd.skipped_weeks(levels, before), 1)
 
-    def test_fewer_than_26_defined_weeks_in_the_year_give_no_state(self):
-        levels, _ = self.levels(withhold=tuple(range(9, 36)))  # 27 of the 52 weeks before week 60 withheld: 25 left
+    def test_nothing_is_skipped_when_the_latest_public_week_has_a_level(self):
+        levels, _ = self.levels()
+        self.assertEqual(pd.skipped_weeks(levels, self.decision_for(levels, wednesdays(self.FIRST, 70)[60])), 0)
+        self.assertIsNone(pd.skipped_weeks(levels, date(2020, 1, 1)))
+
+    def test_no_public_level_gives_no_state(self):
+        levels = weekly([None] * 70, first=self.FIRST)
+        self.assertIsNone(pd.state_at(levels, date(2025, 12, 1)))
+        self.assertIsNone(pd.latest_defined_week(levels, date(2025, 12, 1)))
+
+    def test_fewer_than_13_defined_weeks_in_the_year_give_no_state(self):
+        levels, _ = self.levels(withhold=tuple(range(9, 48)))  # 39 of the 52 weeks before week 60 withheld: 13 left
         week = wednesdays(self.FIRST, 70)[60]
-        self.assertIsNone(pd.state_at(levels, self.decision_for(levels, week)))
-        enough, _ = self.levels(withhold=tuple(range(9, 35)))  # 26 withheld: 26 left
-        self.assertIsNotNone(pd.state_at(enough, self.decision_for(enough, week)))
+        self.assertIsNotNone(pd.state_at(levels, self.decision_for(levels, week)))
+        fewer, _ = self.levels(withhold=tuple(range(9, 49)))  # 40 withheld: 12 left
+        self.assertIsNone(pd.state_at(fewer, self.decision_for(fewer, week)))
 
     def test_a_flat_year_gives_no_state(self):
         levels = weekly([50.0] * 70, first=self.FIRST)
@@ -226,7 +246,12 @@ class StateTests(unittest.TestCase):
         states = pd.decision_states(SNAPSHOT_LEVELS, DATES)
         self.assertEqual(sorted(states), DATES)
         self.assertTrue(any(v is not None for v in states.values()))
-        self.assertTrue(any(v is None for v in states.values()))
+
+    def test_a_day_before_the_snapshot_has_no_state_and_the_last_scored_day_has_one(self):
+        states = pd.decision_states(SNAPSHOT_LEVELS, [date(2013, 5, 1), date(2013, 6, 3), date(2026, 9, 3)])
+        self.assertIsNone(states[date(2013, 5, 1)])
+        self.assertIsNone(states[date(2013, 6, 3)])  # fewer than 13 earlier weeks
+        self.assertIsNotNone(states[date(2026, 9, 3)])
 
 
 def planted(effect=0.6, n=80, with_state=60, noise=0.3, scale=1.0):

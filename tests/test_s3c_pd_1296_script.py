@@ -80,9 +80,9 @@ class DeclarationTests(unittest.TestCase):
         self.assertEqual(declaration["limits"]["last_day"], script.LAST_DAY.isoformat())
         self.assertEqual(declaration["amendments"], [])
         self.assertIn("the 52 as-of weeks", declaration["candidate"]["transform"])
-        self.assertIn("fewer than 26 of those 52", declaration["candidate"]["transform"])
+        self.assertIn("fewer than 13 of those 52", declaration["candidate"]["transform"])
         self.assertIn("at least 60 training pairs", declaration["candidate"]["entry"])
-        self.assertEqual((cc.TRAILING_WEEKS, cc.MIN_TRAILING, cc.MIN_STATE_PAIRS), (52, 26, 60))
+        self.assertEqual((cc.TRAILING_WEEKS, cc.MIN_TRAILING, cc.MIN_STATE_PAIRS), (52, 13, 60))
 
     def test_the_cleared_register_row_exists_for_the_declaration(self):
         row = json.loads((ROOT / "metadata" / "provisional" / "cleared" / "s3c_pd_1296.json").read_text(encoding="utf-8"))
@@ -185,6 +185,23 @@ class GroupTests(unittest.TestCase):
         self.assertEqual((use["decision_days"], use["days_with_state"]), (len(frame.days), 1))
         self.assertEqual(use["refits_in_use"], 1)
         self.assertEqual(use["refits_active"], {str(h): 0 for h in sp.HORIZONS})
+
+    def test_the_use_table_reports_the_age_of_the_level_read(self):
+        frame = Frame()
+        weeks = [date(2025, 1, 1) + timedelta(days=7 * i) for i in range(60)]
+        levels = {w: 100.0 + (i % 5) * 4.0 for i, w in enumerate(weeks)}
+        for w in weeks[-3:]:
+            levels[w] = None
+        est = cc.PdEstimate(None, 0.0, False, 0)
+        refit = date(2025, 12, 1)
+        base = walk_of(frame, values={frame.days[0]: 0.3, frame.days[1]: -0.2})
+        walk = cc.PdWalk(base.forecasts, base.s3, base.values, base.scales, {refit: {h: est for h in sp.HORIZONS}}, {x: refit for x in frame.days}, ())
+        s3c = {x: {h: list(Q) for h in sp.HORIZONS} for x in frame.days}
+        use = script.term_use(frame, walk, s3c, s3c, levels)
+        expected = [cc.skipped_weeks(levels, d) for d in frame.days[:2]]
+        self.assertEqual(use["skipped_weeks"]["decision_days"], 2)
+        self.assertAlmostEqual(use["skipped_weeks"]["mean"], sum(expected) / 2)
+        self.assertEqual(use["skipped_weeks"]["max"], max(expected))
 
     def test_the_fitted_effect_in_bp_per_unit_is_the_coefficient_in_force_times_the_anchors_scale(self):
         frame = Frame()
