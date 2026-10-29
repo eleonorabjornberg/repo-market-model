@@ -11,7 +11,9 @@ day t, and the pair for label day t reads it). Scored decision days end where th
 (`docs/decisions/lockbox.md`; `require_unlocked`, and the scorer's own guard). Development days give a score and an interval,
 never a verdict (scoring protocol v1, #640); reading H9's kill clause is Eleonora's.
 
-    # PUBLISHED.csv, AUG2D.csv, H9D.csv, TW/ (the target forecasts): the commands of scripts/h9_nested_842.py's docstring
+    # PUBLISHED.csv, AUG2D.csv, H9D.csv, TW/ (the target forecasts): the commands of scripts/h9_nested_842.py's docstring. The
+    # target walks (scripts/richer_targets_706.py) are fitted on direct pairs under #706's declaration as amended for this
+    # directive, and `walk` below refuses a target walk whose recorded fit does not say so (richer_targets_706.check_pairing)
     for h in 1 2 3 4 5: for v in base base_direct plus_direct_bgcr_dispersion_bps plus_direct_on_rrp_change_bn plus_direct_sofr_dispersion_bps:
         PYTHONPATH=src python3 scripts/h9_nested_932.py walk --variant $v --horizon $h --published PUBLISHED.csv \\
             --panel H9D.csv --target-walks TW --output OUT/${v}_h$h.json
@@ -167,6 +169,7 @@ def walk_command(args) -> int:
         context = contextlib.nullcontext()
     else:
         document = m842.target_walk_document(args.target_walks, target, h, declared_706, scratch_digest)
+        m706.check_pairing(document.get("settings") or {})
         forecasts, fits = m842.decision_forecasts(document, target, h, args.panel, declared_706)
         calendar = [row.date for row in rows]
         position = {day: index for index, day in enumerate(calendar)}

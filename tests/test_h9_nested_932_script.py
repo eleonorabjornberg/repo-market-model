@@ -25,6 +25,7 @@ by `grep` and reverted afterwards; unmutated control green before and after):
 
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import json
 import sys
@@ -183,8 +184,13 @@ class DeclarationTests(unittest.TestCase):
         self.assertEqual(self.declared["issue"], 932)
         self.assertEqual(self.declared["re_runs"], "metadata/h9_nested_842.json")
         base = json.loads(script.m842.DECLARATION.read_text(encoding="utf-8"))
-        for key in ("scratch_panel_sha256", "declaration_706_sha256"):
-            self.assertEqual(self.declared["targets"][key], base["targets"][key])
+        self.assertEqual(self.declared["targets"]["scratch_panel_sha256"], base["targets"]["scratch_panel_sha256"])
+        # #706's declaration was amended for this directive (direct pairs for the target walks): the pin follows the file as it stands
+        self.assertEqual(
+            self.declared["targets"]["declaration_706_sha256"], hashlib.sha256(script.m706.DECLARATION.read_bytes()).hexdigest()
+        )
+        self.assertNotEqual(self.declared["targets"]["declaration_706_sha256"], base["targets"]["declaration_706_sha256"])
+        self.assertEqual(json.loads(script.m706.DECLARATION.read_text(encoding="utf-8"))["model"]["training_pairs"], "direct")
         self.assertEqual(self.declared["published_panel_sha256"], base["published_panel_sha256"])
 
     def test_the_declared_variants_are_the_scripts(self):
