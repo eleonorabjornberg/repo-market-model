@@ -125,6 +125,13 @@
       "comment_id": 6449746800,
       "phrase": "GO #1263",
       "what": "mark the #1230 IORB back-fill amendment in force in docs/decisions/information-set.md and drop the draft sentence from metadata/backfill_posting.json's admitted_iorb_note (#1268); status only, no rule text changed, as her 27 October ruling on #1263 (ledger item 64) says"
+    },
+    {
+      "kind": "decisions",
+      "issue": 1299,
+      "comment_id": 6500322768,
+      "phrase": "GO #1299",
+      "what": "mark the #541 announcement-dating wording in force in docs/decisions/information-set.md (#1300); status only, no rule text changed, step 1 of adopting (s3c-ann-net) under her 29 October ruling (ledger item 73)"
     }
   ],
   "rule": "docs/decisions/drafts/owner-attestation.md",
