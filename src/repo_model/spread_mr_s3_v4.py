@@ -1,6 +1,6 @@
 """Miss feedback and a calendar-type scale factor (v4 of #1153) on (s3) of #1145 (#1172; H5 step 3).
 
-`metadata/s3_decomposition_1172.json` is the declaration; this module is its arithmetic. (s3) is the base of the H5 candidate (s3c) since #1259 (`repo_model.s3c_candidate`); here it is the base of this study. (s3) is `repo_model.spread_mr_state_calendar`'s
+`metadata/s3_decomposition_1172.json` is the declaration; this module is its arithmetic. (s3) is the base of (s3c) (`repo_model.s3c_candidate`), which was the H5 candidate from #1259 and is the base of (s3c-ann-net), the H5 candidate since #1310 (`repo_model.s3c_announced`); here it is the base of this study. (s3) is `repo_model.spread_mr_state_calendar`'s
 robust arm: `level + phi^k (last - level) + scale(anchor) * (shift + z_h)`, with `shift` the location terms in scale units and `z_h` the
 quantiles of the residual they leave. #1153's v4 is `repo_model.spread_mr_scale`'s arm of that name, a faster-reacting *scale*: after
 the anchor row was outside the 90% band the model gave it, the scale is multiplied by a factor fitted at each refit, and it is

@@ -132,6 +132,13 @@
       "comment_id": 6500322768,
       "phrase": "GO #1299",
       "what": "mark the #541 announcement-dating wording in force in docs/decisions/information-set.md (#1300); status only, no rule text changed, step 1 of adopting (s3c-ann-net) under her 29 October ruling (ledger item 73)"
+    },
+    {
+      "kind": "decisions",
+      "issue": 1310,
+      "comment_id": 6506163029,
+      "phrase": "GO #1310",
+      "what": "step 2 of adopting (s3c-ann-net) (#1311): metadata/sources.json treasury_auctions note and evidence keyed on the announcement, the candidate named in h5-candidate.json, and the final-test pre-registration re-pinned by the amendment of 29 October 2026 with no forecast changed; her 29 October ruling (ledger item 73)"
     }
   ],
   "rule": "docs/decisions/drafts/owner-attestation.md",
