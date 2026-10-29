@@ -22,7 +22,7 @@ its largest total in 2025 and 2026, which is why the minimum is a quarter of the
 **Information set.** A week's figures are public once released: `release_instant(week)` is the declared lag after the as-of date, 6 business
 days on `metadata/market_holidays.json` (the Thursday of the following week) at 16:30 America/New_York, which is what the New York Fed's page
 states ("updated on Thursdays at approximately 4:15 p.m. with the previous week's statistics") rounded up. A decision at 16:00 on the release
-day itself therefore cannot read the week; the next business day's can. `read_level` raises `LookAheadError` for a week released after the
+day itself therefore cannot read the week (the instant of #1296's record); the decision at 18:00 (`repo_model.decision_instant`, since #1312) can. `read_level` raises `LookAheadError` for a week released after the
 decision instant. The state is a slow variable of the *decision*, not of the target: like the scarcity state it is keyed by the decision day
 (`spread_mr_state_calendar.read_state` raises `LookAheadError` for a later day), a training pair is trained on the state of its own decision day
 (`spread_mr_state_calendar.pair_state`), and a forecast reads the state of its own decision day. The snapshot holds the latest revised vintage
@@ -43,6 +43,7 @@ from datetime import date, datetime, time
 from pathlib import Path
 from typing import Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
+from .decision_instant import DECISION_TIME
 from . import data as data_module
 from . import protocol_benchmarks as pb
 from . import spread_mean_reversion as smr
@@ -132,7 +133,7 @@ def release_instant(asof: date) -> datetime:
     return datetime.combine(data_module.next_business_day(asof, RELEASE_LAG_BUSINESS_DAYS), RELEASE_TIME)
 
 
-def read_level(levels: Mapping[date, Optional[float]], asof: date, decision_day: date, *, decision_time: time = time(16, 0)) -> Optional[float]:
+def read_level(levels: Mapping[date, Optional[float]], asof: date, decision_day: date, *, decision_time: time = DECISION_TIME) -> Optional[float]:
     """The level of the as-of week, read by the decision at `decision_time` on `decision_day`.
 
     Raises:
@@ -152,7 +153,7 @@ def read_level(levels: Mapping[date, Optional[float]], asof: date, decision_day:
     return levels[asof]
 
 
-def public_weeks(levels: Mapping[date, Optional[float]], decision_day: date, *, decision_time: time = time(16, 0)) -> List[date]:
+def public_weeks(levels: Mapping[date, Optional[float]], decision_day: date, *, decision_time: time = DECISION_TIME) -> List[date]:
     """The as-of weeks of the snapshot released at or before the decision instant (a withheld week is one of them), oldest first."""
 
     instant = datetime.combine(decision_day, decision_time)
@@ -160,14 +161,14 @@ def public_weeks(levels: Mapping[date, Optional[float]], decision_day: date, *, 
     return sorted(public)
 
 
-def latest_public_week(levels: Mapping[date, Optional[float]], decision_day: date, *, decision_time: time = time(16, 0)) -> Optional[date]:
+def latest_public_week(levels: Mapping[date, Optional[float]], decision_day: date, *, decision_time: time = DECISION_TIME) -> Optional[date]:
     """The latest as-of week in the snapshot released at or before the decision instant, or `None`."""
 
     public = public_weeks(levels, decision_day, decision_time=decision_time)
     return public[-1] if public else None
 
 
-def latest_defined_week(levels: Mapping[date, Optional[float]], decision_day: date, *, decision_time: time = time(16, 0)) -> Optional[date]:
+def latest_defined_week(levels: Mapping[date, Optional[float]], decision_day: date, *, decision_time: time = DECISION_TIME) -> Optional[date]:
     """The latest as-of week released at or before the decision instant that has a level, or `None`."""
 
     for week in reversed(public_weeks(levels, decision_day, decision_time=decision_time)):
@@ -176,7 +177,7 @@ def latest_defined_week(levels: Mapping[date, Optional[float]], decision_day: da
     return None
 
 
-def skipped_weeks(levels: Mapping[date, Optional[float]], decision_day: date, *, decision_time: time = time(16, 0)) -> Optional[int]:
+def skipped_weeks(levels: Mapping[date, Optional[float]], decision_day: date, *, decision_time: time = DECISION_TIME) -> Optional[int]:
     """How many weeks older than the latest public week the latest public level is (0 when the latest public week has a level), or `None`."""
 
     latest = latest_public_week(levels, decision_day, decision_time=decision_time)
@@ -184,7 +185,7 @@ def skipped_weeks(levels: Mapping[date, Optional[float]], decision_day: date, *,
     return None if latest is None or defined is None else (latest - defined).days // 7
 
 
-def state_at(levels: Mapping[date, Optional[float]], decision_day: date, *, decision_time: time = time(16, 0)) -> Optional[float]:
+def state_at(levels: Mapping[date, Optional[float]], decision_day: date, *, decision_time: time = DECISION_TIME) -> Optional[float]:
     """The state a decision on `decision_day` reads: the z-score of the latest public level against the year before it.
 
     `None` where no public week has a level, where fewer than `MIN_TRAILING` of the `TRAILING_WEEKS` weeks before the latest public level have
@@ -210,7 +211,7 @@ def state_at(levels: Mapping[date, Optional[float]], decision_day: date, *, deci
 
 
 def decision_states(
-    levels: Mapping[date, Optional[float]], dates: Sequence[date], *, decision_time: time = time(16, 0)
+    levels: Mapping[date, Optional[float]], dates: Sequence[date], *, decision_time: time = DECISION_TIME
 ) -> Dict[date, Optional[float]]:
     """`states[d]`: the state a decision on panel day `d` could read (what `spread_mr_state_calendar.read_state` and `pair_state` look up)."""
 

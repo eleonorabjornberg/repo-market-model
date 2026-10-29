@@ -194,6 +194,13 @@ def check_availability_provenance(registry: Mapping[str, Mapping[str, object]]) 
         raise RegistryContractError("; ".join(problems))
 
 
+#: The refusal for a selection that prices to a zero purge: every source is public at or before the decision instant on
+#: the row's own day. The panel build treats exactly this refusal as "priced at zero" (`data._priceable_columns`, #1312),
+#: because a same-day print is what an 18:00 decision reads (the H.15 at 16:15, the bill rates at 16:30); every other
+#: caller, the backtests among them, still gets the refusal.
+ZERO_PURGE_REFUSAL = "selected sources must produce a nonzero purge"
+
+
 def max_release_lag_days(
     registry: Mapping[str, Mapping[str, object]],
     sources: object,
@@ -297,5 +304,5 @@ def max_release_lag_days(
 
         maximum = max(maximum, contribution)
     if maximum == 0 and not per_row_availability:
-        raise RegistryContractError("selected sources must produce a nonzero purge")
+        raise RegistryContractError(ZERO_PURGE_REFUSAL)
     return maximum

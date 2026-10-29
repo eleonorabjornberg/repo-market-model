@@ -19,6 +19,10 @@ under the previous rule was re-scored or archived.
 > of its legs at its own latest public row. It was drafted by the pull request that closes #586 and is **not in
 > force** until she merges it.
 
+> **Proposed in #1312, for Eleonora to review:** the amendment at the end of this record, "The decision instant is 18:00 New
+> York time", which records her ruling of 29 October 2026 (chat, relayed on #1312; ledger item 77). It was drafted by the
+> pull request that closes #1312 and is **not in force** until she has merged it, with her own `GO #1312`.
+
 ## The rule
 
 A forecast for scored day `T` is made at the declared decision time on the last panel day before
@@ -152,3 +156,61 @@ are in `docs/pivot/backfilled-history-result.md`.
    pre-registered model are unchanged. The same-row read (`with_reserve_scarcity_state`, the column) is kept
    for the published map's off declaration and for the before-and-after count. Whether the own-leg read
    replaces it in `contract.py`, which would move that checksum, is not decided here.
+
+## Amendment: the decision instant is 18:00 New York time (#1312)
+
+**Drafted by the pull request that closes #1312, for Eleonora to review.** In force only once she has merged it, and the pull
+request is binding only with her own `GO #1312` on that issue (a comment by her, not through an app), cited in
+`metadata/owner_attestations.json`. It records her ruling of 29 October 2026 (chat, relayed; ledger item 77): **move the
+decision instant from 16:00 to 18:00 America/New_York.** This is step 1 of 3. Step 2 (the new live record and its pin) and step 3
+(the re-runs of the results that matter) are separate directives; this pull request does neither.
+
+1. **The instant.** A forecast for scored day `T` is made at 18:00 New York time on the last panel day before `T`, from the merge
+   of this pull request. The clock is one declared constant, `repo_model.decision_instant.DECISION_TIME`, and every default,
+   constant and declaration in `src/` that means "the decision instant" takes it; `tests/test_decision_instant_1312.py` refuses a
+   module that types the clock again. `metadata/funding_panel_manifest.json` states it as the build setting (`18:00:00`).
+   Rule 1's per-field reads, rule 2's scheduled inputs and rule 5's two guards are unchanged; they compare each input's declared
+   first-observable instant with this one.
+2. **Why.** DTCC posts the GCF Repo Index at about 16:00 to 16:05 (her Mac's capture, 27 to 29 October 2026; #1280), after the old
+   instant. Between 16:00 and 18:00 the H.15 (16:15), the weekly FR 2004 (about 16:15), the H.8 (16:15) and, on Thursdays, the
+   H.4.1 (about 16:30) also arrive. A forecast at 18:00 is still made before any trade of the next business day.
+3. **Records made at 16:00 stand as records of that instant.** A published record, a dated study declaration, a captured file or a
+   result page that states `16:00` is labelled by it, not edited, and not provisional on this account, unless she rules otherwise
+   (the provisional register is for the calendar rule, and is unchanged). Nothing in `docs/runs/` is edited; the published
+   panel record `docs/runs/funding_panel.manifest.json` keeps its `16:00:00`. A reader that must still accept such a record
+   reads it against the instant it declares (`repo_model.gcf_index`: a capture file declaring 16:00 is judged at 16:00).
+4. **What it moves, by source** (`scripts/decision_instant_1312.py audit`, `docs/research/decision-instant-1312/audit.json`; the
+   registry's own declared availability and the published panel's dates, no outcome). A declared first-observable instant
+   after 16:00 and at or before 18:00 was invisible to the old decision and is visible to the new one. The declarations
+   themselves are unchanged (they state when a source publishes); what moves is the row the as-of rule reads:
+
+   | Source and field | Declared instant | Effect at 18:00, against 16:00 |
+   |---|---|---|
+   | `fred_macro_latest_vintage` IORB, IOER | 16:15, same day | the decision day's rate is read, not the day before's: one row later on every scored day. The target `spread_bps` is still read at the anchor row (SOFR is not public until the next business day), so the spread does not change. |
+   | `treasury_bill_rates` (all tenors; `tbill_4w`, `tbill_13w` in the panel) | 16:30, same day | the decision day's bill rate is read: one row later on every scored day |
+   | `frb_ddp` EFFR, IOER, IORB (no panel column reads it) | 16:15 | one row later on every scored day |
+   | `fred_macro_latest_vintage` WRESBAL, WTREGEN, WLRRAOL (the H.4.1 weeklies; `reserve_balances`, `tga`) | 16:30, five calendar days after the Wednesday | one row later on the Monday, Tuesday and Wednesday decisions |
+   | `fred_macro_latest_vintage` DFF | 16:15, five days | the same days |
+   | `frb_h8` total assets | 16:15, twelve days | one row later on the Monday, Tuesday and Wednesday decisions |
+   | `nyfed_fr2004` (`dealer_treasury_position`, and the series of #1296) | 16:30, six business days | one row later on every scored day |
+   | `fed_iorb_announcements` (announced IORB changes) | **declared at the decision instant itself**, 16:00 until now | the declaration is re-declared at 18:00 (`scheduled_availability.available_time`), because the features read the notes announced at or before the decision instant. The table's one note announced after 16:00 (17:00 on Sunday 15 March 2020) is not announced on a panel day. |
+   | DTCC GCF Repo Index (forward capture, not in the registry) | about 16:00 to 16:05 | a fetch from 16:00 to 18:00 is a capture, not `fetched_after_decision` (`repo_model.gcf_index`) |
+
+   Not moved, because the declared instant is at or before 16:00 or on a later day: SOFR, TGCR, BGCR (15:00 on the next business
+   day), the NY Fed EFFR (15:00), ON RRP and SRF (16:00 on the next business day), the OFR repo series (16:00, two business days)
+   and the Treasury settlement schedule. The declared lags of the weeklies and of DFF were derived at 16:00 by purge arithmetic;
+   they are kept as declared, and the per-release H.4.1 reading of rule 1 stays off in the registry (see the marked questions in
+   the pull request).
+5. **Nothing the target day's spread is computed from becomes visible.** The spread of day `T` is SOFR(`T`) less IORB(`T`).
+   SOFR(`T`) is public at 15:00 on the next business day after `T` (first print about 08:00), IORB(`T`) at 16:15 on `T`
+   itself: both after the decision on the day before `T`, at 18:00 or at any instant of that day. The audit checks it over every
+   scored day of the published panel and `tests/test_decision_instant_1312.py` pins it, with a leakage test that fails when a
+   value announced at 17:00 on the day before is declared for the target.
+6. **The published panel.** Rebuilt at 18:00 from the tracked fixtures, the panel's bytes and digest do not change
+   (`4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999`); the build's `decision_time` is the one field of its
+   manifest that does. At 18:00 the build prices `iorb`, `tbill_4w` and `tbill_13w` at a zero purge (every source is public by the
+   decision on its own day), which the pricing function's "nonzero purge" refusal had made impossible; the panel build now treats
+   exactly that refusal as priced, and every other caller of `registry.max_release_lag_days` still gets it.
+7. **What does not change.** The lockbox and its tiers; the scoring protocol; the live record and its pin (step 2); every
+   published record; the calendar-first rule and the provisional register; the declared lags.
+

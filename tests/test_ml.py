@@ -230,6 +230,7 @@ from pathlib import Path
 from unittest import mock
 
 from nightly import nightly
+from repo_model.decision_instant import DECISION_TIME as DECISION_INSTANT
 from repo_model import baseline, cli, cli_eval, ml, one_step_guard, recalibration
 from repo_model.contract import QUANTILE_LEVELS
 from repo_model.data import DailyObservation, load_daily_panel, load_stress_thresholds
@@ -13332,7 +13333,7 @@ class RiskDateComponentInputsTests(unittest.TestCase):
             ),
         )
         with patched:
-            rule = ml.InformationRule(_PRESSURE_REGISTRY, self.features, decision_time=time(16, 0))
+            rule = ml.InformationRule(_PRESSURE_REGISTRY, self.features, decision_time=DECISION_INSTANT)  # the announced-IORB features are declared at the decision instant, 18:00 (#1312)
             info = rule.information_set([r.date for r in self.rows], scored)
             observation = rule.observation(self.rows, info)
             predictor = ml.pressure_risk_date_variant_exceedance(

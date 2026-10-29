@@ -71,10 +71,11 @@ import subprocess
 import sys
 import tempfile
 import unittest
-from datetime import date
+from datetime import date, time
 from pathlib import Path
 from unittest import mock
 
+from repo_model.decision_instant import DECISION_TIME_TEXT, LEGACY_DECISION_TIME, LEGACY_DECISION_TIME_TEXT
 from repo_model.splits import LookAheadError
 
 REPO = Path(__file__).resolve().parents[1]
@@ -90,6 +91,30 @@ def _script():
 
 
 fp = _script()
+
+
+def _as_at_opening(declaration):
+    """`declaration` with the script's own `DECISION` entry as the opening hashed it: the line `DECISION = time(16, 0)`.
+
+    The leap declaration hashes the source of the script definitions the model reaches, `DECISION` among them, and that
+    line is now `DECISION = DECISION_TIME` (#1312). The opening's text is restored for the recomputation only.
+    """
+
+    entry = declaration["source_sha256"]["scripts/final_test_preregistration.py"]
+    entry["DECISION"] = hashlib.sha256(b"DECISION = time(16, 0)").hexdigest()
+    return declaration
+
+
+def _opening_instant():
+    """The final test as the opening run (16:00) declared it: the decision instant, and the command typed with it (#1312).
+
+    The pins "at opening" are the checksums of the declarations as they stood on 2026-10-05, at 16:00. The instant
+    moved to 18:00 by the amendment of 29 October 2026, so those declarations are recomputed here at 16:00.
+    """
+
+    command = tuple(LEGACY_DECISION_TIME_TEXT if token == DECISION_TIME_TEXT and fp.CRPS_COMMAND[i - 1] == "--decision-time"
+                    else token for i, token in enumerate(fp.CRPS_COMMAND))
+    return mock.patch.multiple(fp, DECISION=LEGACY_DECISION_TIME, CRPS_COMMAND=command)
 
 
 def _pinned(field):
@@ -188,12 +213,14 @@ class CrpsFreezeTests(unittest.TestCase):
 
     def test_the_leap_checksum_is_the_regenerated_one(self):
         self.assertEqual(_pinned("Declaration checksum at opening"), LEAP_CHECKSUM)
-        self.assertEqual(_without_inputs(fp.declaration()), LEAP_CHECKSUM)
+        with _opening_instant():
+            self.assertEqual(_without_inputs(_as_at_opening(fp.declaration())), LEAP_CHECKSUM)
 
     def test_only_the_cells_moved_the_leap_checksum(self):
         """Without the cells, the leap declaration is byte-for-byte the one pinned at #216."""
 
-        frozen = fp.declaration()
+        with _opening_instant():
+            frozen = _as_at_opening(fp.declaration())
         frozen.pop("inputs")
         self.assertEqual(frozen.pop("cells"), fp.cells())
         text = json.dumps(frozen, sort_keys=True, separators=(",", ":"))
@@ -204,14 +231,20 @@ class CrpsFreezeTests(unittest.TestCase):
 
         published, interval, panel = _published_declaration()
         frozen = fp.crps_declaration()
-        for key in ("model_a", "model_b", "minimum_history", "refit_every", "decision_time"):
+        for key in ("model_a", "model_b", "minimum_history", "refit_every"):
             self.assertEqual(frozen[key], published[key], key)
+        # The one thing that differs from what #169 published is the decision instant (#1312): the record was made at
+        # 16:00 and stands as a record of it, and the frozen test is now made at 18:00.
+        self.assertEqual(published["decision_time"], LEGACY_DECISION_TIME_TEXT)
+        self.assertEqual(frozen["decision_time"], DECISION_TIME_TEXT)
         self.assertEqual(frozen["end"], "2026-09-03")
         self.assertEqual(frozen["panel_sha256"], panel)
+        # The published interval's seed is the 16:00 run's; the frozen one is the 18:00 run's (#1312).
+        self.assertEqual(interval["seed"], fp._crps_seed(LEGACY_DECISION_TIME))
         self.assertEqual(
             frozen["interval"],
             {"level": interval["level"], "replications": interval["replications"],
-             "block_length": interval["block_length"], "seed": interval["seed"],
+             "block_length": interval["block_length"], "seed": fp._crps_seed(),
              "method": interval["method"]},
         )
 
@@ -229,7 +262,11 @@ class CrpsFreezeTests(unittest.TestCase):
         )
         # The primary interval is untouched by the sensitivity report.
         self.assertEqual(frozen["interval"]["block_length"], 2)
-        self.assertEqual(frozen["interval"]["seed"], 1970125677)
+        # The primary seed is `compare`'s own, from the decision time among its material (`baseline.comparison_seed`): it
+        # was 1970125677 at 16:00, the opening's, and is the 18:00 run's now (#1312).
+        self.assertEqual(fp._crps_seed(LEGACY_DECISION_TIME), 1970125677)
+        self.assertEqual(frozen["interval"]["seed"], fp._crps_seed())
+        self.assertNotEqual(fp._crps_seed(), 1970125677)
 
     def test_the_labels_are_declared(self):
         """Ruling of 4 October on #221 (a): reporting labels that add nothing to the pass rule."""
@@ -354,8 +391,9 @@ class FrozenInputsTests(unittest.TestCase):
                     self.assertIn(root, source[path])
 
     def test_without_the_inputs_the_checksums_are_the_ones_the_opening_run_carried(self):
-        self.assertEqual(_without_inputs(fp.declaration()), LEAP_CHECKSUM)
-        rest = fp.crps_declaration()
+        with _opening_instant():
+            self.assertEqual(_without_inputs(_as_at_opening(fp.declaration())), LEAP_CHECKSUM)
+            rest = fp.crps_declaration()
         rest["source_sha256"].pop("scripts/final_test_preregistration.py")
         self.assertEqual(_without_inputs(rest), CRPS_REST_AT_OPENING)
         self.assertEqual(_pinned("Declaration checksum at opening"), LEAP_CHECKSUM)
@@ -481,7 +519,7 @@ class WindowDaysTests(unittest.TestCase):
                 [sys.executable, "-m", "repo_model.cli", "build",
                  "--raw-root", str(REPO / "tests/fixtures/snapshots/funding_inputs"),
                  "--output", str(panel), "--build-cutoff", "2026-09-08T21:31:42+00:00",
-                 "--decision-time", "16:00:00"],
+                 "--decision-time", "18:00:00"],
                 check=True, cwd=REPO, capture_output=True,
                 env={"PYTHONPATH": str(REPO / "src"), "PATH": "/usr/bin:/bin"},
             )
@@ -515,7 +553,7 @@ def baseline_replications():
 
 def _synthetic_record(days, differences, **changes):
     published, interval, panel = _published_declaration()
-    declaration = {**published, "end": "2026-09-03"}
+    declaration = {**published, "end": "2026-09-03", "decision_time": fp.DECISION.isoformat(timespec="minutes")}
     per_origin = [
         {"scored_date": day.isoformat(), "difference_bps": diff,
          "loss_a_bps": 1.0 + diff, "loss_b_bps": 1.0}
@@ -524,7 +562,7 @@ def _synthetic_record(days, differences, **changes):
     record = {
         "declaration": declaration,
         "panel": {"sha256": panel},
-        "comparison": {"loss": "crps_bps", "mean_difference_interval": dict(interval),
+        "comparison": {"loss": "crps_bps", "mean_difference_interval": {**interval, "seed": fp._crps_seed()},
                        "per_origin": per_origin},
     }
     for key, value in changes.items():

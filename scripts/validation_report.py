@@ -168,7 +168,10 @@ def data_block(emit):
     registry = _json(ROOT / "metadata/sources.json")
     lines = [
         "**The published panel.** %s to %s, %d rows, SHA-256 `%s`, decision time %s, built at the cutoff %s from "
-        "tracked snapshots, so it rebuilds without a network (`REPRODUCIBILITY.md`)."
+        "tracked snapshots, so it rebuilds without a network (`REPRODUCIBILITY.md`). The decision time is the build "
+        "setting of the instant forecasts are made at now (`repo_model.decision_instant`, the amendment of 29 October "
+        "2026, #1312); the published records on this page were made at the earlier instant their own declarations "
+        "state, and the panel's bytes and digest are the same at either."
         % (manifest["start_date"], manifest["end_date"], manifest["row_count"], manifest["sha256"][:12],
            manifest["decision_time"], manifest["build_cutoff"]),
         "",

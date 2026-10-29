@@ -36,6 +36,7 @@ import dataclasses
 from datetime import date, datetime, time
 from typing import Dict, List, Mapping, Optional, Sequence, Tuple
 
+from .decision_instant import DECISION_TIME
 from . import announced_iorb, fomc_calendar
 from . import settlement_dating as sd
 from . import spread_mr_calendar as cal
@@ -94,7 +95,7 @@ class AnnouncedTermTable(cal.TermTable):
         calendar: Optional[Sequence[fomc_calendar.Meeting]] = None,
         *,
         legs: Sequence[str] = LEGS,
-        decision_time: time = time(16, 0),
+        decision_time: time = DECISION_TIME,
     ):
         unknown = [name for name in legs if name not in LEGS]
         if unknown:

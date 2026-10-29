@@ -30,6 +30,7 @@ import dataclasses
 from datetime import date, datetime, time
 from typing import Dict, List, Mapping, Sequence, Tuple
 
+from .decision_instant import DECISION_TIME
 from . import net_settlement as ns
 from . import spread_mr_calendar as cal
 from . import spread_mr_state_calendar as sc
@@ -66,7 +67,7 @@ class NetSizeTable(sc.SizeTable):
     `r - lead` (`decision_time` on that day). Only lead 1 is readable, as for the gross flags.
     """
 
-    def __init__(self, panel: Sequence[DailyObservation], auctions: Sequence[ns.Auction], *, decision_time: time = time(16, 0)):
+    def __init__(self, panel: Sequence[DailyObservation], auctions: Sequence[ns.Auction], *, decision_time: time = DECISION_TIME):
         self.dates = [row.date for row in panel]
         self._time = decision_time
         self._by_day: Dict[date, List[ns.Auction]] = {}

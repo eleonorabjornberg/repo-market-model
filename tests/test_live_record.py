@@ -1244,6 +1244,9 @@ class DistributionAgreementTests(unittest.TestCase):
         final = _script("final_test_preregistration")
         argv = [str(cls.short) if part == "PUB.csv" else part for part in final.CRPS_COMMAND]
         argv[argv.index("--end") + 1] = cls.targets[0].isoformat()
+        # The final test is made at 18:00 since #1312, and the live record still at the instant it pins (16:00) until
+        # step 2 of that directive moves it: the agreement is the live script's own decision time against `compare`'s.
+        argv[argv.index("--decision-time") + 1] = live.DECISION.isoformat(timespec="minutes")
         argv[argv.index("--report") + 1] = str(Path(cls.tmp) / "compare.json")
         with contextlib.redirect_stdout(io.StringIO()):
             code = cli_main(argv)
