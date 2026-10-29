@@ -30,7 +30,7 @@ not, you still have the case study." "The S-curve" means the persistence-logisti
 - **Primary cell:** `crps, h = 1`
 - **Model:** `dynamic_logit`
 - **Calibrator:** `platt_recency`
-- **Declaration checksum:** `eeef984915ae1c33e2e6a310bdb87cb59228b942eb68654c8bf9825b05b6375f`
+- **Declaration checksum:** `8f953923d4f5302d3e1f3a43b5af75cb8ccb16d373decaea16d1a8950d11ab2e`
 - **Declaration checksum at opening:** `28ad819321d50a44b50adf69f78af1fbe28d6c4f6a9a813544e13d06deed4432`
 - **Code:** the model is `ml.dynamic_logit_exceedance` under `ml.DYNAMIC_LOGIT_SETTINGS` (#137), with the inputs of
   `scripts/pressure_dynamic_logit.py`'s `DYNAMIC_FEATURES`: the latest spread, reserves as the scarcity state, the
@@ -55,7 +55,7 @@ not, you still have the case study." "The S-curve" means the persistence-logisti
 
   `tests/test_final_test_freeze.py` fails if any of these changes after this record merges.
 
-- **CRPS declaration checksum:** `4dc12dcdbb58f437cbeb164ecb1c1ff7241a6880c7faa6ac408376201212cc26`
+- **CRPS declaration checksum:** `2e11c480b8526aebd722c455145442236c23519d0bdde19177bd05298f24e6f9`
 - **CRPS declaration checksum at opening:** `d0847824027e80e06392b7ba641908cd83a60e38d21ceffff6b9d9d57cf14b59`
 - **CRPS sensitivity seed:** `1970125677`
 - **The CRPS checksum** is `scripts/final_test_preregistration.py crps-declaration`, added by the amendment of
@@ -533,6 +533,6 @@ pull request body carries the table. Had any forecast moved, the checksums would
 
 **The two checksums move once, and the opening's are kept.** Both declarations carry `inputs.metadata_sha256["metadata/sources.json"]`,
 which is the only entry of either declaration that differs: `175858050961823b563a9fcae2c4e62eed9772c3376eacc14d7fb8937210e7a6`
-before, `40dbaddd6c79b082522a62a47e2e90613a6dbda6e36efd6549c30d6dc8aaa715` after. The two pins above are the re-pinned
+before, `4640deb051ddfb833ef09a09621095001402e6112c3f0c55ec1b90f7784eaed9` after. The two pins above are the re-pinned
 declarations'. The checksums the opening run carried are kept as "at opening", and the published run records are not edited.
 `tests/test_final_test_freeze.py` checks the pins as before.
