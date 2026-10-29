@@ -25,6 +25,13 @@ back-filled rows pass `backfill.require_series_admitted`.
         PYTHONPATH=src python3 scripts/backfill_h5_726.py forecasts --arm with --panel EXT_EST.csv --published PUBLISHED.csv \\
             --horizon $h --output OUT/with_h$h.json
     PYTHONPATH=src python3 scripts/backfill_h5_726.py score --published PUBLISHED.csv --runs OUT --output OUT/score.json --markdown OUT/score.md
+
+The re-read of #935 (`metadata/backfill_h5_935.json`: the workbook SOFR volume is blank on every back-filled row, the kill
+read at 75% back-filled) is the same walks, then:
+
+    PYTHONPATH=src python3 scripts/backfill_h5_726.py reread --declaration metadata/backfill_h5_935.json \
+        --previous docs/pivot/evidence/backfill-h5-726-reread/score.json --extended EXT_EST.csv \
+        --published PUBLISHED.csv --runs OUT --output OUT/score.json --markdown OUT/score.md
 """
 
 from __future__ import annotations
@@ -133,6 +140,27 @@ def series_carried(features: Sequence[str], rows: Sequence) -> Tuple[str, ...]:
 
     carried = {name for row in rows if row.date < backfill.FIRST_PUBLISHED for name, value in row.values.items() if value is not None}
     return backfill.series_read([f for f in features if f in carried or f in backfill.contract.DERIVED_FEATURES])
+
+
+def backfilled_volume_cells(rows: Sequence) -> int:
+    """The non-blank `sofr_volume` cells on back-filled rows: the workbook volumes are not admitted (#918, #935), so none."""
+
+    return sum(1 for row in rows if row.date < backfill.FIRST_PUBLISHED and row.values.get("sofr_volume") is not None)
+
+
+def compare_with_previous(new: Mapping[str, Optional[dict]], previous: Mapping[str, Optional[dict]], names: Sequence[str]) -> List[dict]:
+    """For each named group, this run's figures beside the earlier run's (#895), and how the mean difference moved."""
+
+    out = []
+    for name in names:
+        a, b = new.get(name), previous.get(name)
+        out.append({
+            "group": name,
+            "new": None if a is None else {"mean_d": a["mean_d"], "interval_90": a["interval_90"]},
+            "previous": None if b is None else {"mean_d": b["mean_d"], "interval_90": b["interval_90"]},
+            "moved_by": None if a is None or b is None else a["mean_d"] - b["mean_d"],
+        })
+    return out
 
 
 def established_panel(extended: Path, output: Path, admitted: Mapping[str, datetime]) -> int:
@@ -250,7 +278,8 @@ def panel_command(args) -> int:
     require_unlocked([LAST_TARGET], where="backfill_h5_726")
     committed_declaration()
     blanked = established_panel(args.extended, args.output, backfill.load_admitted_series(POSTING))
-    print(json.dumps({"blanked_rows": blanked, "panel_sha256": panel_sha256(args.output)}))
+    volume = backfilled_volume_cells(load_daily_panel(args.output))
+    print(json.dumps({"blanked_rows": blanked, "backfilled_sofr_volume_cells": volume, "panel_sha256": panel_sha256(args.output)}))
     return 0
 
 
@@ -468,7 +497,8 @@ def reading(entry: Optional[dict]) -> str:
 
 
 def reread_command(args) -> int:
-    declared = committed_declaration(REREAD)
+    declaration = args.declaration or REREAD
+    declared = committed_declaration(declaration)
     sd = _load("spread_distribution_634")
     require_unlocked([LAST_TARGET], where="backfill_h5_726")
     rows = [row for row in load_daily_panel(args.published) if row.date <= LAST_TARGET]
@@ -552,21 +582,30 @@ def reread_command(args) -> int:
     ):
         lines.append({"reading": label, "groups": {n: reading(table.get(n)) for n in names}})
     document = {
-        "issue": 870, "declaration": str(REREAD.relative_to(REPO)), "published_panel_sha256": panel_sha256(args.published),
+        "issue": int(declared["issue"]), "declaration": str(Path(declaration).resolve().relative_to(REPO)), "published_panel_sha256": panel_sha256(args.published),
         "extended_panel_sha256": documents[1]["panel_sha256"], "backfilled_rows": documents[1]["backfilled_rows"],
         "decision_days": [days[0].isoformat(), days[-1].isoformat(), len(days)], "shares_ladder": ladder,
         "group_sizes": sizes, "groups": table, "kill_lines": lines, "refits_lead_1": refit_table,
+        "backfilled_sofr_volume_cells": backfilled_volume_cells(load_daily_panel(args.extended)) if args.extended else None,
     }
+    if args.previous:
+        before = json.loads(args.previous.read_text(encoding="utf-8"))
+        document["comparison"] = compare_with_previous(table, before["groups"], COMPARED)
+        document["previous"] = {"issue": before["issue"], "extended_panel_sha256": before["extended_panel_sha256"]}
     args.output.write_text(json.dumps(document, indent=1) + "\n", encoding="utf-8")
     args.markdown.write_text(reread_markdown(document), encoding="utf-8")
     print(json.dumps({"days": len(days), "kill_lines": lines}))
     return 0
 
 
+COMPARED = ("period 2018 H2", "period 2019 H1", "period 2019 H2", "regime 2018-19", "regime 2024", "regime 2025-26", "pooled",
+            "share <= 75%: regime 2018-19", "share <= 75%: pooled")
+
+
 def reread_markdown(document: dict) -> str:
     c = CRITICAL_250
     lines = [
-        "# H4 step 3 re-read: the back-fill against H5's candidate on the ruled interval (#870), development days, not a verdict\n",
+        f"# H4 step 3 re-read: the back-fill against H5's candidate on the ruled interval (#{document['issue']}), development days, not a verdict\n",
         f"Decision days {document['decision_days'][0]} to {document['decision_days'][1]} ({document['decision_days'][2]}). "
         "d = CRPS(without) - CRPS(with), positive when the back-fill helps. Interval: the studentized stationary bootstrap "
         f"(ruling 1), two-sided 90%. Reference value c = {c:.3f} (the 250-day value of the grid comparison): `mean - c se` and "
@@ -586,6 +625,14 @@ def reread_markdown(document: dict) -> str:
             f"[{_f(lo)}, {_f(hi)}] | [{_f(plo)}, {_f(phi)}] | {_f(entry['mean_minus_c_se'])} | {_f(entry['mean_plus_c_se'])} | "
             f"{entry['mean_backfilled_share']:.0%} | {entry['mean_imputed_share']:.0%} | {reading(entry)} |"
         )
+    if document.get("comparison"):
+        lines += ["", f"## Beside #{document['previous']['issue']} (which read the workbook SOFR volume; extended panel `{document['previous']['extended_panel_sha256'][:8]}`)", "",
+                  "| group | mean d now | 90% interval now | mean d before | 90% interval before | moved by |", "|---|---|---|---|---|---|"]
+        for c_ in document["comparison"]:
+            def cell(x):
+                return ("", "") if x is None else (_f(x["mean_d"]), f"[{_f(x['interval_90'][0])}, {_f(x['interval_90'][1])}]")
+            (m1, i1), (m0, i0) = cell(c_["new"]), cell(c_["previous"])
+            lines.append(f"| {c_['group']} | {m1} | {i1} | {m0} | {i0} | {'' if c_['moved_by'] is None else _f(c_['moved_by'])} |")
     lines += ["", "## Training frames of the with arm (lead 1), by half-year of the refit", "",
               "| half-year | refits | back-filled share of rows (min to max) | imputed share of input cells (min to max) |", "|---|---|---|---|"]
     byhalf: Dict[str, List[dict]] = {}
@@ -656,7 +703,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     p.add_argument("--output", type=Path, required=True)
     p.add_argument("--markdown", type=Path, required=True)
     p.set_defaults(func=score_command)
-    p = sub.add_parser("reread", help="the re-read of #870: the ruled interval, 2018-19 by half-year, the share of back-filled rows")
+    p = sub.add_parser("reread", help="the re-read of #870 (or #935): the ruled interval, 2018-19 by half-year, the share of back-filled rows")
+    p.add_argument("--declaration", type=Path, default=None, help="a committed re-read declaration (default: #870's)")
+    p.add_argument("--previous", type=Path, default=None, help="an earlier re-read's score.json to print beside this one")
+    p.add_argument("--extended", type=Path, default=None, help="the blanked extended panel, to count back-filled volume cells")
     p.add_argument("--published", type=Path, required=True)
     p.add_argument("--runs", type=Path, required=True)
     p.add_argument("--output", type=Path, required=True)
