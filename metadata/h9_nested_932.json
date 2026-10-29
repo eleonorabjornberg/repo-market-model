@@ -28,9 +28,9 @@
       "sofr_dispersion_bps"
     ],
     "source": "metadata/richer_targets_706.json, choice.chosen",
-    "forecasts": "the walks of scripts/richer_targets_706.py (#706), re-run unchanged on the scratch panel with the digest the 706 declaration records; each law is the 23-level law of the target at lead h, fitted walk-forward on the shared fold grid (minimum history 61, refit every 21 days)",
+    "forecasts": "the walks of scripts/richer_targets_706.py (#706) on the scratch panel with the digest the 706 declaration records, fitted on direct pairs (training_pairs=\"direct\") under the amendment of metadata/richer_targets_706.json made for this directive; each law is the 23-level law of the target at lead h, fitted walk-forward on the shared fold grid (minimum history 61, refit every 21 days)",
     "scratch_panel_sha256": "26c51093de80bc1c5f6cc4e9e3742fd6606160e4c6ba0db2fa19d6fcbf3e1313",
-    "declaration_706_sha256": "dae63cf22f61485a829ab720fa505f3743d23c511b4cf483371d4f93c53d4c71"
+    "declaration_706_sha256": "52325c99427da28ae7bdd879c3a0772bc72e75d5da6af6ef46966395bde0fdc7"
   },
   "input": {
     "form": "one value per target and lead: the median (level 0.5 of the 23-level grid) of the target's lead-h law for the target day h business days after the decision day, in the target's own unit. The lead-h candidate reads its own lead's column only (repo_model.target_forecasts.column). No other function of the law (width, tail level, mean) is declared or tried",
@@ -120,5 +120,13 @@
   },
   "long_run": "the walks (5 leads x 5 variants) and the fifteen target walks of #706 they read are expected to take more than about two hours: run on the Mac under the needs-mac rule of #46, the commands being those of scripts/h9_nested_932.py's docstring",
   "not_included": "any 2026 day; the ON RRP offering rate, the SRF rate and the H.8 bank groups (liquidity repository); combinations of targets; any other form of the input; the two-part form and the published declaration as the base; the direct twin of #825 (if the candidate moves to the twin there, this step is re-scored)",
-  "published_panel_sha256": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999"
+  "published_panel_sha256": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+  "amendments": [
+    {
+      "made": "before any score; review of 8ddde376 on the pull request that closes #932, 29 October 2026",
+      "what": "the fifteen target walks of #706 are fitted on direct pairs, not one-step pairs: their inputs hold tax_date, treasury_settlement and (at lead 1) the announced-IORB pair, which one_step_guard refuses on a one-step fit (#914). Chosen over dropping the columns because it is Eleonora's ruling of 19 October 2026 on #915 for H9 step 3 and keeps #706's inputs. Adding to ONE_STEP_ALLOW_LIST was not an option",
+      "changes": "targets.declaration_706_sha256 from dae63cf22f61485a829ab720fa505f3743d23c511b4cf483371d4f93c53d4c71 (the declaration #842 pinned) to 52325c99427da28ae7bdd879c3a0772bc72e75d5da6af6ef46966395bde0fdc7 (metadata/richer_targets_706.json as amended); targets.forecasts. Nothing else: variants, comparisons, reading rule and scoring are as first declared",
+      "walks": "a target walk records its fit settings and is refused unless they name training_pairs 'direct' (scripts/richer_targets_706.py check_pairing, and the 932 walk before it reads one)"
+    }
+  ]
 }
