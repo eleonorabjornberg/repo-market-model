@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- DTCC GCF Repo Index capture (#962), on Eleonora's Mac. Placeholders __REPO__, __PYTHON__, __OUT_DIR__ and __LOG__
+     are filled by the needs-mac install paste. Every five minutes, in any time zone: the script reads the ET clock and
+     fetches only from 15:30 to 16:00 ET on a business day (a run after 16:00 records the day missed, once). -->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>org.rmm.gcf-index-capture</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>__PYTHON__</string>
+    <string>-B</string>
+    <string>__REPO__/scripts/gcf_index_capture.py</string>
+    <string>capture</string>
+    <string>--out-dir</string>
+    <string>__OUT_DIR__</string>
+  </array>
+  <key>StartInterval</key>
+  <integer>300</integer>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>StandardOutPath</key>
+  <string>__LOG__</string>
+  <key>StandardErrorPath</key>
+  <string>__LOG__</string>
+</dict>
+</plist>

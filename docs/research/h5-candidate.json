@@ -1,16 +1,20 @@
 {
  "hypothesis": "H5",
- "candidate": "sc_s3_robust",
- "description": "(s3) of the state-scaled calendar study: the scaled mean reversion with calendar terms read at the target day in standardised units, fitted with a Huber estimator and a heavier ridge",
+ "candidate": "sc_s3c",
+ "base": "sc_s3_robust",
+ "cap": {"rule": "every quantile clipped at min(q, line + margin) on target days at full allotment (the standing_repo entry in force on the target day, public at the decision instant, states no aggregate operation limit); (s3) itself on every other day", "line": "repo_model.srf_line (#1241)", "margin_bp": 0, "module": "repo_model.s3c_candidate", "declaration": "metadata/s3c_candidate_1255.json"},
+ "description": "(s3c): (s3) of the state-scaled calendar study (the scaled mean reversion with calendar terms read at the target day in standardised units, fitted with a Huber estimator and a heavier ridge), capped at the Standing Repo Facility line from full allotment onwards, with a margin of zero",
  "label": "development, not a verdict",
  "provisional": false,
- "date": "2026-10-23",
- "replaces": "spread_mr_fhs_mad20_f0.5",
- "ruling": "https://github.com/eleonorabjornberg/repo-market-model/issues/1151#issuecomment-6370128771",
- "note": "Eleonora's ruling on #1151 (option 2): (s3) of #1145 replaces #941's scaled mean reversion, arm (a) of #1115, as the H5 candidate; (a) had replaced gbm_funding on #1115. Nothing is registered; registration remains her own action. The page reads the candidate from this file; the step 4 record is the fallback when it is absent. The gbm_funding walks were not supplied to #1145, so no row compares (s3) with it. Each evidence entry also links its page read on the studentized bound on mean d (her ruling on #1009; #1167, #1194); the candidate stays (her ruling on #1187, 24 October 2026), and its upper-tail twCRPS losses in 2020 and on FOMC days are an open question before any registration.",
+ "date": "2026-10-26",
+ "replaces": "sc_s3_robust, (s3) of the state-scaled calendar study",
+ "ruling": "https://github.com/eleonorabjornberg/repo-market-model/pull/1256",
+ "earlier_ruling": {"date": "2026-10-23", "url": "https://github.com/eleonorabjornberg/repo-market-model/issues/1151#issuecomment-6370128771", "text": "option 2 on #1151: (s3) of #1145 replaces #941's scaled mean reversion, arm (a) of #1115, as the H5 candidate"},
+ "note": "Her ruling of 26 October 2026 (chat, ledger item 61; she merged #1256 that evening): (s3) carries the cap from full allotment onwards, and that is (s3c), named here by #1259. Before it, her ruling on #1151 (option 2) made (s3) of #1145 the candidate in place of #941's scaled mean reversion, arm (a) of #1115; (a) had replaced gbm_funding on #1115. The scoring record below is still #1145's: the tables on the results page are (s3)'s, the base, and (s3c)'s own scores (against (s3), (a), B1, B1' and B2, on the development window and the 2026 days) are on the page listed last under evidence. Nothing is registered; registration remains her own action. The page reads the candidate from this file; the step 4 record is the fallback when it is absent. The gbm_funding walks were not supplied to #1145, so no row compares (s3) with it. Each evidence entry also links its page read on the studentized bound on mean d (her ruling on #1009; #1167, #1194); the candidate stays (her ruling on #1187, 24 October 2026), and its upper-tail twCRPS losses in 2020 and on FOMC days are an open question before any registration.",
  "scores": {
   "record": "docs/research/state-calendar-1145/result.json",
   "model": "sc_s3_robust",
+  "shown_as": "(s3), the base of (s3c)",
   "not_supplied": ["gbm_funding"],
   "benchmarks": [
    {"key": "B1", "label": "B1"},
@@ -23,6 +27,7 @@
  "evidence": [
   {"issue": 1145, "page": "docs/research/state-calendar-1145-result.md", "record": "docs/research/state-calendar-1145/result.json", "mean_d_page": "docs/research/state-calendar-1145-mean-d-1194-result.md"},
   {"issue": 1115, "page": "docs/research/calendar-mr-1115-result.md", "record": "docs/research/calendar-mr-1115/result.json", "mean_d_page": "docs/research/calendar-mr-1115-mean-d-1167-result.md"},
-  {"issue": 1141, "page": "docs/research/walk-calibration-1133-result.md", "record": "docs/research/walk-calibration-1133/result.json", "mean_d_page": "docs/research/walk-calibration-1133-mean-d-1167-result.md"}
+  {"issue": 1141, "page": "docs/research/walk-calibration-1133-result.md", "record": "docs/research/walk-calibration-1133/result.json", "mean_d_page": "docs/research/walk-calibration-1133-mean-d-1167-result.md"},
+  {"issue": 1255, "page": "docs/research/s3c-candidate-1255-result.md", "record": "docs/research/s3c-candidate-1255/result.json"}
  ]
 }

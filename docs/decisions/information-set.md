@@ -6,13 +6,13 @@ under the previous rule was re-scored or archived.
 > **Proposed in #267, for Eleonora to review:** the corrected wording of rule 1 below (the H.4.1
 > read lag). A decision is in force only once she merges it.
 >
-> **Proposed in #541, for Eleonora to review:** the wording of rule 1's H.4.1 sentence and of rule 2's
-> Treasury-settlement bullet, which record her ruling of 10 October 2026 (relayed on #541): a settlement
-> is dated from the auction announcement, not the auction results, and the H.4.1 is read per release, at
-> the release's own publication instant. It was drafted by the pull request that closes #541 and is **not
-> in force** until she merges it. Both readings are measured and off in the published registry:
+> **In force (#541, #1299):** the wording of rule 1's H.4.1 sentence and of rule 2's Treasury-settlement
+> bullet records her ruling of 10 October 2026 (relayed on #541): a settlement is dated from the auction
+> announcement, not the auction results, and the H.4.1 is read per release, at the release's own publication
+> instant. It is in force as wording from her ruling of 29 October 2026 on #1299 (ledger item 73 on #1116,
+> option 1 of decision 1 in the 28 October message). Both readings are still off in the published registry:
 > `metadata/sources.json` is frozen by the final-test pre-registration (bytes), so turning either on is a
-> later pull request, with the re-pin that needs, made after her ruling on it.
+> later pull request, with the re-pin that needs, under her own `GO`.
 >
 > **Proposed in #586, for Eleonora to review:** the amendment at the end of this record, which records her
 > ruling of 11 October 2026 on #571 (relayed by the orchestrating session): the reserve-scarcity state reads each
@@ -80,10 +80,10 @@ when the feature set was fixed; re-scoring them belongs with next-version resear
 
 ## Amendment: back-filled repo-rate history is training history only (#374, #430)
 
-**Draft change from #1230, for Eleonora to review. Not in force until she has merged it.** The pull request that
-closes #1230 amends items 1 and 4 below: it admits IOER/IORB on back-filled rows as training history only (her
-ruling of 26 October 2026), and corrects item 1's line on the SOFR volume to her ruling of 19 October 2026 on #742.
-The rest of this amendment is in force as it stands.
+**The change from #1230 is in force from the merge of PR #1231 on 26 October 2026 (her GO #1230).** It amends items 1
+and 4 below: it admits IOER/IORB on back-filled rows as training history only (her ruling of 26 October 2026), and
+corrects item 1's line on the SOFR volume to her ruling of 19 October 2026 on #742. The rest of this amendment is in
+force as it stands.
 
 The snapshot and the guard are merged. **Posting instant established: 2018-05-17** (the start of that day, New York
 time) for TGCR, BGCR and SOFR, by her ruling of 13 October 2026 on PR #661 (#633); the source is

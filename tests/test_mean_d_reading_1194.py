@@ -154,7 +154,7 @@ class CandidateRecordTests(unittest.TestCase):
 
     def test_the_evidence_links_the_mean_d_pages(self):
         rec = json.loads((ROOT / "docs/research/h5-candidate.json").read_text(encoding="utf-8"))
-        pages = {e["issue"]: e["mean_d_page"] for e in rec["evidence"]}
+        pages = {e["issue"]: e["mean_d_page"] for e in rec["evidence"] if e.get("mean_d_page")}  # #1255's page is its own reading
         self.assertEqual(pages, {1145: "docs/research/state-calendar-1145-mean-d-1194-result.md",
                                  1115: "docs/research/calendar-mr-1115-mean-d-1167-result.md",
                                  1141: "docs/research/walk-calibration-1133-mean-d-1167-result.md"})
