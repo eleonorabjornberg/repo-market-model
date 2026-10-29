@@ -376,7 +376,7 @@ CANDIDATE_GROUPS = (("pooled", "all decision days", "all decision days"), ("targ
 CANDIDATE_SPLITS = (("regime", "by regime"), ("target_day_type", "by target-day type"))
 #: What the page calls each evidence page of the candidate record: the page is for a lay reader, so no issue number.
 EVIDENCE_NAMES = {1145: "state-scaled calendar study", 1115: "calendar-terms study",
-                  1141: "walk-forward calibration study", 1255: "SRF-capped candidate study"}
+                  1141: "walk-forward calibration study", 1255: "SRF-capped candidate study", 1288: "announced-settlement study"}
 SPLIT_BENCHMARKS = (("B1", "B1"), ("B1_prime", "B1&prime;"))
 
 
