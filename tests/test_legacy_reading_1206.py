@@ -40,6 +40,7 @@ EXEMPT = {
     "b2_pool_fallback_1155": "its arms name their readings themselves (the legacy type, the turn labels, the fallback)",
     "regime_spells_1182": "its page was made after #1185 under the turn labels and before #1198 (a third reading)",
     "s3_terms_1196": "its page was made after #1185 under the turn labels and before #1198 (a third reading)",
+    "s3c_turn_cap_1265": "(s3c-t) is defined on the day types in force; under the legacy reading it raises ValueError on a month_end label",
     "live_monitor": "reads the live record, which is frozen on its own declaration",
 }
 

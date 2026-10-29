@@ -133,8 +133,8 @@ ATTRIBUTION = {
     ("docs/decisions/pressure-probability.md", 130): _DECISION,
     ("docs/decisions/pressure-probability.md", 152): _DECISION,
     ("site/index.html", 127): "work-tracking issue on a source card; no figure rests on it",
-    ("site/index.html", 1151): (
-        "names the comment where Eleonora ruled the H5 candidate; every figure in the standings "
+    ("site/index.html", 1256): (
+        "names the pull request that records Eleonora's ruling on the H5 candidate; every figure in the standings "
         "is copied from the evidence page docs/research/state-calendar-1145-result.md, linked beside it "
         "with the earlier studies; no figure rests on it"
     ),

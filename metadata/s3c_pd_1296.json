@@ -1,0 +1,68 @@
+{
+ "status": "declared by the pull request that closes #1296 before any score was computed; a development study, never a verdict. (s3c) stays the H5 candidate until Eleonora rules on the result. Nothing is registered or published: no record in docs/runs/ is edited, the live record and its pin do not change, no declaration already merged changes, docs/research/h5-candidate.json, `gbm_funding`'s declaration, `scripts/final_test_preregistration.py` and metadata/sources.json do not change, no day after 2026-09-03 is scored and no lockbox day is scored. Amendments made after a number was computed are listed in `amendments`; there are none.",
+ "issue": 1296,
+ "ledger": "item 72 on #1116",
+ "ruling": "Eleonora, 28 October 2026, about 3:30 pm ET, chat, relayed on #1296: queue it; adding the source is her decision, taken in this ruling. The directive body is the text followed.",
+ "hypothesis": "H5 (primary goal): the SOFR - IORB spread distribution in bp. Step 3, an arm on the candidate (s3c), with a new public source. Development tier",
+ "target": "spread_bps at the scored day, in basis points, as a 23-quantile distribution at each lead h = 1..5 (scoring_protocol.GRID)",
+ "why": "The Fed's change to the supplementary leverage ratio (announced November 2025, effective January 2026) let bank and dealer balance sheets grow. Primary dealers' reverse repo plus securities borrowed rose over the year (the OFR Short-term Funding Monitor chart named in the directive). The 2026 development days fall after that regime break, and (s3c) has no input for dealer balance-sheet capacity.",
+ "source": "metadata/sources_pd_financing_1296.json: the New York Fed's primary dealer statistics (FR 2004), four weekly Treasury totals (reverse repo and securities borrowed, Treasury excluding TIPS and TIPS), snapshotted and checksummed under tests/fixtures/snapshots/nyfed-pd-financing/ (this repository's tracked snapshots live under tests/fixtures/snapshots/; data/raw/ is gitignored), released on Thursdays at approximately 4:15 p.m. with the previous week's statistics, declared at 16:30 America/New_York six business days after the as-of Wednesday. Not registered in metadata/sources.json (pinned under the final-test pre-registration)",
+ "candidate": {
+  "name": "sc_s3c_pd",
+  "label": "(s3c-pd)",
+  "definition": "(s3c) with one state term added to (s3)'s fit: the state read by the decision of the day, the z-score of the latest public week's primary dealer level against the year before it, enters the location of every lead beside (s3)'s calendar terms. Every other term, the Huber fit (k = 1.345), the ridge of 5, the pool of standardised residuals and the SRF cap at full allotment (margin 0 bp, repo_model.s3c_candidate) are (s3c)'s and are not changed",
+  "module": "repo_model.s3c_pd (load_levels, release_instant, read_level, state_at, decision_states, fit_pd_terms, walk); the cap, the line and the full-allotment flag are repo_model.s3c_candidate's and repo_model.srf_line's, unchanged",
+  "level": "L(w) = (PDSIRRA-UTSETTOT + PDSIRRA-UTSTTOT + PDSIOSB-UTSETTOT + PDSIOSB-UTSTTOT) / 1,000, in USD billions, for the as-of Wednesday w; a week with any of the four withheld ('*') has no level",
+  "transform": "x(D) = (L(w*) - mean) / stdev, with w* the latest as-of week released at or before the decision instant of day D (16:00 America/New_York) that has a level, and mean and stdev (sample) over the defined levels of the 52 as-of weeks before w*; x(D) is undefined (the column is 0) when no released week has a level, when fewer than 13 of those 52 weeks have a level, or when their standard deviation is not positive. The directive's 'latest public level' is read literally: a withheld latest week is skipped and the level of the latest week that has one is carried, with no limit on how many weeks are skipped (a limit is a threshold nobody has set); the number skipped is reported for every decision day with a state. The minimum of 13 defined weeks (a quarter of the year) was chosen from how many weeks the New York Fed withholds in 2025 and 2026, read before any score, because a minimum of 26 would leave most 2026 days without a state; it is not chosen from any score. Declared before any score and not tuned: the alternative named in the directive (a change over 13 weeks) was not tried",
+  "units": "x is dimensionless, one unit being one trailing-year standard deviation of the level. In the fit the target is the raw residual divided by the scale at the pair's origin, as for every term, and the column is x itself, so the coefficient is in standardised residual units per standard unit and its effect in bp is coefficient * x * the anchor's scale. A forecast adds that effect, in bp, to every quantile, beside the shift and the pool of the fit. The fitted effect is reported in bp per standard unit (coefficient * the anchor's scale, at the anchor's scale of each decision day)",
+  "entry": "the term enters a lead's fit when at least 60 training pairs (spread_mean_reversion.MIN_PAIRS, the base model's minimum number of training pairs) have a defined state; the intercept is dropped, so the pool keeps the ordinary-day centre; a pair with no state has the column 0. Where the term does not enter, the estimate is spread_mr_state_calendar.fit_state_terms' on the same pairs, element for element. The same state enters every lead's fit, and each lead is fitted on its own pairs",
+  "information_set": "a new availability rule. The figures of an as-of week are public from release_instant: six market business days after the Wednesday (the Thursday of the following week, a holiday moving it to the next business day), 16:30 America/New_York; a decision at 16:00 on the release day itself cannot read it. read_level raises LookAheadError (repo_model.splits) for a week released after the decision instant, and state_at reads every week through it. The state is a slow variable of the decision, not of the target: it is keyed by the decision day as the scarcity state is, a training pair is trained on the state of its own decision day (origin + lag, spread_mr_state_calendar.pair_state) and a forecast reads the state of its own decision day (spread_mr_state_calendar.read_state, which raises LookAheadError for a later day). Leakage test with recorded mutations: tests/test_s3c_pd.py. Staleness: the latest public level is read, never an older one than the latest week that has a level; a withheld latest week is skipped, and the weeks skipped are reported",
+  "pairs": "direct: the calendar terms are read at the target row on direct pairs (training_pairs = 'direct'); fit_pd_terms is guarded by one_step_guard with no allow-list entry; the state is no panel column and no calendar or scheduled field. The provisional-register row is metadata/provisional/cleared/s3c_pd_1296.json",
+  "margin_bp": 0.0
+ },
+ "frame": {
+  "windows": "the development window (targets up to 2025-12-31, as #1145, #1241 and #1255) and the 2026 development days (targets 2026-01-02 to 2026-09-03, the near-blind tier open since GO #151, as #1229, #1252 and #1255), the frames of scripts/s3c_candidate_1255.py, loaded as they are. The 2026 days are split out as their own window and as their own regime",
+  "walk": "(s3)'s walk is #1229's and #1255's (every decision day from the start of the panel, refit every 21 decision days, direct pairs); the arm is walked on the same days with the same refit schedule, and (s3) re-forecast inside it must equal the frame's (s3) cell for cell or the run stops",
+  "guards": "a scored decision day or target day passes lockbox.require_unlocked through spread_mean_reversion_686.require_scored_days with the last day 2026-09-03; the blind tier (from 2026-09-04) and every lockbox day are refused. The snapshot holds weeks released after that day; none can be read by a decision up to it",
+  "reproduction": "(s3) and (s3c) of the frames are #1255's; the pooled means are compared with docs/research/s3c-candidate-1255/result.json and the difference stated on the page"
+ },
+ "arms": [
+  {"name": "sc_s3_robust", "role": "(s3) of #1145; reference", "margin_bp": null},
+  {"name": "sc_s3c", "role": "(s3c), the H5 candidate; reference", "margin_bp": 0.0},
+  {"name": "sc_s3c_pd", "role": "(s3c-pd), (s3c) with the primary dealer state term", "margin_bp": 0.0}
+ ],
+ "models": ["B1", "B1_prime", "B2", "sc_s3_robust", "sc_s3c", "sc_s3c_pd"],
+ "primary": {
+  "metric": "grid CRPS (23 levels) averaged over leads h = 1..5",
+  "key_secondary": "upper-tail twCRPS (weight 1{z > 0 bp})",
+  "pressure_probability": "the Brier score of P(spread > +5 bp), the probability read off the 23 quantiles as 1 - F(floor(tau) + 0.5), F linear between them (spread_mean_reversion.exceedance), the event strict and on whole basis points (data.exceeds_bp)",
+  "comparisons": "(s3c-pd) paired with (s3c) and with (s3), and against B1, B1' and B2",
+  "calibration": "the 90% band coverage (closed band q05 to q95) of (s3c-pd) beside (s3c)'s and (s3)'s, pooled, by regime, by lead and on the days the state is defined; means, not tested"
+ },
+ "scoring": {
+  "scorer": "repo_model.scoring_protocol (#655), the development tier: no verdict, no registration",
+  "test": "scoring_protocol.paired_tests, the studentized stationary bootstrap (ruling 1), mean block 10 business days, 10,000 draws, seed 1296, two-sided 90% interval (the lower end is the one-sided 95% bound); the skill interval and the studentized interval on mean d are reported for every tested row; where the studentized bound cannot be computed the unstudentized percentile interval of mean d is given beside it, with no reading taken from it",
+  "reading": "a reading is taken from the mean-d bound (her ruling on #1009): (s3c-pd) is read better than a reference when the lower end of the 90% interval of mean d is above zero, worse when the upper end is below zero, otherwise undecided. Lens C's caveat (the lag-10 HAC standard error is understated about 2x after 2020) is stated on the page",
+  "splits": "pooled; by regime (the declared regimes, with 2026 split out); by pressure-day type of the target day; by lead; by calendar target-day type; by target month (2026 window); and, over the decision days, those on which the state is defined against those on which it is not (a group of fewer than 20 days is listed and not tested). The intervals of a group of target days keep the current method (the group's days, scattered, resampled in date order as if consecutive), which #1221 questions and #1228 will decide",
+  "identical_groups": "a group in which an arm's score equals the reference's on every day is listed as identical and not tested against it",
+  "seed": 1296
+ },
+ "fitted_effect": "the fitted effect of the state term in bp per standard unit: for each decision day and lead, the coefficient of the refit in force times the scale at the anchor of that decision day (the mean and the range over decision days, by lead and by regime of the decision day), the coefficient in standardised units per standard unit by refit (the median, the range, the number of refits in which the term is active, by lead), the mean absolute shift of the location in bp on the days the state is defined, the weeks skipped (the age of the level read beyond the latest public week) on those days, and the number of USD billions one standard unit is (the trailing-year standard deviation of the level, mean over decision days)",
+ "reading_rules": [
+  "A figure is a check on days that were already seen. Nothing here is a verdict, nothing is registered and no choice is made on it; (s3c) stays the candidate until she rules on the result.",
+  "A gain or loss is read from the 90% interval of mean d excluding zero; otherwise undecided. A point estimate alone is not read.",
+  "A pooled figure is never read without the regime, pressure-day type and lead splits beside it.",
+  "The page says plainly on what share of decision days the state is defined, how old the level read is (the weeks skipped over withheld weeks: the mean, the largest, and the share of days more than 4 weeks old) and that on the days with no state (s3c-pd) differs from (s3c) only through the refit.",
+  "The page says that the snapshot is the latest revised vintage and not first prints.",
+  "The page ends with marked questions for Eleonora with numbered options and defaults that change no claim, among them whether the source is to be registered."
+ ],
+ "limits": {
+  "last_day": "2026-09-03",
+  "named_candidate": "unchanged; docs/research/h5-candidate.json is not changed",
+  "preregistration": "scripts/final_test_preregistration.py is not touched; test_final_test_freeze and test_live_score_freeze are run before the push",
+  "allow_list": "repo_model.one_step_guard.ONE_STEP_ALLOW_LIST is not changed",
+  "sources": "metadata/sources.json is not changed; no declaration already merged is changed; docs/runs/ is not touched; no private or licensed data"
+ },
+ "long_run": "cloud; one walk of (s3) and of the arm over the whole panel (minutes) and the paired tests of one arm against five references on two windows, about two dozen groups and four metrics (the longer part; #1255's and #1275's were well under two hours on 4 cores). If the measured time says otherwise, the run goes to the Mac as a `needs-mac:` comment",
+ "amendments": []
+}

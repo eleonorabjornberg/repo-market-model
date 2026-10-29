@@ -1,6 +1,6 @@
 """State-scaled calendar effects on volatility-scaled mean reversion, read at the target day (#1145; H5 step 3, the fix of #1115).
 
-`metadata/state_calendar_1145.json` is the declaration; this module is its arithmetic. #1115 estimated one effect in basis points
+`metadata/state_calendar_1145.json` is the declaration; this module is its arithmetic. (s3) below is the base of the H5 candidate (s3c), which caps it at the SRF line from full allotment (`repo_model.s3c_candidate`, #1256; named the candidate by #1259). #1115 estimated one effect in basis points
 per calendar term and applied it everywhere, so it lost where the state was quiet (2020, 2021-23) and won where it was loud. Here
 the effect scales with the state. The base is `repo_model.spread_mr_fhs`'s declared variant `spread_mr_fhs_mad20_f0.5` (#941),
 unchanged: `level + phi^k (last - level) + scale(anchor) * z_h`. Four arms add declared terms to it, in the model's own

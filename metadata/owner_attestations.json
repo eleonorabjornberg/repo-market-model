@@ -118,6 +118,13 @@
       "comment_id": 6422567581,
       "phrase": "GO #1230",
       "what": "admit IOER/IORB on back-filled 2014-18 rows as training history only (#1231): the back-fill amendment to docs/decisions/information-set.md, items 1 and 4, and the backfill guard, as her 26 October ruling on #1223 (ledger item 56) says"
+    },
+    {
+      "kind": "decisions",
+      "issue": 1263,
+      "comment_id": 6449746800,
+      "phrase": "GO #1263",
+      "what": "mark the #1230 IORB back-fill amendment in force in docs/decisions/information-set.md and drop the draft sentence from metadata/backfill_posting.json's admitted_iorb_note (#1268); status only, no rule text changed, as her 27 October ruling on #1263 (ledger item 64) says"
     }
   ],
   "rule": "docs/decisions/drafts/owner-attestation.md",
