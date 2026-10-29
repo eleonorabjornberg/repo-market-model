@@ -6,13 +6,13 @@ under the previous rule was re-scored or archived.
 > **Proposed in #267, for Eleonora to review:** the corrected wording of rule 1 below (the H.4.1
 > read lag). A decision is in force only once she merges it.
 >
-> **Proposed in #541, for Eleonora to review:** the wording of rule 1's H.4.1 sentence and of rule 2's
-> Treasury-settlement bullet, which record her ruling of 10 October 2026 (relayed on #541): a settlement
-> is dated from the auction announcement, not the auction results, and the H.4.1 is read per release, at
-> the release's own publication instant. It was drafted by the pull request that closes #541 and is **not
-> in force** until she merges it. Both readings are measured and off in the published registry:
+> **In force (#541, #1299):** the wording of rule 1's H.4.1 sentence and of rule 2's Treasury-settlement
+> bullet records her ruling of 10 October 2026 (relayed on #541): a settlement is dated from the auction
+> announcement, not the auction results, and the H.4.1 is read per release, at the release's own publication
+> instant. It is in force as wording from her ruling of 29 October 2026 on #1299 (ledger item 73 on #1116,
+> option 1 of decision 1 in the 28 October message). Both readings are still off in the published registry:
 > `metadata/sources.json` is frozen by the final-test pre-registration (bytes), so turning either on is a
-> later pull request, with the re-pin that needs, made after her ruling on it.
+> later pull request, with the re-pin that needs, under her own `GO`.
 >
 > **Proposed in #586, for Eleonora to review:** the amendment at the end of this record, which records her
 > ruling of 11 October 2026 on #571 (relayed by the orchestrating session): the reserve-scarcity state reads each
