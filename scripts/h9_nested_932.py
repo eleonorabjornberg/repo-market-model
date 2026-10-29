@@ -127,6 +127,12 @@ def check_alignment(variant: str, settings: Mapping) -> None:
         raise ValueError(f"{variant} is #842's one-step candidate, but its fit names training_pairs {named!r}")
 
 
+def check_target_walk(document: Mapping) -> None:
+    """A #706 target walk is read only if its recorded fit names direct pairs (the declaration's amendment): raises `ValueError`."""
+
+    m706.check_pairing(settings_of(document))
+
+
 def settings_of(document: Mapping) -> Mapping:
     """A walk's recorded fit settings (`spread_distribution_634.py` writes them with `default=str`; both forms are read)."""
 
@@ -169,7 +175,7 @@ def walk_command(args) -> int:
         context = contextlib.nullcontext()
     else:
         document = m842.target_walk_document(args.target_walks, target, h, declared_706, scratch_digest)
-        m706.check_pairing(document.get("settings") or {})
+        check_target_walk(document)
         forecasts, fits = m842.decision_forecasts(document, target, h, args.panel, declared_706)
         calendar = [row.date for row in rows]
         position = {day: index for index, day in enumerate(calendar)}

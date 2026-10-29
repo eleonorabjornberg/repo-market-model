@@ -21,6 +21,9 @@ by `grep` and reverted afterwards; unmutated control green before and after):
    `AssertionError: ValueError not raised`.
 3. `refuse_locked`: `require_unlocked(list(days), ...)` replaced by `return`. `LockedDayTests.test_a_locked_day_is_refused` fails
    with `AssertionError: LookAheadError not raised`.
+4. `check_target_walk`: `m706.check_pairing(settings_of(document))` replaced by `return`. A target walk fitted on one-step
+   pairs is then read as an aligned input; `TargetWalkPairingTests.test_a_target_walk_on_one_step_pairs_or_without_settings_is_refused`
+   fails with `AssertionError: ValueError not raised`.
 """
 
 from __future__ import annotations
@@ -152,6 +155,24 @@ class PairingTests(unittest.TestCase):
     def test_the_one_step_base_must_not_name_a_pairing(self):
         with self.assertRaises(ValueError):
             script.check_alignment("base", {"training_pairs": "direct"})
+
+
+class TargetWalkPairingTests(unittest.TestCase):
+    """The 15 target walks of #706 are read only if they were fitted on direct pairs.
+
+    A walk file records its fit settings with `default=str`, so the Mac run's files hold them as the string
+    `"{'training_pairs': 'direct'}"` (found by smoke-testing a full walk: a `.get` on the string raised `AttributeError`).
+    """
+
+    def test_a_target_walk_fitted_on_direct_pairs_passes_in_both_recorded_forms(self):
+        script.check_target_walk({"settings": {"training_pairs": "direct"}})
+        script.check_target_walk({"settings": "{'training_pairs': 'direct'}"})
+
+    def test_a_target_walk_on_one_step_pairs_or_without_settings_is_refused(self):
+        for document in ({"settings": {}}, {"settings": "{}"}, {}, {"settings": {"training_pairs": "one_step"}}):
+            with self.subTest(document=document):
+                with self.assertRaises(ValueError):
+                    script.check_target_walk(document)
 
 
 class VariantTests(unittest.TestCase):
