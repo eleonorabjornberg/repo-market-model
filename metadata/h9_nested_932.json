@@ -1,0 +1,132 @@
+{
+  "status": "declared by the pull request that closes #932 before any aligned score was computed; a measurement, not a record. Nothing is published: no target joins any published declaration, no day after 2025-12-31 is read or scored (docs/decisions/lockbox.md), no rule changes, the live record and pin do not move. Development data gives no verdict (scoring protocol v1, #640): every figure here is exploration. Reading H9's kill clause is Eleonora's.",
+  "issue": 932,
+  "re_runs": "metadata/h9_nested_842.json",
+  "hypothesis": "H9 (richer targets carry more learnable signal), step 3 re-run: the development nested test against H5's candidate with the forecast column aligned to its label day. Milestone M4.",
+  "rulings": [
+    "Eleonora, 19 October 2026 (ruling on finding #915, relayed): H9 step 3 is re-run with aligned pairs (training row p holds the forecast for the label day) before H9's kill clause is read",
+    "Eleonora, 12 October 2026 (scoring protocol v1, #640): development data gives a score and an interval, never a verdict",
+    "Eleonora, #798: every headline is reported with and without decision day 2019-09-18"
+  ],
+  "finding": "#915: at leads 2 to 5, #842's plus walks fitted on one-step pairs (p, p + 1). Row p's column holds the forecast of the target for day p + h, so the model learned it against the spread of day p + 1 and was served the forecast of the day it predicts. The two match only at h = 1.",
+  "alignment": {
+    "how": "training_pairs='direct' (repo_model.ml, #37): each label day t is paired with the row its own forecast reads, t - h, whose column h9fc_<target>_h<h> holds the forecast of the target for day t. The row is the as-of observation at t's decision instant, read through the same InformationRule and its leakage and staleness guards as a served forecast. The column's own availability guard is target_forecasts.attach, unchanged",
+    "why_not_a_shifted_column": "a column on row d holds the forecast for d + h, which is what a served row must read; shifting it so that row p holds the forecast for p + 1 would feed the model that value at serving time as well. Direct pairs change which row trains against which label and leave the served column alone",
+    "check": "every walk's recorded fit settings must name training_pairs 'direct' for a direct variant and none for the one-step base (scripts/h9_nested_932.py check_alignment); the score refuses a walk that does not",
+    "test": "tests/test_h9_nested_932_script.py fits the script's fitter on a frame whose column on row d is the index of the day it forecasts and whose spread on row t is t: a design row holds the number of its own label"
+  },
+  "candidate": {
+    "name": "gbm_funding",
+    "is": "ml.fit_gradient_boosted_quantiles at the protocol's 23 levels on the published funding features only (live_record.published_features(h)), uncalibrated, every day, directly at each lead; the phase 2 gbm re-scored under the protocol (#634's control of the same name)",
+    "source": "metadata/spread_distribution_634.json, control gbm_funding; scripts/spread_distribution_634.py walk, on the published panel",
+    "reproduction": "the base is re-walked here by the same call; its grid CRPS on the common days is compared with #634's recorded figure (docs/pivot/evidence/spread-distribution-protocol/score.json, mean_primary.gbm_funding) and the difference is reported"
+  },
+  "targets": {
+    "chosen": [
+      "bgcr_dispersion_bps",
+      "on_rrp_change_bn",
+      "sofr_dispersion_bps"
+    ],
+    "source": "metadata/richer_targets_706.json, choice.chosen",
+    "forecasts": "the walks of scripts/richer_targets_706.py (#706) on the scratch panel with the digest the 706 declaration records, fitted on direct pairs (training_pairs=\"direct\") under the amendment of metadata/richer_targets_706.json made for this directive; each law is the 23-level law of the target at lead h, fitted walk-forward on the shared fold grid (minimum history 61, refit every 21 days)",
+    "scratch_panel_sha256": "26c51093de80bc1c5f6cc4e9e3742fd6606160e4c6ba0db2fa19d6fcbf3e1313",
+    "declaration_706_sha256": "52325c99427da28ae7bdd879c3a0772bc72e75d5da6af6ef46966395bde0fdc7"
+  },
+  "input": {
+    "form": "one value per target and lead: the median (level 0.5 of the 23-level grid) of the target's lead-h law for the target day h business days after the decision day, in the target's own unit. The lead-h candidate reads its own lead's column only (repo_model.target_forecasts.column). No other function of the law (width, tail level, mean) is declared or tried",
+    "availability": "public at 16:00 ET on the decision day, the decision instant (metadata/sources_measurement.json, h9_target_forecasts, zero lag). Each forecast comes from a fit made at or before that instant: a walk fits once per block of 21 rows at the decision instant of the block's first row, and repo_model.target_forecasts.attach refuses, with LookAheadError, a forecast whose recorded fit is later than its own decision day",
+    "holes": "a decision day on which the target's walk made no forecast (the first 61 labels of the walk; a lead with no law) holds no value; the fitter treats a hole as missing, as it does for every other held input, but refuses a training window in which the column is unobserved on every row. A plus variant's walk therefore starts at the first of the base's own 21-row refit blocks whose training window holds at least one forecast (the minimum history is raised by whole blocks, so every refit origin of the plus walk is an origin of the base walk). All variants and benchmarks are scored on the decision days that every walk covers; the base is also reported on all its days, for the reproduction of #634's figure",
+    "off": "the columns are switched on for this run only (target_forecasts.switched_on); they are in no published declaration"
+  },
+  "variants": {
+    "base": "gbm_funding on one-step pairs, #842's candidate, re-walked (the reproduction of #634 and the cross-comparison)",
+    "base_direct": "gbm_funding on direct pairs, no target forecast: the like-for-like base of an aligned plus walk",
+    "plus_direct_bgcr_dispersion_bps": "the candidate on direct pairs and the lead's column of bgcr_dispersion_bps",
+    "plus_direct_on_rrp_change_bn": "the candidate on direct pairs and the lead's column of on_rrp_change_bn",
+    "plus_direct_sofr_dispersion_bps": "the candidate on direct pairs and the lead's column of sofr_dispersion_bps",
+    "count": "four variants added to #842's: base_direct and the three plus_direct. No hyperparameter differs from the candidate's, no target is combined with another, no form of the input is tried besides the one declared. The base (one-step) re-walk adds none"
+  },
+  "comparisons": {
+    "primary": [
+      [
+        "base_direct",
+        "plus_direct_bgcr_dispersion_bps"
+      ],
+      [
+        "base_direct",
+        "plus_direct_on_rrp_change_bn"
+      ],
+      [
+        "base_direct",
+        "plus_direct_sofr_dispersion_bps"
+      ]
+    ],
+    "primary_why": "the pairing is held fixed, so the difference is the input alone; Holm across the three on the pooled primary score, with and without 2019-09-18",
+    "secondary": [
+      [
+        "base",
+        "plus_direct_bgcr_dispersion_bps"
+      ],
+      [
+        "base",
+        "plus_direct_on_rrp_change_bn"
+      ],
+      [
+        "base",
+        "plus_direct_sofr_dispersion_bps"
+      ],
+      [
+        "base",
+        "base_direct"
+      ]
+    ],
+    "secondary_why": "the aligned plus against #842's one-step base (the pairing and the input together, the figure that sits beside #856's) and the pairing alone",
+    "versus_benchmarks": "each variant against B1 and B2",
+    "beside_842": "#856's pooled figures are read from docs/pivot/evidence/h9-nested-842/score.json, unedited; docs/pivot/h9-nested-842-result.md is not edited"
+  },
+  "protocol": {
+    "record": "docs/decisions/scoring-protocol.md (version 1)",
+    "scorer": "repo_model.scoring_protocol and repo_model.protocol_benchmarks, through scripts/spread_distribution_634.py",
+    "primary_score": "grid CRPS over the protocol's 23 levels, equal weight over h = 1 to 5, one number per decision day",
+    "key_secondary": "upper-tail twCRPS with weight 1{y > 0 bp}",
+    "nested_difference": "d = S(base) - S(base + target); positive favours the target's forecast; skill = mean(d) / mean(S(base))",
+    "versus_benchmarks": "base and each variant against B1 (as-of persistence) and B2 (calendar climatology), d = S(benchmark) - S(model)",
+    "interval": "studentized stationary bootstrap (Newey-West lag 10), mean block 10, 10,000 draws, seed 932, one-sided 95%",
+    "critical_value": "#695's calibrated critical values are for the confirmation checkpoints; this is a development window of about 1,900 days, so the scorer's own studentized bound is used, as in #634",
+    "multiplicity": "three targets are tested on the pooled primary score of the like-for-like pairing; Holm-adjusted bootstrap p-values beside the unadjusted bounds. Nothing here is a claim",
+    "splits": "pooled; without decision day 2019-09-18 (#798); by the regime of the decision day (metadata/evaluation_splits.json, reported only, drawn after the fact); by the as-of scarcity state of the decision day (ample = reserve_scarcity_state below 2, scarce = 2 and above, unknown, read as of the decision instant; ruling on #515); by the pressure-day type of the target day (SplitDeclaration.reporting_day_type); by lead. Every split is also read without 2019-09-18 where that day falls in it. No split is a pass requirement; a group of 10 or fewer decision days is not tested"
+  },
+  "horizons": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "scoring": {
+    "first_day": "2018-06-29",
+    "last_decision_day_rule": "a decision day is scored when every one of its five target days is on or before 2025-12-31 and has a published outcome",
+    "last_target_day": "2025-12-31",
+    "minimum_history": 61,
+    "refit_every": 21,
+    "decision_time": "16:00",
+    "outcome": "the panel's spread_bps on the target day (the published panel, digest 4ddc3882...), not re-derived from first-published vintages",
+    "calendar": "the published panel's business days"
+  },
+  "reading_rule": {
+    "per_target": "as #842: a target's forecast IMPROVES the candidate when the one-sided 95% lower bound of mean(d) on the pooled primary score of the like-for-like pairing is above zero; otherwise 'no improvement beyond its interval', with the point skill beside it. Both with and without 2019-09-18; both stated if they differ. A split cell that shows a gain is reported with the number of cells read, never alone",
+    "h9_kill_clause": "the page states each target's reading and the like-for-like figures beside #856's; it does not read H9's kill clause (\"no nested gain for H5\"). That reading is Eleonora's",
+    "variant_count": "recorded in the result: variants scored in development before this directive (see the research log) plus the four added here"
+  },
+  "long_run": "the walks (5 leads x 5 variants) and the fifteen target walks of #706 they read are expected to take more than about two hours: run on the Mac under the needs-mac rule of #46, the commands being those of scripts/h9_nested_932.py's docstring",
+  "not_included": "any 2026 day; the ON RRP offering rate, the SRF rate and the H.8 bank groups (liquidity repository); combinations of targets; any other form of the input; the two-part form and the published declaration as the base; the direct twin of #825 (if the candidate moves to the twin there, this step is re-scored)",
+  "published_panel_sha256": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+  "amendments": [
+    {
+      "made": "before any score; review of 8ddde376 on the pull request that closes #932, 29 October 2026",
+      "what": "the fifteen target walks of #706 are fitted on direct pairs, not one-step pairs: their inputs hold tax_date, treasury_settlement and (at lead 1) the announced-IORB pair, which one_step_guard refuses on a one-step fit (#914). Chosen over dropping the columns because it is Eleonora's ruling of 19 October 2026 on #915 for H9 step 3 and keeps #706's inputs. Adding to ONE_STEP_ALLOW_LIST was not an option",
+      "changes": "targets.declaration_706_sha256 from dae63cf22f61485a829ab720fa505f3743d23c511b4cf483371d4f93c53d4c71 (the declaration #842 pinned) to 52325c99427da28ae7bdd879c3a0772bc72e75d5da6af6ef46966395bde0fdc7 (metadata/richer_targets_706.json as amended); targets.forecasts. Nothing else: variants, comparisons, reading rule and scoring are as first declared",
+      "walks": "a target walk records its fit settings and is refused unless they name training_pairs 'direct' (scripts/richer_targets_706.py check_pairing, and the 932 walk before it reads one)"
+    }
+  ]
+}

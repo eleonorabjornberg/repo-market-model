@@ -4,6 +4,18 @@ Recorded mutation (the one guard this script adds; the scorer's own lockbox guar
 
 * `refuse_locked`, the call `require_unlocked(list(days), ...)` replaced by `return`: `test_a_locked_day_is_refused`
   fails with `AssertionError` (`LookAheadError not raised`; the blind tier is every day after 2026-09-03, `metadata/lockbox.json`).
+
+Direct pairs (#932, review of 8ddde376; Eleonora's ruling of 19 October 2026 on #915): the walks fit on `training_pairs="direct"`,
+because `new_features(h)` holds columns the as-of rule serves from the scored row (`tax_date`, `treasury_settlement`, and at lead 1
+the announced-IORB pair), which a one-step fit would learn one row off (`one_step_guard`, #914). Recorded mutation, CPython 3.11,
+`/opt/rmm-venv`, the killing test run alone, mutation confirmed applied by `grep` and reverted:
+
+* `target_fitter`, the keyword `training_pairs="direct"` removed (the one-step fit of #706 as first written):
+  `PairingTests.test_the_walks_fit_passes_the_one_step_guard_at_every_lead` fails with `AssertionError: None != 'direct'`
+  (and, with that assertion off, the fitter itself raises the guard's `ValueError` naming `tax_date` and `treasury_settlement`,
+  and at lead 1 the announced-IORB pair).
+* `check_pairing`, `if named != "direct":` replaced by `if False:`: `PairingTests.test_a_walk_fitted_on_one_step_pairs_is_refused`
+  fails with `AssertionError: ValueError not raised`.
 """
 
 from __future__ import annotations
@@ -52,6 +64,40 @@ class DeclarationTests(unittest.TestCase):
         with mock.patch.object(script.subprocess, "run", return_value=Done()):
             with self.assertRaises(SystemExit):
                 script.committed_declaration()
+
+
+class PairingTests(unittest.TestCase):
+    def test_the_walks_fit_passes_the_one_step_guard_at_every_lead(self):
+        """The guard sits on the fitter's def line: a direct fit is not checked, a one-step fit over these inputs raises ValueError."""
+
+        from repo_model import ml, one_step_guard
+
+        for h in script.HORIZONS:
+            with self.subTest(lead=h):
+                features = script.m634.new_features(h)
+                regressors = tuple(f for f in features if f != "spread_bps")
+                with self.assertRaises(ValueError):  # premise: these inputs are refused on one-step pairs
+                    one_step_guard.check_one_step_regressors("fit_gradient_boosted_quantiles", regressors)
+                fit = script.target_fitter(features)
+                self.assertEqual(fit.keywords.get("training_pairs"), "direct")
+                self.assertIs(fit.func, ml.fit_gradient_boosted_quantiles)
+                try:
+                    fit([], information=None)
+                except ValueError as error:  # an empty frame is refused by the fitter itself, but only after the guard has passed
+                    self.assertNotIn("one-step pairs", str(error))
+
+    def test_a_walk_fitted_on_one_step_pairs_is_refused(self):
+        with self.assertRaises(ValueError):
+            script.check_pairing({})
+        with self.assertRaises(ValueError):
+            script.check_pairing({"training_pairs": "one_step"})
+        script.check_pairing({"training_pairs": "direct"})
+
+    def test_the_declaration_names_the_pairing_and_the_amendment(self):
+        declared = json.loads(script.DECLARATION.read_text(encoding="utf-8"))
+        self.assertEqual(declared["model"]["training_pairs"], "direct")
+        self.assertIn("932", json.dumps(declared["amendments"]))
+        self.assertIn("19 October 2026", json.dumps(declared["amendments"]))
 
 
 class PanelRowsTests(unittest.TestCase):
