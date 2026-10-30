@@ -1,0 +1,2918 @@
+{
+ "declaration": 961,
+ "demonstration": {
+  "days": 5000,
+  "gate": {
+   "climatology": {
+    "cells": {
+     "calm/1": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 1.0,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 2500,
+        "p": 0.9548618293061523,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 6.943342876336758e-50,
+        "pass": false,
+        "rate": 0.0016
+       },
+       "kupiec_q95": {
+        "p": 3.3688681473302737e-53,
+        "pass": false,
+        "rate": 0.0008
+       }
+      }
+     },
+     "calm/2": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 1.0,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 1250,
+        "p": 0.0010622322401731528,
+        "pass": false
+       },
+       "kupiec_q05": {
+        "p": 6.943342876336758e-50,
+        "pass": false,
+        "rate": 0.0016
+       },
+       "kupiec_q95": {
+        "p": 3.3688681473302737e-53,
+        "pass": false,
+        "rate": 0.0008
+       }
+      }
+     },
+     "calm/3": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 1.0,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 834,
+        "p": 1.0,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 6.943342876336758e-50,
+        "pass": false,
+        "rate": 0.0016
+       },
+       "kupiec_q95": {
+        "p": 3.3688681473302737e-53,
+        "pass": false,
+        "rate": 0.0008
+       }
+      }
+     },
+     "calm/4": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 1.0,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 625,
+        "p": 0.9548166100318994,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 6.943342876336758e-50,
+        "pass": false,
+        "rate": 0.0016
+       },
+       "kupiec_q95": {
+        "p": 3.3688681473302737e-53,
+        "pass": false,
+        "rate": 0.0008
+       }
+      }
+     },
+     "calm/5": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 1.0,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 500,
+        "p": 1.0,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 6.943342876336758e-50,
+        "pass": false,
+        "rate": 0.0016
+       },
+       "kupiec_q95": {
+        "p": 3.3688681473302737e-53,
+        "pass": false,
+        "rate": 0.0008
+       }
+      }
+     },
+     "stress/1": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9176,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 2500,
+        "p": 7.308441110338202e-136,
+        "pass": false
+       },
+       "kupiec_q05": {
+        "p": 1.2473436851866364e-65,
+        "pass": false,
+        "rate": 0.14
+       },
+       "kupiec_q95": {
+        "p": 2.8710589892422325e-14,
+        "pass": false,
+        "rate": 0.0864
+       }
+      }
+     },
+     "stress/2": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9176,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 1250,
+        "p": 2.925441269766597e-43,
+        "pass": false
+       },
+       "kupiec_q05": {
+        "p": 1.2473436851866364e-65,
+        "pass": false,
+        "rate": 0.14
+       },
+       "kupiec_q95": {
+        "p": 2.8710589892422325e-14,
+        "pass": false,
+        "rate": 0.0864
+       }
+      }
+     },
+     "stress/3": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9176,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 834,
+        "p": 7.526176640256971e-21,
+        "pass": false
+       },
+       "kupiec_q05": {
+        "p": 1.2473436851866364e-65,
+        "pass": false,
+        "rate": 0.14
+       },
+       "kupiec_q95": {
+        "p": 2.8710589892422325e-14,
+        "pass": false,
+        "rate": 0.0864
+       }
+      }
+     },
+     "stress/4": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9176,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 625,
+        "p": 7.89764982571028e-12,
+        "pass": false
+       },
+       "kupiec_q05": {
+        "p": 1.2473436851866364e-65,
+        "pass": false,
+        "rate": 0.14
+       },
+       "kupiec_q95": {
+        "p": 2.8710589892422325e-14,
+        "pass": false,
+        "rate": 0.0864
+       }
+      }
+     },
+     "stress/5": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9176,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 500,
+        "p": 9.977664362322427e-08,
+        "pass": false
+       },
+       "kupiec_q05": {
+        "p": 1.2473436851866364e-65,
+        "pass": false,
+        "rate": 0.14
+       },
+       "kupiec_q95": {
+        "p": 2.8710589892422325e-14,
+        "pass": false,
+        "rate": 0.0864
+       }
+      }
+     }
+    },
+    "failing_cells": [
+     "calm/lead 1",
+     "calm/lead 2",
+     "calm/lead 3",
+     "calm/lead 4",
+     "calm/lead 5",
+     "stress/lead 1",
+     "stress/lead 2",
+     "stress/lead 3",
+     "stress/lead 4",
+     "stress/lead 5"
+    ],
+    "pass": false,
+    "pooled_cells": {
+     "1": {
+      "n": 5000,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9588,
+        "pass": true
+       },
+       "independence_q95": {
+        "n": 5000,
+        "p": 5.962455498449752e-180,
+        "pass": false
+       },
+       "kupiec_q05": {
+        "p": 1.9050048540896738e-10,
+        "pass": false,
+        "rate": 0.0708
+       },
+       "kupiec_q95": {
+        "p": 0.03393484562536115,
+        "pass": true,
+        "rate": 0.0436
+       }
+      }
+     },
+     "2": {
+      "n": 5000,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9588,
+        "pass": true
+       },
+       "independence_q95": {
+        "n": 2500,
+        "p": 1.5366854584902903e-62,
+        "pass": false
+       },
+       "kupiec_q05": {
+        "p": 1.9050048540896738e-10,
+        "pass": false,
+        "rate": 0.0708
+       },
+       "kupiec_q95": {
+        "p": 0.03393484562536115,
+        "pass": true,
+        "rate": 0.0436
+       }
+      }
+     },
+     "3": {
+      "n": 5000,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9588,
+        "pass": true
+       },
+       "independence_q95": {
+        "n": 1667,
+        "p": 1.921124443233016e-39,
+        "pass": false
+       },
+       "kupiec_q05": {
+        "p": 1.9050048540896738e-10,
+        "pass": false,
+        "rate": 0.0708
+       },
+       "kupiec_q95": {
+        "p": 0.03393484562536115,
+        "pass": true,
+        "rate": 0.0436
+       }
+      }
+     },
+     "4": {
+      "n": 5000,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9588,
+        "pass": true
+       },
+       "independence_q95": {
+        "n": 1250,
+        "p": 2.0126354602422768e-23,
+        "pass": false
+       },
+       "kupiec_q05": {
+        "p": 1.9050048540896738e-10,
+        "pass": false,
+        "rate": 0.0708
+       },
+       "kupiec_q95": {
+        "p": 0.03393484562536115,
+        "pass": true,
+        "rate": 0.0436
+       }
+      }
+     },
+     "5": {
+      "n": 5000,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9588,
+        "pass": true
+       },
+       "independence_q95": {
+        "n": 1000,
+        "p": 4.808892863311089e-12,
+        "pass": false
+       },
+       "kupiec_q05": {
+        "p": 1.9050048540896738e-10,
+        "pass": false,
+        "rate": 0.0708
+       },
+       "kupiec_q95": {
+        "p": 0.03393484562536115,
+        "pass": true,
+        "rate": 0.0436
+       }
+      }
+     }
+    },
+    "pooled_pass": false,
+    "post_hoc_thinned_kupiec": {
+     "failing_cells": [
+      "calm/lead 1",
+      "calm/lead 2",
+      "calm/lead 3",
+      "calm/lead 4",
+      "calm/lead 5",
+      "stress/lead 1",
+      "stress/lead 2",
+      "stress/lead 3",
+      "stress/lead 4",
+      "stress/lead 5"
+     ],
+     "pass": false
+    }
+   },
+   "ideal": {
+    "cells": {
+     "calm/1": {
+      "n": 2500,
+      "pass": true,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9752,
+        "pass": true
+       },
+       "independence_q95": {
+        "n": 2500,
+        "p": 0.757075714224042,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 0.5168668412171677,
+        "pass": true,
+        "rate": 0.0472
+       },
+       "kupiec_q95": {
+        "p": 1.0,
+        "pass": true,
+        "rate": 0.05
+       }
+      }
+     },
+     "calm/2": {
+      "n": 2500,
+      "pass": true,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9784,
+        "pass": true
+       },
+       "independence_q95": {
+        "n": 1250,
+        "p": 0.9057756232826953,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 0.40338933470506383,
+        "pass": true,
+        "rate": 0.0464
+       },
+       "kupiec_q95": {
+        "p": 0.5168668412171677,
+        "pass": true,
+        "rate": 0.0472
+       }
+      }
+     },
+     "calm/3": {
+      "n": 2500,
+      "pass": true,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9764,
+        "pass": true
+       },
+       "independence_q95": {
+        "n": 834,
+        "p": 0.6094535665324732,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 0.5789920205017886,
+        "pass": true,
+        "rate": 0.0476
+       },
+       "kupiec_q95": {
+        "p": 0.3058336550879527,
+        "pass": true,
+        "rate": 0.0456
+       }
+      }
+     },
+     "calm/4": {
+      "n": 2500,
+      "pass": true,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9756,
+        "pass": true
+       },
+       "independence_q95": {
+        "n": 625,
+        "p": 0.40655931164233117,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 0.8547414995090223,
+        "pass": true,
+        "rate": 0.0508
+       },
+       "kupiec_q95": {
+        "p": 0.9267913142398954,
+        "pass": true,
+        "rate": 0.0496
+       }
+      }
+     },
+     "calm/5": {
+      "n": 2500,
+      "pass": true,
+      "tests": {
+       "band_98": {
+        "coverage": 0.978,
+        "pass": true
+       },
+       "independence_q95": {
+        "n": 500,
+        "p": 0.950762614956194,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 0.2778566355960611,
+        "pass": true,
+        "rate": 0.0548
+       },
+       "kupiec_q95": {
+        "p": 0.7121684606041666,
+        "pass": true,
+        "rate": 0.0484
+       }
+      }
+     },
+     "stress/1": {
+      "n": 2500,
+      "pass": true,
+      "tests": {
+       "band_98": {
+        "coverage": 0.98,
+        "pass": true
+       },
+       "independence_q95": {
+        "n": 2500,
+        "p": 0.7774632631952715,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 0.5242456360357799,
+        "pass": true,
+        "rate": 0.0528
+       },
+       "kupiec_q95": {
+        "p": 0.20658144131797418,
+        "pass": true,
+        "rate": 0.0556
+       }
+      }
+     },
+     "stress/2": {
+      "n": 2500,
+      "pass": true,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9768,
+        "pass": true
+       },
+       "independence_q95": {
+        "n": 1250,
+        "p": 0.894665732539643,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 0.07315829920875509,
+        "pass": true,
+        "rate": 0.058
+       },
+       "kupiec_q95": {
+        "p": 0.3525447776490456,
+        "pass": true,
+        "rate": 0.046
+       }
+      }
+     },
+     "stress/3": {
+      "n": 2500,
+      "pass": true,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9788,
+        "pass": true
+       },
+       "independence_q95": {
+        "n": 834,
+        "p": 0.32558443948940197,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 0.020681451961804907,
+        "pass": true,
+        "rate": 0.0604
+       },
+       "kupiec_q95": {
+        "p": 1.0,
+        "pass": true,
+        "rate": 0.05
+       }
+      }
+     },
+     "stress/4": {
+      "n": 2500,
+      "pass": true,
+      "tests": {
+       "band_98": {
+        "coverage": 0.978,
+        "pass": true
+       },
+       "independence_q95": {
+        "n": 625,
+        "p": 0.11804693005622074,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 0.010104808243985323,
+        "pass": true,
+        "rate": 0.0616
+       },
+       "kupiec_q95": {
+        "p": 1.0,
+        "pass": true,
+        "rate": 0.05
+       }
+      }
+     },
+     "stress/5": {
+      "n": 2500,
+      "pass": true,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9776,
+        "pass": true
+       },
+       "independence_q95": {
+        "n": 500,
+        "p": 0.8775313881380875,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 0.012909931955846568,
+        "pass": true,
+        "rate": 0.0612
+       },
+       "kupiec_q95": {
+        "p": 0.224951910885325,
+        "pass": true,
+        "rate": 0.0448
+       }
+      }
+     }
+    },
+    "failing_cells": [],
+    "pass": true,
+    "pooled_cells": {
+     "1": {
+      "n": 5000,
+      "pass": true,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9776,
+        "pass": true
+       },
+       "independence_q95": {
+        "n": 5000,
+        "p": 0.9869211929324547,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 1.0,
+        "pass": true,
+        "rate": 0.05
+       },
+       "kupiec_q95": {
+        "p": 0.36780539702687515,
+        "pass": true,
+        "rate": 0.0528
+       }
+      }
+     },
+     "2": {
+      "n": 5000,
+      "pass": true,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9776,
+        "pass": true
+       },
+       "independence_q95": {
+        "n": 2500,
+        "p": 0.9738776214462027,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 0.47838318249000816,
+        "pass": true,
+        "rate": 0.0522
+       },
+       "kupiec_q95": {
+        "p": 0.2647205028523622,
+        "pass": true,
+        "rate": 0.0466
+       }
+      }
+     },
+     "3": {
+      "n": 5000,
+      "pass": true,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9776,
+        "pass": true
+       },
+       "independence_q95": {
+        "n": 1667,
+        "p": 0.8666714881463033,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 0.19987450266642295,
+        "pass": true,
+        "rate": 0.054
+       },
+       "kupiec_q95": {
+        "p": 0.4722471456498044,
+        "pass": true,
+        "rate": 0.0478
+       }
+      }
+     },
+     "4": {
+      "n": 5000,
+      "pass": true,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9768,
+        "pass": true
+       },
+       "independence_q95": {
+        "n": 1250,
+        "p": 0.16186897081014914,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 0.04837109684450047,
+        "pass": true,
+        "rate": 0.0562
+       },
+       "kupiec_q95": {
+        "p": 0.9482300368951216,
+        "pass": true,
+        "rate": 0.0498
+       }
+      }
+     },
+     "5": {
+      "n": 5000,
+      "pass": true,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9778,
+        "pass": true
+       },
+       "independence_q95": {
+        "n": 1000,
+        "p": 0.8797499332971773,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 0.011275358209396735,
+        "pass": true,
+        "rate": 0.058
+       },
+       "kupiec_q95": {
+        "p": 0.2647205028523622,
+        "pass": true,
+        "rate": 0.0466
+       }
+      }
+     }
+    },
+    "pooled_pass": true,
+    "post_hoc_thinned_kupiec": {
+     "failing_cells": [],
+     "pass": true
+    }
+   },
+   "over_1.5": {
+    "cells": {
+     "calm/1": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9996,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 2500,
+        "p": 0.2081685284981381,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 9.050472017782986e-32,
+        "pass": false,
+        "rate": 0.0084
+       },
+       "kupiec_q95": {
+        "p": 3.2673422807968474e-30,
+        "pass": false,
+        "rate": 0.0092
+       }
+      }
+     },
+     "calm/2": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9992,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 1250,
+        "p": 0.5731648660904549,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 5.56672748656296e-37,
+        "pass": false,
+        "rate": 0.006
+       },
+       "kupiec_q95": {
+        "p": 3.2673422807968474e-30,
+        "pass": false,
+        "rate": 0.0092
+       }
+      }
+     },
+     "calm/3": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9996,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 834,
+        "p": 0.7305082354258399,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 6.195103863054088e-39,
+        "pass": false,
+        "rate": 0.0052
+       },
+       "kupiec_q95": {
+        "p": 1.2224221908028091e-26,
+        "pass": false,
+        "rate": 0.0112
+       }
+      }
+     },
+     "calm/4": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9996,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 625,
+        "p": 0.7328545970296005,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 2.8910577894112063e-34,
+        "pass": false,
+        "rate": 0.0072
+       },
+       "kupiec_q95": {
+        "p": 1.836275113900828e-29,
+        "pass": false,
+        "rate": 0.0096
+       }
+      }
+     },
+     "calm/5": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9992,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 500,
+        "p": 0.8489167388721746,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 2.068217571117861e-33,
+        "pass": false,
+        "rate": 0.0076
+       },
+       "kupiec_q95": {
+        "p": 5.120891809565886e-28,
+        "pass": false,
+        "rate": 0.0104
+       }
+      }
+     },
+     "stress/1": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.998,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 2500,
+        "p": 0.649759395668445,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 2.068217571117861e-33,
+        "pass": false,
+        "rate": 0.0076
+       },
+       "kupiec_q95": {
+        "p": 4.759635681297112e-36,
+        "pass": false,
+        "rate": 0.0064
+       }
+      }
+     },
+     "stress/2": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.998,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 1250,
+        "p": 0.7480896200969733,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 9.050472017782986e-32,
+        "pass": false,
+        "rate": 0.0084
+       },
+       "kupiec_q95": {
+        "p": 2.8910577894112063e-34,
+        "pass": false,
+        "rate": 0.0072
+       }
+      }
+     },
+     "stress/3": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9988,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 834,
+        "p": 0.8058855649007303,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 2.068217571117861e-33,
+        "pass": false,
+        "rate": 0.0076
+       },
+       "kupiec_q95": {
+        "p": 2.068217571117861e-33,
+        "pass": false,
+        "rate": 0.0076
+       }
+      }
+     },
+     "stress/4": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9988,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 625,
+        "p": 0.6902300165555433,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 2.8910577894112063e-34,
+        "pass": false,
+        "rate": 0.0072
+       },
+       "kupiec_q95": {
+        "p": 5.5640763682393235e-31,
+        "pass": false,
+        "rate": 0.0088
+       }
+      }
+     },
+     "stress/5": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9992,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 500,
+        "p": 0.8489167388721746,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 2.068217571117861e-33,
+        "pass": false,
+        "rate": 0.0076
+       },
+       "kupiec_q95": {
+        "p": 9.050472017782986e-32,
+        "pass": false,
+        "rate": 0.0084
+       }
+      }
+     }
+    },
+    "failing_cells": [
+     "calm/lead 1",
+     "calm/lead 2",
+     "calm/lead 3",
+     "calm/lead 4",
+     "calm/lead 5",
+     "stress/lead 1",
+     "stress/lead 2",
+     "stress/lead 3",
+     "stress/lead 4",
+     "stress/lead 5"
+    ],
+    "pass": false,
+    "pooled_cells": {
+     "1": {
+      "n": 5000,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9988,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 5000,
+        "p": 0.3140587546487119,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 2.0953784764382643e-63,
+        "pass": false,
+        "rate": 0.008
+       },
+       "kupiec_q95": {
+        "p": 3.149288305781274e-64,
+        "pass": false,
+        "rate": 0.0078
+       }
+      }
+     },
+     "2": {
+      "n": 5000,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9986,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 2500,
+        "p": 0.5318789484833012,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 9.130993506508449e-67,
+        "pass": false,
+        "rate": 0.0072
+       },
+       "kupiec_q95": {
+        "p": 1.3594579298070975e-62,
+        "pass": false,
+        "rate": 0.0082
+       }
+      }
+     },
+     "3": {
+      "n": 5000,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9992,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 1667,
+        "p": 0.6016157598440137,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 2.540463675264703e-70,
+        "pass": false,
+        "rate": 0.0064
+       },
+       "kupiec_q95": {
+        "p": 6.1676952724808035e-58,
+        "pass": false,
+        "rate": 0.0094
+       }
+      }
+     },
+     "4": {
+      "n": 5000,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9992,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 1250,
+        "p": 0.6294370039053009,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 9.130993506508449e-67,
+        "pass": false,
+        "rate": 0.0072
+       },
+       "kupiec_q95": {
+        "p": 1.0928031154645396e-58,
+        "pass": false,
+        "rate": 0.0092
+       }
+      }
+     },
+     "5": {
+      "n": 5000,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9992,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 1000,
+        "p": 0.7877195428809861,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 4.612503358192989e-65,
+        "pass": false,
+        "rate": 0.0076
+       },
+       "kupiec_q95": {
+        "p": 6.1676952724808035e-58,
+        "pass": false,
+        "rate": 0.0094
+       }
+      }
+     }
+    },
+    "pooled_pass": false,
+    "post_hoc_thinned_kupiec": {
+     "failing_cells": [
+      "calm/lead 1",
+      "calm/lead 2",
+      "calm/lead 3",
+      "calm/lead 4",
+      "calm/lead 5",
+      "stress/lead 1",
+      "stress/lead 2",
+      "stress/lead 3",
+      "stress/lead 4",
+      "stress/lead 5"
+     ],
+     "pass": false
+    }
+   },
+   "persistence": {
+    "cells": {
+     "calm/1": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 1.0,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 2500,
+        "p": 0.9323243652212807,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 1.813853962555418e-51,
+        "pass": false,
+        "rate": 0.0012
+       },
+       "kupiec_q95": {
+        "p": 1.813853962555418e-51,
+        "pass": false,
+        "rate": 0.0012
+       }
+      }
+     },
+     "calm/2": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 1.0,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 1250,
+        "p": 0.8411036303663038,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 6.943342876336758e-50,
+        "pass": false,
+        "rate": 0.0016
+       },
+       "kupiec_q95": {
+        "p": 5.003803897846444e-47,
+        "pass": false,
+        "rate": 0.0024
+       }
+      }
+     },
+     "calm/3": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 1.0,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 834,
+        "p": 1.0,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 3.3688681473302737e-53,
+        "pass": false,
+        "rate": 0.0008
+       },
+       "kupiec_q95": {
+        "p": 3.3688681473302737e-53,
+        "pass": false,
+        "rate": 0.0008
+       }
+      }
+     },
+     "calm/4": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 1.0,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 625,
+        "p": 0.9548166100318994,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 3.700552333154559e-55,
+        "pass": false,
+        "rate": 0.0004
+       },
+       "kupiec_q95": {
+        "p": 1.813853962555418e-51,
+        "pass": false,
+        "rate": 0.0012
+       }
+      }
+     },
+     "calm/5": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 1.0,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 500,
+        "p": 1.0,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 3.700552333154559e-55,
+        "pass": false,
+        "rate": 0.0004
+       },
+       "kupiec_q95": {
+        "p": 6.943342876336758e-50,
+        "pass": false,
+        "rate": 0.0016
+       }
+      }
+     },
+     "stress/1": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9172,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 2500,
+        "p": 0.33192630268863776,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 5.603142714691848e-28,
+        "pass": false,
+        "rate": 0.1044
+       },
+       "kupiec_q95": {
+        "p": 6.438805758384979e-32,
+        "pass": false,
+        "rate": 0.1088
+       }
+      }
+     },
+     "stress/2": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9212,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 1250,
+        "p": 0.22754409533965725,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 2.1019626740941282e-33,
+        "pass": false,
+        "rate": 0.1104
+       },
+       "kupiec_q95": {
+        "p": 1.1728416483661863e-32,
+        "pass": false,
+        "rate": 0.1096
+       }
+      }
+     },
+     "stress/3": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.918,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 834,
+        "p": 0.913048676045841,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 2.1019626740941282e-33,
+        "pass": false,
+        "rate": 0.1104
+       },
+       "kupiec_q95": {
+        "p": 9.655391642953116e-30,
+        "pass": false,
+        "rate": 0.1064
+       }
+      }
+     },
+     "stress/4": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9172,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 625,
+        "p": 0.005637377121995057,
+        "pass": false
+       },
+       "kupiec_q05": {
+        "p": 3.706854497762377e-34,
+        "pass": false,
+        "rate": 0.1112
+       },
+       "kupiec_q95": {
+        "p": 5.603142714691848e-28,
+        "pass": false,
+        "rate": 0.1044
+       }
+      }
+     },
+     "stress/5": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9136,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 500,
+        "p": 0.0010758241199326027,
+        "pass": false
+       },
+       "kupiec_q05": {
+        "p": 2.1019626740941282e-33,
+        "pass": false,
+        "rate": 0.1104
+       },
+       "kupiec_q95": {
+        "p": 4.9751997326674147e-33,
+        "pass": false,
+        "rate": 0.11
+       }
+      }
+     }
+    },
+    "failing_cells": [
+     "calm/lead 1",
+     "calm/lead 2",
+     "calm/lead 3",
+     "calm/lead 4",
+     "calm/lead 5",
+     "stress/lead 1",
+     "stress/lead 2",
+     "stress/lead 3",
+     "stress/lead 4",
+     "stress/lead 5"
+    ],
+    "pass": false,
+    "pooled_cells": {
+     "1": {
+      "n": 5000,
+      "pass": true,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9586,
+        "pass": true
+       },
+       "independence_q95": {
+        "n": 5000,
+        "p": 0.013112131042735717,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 0.36780539702687515,
+        "pass": true,
+        "rate": 0.0528
+       },
+       "kupiec_q95": {
+        "p": 0.11012620490382258,
+        "pass": true,
+        "rate": 0.055
+       }
+      }
+     },
+     "2": {
+      "n": 5000,
+      "pass": true,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9606,
+        "pass": true
+       },
+       "independence_q95": {
+        "n": 2500,
+        "p": 0.24924414076522317,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 0.055936818552985414,
+        "pass": true,
+        "rate": 0.056
+       },
+       "kupiec_q95": {
+        "p": 0.055936818552985414,
+        "pass": true,
+        "rate": 0.056
+       }
+      }
+     },
+     "3": {
+      "n": 5000,
+      "pass": true,
+      "tests": {
+       "band_98": {
+        "coverage": 0.959,
+        "pass": true
+       },
+       "independence_q95": {
+        "n": 1667,
+        "p": 0.9060269552820388,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 0.0740697651880432,
+        "pass": true,
+        "rate": 0.0556
+       },
+       "kupiec_q95": {
+        "p": 0.24804763136391683,
+        "pass": true,
+        "rate": 0.0536
+       }
+      }
+     },
+     "4": {
+      "n": 5000,
+      "pass": true,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9586,
+        "pass": true
+       },
+       "independence_q95": {
+        "n": 1250,
+        "p": 0.8691180132106985,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 0.06447362334529375,
+        "pass": true,
+        "rate": 0.0558
+       },
+       "kupiec_q95": {
+        "p": 0.36780539702687515,
+        "pass": true,
+        "rate": 0.0528
+       }
+      }
+     },
+     "5": {
+      "n": 5000,
+      "pass": true,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9568,
+        "pass": true
+       },
+       "independence_q95": {
+        "n": 1000,
+        "p": 0.024526935145893422,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 0.08481581237489035,
+        "pass": true,
+        "rate": 0.0554
+       },
+       "kupiec_q95": {
+        "p": 0.06447362334529375,
+        "pass": true,
+        "rate": 0.0558
+       }
+      }
+     }
+    },
+    "pooled_pass": true,
+    "post_hoc_thinned_kupiec": {
+     "failing_cells": [
+      "calm/lead 1",
+      "calm/lead 2",
+      "calm/lead 3",
+      "calm/lead 4",
+      "calm/lead 5",
+      "stress/lead 1",
+      "stress/lead 2",
+      "stress/lead 3",
+      "stress/lead 4",
+      "stress/lead 5"
+     ],
+     "pass": false
+    }
+   },
+   "pooled": {
+    "cells": {
+     "calm/1": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 1.0,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 2500,
+        "p": 0.9323243652212807,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 1.0110224643363516e-57,
+        "pass": false,
+        "rate": 0.0
+       },
+       "kupiec_q95": {
+        "p": 1.813853962555418e-51,
+        "pass": false,
+        "rate": 0.0012
+       }
+      }
+     },
+     "calm/2": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 1.0,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 1250,
+        "p": 0.9043306429215094,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 1.813853962555418e-51,
+        "pass": false,
+        "rate": 0.0012
+       },
+       "kupiec_q95": {
+        "p": 6.943342876336758e-50,
+        "pass": false,
+        "rate": 0.0016
+       }
+      }
+     },
+     "calm/3": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 1.0,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 834,
+        "p": 1.0,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 1.0110224643363516e-57,
+        "pass": false,
+        "rate": 0.0
+       },
+       "kupiec_q95": {
+        "p": 3.700552333154559e-55,
+        "pass": false,
+        "rate": 0.0004
+       }
+      }
+     },
+     "calm/4": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 1.0,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 625,
+        "p": 0.9097057552803509,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 3.3688681473302737e-53,
+        "pass": false,
+        "rate": 0.0008
+       },
+       "kupiec_q95": {
+        "p": 6.943342876336758e-50,
+        "pass": false,
+        "rate": 0.0016
+       }
+      }
+     },
+     "calm/5": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 1.0,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 500,
+        "p": 1.0,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 1.813853962555418e-51,
+        "pass": false,
+        "rate": 0.0012
+       },
+       "kupiec_q95": {
+        "p": 1.813853962555418e-51,
+        "pass": false,
+        "rate": 0.0012
+       }
+      }
+     },
+     "stress/1": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9164,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 2500,
+        "p": 0.34510187681959903,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 2.1019626740941282e-33,
+        "pass": false,
+        "rate": 0.1104
+       },
+       "kupiec_q95": {
+        "p": 2.98181755403729e-25,
+        "pass": false,
+        "rate": 0.1012
+       }
+      }
+     },
+     "stress/2": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9228,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 1250,
+        "p": 0.38788986516551804,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 4.9865004478130935e-40,
+        "pass": false,
+        "rate": 0.1172
+       },
+       "kupiec_q95": {
+        "p": 1.3812070264552555e-25,
+        "pass": false,
+        "rate": 0.1016
+       }
+      }
+     },
+     "stress/3": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9128000000000001,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 834,
+        "p": 0.7969116944396537,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 7.989817434977497e-39,
+        "pass": false,
+        "rate": 0.116
+       },
+       "kupiec_q95": {
+        "p": 6.2008490534016986e-24,
+        "pass": false,
+        "rate": 0.0996
+       }
+      }
+     },
+     "stress/4": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9124,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 625,
+        "p": 0.26606825497935827,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 2.0217887316521507e-45,
+        "pass": false,
+        "rate": 0.1224
+       },
+       "kupiec_q95": {
+        "p": 1.0594031419003454e-21,
+        "pass": false,
+        "rate": 0.0968
+       }
+      }
+     },
+     "stress/5": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9152,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 500,
+        "p": 0.7907099911565161,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 8.701545742498905e-54,
+        "pass": false,
+        "rate": 0.13
+       },
+       "kupiec_q95": {
+        "p": 1.4511819304049235e-19,
+        "pass": false,
+        "rate": 0.094
+       }
+      }
+     }
+    },
+    "failing_cells": [
+     "calm/lead 1",
+     "calm/lead 2",
+     "calm/lead 3",
+     "calm/lead 4",
+     "calm/lead 5",
+     "stress/lead 1",
+     "stress/lead 2",
+     "stress/lead 3",
+     "stress/lead 4",
+     "stress/lead 5"
+    ],
+    "pass": false,
+    "pooled_cells": {
+     "1": {
+      "n": 5000,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9582,
+        "pass": true
+       },
+       "independence_q95": {
+        "n": 5000,
+        "p": 1.8299563982271477e-05,
+        "pass": false
+       },
+       "kupiec_q05": {
+        "p": 0.09680379268088882,
+        "pass": true,
+        "rate": 0.0552
+       },
+       "kupiec_q95": {
+        "p": 0.6981116374058851,
+        "pass": true,
+        "rate": 0.0512
+       }
+      }
+     },
+     "2": {
+      "n": 5000,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9614,
+        "pass": true
+       },
+       "independence_q95": {
+        "n": 2500,
+        "p": 0.0013919815350329648,
+        "pass": false
+       },
+       "kupiec_q05": {
+        "p": 0.0036809677990141255,
+        "pass": false,
+        "rate": 0.0592
+       },
+       "kupiec_q95": {
+        "p": 0.6054909042837638,
+        "pass": true,
+        "rate": 0.0516
+       }
+      }
+     },
+     "3": {
+      "n": 5000,
+      "pass": true,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9564,
+        "pass": true
+       },
+       "independence_q95": {
+        "n": 1667,
+        "p": 0.042049097115192155,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 0.011275358209396735,
+        "pass": true,
+        "rate": 0.058
+       },
+       "kupiec_q95": {
+        "p": 1.0,
+        "pass": true,
+        "rate": 0.05
+       }
+      }
+     },
+     "4": {
+      "n": 5000,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9562,
+        "pass": true
+       },
+       "independence_q95": {
+        "n": 1250,
+        "p": 0.0008409830478001324,
+        "pass": false
+       },
+       "kupiec_q05": {
+        "p": 0.00027511432918689776,
+        "pass": false,
+        "rate": 0.0616
+       },
+       "kupiec_q95": {
+        "p": 0.7946983490714932,
+        "pass": true,
+        "rate": 0.0492
+       }
+      }
+     },
+     "5": {
+      "n": 5000,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9576,
+        "pass": true
+       },
+       "independence_q95": {
+        "n": 1000,
+        "p": 0.1267785638010524,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 1.297800078940955e-06,
+        "pass": false,
+        "rate": 0.0656
+       },
+       "kupiec_q95": {
+        "p": 0.43263696848344235,
+        "pass": true,
+        "rate": 0.0476
+       }
+      }
+     }
+    },
+    "pooled_pass": false,
+    "post_hoc_thinned_kupiec": {
+     "failing_cells": [
+      "calm/lead 1",
+      "calm/lead 2",
+      "calm/lead 3",
+      "calm/lead 4",
+      "calm/lead 5",
+      "stress/lead 1",
+      "stress/lead 2",
+      "stress/lead 3",
+      "stress/lead 4",
+      "stress/lead 5"
+     ],
+     "pass": false
+    }
+   },
+   "under_0.5": {
+    "cells": {
+     "calm/1": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.7632,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 2500,
+        "p": 0.6384789035793115,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 2.2109880532166228e-166,
+        "pass": false,
+        "rate": 0.2072
+       },
+       "kupiec_q95": {
+        "p": 5.885986752871906e-146,
+        "pass": false,
+        "rate": 0.1952
+       }
+      }
+     },
+     "calm/2": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.7604,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 1250,
+        "p": 0.7285642366024735,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 2.2185418923136408e-178,
+        "pass": false,
+        "rate": 0.214
+       },
+       "kupiec_q95": {
+        "p": 5.9051244453409165e-148,
+        "pass": false,
+        "rate": 0.1964
+       }
+      }
+     },
+     "calm/3": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.75,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 834,
+        "p": 0.034763609049611836,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 4.122919160082712e-174,
+        "pass": false,
+        "rate": 0.2116
+       },
+       "kupiec_q95": {
+        "p": 8.885502700550204e-168,
+        "pass": false,
+        "rate": 0.208
+       }
+      }
+     },
+     "calm/4": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.7428,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 625,
+        "p": 0.30407046704031854,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 5.442099683544633e-172,
+        "pass": false,
+        "rate": 0.2104
+       },
+       "kupiec_q95": {
+        "p": 1.3296052127054933e-163,
+        "pass": false,
+        "rate": 0.2056
+       }
+      }
+     },
+     "calm/5": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.74,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 500,
+        "p": 0.5485379609378609,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 1.4078119705921798e-185,
+        "pass": false,
+        "rate": 0.218
+       },
+       "kupiec_q95": {
+        "p": 6.544220211108337e-163,
+        "pass": false,
+        "rate": 0.2052
+       }
+      }
+     },
+     "stress/1": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.7532,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 2500,
+        "p": 0.19258578157987422,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 5.755742482363491e-182,
+        "pass": false,
+        "rate": 0.216
+       },
+       "kupiec_q95": {
+        "p": 2.6200615875856485e-151,
+        "pass": false,
+        "rate": 0.1984
+       }
+      }
+     },
+     "stress/2": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.742,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 1250,
+        "p": 0.46308777759983316,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 1.1486161799763627e-177,
+        "pass": false,
+        "rate": 0.2136
+       },
+       "kupiec_q95": {
+        "p": 9.932833722703783e-157,
+        "pass": false,
+        "rate": 0.2016
+       }
+      }
+     },
+     "stress/3": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.7484,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 834,
+        "p": 0.9130217998767094,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 8.93375830910043e-208,
+        "pass": false,
+        "rate": 0.23
+       },
+       "kupiec_q95": {
+        "p": 5.885986752871906e-146,
+        "pass": false,
+        "rate": 0.1952
+       }
+      }
+     },
+     "stress/4": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.7392000000000001,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 625,
+        "p": 0.890035109957652,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 1.3135710848408967e-214,
+        "pass": false,
+        "rate": 0.2336
+       },
+       "kupiec_q95": {
+        "p": 2.0632739831310043e-157,
+        "pass": false,
+        "rate": 0.202
+       }
+      }
+     },
+     "stress/5": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.7388,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 500,
+        "p": 0.6870699729662383,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 5.6226732389715204e-220,
+        "pass": false,
+        "rate": 0.2364
+       },
+       "kupiec_q95": {
+        "p": 5.448420699387847e-165,
+        "pass": false,
+        "rate": 0.2064
+       }
+      }
+     }
+    },
+    "failing_cells": [
+     "calm/lead 1",
+     "calm/lead 2",
+     "calm/lead 3",
+     "calm/lead 4",
+     "calm/lead 5",
+     "stress/lead 1",
+     "stress/lead 2",
+     "stress/lead 3",
+     "stress/lead 4",
+     "stress/lead 5"
+    ],
+    "pass": false,
+    "pooled_cells": {
+     "1": {
+      "n": 5000,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.7582,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 5000,
+        "p": 0.6097133413462024,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 0.0,
+        "pass": false,
+        "rate": 0.2116
+       },
+       "kupiec_q95": {
+        "p": 3.7029331403605756e-295,
+        "pass": false,
+        "rate": 0.1968
+       }
+      }
+     },
+     "2": {
+      "n": 5000,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.7512,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 2500,
+        "p": 0.43496808232240747,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 0.0,
+        "pass": false,
+        "rate": 0.2138
+       },
+       "kupiec_q95": {
+        "p": 1.5222668918949136e-302,
+        "pass": false,
+        "rate": 0.199
+       }
+      }
+     },
+     "3": {
+      "n": 5000,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.7492,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 1667,
+        "p": 0.914217704042522,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 0.0,
+        "pass": false,
+        "rate": 0.2208
+       },
+       "kupiec_q95": {
+        "p": 2.337005367916e-311,
+        "pass": false,
+        "rate": 0.2016
+       }
+      }
+     },
+     "4": {
+      "n": 5000,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.741,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 1250,
+        "p": 0.3601513230592218,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 0.0,
+        "pass": false,
+        "rate": 0.222
+       },
+       "kupiec_q95": {
+        "p": 6.9123e-319,
+        "pass": false,
+        "rate": 0.2038
+       }
+      }
+     },
+     "5": {
+      "n": 5000,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.7394000000000001,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 1000,
+        "p": 0.8810949725417245,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 0.0,
+        "pass": false,
+        "rate": 0.2272
+       },
+       "kupiec_q95": {
+        "p": 0.0,
+        "pass": false,
+        "rate": 0.2058
+       }
+      }
+     }
+    },
+    "pooled_pass": false,
+    "post_hoc_thinned_kupiec": {
+     "failing_cells": [
+      "calm/lead 1",
+      "calm/lead 2",
+      "calm/lead 3",
+      "calm/lead 4",
+      "calm/lead 5",
+      "stress/lead 1",
+      "stress/lead 2",
+      "stress/lead 3",
+      "stress/lead 4",
+      "stress/lead 5"
+     ],
+     "pass": false
+    }
+   },
+   "under_0.75": {
+    "cells": {
+     "calm/1": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9248,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 2500,
+        "p": 0.2882332903725008,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 4.9751997326674147e-33,
+        "pass": false,
+        "rate": 0.11
+       },
+       "kupiec_q95": {
+        "p": 6.370261496260317e-26,
+        "pass": false,
+        "rate": 0.102
+       }
+      }
+     },
+     "calm/2": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9188000000000001,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 1250,
+        "p": 0.38788986516551804,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 1.1179813742417164e-28,
+        "pass": false,
+        "rate": 0.1052
+       },
+       "kupiec_q95": {
+        "p": 1.3812070264552555e-25,
+        "pass": false,
+        "rate": 0.1016
+       }
+      }
+     },
+     "calm/3": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9248,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 834,
+        "p": 0.8104861146533828,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 2.664006077007002e-35,
+        "pass": false,
+        "rate": 0.1124
+       },
+       "kupiec_q95": {
+        "p": 2.508120054800883e-28,
+        "pass": false,
+        "rate": 0.1048
+       }
+      }
+     },
+     "calm/4": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9164,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 625,
+        "p": 0.8097555603598828,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 3.18148155034465e-39,
+        "pass": false,
+        "rate": 0.1164
+       },
+       "kupiec_q95": {
+        "p": 4.5142839987784246e-36,
+        "pass": false,
+        "rate": 0.1132
+       }
+      }
+     },
+     "calm/5": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9148000000000001,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 500,
+        "p": 0.6003989153956744,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 4.5142839987784246e-36,
+        "pass": false,
+        "rate": 0.1132
+       },
+       "kupiec_q95": {
+        "p": 7.989817434977497e-39,
+        "pass": false,
+        "rate": 0.116
+       }
+      }
+     },
+     "stress/1": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9124,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 2500,
+        "p": 0.4315375914372549,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 4.5142839987784246e-36,
+        "pass": false,
+        "rate": 0.1132
+       },
+       "kupiec_q95": {
+        "p": 5.603142714691848e-28,
+        "pass": false,
+        "rate": 0.1044
+       }
+      }
+     },
+     "stress/2": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9172,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 1250,
+        "p": 0.21554421571296273,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 1.4229394378171868e-44,
+        "pass": false,
+        "rate": 0.1216
+       },
+       "kupiec_q95": {
+        "p": 2.7611079326794176e-27,
+        "pass": false,
+        "rate": 0.1036
+       }
+      }
+     },
+     "stress/3": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9088,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 834,
+        "p": 0.6279359155859809,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 4.535869501903094e-42,
+        "pass": false,
+        "rate": 0.1192
+       },
+       "kupiec_q95": {
+        "p": 2.9253832437903464e-26,
+        "pass": false,
+        "rate": 0.1024
+       }
+      }
+     },
+     "stress/4": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9064,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 625,
+        "p": 0.35577020533092996,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 5.5923949521562984e-52,
+        "pass": false,
+        "rate": 0.1284
+       },
+       "kupiec_q95": {
+        "p": 6.2008490534016986e-24,
+        "pass": false,
+        "rate": 0.0996
+       }
+      }
+     },
+     "stress/5": {
+      "n": 2500,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9136,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 500,
+        "p": 0.9746549734661405,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 5.211844159322892e-57,
+        "pass": false,
+        "rate": 0.1328
+       },
+       "kupiec_q95": {
+        "p": 1.2018244018414328e-22,
+        "pass": false,
+        "rate": 0.098
+       }
+      }
+     }
+    },
+    "failing_cells": [
+     "calm/lead 1",
+     "calm/lead 2",
+     "calm/lead 3",
+     "calm/lead 4",
+     "calm/lead 5",
+     "stress/lead 1",
+     "stress/lead 2",
+     "stress/lead 3",
+     "stress/lead 4",
+     "stress/lead 5"
+    ],
+    "pass": false,
+    "pooled_cells": {
+     "1": {
+      "n": 5000,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9186,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 5000,
+        "p": 0.19070863764820772,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 2.6262555587881426e-67,
+        "pass": false,
+        "rate": 0.1116
+       },
+       "kupiec_q95": {
+        "p": 3.577951393803898e-52,
+        "pass": false,
+        "rate": 0.1032
+       }
+      }
+     },
+     "2": {
+      "n": 5000,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.918,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 2500,
+        "p": 0.1354027438479783,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 9.389996814116351e-71,
+        "pass": false,
+        "rate": 0.1134
+       },
+       "kupiec_q95": {
+        "p": 3.741257290649225e-51,
+        "pass": false,
+        "rate": 0.1026
+       }
+      }
+     },
+     "3": {
+      "n": 5000,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9168000000000001,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 1667,
+        "p": 0.7564728990845652,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 1.8574541285176823e-75,
+        "pass": false,
+        "rate": 0.1158
+       },
+       "kupiec_q95": {
+        "p": 7.402515424440653e-53,
+        "pass": false,
+        "rate": 0.1036
+       }
+      }
+     },
+     "4": {
+      "n": 5000,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9114,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 1250,
+        "p": 0.31987923954146813,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 5.161922746127542e-89,
+        "pass": false,
+        "rate": 0.1224
+       },
+       "kupiec_q95": {
+        "p": 9.46591684861379e-58,
+        "pass": false,
+        "rate": 0.1064
+       }
+      }
+     },
+     "5": {
+      "n": 5000,
+      "pass": false,
+      "tests": {
+       "band_98": {
+        "coverage": 0.9142,
+        "pass": false
+       },
+       "independence_q95": {
+        "n": 1000,
+        "p": 0.6781231708114441,
+        "pass": true
+       },
+       "kupiec_q05": {
+        "p": 2.7309824266283846e-90,
+        "pass": false,
+        "rate": 0.123
+       },
+       "kupiec_q95": {
+        "p": 8.022536277511261e-59,
+        "pass": false,
+        "rate": 0.107
+       }
+      }
+     }
+    },
+    "pooled_pass": false,
+    "post_hoc_thinned_kupiec": {
+     "failing_cells": [
+      "calm/lead 1",
+      "calm/lead 2",
+      "calm/lead 3",
+      "calm/lead 4",
+      "calm/lead 5",
+      "stress/lead 1",
+      "stress/lead 2",
+      "stress/lead 3",
+      "stress/lead 4",
+      "stress/lead 5"
+     ],
+     "pass": false
+    }
+   }
+  },
+  "mean_crps": {
+   "climatology": 2.2220489611896355,
+   "ideal": 1.348915524583233,
+   "over_1.5": 1.4155783561528255,
+   "persistence": 1.5364578097760622,
+   "pooled": 1.4263075658233084,
+   "under_0.5": 1.4974207490692493,
+   "under_0.75": 1.3821882653709878
+  },
+  "paired_under_0.5": {
+   "climatology": {
+    "lower_95": 0.6402103407251186,
+    "mean_difference": 0.7246282121203752
+   },
+   "persistence": {
+    "lower_95": 0.011225298241767361,
+    "mean_difference": 0.0390370607068112
+   },
+   "pooled": {
+    "lower_95": -0.08722781650056165,
+    "mean_difference": -0.07111318324594423
+   }
+  },
+  "seed": 961
+ },
+ "size": {
+  "cells_per_path": 10,
+  "days": 2000,
+  "declared": {
+   "fail_share": 0.5433333333333333,
+   "fail_share_by_lead": {
+    "1": 0.06,
+    "2": 0.11333333333333333,
+    "3": 0.24333333333333335,
+    "4": 0.3566666666666667,
+    "5": 0.41
+   },
+   "fail_share_by_test": {
+    "band_98": 0.0,
+    "independence_q95": 0.02,
+    "kupiec_q05": 0.31666666666666665,
+    "kupiec_q95": 0.33
+   }
+  },
+  "paths": 300,
+  "post_hoc_thinned_kupiec": {
+   "fail_share": 0.19666666666666666,
+   "fail_share_by_lead": {
+    "1": 0.06,
+    "2": 0.04666666666666667,
+    "3": 0.03666666666666667,
+    "4": 0.03,
+    "5": 0.056666666666666664
+   },
+   "fail_share_by_test": {
+    "band_98": 0.0,
+    "independence_q95": 0.02,
+    "kupiec_q05": 0.09,
+    "kupiec_q95": 0.10333333333333333
+   }
+  },
+  "tests_per_cell": 4
+ }
+}
