@@ -49,6 +49,16 @@ def non_ordinary_day(day_type: str, coupons: Optional[float], coupon_clause: boo
     return coupon_clause and coupons is not None and float(coupons) > 0.0
 
 
+def scheduled_risk_date(values: Mapping[str, Optional[float]]) -> bool:
+    """A quarter-end, a tax date or a day with a coupon settlement (the "large Treasury settlement").
+
+    ``SCHEDULED`` for the panel row ``values``: calendar facts, known ahead of the day. Moved here from
+    ``pressure_judge._scheduled_risk_date`` (#1055, stage 1).
+    """
+
+    return is_risk_date(values, SCHEDULED)
+
+
 def is_risk_date(
     values: Mapping[str, Optional[float]],
     definition: str,

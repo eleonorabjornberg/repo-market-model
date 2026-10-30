@@ -330,8 +330,8 @@ def pair_table(scores, pairs, days, draws) -> Dict[str, dict]:
 def _scarcity_states() -> Dict[date, Optional[float]]:
     """Lead-1 target day -> the own-leg scarcity state as read at that lead's decision instant."""
 
-    judge = s634._load("pressure_judge")
-    return judge._scarcity_states(1, LAST_TARGET)
+    scarcity = s634._load("scarcity_states")
+    return scarcity.scarcity_states(1, LAST_TARGET)
 
 
 # -- the report ------------------------------------------------------------------------------------------------------
