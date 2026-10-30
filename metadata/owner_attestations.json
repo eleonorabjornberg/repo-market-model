@@ -146,6 +146,13 @@
       "comment_id": 6512786796,
       "phrase": "GO #1312",
       "what": "move the decision instant from 16:00 to 18:00 America/New_York (step 1 of 3): the amendment to docs/decisions/information-set.md, the final-test pre-registration amendment and re-pin, metadata/sources.json and metadata/funding_panel_manifest.json; her 29 October 2026 ruling (ledger item 77)"
+    },
+    {
+      "kind": "decisions",
+      "issue": 1313,
+      "comment_id": 6534020982,
+      "phrase": "GO #1313",
+      "what": "the live-pin v4 bump decision record and the live-log workflow move to the 18:00 decision instant (step 2 of 3): close the 16:00 live record and open the 18:00 one; her 29 October 2026 ruling (ledger item 77), GO on 30 October 2026"
     }
   ],
   "rule": "docs/decisions/drafts/owner-attestation.md",

@@ -220,15 +220,28 @@ class WorkflowFileTests(unittest.TestCase):
         self.assertIn("scripts/live_record.py run", text)
         self.assertNotIn("--dry-run", text)
 
-    def test_it_runs_after_the_decision_instant_on_weekdays_with_two_fallback_slots(self):
-        # #275. 21:30 UTC is 17:30 EDT / 16:30 EST on the ET day itself. 23:15 UTC is 19:15 EDT /
-        # 18:15 EST, the same ET day. 01:15 UTC on Tuesday to Saturday is 21:15 EDT / 20:15 EST on
-        # the ET day before: Monday to Friday.
+    def test_it_runs_after_the_decision_instant_on_weekdays_with_a_fallback_slot(self):
+        """#275, moved by #1313 (decision instant 18:00 ET, her ruling of 29 October 2026, ledger item 77).
+
+        The 21:30 UTC slot is 17:30 EDT / 16:30 EST: before 18:00 ET either way, so it is gone. 23:15 UTC is
+        19:15 EDT / 18:15 EST, the same ET day, after the instant in both. 01:15 UTC on Tuesday to Saturday is
+        21:15 EDT / 20:15 EST on the ET day before: Monday to Friday. Every remaining slot starts after 18:00 ET
+        in both offsets (the test computes it), and none is before it.
+
+        Recorded mutation: the `- cron: "30 21 * * 1-5"` line restored in `live-log.yml`; this test failed with
+        AssertionError (the schedule list differed and the 21:30 UTC slot was 16:30 ET in EST).
+        """
         schedule = [line.strip() for line in self.lines if "cron:" in line]
-        self.assertEqual(
-            schedule,
-            ['- cron: "30 21 * * 1-5"', '- cron: "15 23 * * 1-5"', '- cron: "15 1 * * 2-6"'],
-        )
+        self.assertEqual(schedule, ['- cron: "15 23 * * 1-5"', '- cron: "15 1 * * 2-6"'])
+        edt, est = timezone(timedelta(hours=-4)), timezone(timedelta(hours=-5))
+        for line in schedule:
+            minute, hour = (int(part) for part in line.split('"')[1].split()[:2])
+            for name, zone in (("EDT", edt), ("EST", est)):
+                with self.subTest(cron=line, zone=name):
+                    at = datetime(2026, 11, 3, hour, minute, tzinfo=timezone.utc).astimezone(zone)
+                    # A slot on the ET evening of its own UTC day, or after midnight (the fallback, 01:15 UTC):
+                    # either way it is at or after 18:00 ET on the ET day it serves.
+                    self.assertTrue(at.hour >= 18 or at.hour < 6, f"{line} is {at:%H:%M} {name}")
 
     def test_the_concurrency_group_still_serialises_the_runs_and_never_cancels_one_in_progress(self):
         self.assertEqual(
@@ -274,12 +287,12 @@ class WorkflowFileTests(unittest.TestCase):
         """#937: GitHub started the 01:15 UTC fallback slot hours late (05:48 UTC on 2026-10-16 and
         five earlier runs), after midnight ET. `date +%F` then named the next ET day, which has no
         record yet, so the log job ran, "Write the day's record" failed and #237 got a false
-        "Failed: <day>, at step record". A run that starts before the 16:00 ET decision instant has
-        nothing to do: the check job says so, the log job is skipped, and no comment is posted. From
-        16:00 ET on the log job runs as before, and a real failure still reaches #237.
+        "Failed: <day>, at step record". A run that starts before the 18:00 ET decision instant (16:00 until #1313)
+        has nothing to do: the check job says so, the log job is skipped, and no comment is posted. From
+        18:00 ET on the log job runs as before, and a real failure still reaches #237.
 
-        Recorded mutation: `-lt 16` in the "Skip before the decision instant" step changed to `-lt 15`;
-        this test failed on the 15:00 ET subtest with AssertionError ('early=false' != 'early=true').
+        Recorded mutation: `-lt 18` in the "Skip before the decision instant" step changed to `-lt 17`;
+        this test failed on the 17:00 ET subtest with AssertionError ('early=false' != 'early=true').
         """
         check = self._job("check")
         step = re.search(r"\n      - name: Skip before the decision instant\n(.*?)(?=\n      - name: |\Z)", check, re.S)
@@ -296,8 +309,8 @@ class WorkflowFileTests(unittest.TestCase):
         self.assertIn("needs.check.outputs.recorded != 'true'", log)
         script = textwrap.dedent(body.split("run: |\n", 1)[1])
         for hour, expected in (("00", "early=true"), ("01", "early=true"), ("08", "early=true"),
-                               ("15", "early=true"), ("16", "early=false"), ("19", "early=false"),
-                               ("21", "early=false")):
+                               ("15", "early=true"), ("16", "early=true"), ("17", "early=true"),
+                               ("18", "early=false"), ("19", "early=false"), ("21", "early=false")):
             with self.subTest(et_hour=hour), tempfile.TemporaryDirectory() as tmp:
                 stub = Path(tmp) / "date"
                 stub.write_text(f"#!/bin/sh\ncase \"$*\" in\n  *%H*) echo {hour};;\n  *) echo 2026-10-16;;\nesac\n",
