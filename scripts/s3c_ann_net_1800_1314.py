@@ -2,8 +2,10 @@
 widened on 30 October 2026, ledger item 80, #1316 option 2).
 
 A development study, never a verdict. Step 3 of 3 in moving the decision instant from 16:00 to 18:00 New York time (#1312 amended the information set, #1313
-opens the new live record). The walks, fits and forecasts are #1288's and #1320's, **run unchanged** by their own scripts at the 18:00 instant
-(`repo_model.decision_instant.DECISION_TIME`); this script adds only what a re-run at a new instant needs:
+opens the new live record). The walks, fits and forecasts are #1288's and #1320's, **run unchanged** by their own scripts at the 18:00 instant.
+The study family took its decision instant from one hard-coded `time(16, 0)` in `scripts/spread_mean_reversion_686.py`, so a re-run of any of them was a
+re-run at 16:00 whatever `repo_model.decision_instant` said; that module now reads `RMM_DECISION_TIME` (default 16:00, nothing else moves; 18:00 the only other
+value) and every 18:00 command below sets it. `score` refuses to run unless the family's instant is 18:00. This script adds only what a re-run at a new instant needs:
 
 * the 16:00 side of a paired comparison, kept as per-cell scores (`cells`, run from a checkout of the last commit before #1312 merged);
 * the paired 18:00-against-16:00 row for (s3c-ann-net) itself, and for (s3c) and (s3c-ann) beside it;
@@ -21,8 +23,8 @@ half an hour, the rest minutes):
         --output PUB.csv --build-cutoff 2026-09-08T21:31:42+00:00 --decision-time 18:00:00
     PYTHONPATH=src python3 -m repo_model.cli verify-panel PUB.csv --manifest metadata/funding_panel_manifest.json
     OUT=docs/research/s3c-ann-net-1800-1314
-    PYTHONPATH=src python3 scripts/s3c_announced_settlement_1288.py score --panel PUB.csv --output $OUT/announced-settlement-1800.json
-    PYTHONPATH=src python3 scripts/s3c_ann_net_diagnosis_1319.py score --panel PUB.csv --output $OUT/diagnosis-1800.json
+    RMM_DECISION_TIME=18:00 PYTHONPATH=src python3 scripts/s3c_announced_settlement_1288.py score --panel PUB.csv --output $OUT/announced-settlement-1800.json
+    RMM_DECISION_TIME=18:00 PYTHONPATH=src python3 scripts/s3c_ann_net_diagnosis_1319.py score --panel PUB.csv --output $OUT/diagnosis-1800.json
     # the 16:00 side, from the last commit before #1312 merged (a worktree; its own panel build at 16:00 is byte-identical to PUB.csv):
     git worktree add ../rmm-1600 29732943ea64882bdf81bc1337278fb2c9cf67a7
     (cd ../rmm-1600 && PYTHONPATH=src python3 -m repo_model.cli build --raw-root tests/fixtures/snapshots/funding_inputs \\
@@ -41,6 +43,7 @@ import argparse
 import importlib.util
 import json
 import math
+import os
 import subprocess
 import sys
 from datetime import date, time
@@ -360,6 +363,7 @@ def cmd_cells(args) -> int:
 
 
 def cmd_score(args) -> int:
+    os.environ["RMM_DECISION_TIME"] = INSTANT_TEXT  # the study family's base module reads it when it loads (spread_mean_reversion_686.py)
     m = load_tree(REPO)
     from repo_model import decision_instant, scoring_protocol as sp
 
