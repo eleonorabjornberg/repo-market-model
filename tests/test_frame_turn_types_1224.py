@@ -39,6 +39,7 @@ EXEMPT = {
     "turn_day_labels_959": "builds the turn labels from the legacy ones, and compares them",
     "tax_date_october_965": "reads only the `tax_date` label, which both readings share",
     "b2_pool_fallback_1155": "its arms name their readings themselves (the legacy type, the turn labels, the fallback)",
+    "h9_nested_932": "a dated study, run on her Mac at 875eb08f on 29 Oct 2026 under the day types then in force; its outputs are the record, so its method is not changed",
     "scaled_score_967": "`KINDS` and the per-type scale are the retired label set; routing it moves the scaled score (question on the pull request)",
     "contiguous_calibration_963": "`STRATA` are the retired labels, so a routed call would match no `month_end` or `quarter_end` day (question on the pull request)",
     "drivers_audit_951": "`CALENDAR_KINDS` and `RARE_GROUPS` are the retired labels, so a routed call would drop the turn days from them (question on the pull request)",

@@ -42,6 +42,7 @@ EXEMPT = {
     "s3_terms_1196": "its page was made after #1185 under the turn labels and before #1198 (a third reading)",
     "s3c_turn_cap_1265": "(s3c-t) is defined on the day types in force; under the legacy reading it raises ValueError on a month_end label",
     "live_monitor": "reads the live record, which is frozen on its own declaration",
+    "h9_nested_932": "a dated study, run on her Mac at 875eb08f on 29 Oct 2026 under the day types then in force; its outputs are the record, so its method is not changed",
 }
 
 
