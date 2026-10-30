@@ -51,6 +51,41 @@ class InstantTests(unittest.TestCase):
         script.require_instant(decision_instant.DECISION_TIME)
 
 
+def _load_686(env):
+    """`scripts/spread_mean_reversion_686.py`, the base of the study family, loaded afresh with `RMM_DECISION_TIME` set to `env` (None: unset)."""
+
+    import os
+
+    path = ROOT / "scripts" / "spread_mean_reversion_686.py"
+    held = os.environ.pop("RMM_DECISION_TIME", None)
+    if env is not None:
+        os.environ["RMM_DECISION_TIME"] = env
+    try:
+        spec = importlib.util.spec_from_file_location("spread_mean_reversion_686_in_1314", path)
+        module = importlib.util.module_from_spec(spec)
+        sys.modules["spread_mean_reversion_686_in_1314"] = module
+        spec.loader.exec_module(module)
+        return module
+    finally:
+        os.environ.pop("RMM_DECISION_TIME", None)
+        if held is not None:
+            os.environ["RMM_DECISION_TIME"] = held
+
+
+class FamilyInstantTests(unittest.TestCase):
+    """The study family's base module keeps 16:00 unless a run asks for 18:00, so no earlier study's re-run moves; #1314 asks for 18:00."""
+
+    def test_by_default_the_family_stays_at_sixteen_hundred(self):
+        self.assertEqual(_load_686(None).DECISION_TIME, time(16, 0))
+
+    def test_a_run_can_ask_for_eighteen_hundred(self):
+        self.assertEqual(_load_686("18:00").DECISION_TIME, time(18, 0))
+
+    def test_any_other_instant_is_refused(self):
+        with self.assertRaises(ValueError):
+            _load_686("17:00")
+
+
 class CompareTests(unittest.TestCase):
     def test_numeric_leaves_are_flattened_by_path_and_booleans_and_text_are_left_out(self):
         flat = script.flatten({"a": {"b": 1, "c": [2.0, 3.0], "t": "x", "f": True}, "n": None})
