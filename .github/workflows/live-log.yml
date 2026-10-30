@@ -289,6 +289,57 @@ jobs:
           "$PY" -B ../main/scripts/live_raw.py check-append --repo . --day "$DAY" --base "$base"
           git push --quiet origin HEAD:refs/heads/live-raw
 
+      # H10 prospective confirmation (#1322, Eleonora's ruling of 30 October 2026, option (a')). After
+      # the day's H5 record is written, find the onsets of the panel it was built from with the parent's
+      # own rule, attribute each new one with repo-market-liquidity's registered
+      # `h10_live.attribute_onset`, and append the day's `h10/<day>.json`, labelled prospective, to the
+      # add-only `live-h10` branch (`scripts/live_h10.py`). The registered code is never liquidity's main:
+      # liquidity at `liquidity_commit` and the model at `parent_commit`, both read from
+      # `metadata/live_h10_pin.json`, each in a clean checkout of its own, and the parent override is never
+      # passed. A row whose method digest is not the registered one is refused and the step fails; a
+      # `LookAheadError` is recorded and stops the day. The step never blocks the H5 record, the anchor or
+      # the digest, and its failure ends the run red.
+      - name: Attribute the day's H10 onsets
+        id: h10
+        if: steps.push.outcome == 'success' && env.WROTE == '1'
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          pin=main/metadata/live_h10_pin.json
+          h10_liq=$(jq -r .liquidity_commit "$pin")
+          h10_parent=$(jq -r .parent_commit "$pin")
+          echo "$h10_liq" | grep -Eq '^[0-9a-f]{40}$'
+          echo "$h10_parent" | grep -Eq '^[0-9a-f]{40}$'
+          git clone --quiet https://github.com/eleonorabjornberg/repo-market-liquidity.git h10-liquidity
+          git -C h10-liquidity checkout --quiet --detach "$h10_liq"
+          test "$(git -C h10-liquidity rev-parse HEAD)" = "$h10_liq"
+          git -C main worktree add --quiet --detach ../h10-parent "$h10_parent"
+          test "$(git -C h10-parent rev-parse HEAD)" = "$h10_parent"
+          url="https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git"
+          if git ls-remote --exit-code --heads "$url" live-h10 >/dev/null; then
+            git clone --quiet --branch live-h10 --single-branch "$url" live-h10
+          else
+            git init --quiet -b live-h10 live-h10
+            git -C live-h10 remote add origin "$url"
+          fi
+          cd live-h10
+          base=$(git rev-parse --verify -q HEAD || true)
+          set +e
+          PYTHONPATH=../h10-liquidity/src:../h10-parent/src ../venv/bin/python -B ../main/scripts/live_h10.py run \
+            --day "$DAY" --panel ../work/panel.csv --out-dir . --pin ../main/metadata/live_h10_pin.json
+          code=$?
+          set -e
+          # 0: recorded. 3: a LookAheadError was recorded and stopped the day: the file is pushed, the step fails.
+          # Anything else (a refused row, a disagreement between the onset sources) wrote nothing.
+          if [ "$code" != 0 ] && [ "$code" != 3 ]; then exit "$code"; fi
+          git add "h10/$DAY.json"
+          git -c user.name="github-actions[bot]" \
+            -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit --quiet -m "H10 onset check for $DAY (liquidity $h10_liq, parent $h10_parent)"
+          "$PY" -B ../main/scripts/live_h10.py check-append --repo . --day "$DAY" --base "$base"
+          git push --quiet origin HEAD:refs/heads/live-h10
+          exit "$code"
+
       - name: Anchor the digests in Sigstore Rekor
         id: anchor
         if: steps.push.outcome == 'success'
@@ -363,6 +414,13 @@ jobs:
           n=$FAILED_RUNS_ISSUE
           echo "Raw archive failed: $DAY. The record is written; its raw inputs are not archived on live-raw, so the day cannot be rebuilt from bytes (#257). Run: $RUN_URL" > raw-failed.md
           gh api "repos/$REPO/issues/$n/comments" -F body=@raw-failed.md >/dev/null
+
+      - name: Report an H10 step that failed
+        if: always() && steps.h10.outcome == 'failure'
+        run: |
+          n=$FAILED_RUNS_ISSUE
+          echo "H10 step failed: $DAY. The H5 record is written; the day's H10 onset check is not (a refused row, a lockbox refusal or an error: see the step in the run). Run: $RUN_URL" > h10-failed.md
+          gh api "repos/$REPO/issues/$n/comments" -F body=@h10-failed.md >/dev/null
 
       - name: Post the digest outside the repository
         id: digest
@@ -445,7 +503,7 @@ jobs:
           gh api "repos/$REPO/issues/$n/comments" -F body=@failed.md >/dev/null
 
       - name: Say a run succeeded after a failure
-        if: success() && env.WROTE == '1' && steps.raw.outcome != 'failure'
+        if: success() && env.WROTE == '1' && steps.raw.outcome != 'failure' && steps.h10.outcome != 'failure'
         run: |
           n=$FAILED_RUNS_ISSUE
           last=$(gh api --paginate "repos/$REPO/issues/$n/comments?per_page=100" -q '.[-1].body' | tail -1)
@@ -461,4 +519,11 @@ jobs:
         if: always() && steps.raw.outcome == 'failure'
         run: |
           echo "The raw inputs of $DAY were not archived on live-raw (#257): see the step above." >&2
+          exit 1
+
+      # Same for the H10 step (#1322): continue-on-error lets the anchor and the checks run after it.
+      - name: Fail the run when the H10 step failed
+        if: always() && steps.h10.outcome == 'failure'
+        run: |
+          echo "The H10 onset check of $DAY failed (#1322): see the step above." >&2
           exit 1
