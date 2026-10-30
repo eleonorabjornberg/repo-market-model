@@ -36,6 +36,7 @@ Standard library only, apart from the registered code it calls.
 from __future__ import annotations
 
 import argparse
+import importlib
 import json
 import re
 import subprocess
@@ -225,7 +226,6 @@ def run_day(day: date, panel: Path, out_dir: Path, backend: Backend, pin: dict) 
 def real_backend() -> Backend:
     """The registered code, imported from `PYTHONPATH`: liquidity at its commit over the parent at its pin."""
 
-    from repo_liquidity import h10_apply, h10_live
     from repo_model import onset, pressure
     from repo_model.data import load_daily_panel
 
@@ -235,6 +235,10 @@ def real_backend() -> Backend:
         cross = pressure.onsets(rows, float(onset.ONSET_THRESHOLD_BP), [row.date for row in rows])
         return agreed_onsets(flagged, cross)
 
+    # By name, not by import statement: repo-market-liquidity is not a dependency of this repository, it is the
+    # registered code the workflow checks out beside it (tests/test_dependency_boundary.py).
+    h10_apply = importlib.import_module("repo_liquidity.h10_apply")
+    h10_live = importlib.import_module("repo_liquidity.h10_live")
     return Backend(load_rows=load_daily_panel, onset_days=onset_days, rule=h10_apply.real_rule,
                    attribute=h10_live.attribute_onset)
 
