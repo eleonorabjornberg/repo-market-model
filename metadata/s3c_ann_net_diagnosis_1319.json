@@ -1,0 +1,66 @@
+{
+ "status": "declared by the pull request that closes #1319 before any diagnostic table was computed; a diagnosis of a record that already exists, never a verdict. Nothing is registered or published: no record in docs/runs/ is edited, no arm, declaration, candidate or decision record changes, docs/research/h5-candidate.json and metadata/s3c_announced_settlement_1288.json do not change, no lockbox day is scored and no day after 2026-09-03 is scored. Before this declaration was committed the walks of #1288 were built once (frames and forecasts, no table) to see that they load and how long they take, and the discrete scarcity state of #1145 was listed by year (0 abundant, 1 to 3 scarcer; 2022 to 2024 sit at 0, 2019 at 3). Amendments made after a number was computed are listed in `amendments`; there are none.",
+ "issue": 1319,
+ "findings": "#1316, #1317, #1318 (open; none changes here)",
+ "ruling": "Eleonora, 30 October 2026, about 1:15 pm ET, chat, relayed on #1319 (ledger item 79): diagnose the three losses of (s3c-ann-net) before any record changes.",
+ "hypothesis": "H5 (primary goal): the SOFR - IORB spread distribution in bp. Step 3, the candidate (s3c-ann-net). A diagnosis, not a new arm. Development tier",
+ "record_read": "#1288's frame, fits and forecasts exactly as merged: scripts/s3c_announced_settlement_1288.py `build` is called for both windows with no change and no new fit; its forecasts are the instants they were made at (16:00 on the decision day). The study checks that the pooled, lead, and 2018-19, 2020 regime means of every arm it reads equal docs/research/s3c-announced-settlement-1288/result.json to 1e-9, and refuses to write a record otherwise. The panel is the published panel (digest 4ddc3882...).",
+ "windows": {
+  "development": "decision days whose five targets fall on or before 2025-12-31 (#1255's first window). Every reading is taken from this window.",
+  "2026": "decision days whose five targets fall from 2026-01-02 to 2026-09-03 (the near-blind tier open since GO #151). Reported separately and decides nothing: tables 1, 3 and 5 only."
+ },
+ "arms": {
+  "reference_flag": "sc_s3c at lead 1 and sc_s3c_ann at leads 2 to 5 (the two are cell for cell the same at lead 1, which the study checks): (s3c) and the announced flag",
+  "net": "sc_s3c_ann_net, (s3c-ann-net); at lead 1 it is #1273's (s3c-net), which the study checks",
+  "also_read": "sc_s3c, for the lead-1 and 2020 comparisons that #1316 states"
+ },
+ "unit": "A diagnostic difference d is score(arm) - score(reference), so a positive mean d is a loss for the arm (the arm scores higher, worse); every table says which way it points. Scores are grid CRPS, upper-tail twCRPS and the Brier score of P(> +5 bp), as in #1288 (scripts/s3c_net_settlement_1273.py cell_table). Percentages are skill, 1 - mean(arm)/mean(reference), as on #1288's page.",
+ "intervals": "the 90% interval of the stationary block bootstrap (mean block 10, 2000 replications, seed 1319, resampling in date order) over the days of the group, repo_model.metrics.stationary_bootstrap_interval. It is a diagnostic interval on mean d, not scoring protocol v1's studentized test; no row here is a verdict and a group of fewer than 20 days is listed and given no interval. A reading is taken from the interval excluding zero; otherwise undecided.",
+ "legs_of_the_net": "gross: the offerings of the class that the decision instant had seen, summed (a class announced only in part is left out and counted, as net_settlement.net_for_day leaves it out); maturing: the largest announced maturing figure of the class; net: gross less maturing, as net_settlement.net_for_day gives it. All in USD 100 bn. A class partly announced at the decision is its own group and enters no regression.",
+ "tables": {
+  "1_lead_1_loss": {
+   "what": "Where the lead-1 loss of (s3c-ann-net) against (s3c) sits. At lead 1 nothing is announced early, so the whole difference is the net sizing of the two settlement terms against their flags.",
+   "cells": "lead 1, one cell per decision day; grain: the decision day",
+   "groups": [
+    "the target day type: a coupon settlement day, a bill settlement day with a cash management bill, a bill settlement day without one, neither settles",
+    "the net-to-gross class of the target day as announced at the decision: no settlement; net at or below zero on a settling leg; net above zero and below half of gross on every settling leg; net at or above half of gross on every settling leg; a class partly announced",
+    "the maturing share of gross on a settling day, in three classes fixed by the maturing share of gross over the settlement target days of the development window (an input, no outcome): lowest third, middle third, highest third"
+   ],
+   "report": "mean d with interval for each score; the group's days; the group's share of the total of d over all lead-1 cells (share of the loss)"
+  },
+  "2_gross_or_net": {
+   "what": "H-a. Whether settlement-day pressure scales with the gross amount, the net, or the maturing amount, tested on the settlement target days of the development window.",
+   "cells": "target days T on which a leg settles with its class fully announced at the decision of T - h; at lead 1 and at lead 3. The outcome is the residual r = y_T - q50 of the reference forecast at that lead ((s3c) at lead 1, (s3c-ann) at lead 3), in bp, where q50 is the forecast's median (the 0.5 level of the grid).",
+   "regressions": "per leg L (coupon, bill), on the target days where L settles: r = a + g * gross_L + m * maturing_L + o * other_leg_settles. Also the net-only form r = a + n * net_L + o * other_leg_settles. gross, maturing and net in USD 100 bn. Ordinary least squares; the interval of each coefficient and of g + m is the stationary block bootstrap (seed 1319, 2000 replications) over the target days in date order, refitting at every resample. If the net were the whole story the maturing amount would offset the gross one for one, m = -g, so g + m = 0; the reading is on g + m. The in-sample mean squared residual of the gross-and-maturing form, of the net-only form and of the gross-only form (m = 0) are reported with the interval of the net-only form minus the gross-and-maturing form.",
+   "splits": "pooled; by the scarcity state of the decision day (0 abundant, 1 to 2, 3 scarce; #1145's state, as read at the decision instant; a day with no state is its own group); a split of fewer than 20 target days or a leg with no variation in gross is listed and not fitted.",
+   "reading_H_a": "supported at a lead and leg when the interval of g + m lies above zero (the maturing amount offsets less than the gross amount adds, so netting understates the pressure) and the net-only form's mean squared residual is not below the gross-and-maturing form's by more than its interval; not supported when the interval of g + m contains zero and the net-only form's mean squared residual is below the gross-only form's with the interval of the difference above zero, or when the interval of g + m lies below zero; otherwise undecided. A lead and leg that disagree are reported as they are."
+  },
+  "3_net_against_flag": {
+   "what": "Loss 3 and the second half of H-a: (s3c-ann-net) against (s3c-ann) at every lead, and where it loses.",
+   "cells": "each lead h = 1..5, one cell per decision day; grain: the decision day for the lead rows; the target day averaged over the five leads for the regime rows, as #1288 groups by regime",
+   "groups": [
+    "by lead: pooled, and by regime of the target day (2018-19, 2020, 2021-23, 2024, 2025-26)",
+    "by realised event: the cells whose target spread exceeded +5 bp (the event of docs/decisions/pressure-probability.md, strict, whole basis points) and the others: the arm's mean predicted probability of the event, the reference's, the observed frequency, and the Brier difference summed over each of the two sets",
+    "by the target day type and by the net-to-gross class of table 1, at each lead (the class at lead h is read at the decision of T - h)",
+    "the days on which the flag is 1 and the announced net is at or below zero on every settling leg (the arm sees no drain, the flag sees a settlement)"
+   ],
+   "report": "mean d with interval for each score; the group's cells; the share of the total of d"
+  },
+  "4_2020": {
+   "what": "H-b. Why every announced-settlement arm loses to (s3c) in 2020.",
+   "cells": "decision days with a target in the 2020 regime, as #1288's regime group (grain: the target day, the five leads averaged); leads 2 to 5 where a table says so",
+   "tables": [
+    "4a: the 2020 loss of (s3c-ann) and (s3c-ann-net) against (s3c), by month of the target day, and March to June against the rest of 2020; the share of the total 2020 loss that sits in March to June",
+    "4b: the settlement-term contribution against the realised spread, by regime: at leads 2 to 5, for each arm, the mean fitted shift in bp that the settlement terms add on the settlement target cells (the fitted effect of the refit the forecast used, in bp, times the term's value: the flag, or the net in USD 100 bn; the same construction as #1288's `effects`), the mean forecast error y_T - q50 on the settlement target cells less that on the cells with no settlement (the settlement-day bias: negative when the arm forecasts too high on settlement days), and the realised mean spread on settlement target days less that on the others. Interval by the decision-day bootstrap",
+    "4c: the 2020 loss of each arm against (s3c) at leads 2 to 5 by the scarcity state of the decision day (0, 1 to 2, 3) and by settlement size of the target day (the highest third of total gross over the settlement target days of the development window; other settlement days; no settlement), the cells and the share of the 2020 loss",
+    "4d: the 2020 cells whose target day has an auction with no stated release time ('For Immediate Release') in metadata/announcement_release_times_1301.json settling on it, a cash management bill or not: the loss in them, their share of the total 2020 loss, and the 2020 loss of each arm with them left out"
+   ],
+   "reading_H_b": "supported when, on the 2020 settlement target cells, the settlement-day bias of the arm is below that of 2018-19 by an interval below zero (the settlement terms over-predict relative to the earlier years), and the 2020 loss on the highest third of settlement size with state 0 or 1 to 2 is a loss on the interval while the rest of 2020 is not; not supported when either fails with an interval that excludes it; otherwise undecided. The dating is ruled out as the cause when the 2020 loss with the immediate-release days left out stays a loss on the interval."
+  },
+  "5_reproduction": "every pooled, lead and regime mean of the arms read, and every one of the three scores, equals #1288's record; the lead-1 cell of (s3c-ann) equals (s3c)'s and the lead-1 cell of (s3c-ann-net) equals (s3c-net)'s; refused otherwise."
+ },
+ "answers": "the page gives a plain answer to 'why does it do this?' for each of the three losses (lead 1, 2020, net against flag), each hypothesis marked supported, not supported or undecided with its intervals, and ends with a marked question to Eleonora: numbered options for #1316 (record the losses as open questions; widen #1314), #1318 (queue the flag-plus-net arm, or a gross-sized arm if H-a holds) and #1317, each with a recommendation and a default that changes no claim. The script writes no judgement of its own: the page's reading lines are computed from the intervals by the rules above.",
+ "guards": "every cell passes lockbox.require_unlocked through spread_mean_reversion_686.require_scored_days with the window's last day; the blind tier and every lockbox day are refused by the frames' own guards; no day after 2026-09-03 is read. The script reads forecasts the walks already made and scores them against the outcome; it fits no model and opens no new read path, so there is no new leakage guard to mutate. The new arithmetic (the legs of the net, the regression, the group shares) is pinned by tests/test_s3c_ann_net_diagnosis_1319.py on hand cases.",
+ "seed": 1319,
+ "amendments": []
+}
