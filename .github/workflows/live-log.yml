@@ -297,7 +297,7 @@ jobs:
       # liquidity at `liquidity_commit` and the model at `parent_commit`, both read from
       # `metadata/live_h10_pin.json`, each in a clean checkout of its own, and the parent override is never
       # passed. A row whose method digest is not the registered one is refused and the step fails; a
-      # `LookAheadError` is recorded and stops the day. The step never blocks the H5 record, the anchor or
+      # `LookAheadError` is recorded as a pending onset (awaiting the new registration, #1324). The step never blocks the H5 record, the anchor or
       # the digest, and its failure ends the run red.
       - name: Attribute the day's H10 onsets
         id: h10
@@ -329,9 +329,9 @@ jobs:
             --day "$DAY" --panel ../work/panel.csv --out-dir . --pin ../main/metadata/live_h10_pin.json
           code=$?
           set -e
-          # 0: recorded. 3: a LookAheadError was recorded and stopped the day: the file is pushed, the step fails.
+          # 0: recorded (an onset the registered method refuses is a pending row in the file, not a failure).
           # Anything else (a refused row, a disagreement between the onset sources) wrote nothing.
-          if [ "$code" != 0 ] && [ "$code" != 3 ]; then exit "$code"; fi
+          if [ "$code" != 0 ]; then exit "$code"; fi
           git add "h10/$DAY.json"
           git -c user.name="github-actions[bot]" \
             -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \

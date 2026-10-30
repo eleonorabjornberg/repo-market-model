@@ -15,7 +15,7 @@ registered commit and of the parent at its pin; these tests inject the backend):
 * **the digest** (`DigestTests`): a row whose `method_digest` is not the registered one, or whose `parent_commit` is not
   the registered parent, or that was made with the parent override or from a dirty parent, is refused: nothing is written
   and the job fails;
-* **the lockbox** (`LookAheadTests`): a `LookAheadError` is recorded and the day stops; the job never retries with an
+* **the lockbox** (`LookAheadTests`): a `LookAheadError` is recorded as a pending row and the day goes on; the job never retries with an
   override and never attributes the onsets after it;
 * **the days** (`DayTests`): an onset is reported once, as soon as it is flagged; a "not attributable" row is kept; an
   onset whose report window has closed stays in the record as a miss; a day is recorded once; a day with no onset is
@@ -33,7 +33,8 @@ test named (the exception is what the failing test raised):
 * parent: in `live_h10.check_row`, `if row.get("parent_commit") != pin["parent_commit"]:` -> `if False:` makes
   `test_a_row_from_another_parent_is_refused` fail with `AssertionError: DigestMismatch not raised`.
 * lockbox: in `live_h10.run_day`, `except _look_ahead_error() as error:` -> `except ZeroDivisionError as error:` makes
-  `test_a_look_ahead_error_is_recorded_and_stops_the_day` fail with `splits.LookAheadError` propagating out of `run_day`.
+  `test_a_look_ahead_error_is_recorded_as_pending_and_the_day_goes_on` fail with `splits.LookAheadError` propagating out of
+  `run_day`.
 """
 
 from __future__ import annotations
@@ -191,7 +192,7 @@ class LookAheadTests(unittest.TestCase):
         self.addCleanup(self.tmp.cleanup)
         self.out = Path(self.tmp.name)
 
-    def test_a_look_ahead_error_is_recorded_and_stops_the_day(self):
+    def test_a_look_ahead_error_is_recorded_as_pending_and_the_day_goes_on(self):
         def behaviour(onset, report):
             if onset.day == 28:
                 raise LookAheadError("attribution: scored day 2026-09-04 is in the locked blind tier")
@@ -199,14 +200,18 @@ class LookAheadTests(unittest.TestCase):
 
         fake = Fake(onsets=[date(2026, 10, 27), date(2026, 10, 28), date(2026, 10, 29)], behaviour=behaviour)
         code = live_h10.run_day(date(2026, 10, 30), Path("p"), self.out, fake.backend(), self.pin)
-        self.assertEqual(code, live_h10.EXIT_LOOK_AHEAD)
-        self.assertEqual([c[0].day for c in fake.calls], [27, 28], "the day stops at the refusal")
+        self.assertEqual(code, 0)
+        self.assertEqual([c[0].day for c in fake.calls], [27, 28, 29], "the other onsets are still attributed")
         record = json.loads((self.out / "h10" / "2026-10-30.json").read_text(encoding="utf-8"))
-        self.assertEqual(record["status"], "look_ahead_error")
-        self.assertIn("locked blind tier", record["stopped"]["error"])
-        self.assertEqual(record["stopped"]["onset"], "2026-10-28")
-        self.assertEqual(record["stopped"]["not_attempted"], ["2026-10-29"])
-        self.assertEqual([r["onset"] for r in record["rows"]], ["2026-10-27"], "rows made before the refusal are kept")
+        self.assertEqual(record["status"], "pending")
+        self.assertEqual([(r["onset"], r["status"]) for r in record["rows"]],
+                         [("2026-10-27", "attributed"), ("2026-10-28", "pending"), ("2026-10-29", "attributed")])
+        pending = record["rows"][1]
+        self.assertIn("awaiting the new registration", pending["reason"])
+        self.assertIn("locked blind tier", pending["refusal"]["error"])
+        self.assertEqual(pending["refusal"]["type"], "LookAheadError")
+        self.assertFalse(pending["counted"])
+        self.assertEqual(pending["label"], "prospective")
         self.assertEqual(record["label"], "prospective")
 
     def test_a_refused_onset_is_tried_again_the_next_day_not_lost(self):
@@ -214,7 +219,7 @@ class LookAheadTests(unittest.TestCase):
         live_h10.run_day(date(2026, 10, 29), Path("p"), self.out, refuse.backend(), self.pin)
         again = Fake(onsets=[date(2026, 10, 28)])
         live_h10.run_day(date(2026, 10, 30), Path("p"), self.out, again.backend(), self.pin)
-        self.assertEqual(len(again.calls), 1, "no row was made, so the onset is still open")
+        self.assertEqual(len(again.calls), 1, "a pending onset is not attributed, so it is still open")
 
 
 class DayTests(unittest.TestCase):

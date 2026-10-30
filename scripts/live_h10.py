@@ -15,9 +15,11 @@ Each business day, after the day's H5 record is written, `run` does this on the 
    whose window closed without a row stays in the record as a "not attributable" miss, in the denominator;
 3. checks every row against the registered values in `metadata/live_h10_pin.json` (the method digest, the parent
    commit, no parent override, a clean parent). A row that differs is refused: nothing is written and the job fails;
-4. writes `h10/<day>.json`, labelled prospective, to the add-only `live-h10` branch. A `LookAheadError` (a lockbox tier)
-   is recorded in that file and stops the day, with exit code `EXIT_LOOK_AHEAD`; it is never overridden. A day with no
-   onset is recorded too, so a missing file means the job did not run.
+4. writes `h10/<day>.json`, labelled prospective, to the add-only `live-h10` branch. An onset the registered method
+   refuses with a `LookAheadError` is recorded as a row with status `pending` (her ruling on #1324, 30 October 2026:
+   awaiting the new registration, not attributed); the refusal is never overridden. A pending onset has no
+   attribution, so it is tried again each day while its window is open, and the other onsets of the day are still
+   attributed. A day with no onset is recorded too, so a missing file means the job did not run.
 
 The registered code is never liquidity's main. The workflow runs this script with `PYTHONPATH` set to a clean checkout
 of repo-market-liquidity at `liquidity_commit` and a clean checkout of the model at `parent_commit`, both from the pin
@@ -51,7 +53,7 @@ PIN_PATH = REPO / "metadata" / "live_h10_pin.json"
 H10_DIR = "h10"
 LABEL = "prospective"
 HYPOTHESIS = "H10"
-EXIT_LOOK_AHEAD = 3
+PENDING = "pending"
 
 BOT_NAME = "github-actions[bot]"
 BOT_EMAIL = "41898282+github-actions[bot]@users.noreply.github.com"
@@ -152,7 +154,8 @@ def _reported_onsets(out_dir: Path) -> set:
     reported = set()
     for path in sorted((Path(out_dir) / H10_DIR).glob("*.json")):
         for row in json.loads(path.read_text(encoding="utf-8")).get("rows", []):
-            reported.add(row["onset"])
+            if row.get("status") != PENDING:
+                reported.add(row["onset"])
     return reported
 
 
@@ -165,8 +168,17 @@ def _miss_row(onset: date, report: date, pin: dict) -> dict:
     }
 
 
+def _pending_row(onset: date, report: date, error: Exception) -> dict:
+    return {
+        "onset": onset.isoformat(), "report_day": report.isoformat(), "status": PENDING,
+        "reason": "the registered method refused this onset; awaiting the new registration (#1324)",
+        "refusal": {"type": type(error).__name__, "error": str(error)},
+        "under_bar": False, "beats_null": False, "counted": False,
+    }
+
+
 def run_day(day: date, panel: Path, out_dir: Path, backend: Backend, pin: dict) -> int:
-    """One business day's step. Returns 0, or `EXIT_LOOK_AHEAD` when a lockbox refusal stopped the day.
+    """One business day's step. Returns 0: an onset the registered method refuses is recorded as pending.
 
     Raises:
         DigestMismatch: a row is not the registered method's. Nothing is written.
@@ -188,8 +200,7 @@ def run_day(day: date, panel: Path, out_dir: Path, backend: Backend, pin: dict) 
     todo = [d for d in in_scope if d.isoformat() not in reported]
 
     made: List[dict] = []
-    stopped = None
-    for position, onset in enumerate(todo):
+    for onset in todo:
         deadline = report_deadline(dates, onset, pin["report_days"])
         if dates.index(report) - dates.index(onset) > pin["report_days"]:
             row = _miss_row(onset, report, pin)
@@ -198,17 +209,14 @@ def run_day(day: date, panel: Path, out_dir: Path, backend: Backend, pin: dict) 
                 with backend.rule() as rule:
                     row = backend.attribute(rows, rule, onset, report)
             except _look_ahead_error() as error:
-                stopped = {
-                    "onset": onset.isoformat(), "error": str(error), "type": type(error).__name__,
-                    "not_attempted": [d.isoformat() for d in todo[position + 1:]],
-                }
-                break
-            check_row(row, pin)
+                row = _pending_row(onset, report, error)
+            else:
+                check_row(row, pin)
         made.append({**row, "label": LABEL, "report_deadline": deadline.isoformat() if deadline else None})
 
     record = {
         "version": 1, "label": LABEL, "hypothesis": HYPOTHESIS, "decision_day": day.isoformat(),
-        "status": "look_ahead_error" if stopped else "ok",
+        "status": PENDING if any(r["status"] == PENDING for r in made) else "ok",
         "panel_last_day": report.isoformat(), "panel_rows": len(rows),
         "onsets_found": [d.isoformat() for d in in_scope], "onsets_checked_from": pin["registered_on"],
         "registered": {key: pin[key] for key in ("liquidity_commit", "parent_commit", "method_digest",
@@ -216,11 +224,9 @@ def run_day(day: date, panel: Path, out_dir: Path, backend: Backend, pin: dict) 
                                                   "report_days")},
         "rows": made,
     }
-    if stopped:
-        record["stopped"] = stopped
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(json.dumps(record, indent=1, sort_keys=True) + "\n", encoding="utf-8")
-    return EXIT_LOOK_AHEAD if stopped else 0
+    return 0
 
 
 def real_backend() -> Backend:
