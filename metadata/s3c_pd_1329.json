@@ -1,0 +1,21 @@
+{
+ "status": "declaration version 2 of the carry rule of (s3c-pd), drafted by the pull request that closes #1329 for Eleonora's review. It changes no score: nothing is re-scored and no record in docs/runs/ is edited. The published record of #1296 (docs/research/s3c-pd-1296-result.md, docs/research/s3c-pd-1296/result.json) was made under version 1 and stands as that record.",
+ "issue": 1329,
+ "finding": "#1303",
+ "hypothesis": "H5 (primary goal), step 3 (data rules)",
+ "ruling": "Eleonora, 30 October 2026 (chat, relayed on #1329; ledger item 88): finding #1303, yes. The 13-day weekly-carry bound binds every future weekly state term.",
+ "supersedes": {
+  "declaration": "metadata/s3c_pd_1296.json, candidate.transform, from 'The directive's latest public level is read literally' to 'the number skipped is reported': the carry over withheld weeks, 'with no limit on how many weeks are skipped (a limit is a threshold nobody has set)'; and metadata/sources_pd_financing_1296.json, transform.carry. Both stay as declared for the record made under them."
+ },
+ "version": 2,
+ "carry": {
+  "rule": "the level of the latest as-of week that has one is carried over withheld weeks for at most data.WEEKLY_CARRY_MAX_STALENESS_DAYS days, measured from the latest public as-of week of the same release (the panel's constant, docs/decisions/weekly-carry.md; repo_model.s3c_pd.MAX_CARRY_DAYS is that constant and not a copy). Beyond it the level is no level, the state is undefined and the term reads 0, as an unknown state does",
+  "reading": "on a weekly grid one withheld week is carried (7 days) and two are not (14 days), the 'one missed print is tolerated, two are not' of the record; the bound compares one as-of date with an earlier one and holds no release lag, as the record has it",
+  "not_a_new_threshold": "the number is the decided one; nothing is chosen for this term",
+  "implementation": "repo_model.s3c_pd.latest_defined_week, state_at and decision_states take max_carry_days, default MAX_CARRY_DAYS; max_carry_days=None is the unbounded read of version 1. skipped_weeks reports the age of the level whatever the bound",
+  "version_1_reproduction": "scripts/s3c_pd_1296.py passes the unbounded read explicitly (UNBOUNDED_CARRY) so that its published record reproduces. Any other, later reader of a weekly state term takes the default",
+  "tests": "tests/test_s3c_pd.py, CarryBoundTests (a recorded mutation in its docstring) and SourceEntryTests"
+ },
+ "what_is_not_known": "the effect of the bound on the (s3c-pd) scores. That is a re-run of scripts/s3c_pd_1296.py with the bounded read, about 25 minutes on a cloud session, which this declaration does not order and no one has run; no figure of the bound's effect is given here",
+ "declared_before_any_score": true
+}

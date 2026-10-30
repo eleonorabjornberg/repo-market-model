@@ -73,6 +73,9 @@ k, d1222 = m1255.k, m1255.d1222
 c, s686, s761, load_daily_panel = k.c, k.s686, k.s761, m1255.load_daily_panel
 
 DECLARATION = REPO / "metadata" / "s3c_pd_1296.json"
+#: This record was made with no limit on the weeks a level is carried (its declaration, "no limit"). The weekly-carry bound binds every later weekly
+#: state term (#1329, `metadata/s3c_pd_1329.json`); this script keeps the unbounded read so that the published record reproduces, and nothing new may.
+UNBOUNDED_CARRY = None
 SOURCE_DECLARATION = REPO / "metadata" / "sources_pd_financing_1296.json"
 SNAPSHOT = REPO / "tests" / "fixtures" / "snapshots" / "nyfed-pd-financing"
 RECORD_1255 = REPO / "docs" / "research" / "s3c-candidate-1255" / "result.json"
@@ -200,7 +203,7 @@ def fitted_effect(frame, walk: s3c_pd.PdWalk, levels) -> dict:
                    for h, v in sorted(coefficients.items())}
     units = []
     for d in frame.days:
-        week = s3c_pd.latest_defined_week(levels, d)
+        week = s3c_pd.latest_defined_week(levels, d, max_carry_days=UNBOUNDED_CARRY)
         if week is None:
             continue
         trailing = [levels[w] for w in levels if 0 < (week - w).days <= 7 * s3c_pd.TRAILING_WEEKS and levels[w] is not None]
@@ -347,7 +350,7 @@ def score(args) -> int:
     register = policy_events.load_register()
     table = cal.TermTable(panel, announced_iorb.load_announcements(c.IORB_TABLE), decision_time=c.DECISION_TIME)
     levels = s3c_pd.load_levels(SNAPSHOT)
-    states = s3c_pd.decision_states(levels, [row.date for row in panel])
+    states = s3c_pd.decision_states(levels, [row.date for row in panel], max_carry_days=UNBOUNDED_CARRY)
     s686.require_scored_days(candidate_days(panel, LAST_DAY, args.first), LAST_DAY)
     walk = s3c_pd.walk(panel, candidate_days(panel, LAST_DAY, args.first), table, states, registry=registry, decision_time=k.DECISION_TIME, splits=splits)
     result: dict = {
