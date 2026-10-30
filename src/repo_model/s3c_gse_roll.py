@@ -20,6 +20,7 @@ from __future__ import annotations
 from datetime import date, time, timedelta
 from typing import List, Optional, Sequence
 
+from .decision_instant import DECISION_TIME
 from . import announced_iorb, data, fomc_calendar
 from . import spread_mr_calendar as cal
 from .data import DailyObservation
@@ -71,7 +72,7 @@ class RollTermTable(cal.TermTable):
         announcements: Sequence[announced_iorb.IorbAnnouncement],
         calendar: Optional[Sequence[fomc_calendar.Meeting]] = None,
         *,
-        decision_time: time = time(16, 0),
+        decision_time: time = DECISION_TIME,
     ):
         super().__init__(panel, announcements, calendar, decision_time=decision_time)
         column = [roll_ramp(day) for day in self.dates]

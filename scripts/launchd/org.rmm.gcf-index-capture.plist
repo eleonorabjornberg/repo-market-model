@@ -2,7 +2,7 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <!-- DTCC GCF Repo Index capture (#962), on Eleonora's Mac. Placeholders __REPO__, __PYTHON__, __OUT_DIR__ and __LOG__
      are filled by the needs-mac install paste. Every five minutes, in any time zone: the script reads the ET clock and
-     fetches only from 15:30 to 16:00 ET on a business day (a run after 16:00 records the day missed, once). -->
+     fetches only from 15:30 ET to the decision instant (18:00 ET since #1312; DTCC posts at about 16:00) on a business day (a run after it records the day missed, once). -->
 <plist version="1.0">
 <dict>
   <key>Label</key>

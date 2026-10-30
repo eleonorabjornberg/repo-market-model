@@ -48,6 +48,7 @@ from pathlib import Path
 from repo_model import contract, registry as registry_module
 from repo_model import protocol_benchmarks as pb
 from repo_model import s3c_pd as pd
+from repo_model.decision_instant import DECISION_TIME, LEGACY_DECISION_TIME
 from repo_model import spread_mean_reversion as smr
 from repo_model import spread_mr_calendar as cal
 from repo_model import spread_mr_state_calendar as sc
@@ -147,10 +148,16 @@ class ReleaseDayTests(unittest.TestCase):
         self.assertEqual(pd.release_instant(date(2026, 11, 18)), datetime(2026, 11, 27, 16, 30))
 
     def test_a_week_released_at_16_30_is_refused_at_16_00_the_same_day(self):
+        # At the instant #1296's record was made at (16:00); the decision instant is 18:00 since #1312 (next test).
         levels = weekly([1.0, 2.0], first=self.WEEK)
         with self.assertRaises(LookAheadError):
-            pd.read_level(levels, self.WEEK, date(2026, 9, 3))
-        self.assertEqual(pd.read_level(levels, self.WEEK, date(2026, 9, 4)), 1.0)
+            pd.read_level(levels, self.WEEK, date(2026, 9, 3), decision_time=LEGACY_DECISION_TIME)
+        self.assertEqual(pd.read_level(levels, self.WEEK, date(2026, 9, 4), decision_time=LEGACY_DECISION_TIME), 1.0)
+
+    def test_a_week_released_at_16_30_is_read_at_the_18_00_decision_the_same_day(self):
+        levels = weekly([1.0, 2.0], first=self.WEEK)
+        self.assertEqual(pd.read_level(levels, self.WEEK, date(2026, 9, 3)), 1.0)
+        self.assertEqual(pd.read_level(levels, self.WEEK, date(2026, 9, 3), decision_time=DECISION_TIME), 1.0)
 
     def test_a_week_is_refused_before_its_release_and_read_after(self):
         levels = weekly([1.0], first=self.WEEK)
@@ -163,7 +170,11 @@ class ReleaseDayTests(unittest.TestCase):
         values = [float(i) for i in range(1, 60)]
         levels = weekly(values, first=date(2025, 5, 7))
         thursday, friday = date(2026, 6, 4), date(2026, 6, 5)  # the week of Wednesday 2026-05-27 is released on Thursday 4 June
-        self.assertEqual(pd.latest_public_week(levels, thursday), date(2026, 5, 20))
+        # at 16:00 (the instant of #1296's record) the release-day decision reads the week before ...
+        self.assertEqual(pd.latest_public_week(levels, thursday, decision_time=LEGACY_DECISION_TIME), date(2026, 5, 20))
+        self.assertEqual(pd.latest_public_week(levels, friday, decision_time=LEGACY_DECISION_TIME), date(2026, 5, 27))
+        # ... and at the 18:00 decision (#1312) it reads the week released that afternoon
+        self.assertEqual(pd.latest_public_week(levels, thursday), date(2026, 5, 27))
         self.assertEqual(pd.latest_public_week(levels, friday), date(2026, 5, 27))
 
     def test_a_week_not_in_the_snapshot_is_refused(self):
@@ -204,8 +215,10 @@ class StateTests(unittest.TestCase):
         self.assertAlmostEqual(pd.state_at(levels, day), expected, places=12)
         # the day before the withheld week is released, week 60 is not yet public: the same level, two weeks skipped less one
         before = pd.release_instant(weeks[60]).date()
-        self.assertEqual(pd.latest_public_week(levels, before), weeks[59])
-        self.assertEqual(pd.skipped_weeks(levels, before), 1)
+        self.assertEqual(pd.latest_public_week(levels, before, decision_time=LEGACY_DECISION_TIME), weeks[59])
+        self.assertEqual(pd.skipped_weeks(levels, before, decision_time=LEGACY_DECISION_TIME), 1)
+        # at the 18:00 decision the withheld week is released by the afternoon: the day before is the day it is not
+        self.assertEqual(pd.latest_public_week(levels, before), weeks[60])
 
     def test_nothing_is_skipped_when_the_latest_public_week_has_a_level(self):
         levels, _ = self.levels()
@@ -238,9 +251,15 @@ class StateTests(unittest.TestCase):
         moved = dict(levels)
         moved[weeks[60]] = 1.0e6
         moved[weeks[61]] = -1.0e6
-        self.assertEqual(pd.state_at(moved, day), pd.state_at(levels, day))
+        early = {"decision_time": LEGACY_DECISION_TIME}
+        self.assertEqual(pd.state_at(moved, day, **early), pd.state_at(levels, day, **early))
         later = day + timedelta(days=1)
-        self.assertNotEqual(pd.state_at(moved, later), pd.state_at(levels, later))
+        self.assertNotEqual(pd.state_at(moved, later, **early), pd.state_at(levels, later, **early))
+        # at the 18:00 decision (#1312) the release-day decision already reads week 60, never week 61
+        self.assertNotEqual(pd.state_at(moved, day), pd.state_at(levels, day))
+        moved_61 = dict(levels)
+        moved_61[weeks[61]] = -1.0e6
+        self.assertEqual(pd.state_at(moved_61, day), pd.state_at(levels, day))
 
     def test_the_states_table_keys_every_panel_day(self):
         states = pd.decision_states(SNAPSHOT_LEVELS, DATES)

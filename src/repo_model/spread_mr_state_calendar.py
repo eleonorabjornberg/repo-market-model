@@ -39,6 +39,7 @@ from dataclasses import dataclass
 from datetime import date, time
 from typing import Dict, Iterable, List, Mapping, NamedTuple, Optional, Sequence, Tuple
 
+from .decision_instant import DECISION_TIME
 from . import announced_iorb
 from . import protocol_benchmarks as pb
 from . import setup_diagnostic
@@ -277,7 +278,7 @@ class IorbTable:
     """
 
     def __init__(self, panel: Sequence[DailyObservation], announcements: Sequence[announced_iorb.IorbAnnouncement], *,
-                 decision_time: time = time(16, 0)):
+                 decision_time: time = DECISION_TIME):
         self.dates = [row.date for row in panel]
         self.changes = [
             0.0 if values[announced_iorb.ANNOUNCED_CHANGE] is None else float(values[announced_iorb.ANNOUNCED_CHANGE])

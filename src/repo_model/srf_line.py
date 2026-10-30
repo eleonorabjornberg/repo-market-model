@@ -26,12 +26,15 @@ from __future__ import annotations
 from datetime import date, datetime, time
 from typing import List, Optional, Sequence
 
+from .decision_instant import LEGACY_DECISION_TIME
 from .policy_events import PolicyEntry, known_entries, require_announced
 
 __all__ = ["DECISION_TIME", "FACILITY_EFFECTIVE", "cap_quantiles", "srf_line_bps"]
 
-#: The decision instant of the published records, which the declaration's `available_time` states.
-DECISION_TIME = time(16, 0)
+#: The instant #1241's and #1252's declarations state as `available_time`: the decision instant when they were
+#: declared (16:00), kept as those dated declarations record it (#1312). The cap is not adopted, and a re-declaration
+#: at the new instant is a later directive's.
+DECISION_TIME = LEGACY_DECISION_TIME
 #: The first day of the facility in the register (`standing_repo-20210728`, effective 2021-07-29).
 FACILITY_EFFECTIVE = date(2021, 7, 29)
 _SRF, _IORB = "standing_repo", "iorb_rate"

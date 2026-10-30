@@ -1,16 +1,16 @@
 """DTCC GCF Repo Index, forward capture (#962; H5 groundwork G3, prospective logging).
 
 DTCC posts the day's par-weighted GCF Treasury rate and par volume at about 15:30 ET on the day itself, half an hour
-before the 16:00 ET decision instant, so it is the one public repo rate for day T that exists at T's decision.
+before the 16:00 ET decision instant (18:00 ET since #1312, when DTCC was found to post at about 16:00; see `decision_instant`), so it is the one public repo rate for day T that exists at T's decision.
 `repo_model.gcf_index` keeps one file per business day, as fetched: the response bytes, the fetch instant (UTC and ET)
-and their SHA-256. A day fetched after 16:00 ET, or with no posting by then, is a missed record that holds no value.
+and their SHA-256. A day fetched after the decision instant, or with no posting by then, is a missed record that holds no value.
 Nothing is back-filled and no history is read as an input (#962 criterion 3).
 
 **Recorded mutation** (27 October 2026), in `repo_model.gcf_index.check_record`: the line
 
     if fetched > decision:
 
-(a captured record whose fetch instant is after the day's 16:00 ET decision instant) was changed to `if False:`.
+(a captured record whose fetch instant is after the day's decision instant) was changed to `if False:`.
 `LateFetchTests.test_a_fetch_after_the_decision_instant_is_refused` and
 `LateFetchTests.test_the_read_guard_refuses_a_value_fetched_after_the_decision_instant` then failed with
 `AssertionError: LookAheadError not raised`. The read guard's own line in `read_value`, `if fetched > as_of:`, was
@@ -95,15 +95,15 @@ class ParseTests(unittest.TestCase):
 
 
 class InstantsTests(unittest.TestCase):
-    def test_the_decision_instant_is_sixteen_hundred_eastern_on_the_day(self):
-        self.assertEqual(gi.decision_instant(DAY).isoformat(), "2026-10-26T16:00:00-04:00")
+    def test_the_decision_instant_is_eighteen_hundred_eastern_on_the_day(self):
+        self.assertEqual(gi.decision_instant(DAY).isoformat(), "2026-10-26T18:00:00-04:00")
 
     def test_the_window_opens_at_fifteen_thirty_on_the_same_day(self):
         self.assertEqual(gi.window_start(DAY).isoformat(), "2026-10-26T15:30:00-04:00")
 
     def test_standard_time_is_an_hour_later_in_utc(self):
         winter = date(2026, 11, 2)
-        self.assertEqual(gi.decision_instant(winter).astimezone(timezone.utc).hour, 21)
+        self.assertEqual(gi.decision_instant(winter).astimezone(timezone.utc).hour, 23)
 
 
 class CapturedRecordTests(unittest.TestCase):
@@ -136,13 +136,13 @@ class CapturedRecordTests(unittest.TestCase):
             _record(fetched=_utc(15, 29, 59))
 
     def test_a_fetch_at_the_end_of_the_window_is_kept(self):
-        self.assertEqual(_record(fetched=_utc(16, 0, 0))["status"], "captured")
+        self.assertEqual(_record(fetched=_utc(18, 0, 0))["status"], "captured")
 
 
 class LateFetchTests(unittest.TestCase):
     def test_a_fetch_after_the_decision_instant_is_refused(self):
         with self.assertRaises(LookAheadError):
-            _record(fetched=_utc(16, 0, 1))
+            _record(fetched=_utc(18, 0, 1))
 
     def test_a_captured_record_is_refused_by_a_reader_at_an_earlier_instant(self):
         with tempfile.TemporaryDirectory() as root:
@@ -153,14 +153,14 @@ class LateFetchTests(unittest.TestCase):
 
     def test_the_read_guard_refuses_a_value_fetched_after_the_decision_instant(self):
         record = _record(fetched=_utc(15, 45))
-        record["fetched_at_utc"] = _utc(16, 20).isoformat()
-        record["fetched_at_et"] = gi._et(_utc(16, 20)).isoformat()
+        record["fetched_at_utc"] = _utc(18, 20).isoformat()
+        record["fetched_at_et"] = gi._et(_utc(18, 20)).isoformat()
         with tempfile.TemporaryDirectory() as root:
             path = Path(root) / "gcf" / "2026-10-26.json"
             path.parent.mkdir(parents=True)
             path.write_text(json.dumps(record), encoding="utf-8")
             with self.assertRaises(LookAheadError):
-                gi.read_value(root, DAY, as_of=_utc(16, 30))
+                gi.read_value(root, DAY, as_of=_utc(18, 30))
             with self.assertRaises(LookAheadError):
                 gi.read_all(root)
 
@@ -173,7 +173,7 @@ class LateFetchTests(unittest.TestCase):
 
 class MissedRecordTests(unittest.TestCase):
     def test_a_late_fetch_is_a_missed_record_with_no_value(self):
-        record = gi.missed_record(DAY, "fetched_after_decision", fetched_at=_utc(16, 12), url=URL, payload=_csv())
+        record = gi.missed_record(DAY, "fetched_after_decision", fetched_at=_utc(18, 12), url=URL, payload=_csv())
         self.assertEqual(record["status"], "missed")
         self.assertNotIn("treasury_rate_percent", record)
         self.assertNotIn("payload", record)
@@ -181,8 +181,8 @@ class MissedRecordTests(unittest.TestCase):
 
     def test_a_missed_record_is_never_a_value(self):
         with tempfile.TemporaryDirectory() as root:
-            gi.write_record(root, gi.missed_record(DAY, "no_posting", fetched_at=_utc(16, 10), url=URL, payload=_csv(days=())))
-            self.assertIsNone(gi.read_value(root, DAY, as_of=_utc(17)))
+            gi.write_record(root, gi.missed_record(DAY, "no_posting", fetched_at=_utc(18, 10), url=URL, payload=_csv(days=())))
+            self.assertIsNone(gi.read_value(root, DAY, as_of=_utc(19)))
 
     def test_no_run_has_no_fetch(self):
         record = gi.missed_record(DAY, "no_run")
@@ -251,13 +251,13 @@ class WhatToDoTests(unittest.TestCase):
         self.assertEqual((decision.action, decision.day), ("fetch", DAY))
 
     def test_the_last_instant_of_the_window_still_fetches(self):
-        self.assertEqual(gi.plan(_utc(16, 0, 0), already=set()).action, "fetch")
+        self.assertEqual(gi.plan(_utc(18, 0, 0), already=set()).action, "fetch")
 
     def test_a_day_already_stored_is_not_fetched_again(self):
         self.assertEqual(gi.plan(_utc(15, 40), already={DAY}).action, "done")
 
     def test_after_the_decision_instant_the_day_is_fetched_once_to_be_recorded_missed(self):
-        decision = gi.plan(_utc(16, 0, 1), already=set())
+        decision = gi.plan(_utc(18, 0, 1), already=set())
         self.assertEqual((decision.action, decision.day), ("late", DAY))
 
     def test_unrecorded_earlier_business_days_are_no_run_not_back_filled(self):
@@ -325,28 +325,28 @@ class CaptureScriptTests(unittest.TestCase):
 
     def test_a_late_slot_with_the_row_records_the_day_missed_and_keeps_no_value(self):
         with tempfile.TemporaryDirectory() as root:
-            self.assertEqual(self._run(root, _utc(16, 35)), "missed")
+            self.assertEqual(self._run(root, _utc(18, 35)), "missed")
             record = json.loads((Path(root) / "gcf" / "2026-10-26.json").read_text(encoding="utf-8"))
             self.assertEqual((record["status"], record["reason"]), ("missed", "fetched_after_decision"))
             self.assertNotIn("treasury_rate_percent", record)
 
     def test_a_slot_that_started_in_the_window_but_fetched_after_it_is_missed(self):
         with tempfile.TemporaryDirectory() as root:
-            self.assertEqual(self._run(root, _utc(15, 59), clock=_utc(16, 0, 30)), "missed")
+            self.assertEqual(self._run(root, _utc(17, 59), clock=_utc(18, 0, 30)), "missed")
             record = json.loads((Path(root) / "gcf" / "2026-10-26.json").read_text(encoding="utf-8"))
             self.assertEqual(record["reason"], "fetched_after_decision")
 
     def test_a_late_slot_with_no_row_records_no_posting(self):
         self.body = _csv(days=((date(2026, 10, 23), 1, 3.9, 1, 3.9),))
         with tempfile.TemporaryDirectory() as root:
-            self.assertEqual(self._run(root, _utc(17, 0)), "missed")
+            self.assertEqual(self._run(root, _utc(19, 0)), "missed")
             record = json.loads((Path(root) / "gcf" / "2026-10-26.json").read_text(encoding="utf-8"))
             self.assertEqual((record["reason"], record["latest_row_date"]), ("no_posting", "2026-10-23"))
 
     def test_an_unreadable_late_response_is_recorded_not_raised(self):
         self.body = b"<html>maintenance</html>"
         with tempfile.TemporaryDirectory() as root:
-            self.assertEqual(self._run(root, _utc(17, 0)), "missed")
+            self.assertEqual(self._run(root, _utc(19, 0)), "missed")
             record = json.loads((Path(root) / "gcf" / "2026-10-26.json").read_text(encoding="utf-8"))
             self.assertEqual(record["reason"], "unreadable_response")
 
@@ -410,7 +410,7 @@ class DeclarationTests(unittest.TestCase):
         raw = (self.ROOT / "scripts" / "launchd" / "org.rmm.gcf-index-capture.plist").read_bytes()
         plist = plistlib.loads(raw)
         self.assertEqual(plist["Label"], "org.rmm.gcf-index-capture")
-        # Time-zone free: the script itself decides (15:30 to 16:00 ET) whether a run fetches.
+        # Time-zone free: the script itself decides (15:30 ET to the decision instant) whether a run fetches.
         self.assertLessEqual(plist["StartInterval"], 600)
         args = plist["ProgramArguments"]
         self.assertIn("capture", args)
@@ -444,7 +444,7 @@ class PrivateDirectoryTests(unittest.TestCase):
     def test_the_main_entry_refuses_a_checkout_and_writes_nothing(self):
         with tempfile.TemporaryDirectory() as root:
             (Path(root) / ".git").mkdir()
-            code = self.script.main(["capture", "--out-dir", str(Path(root) / "x"), "--now", _utc(16, 30).isoformat()])
+            code = self.script.main(["capture", "--out-dir", str(Path(root) / "x"), "--now", _utc(18, 30).isoformat()])
             self.assertEqual(code, 2)
             self.assertFalse((Path(root) / "x").exists())
 

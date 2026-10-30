@@ -15,6 +15,7 @@ import unittest
 from datetime import date, datetime, time, timedelta
 from pathlib import Path
 
+from repo_model.decision_instant import DECISION_TIME
 from repo_model.announced_iorb import (
     ANNOUNCED_CHANGE,
     DAYS_TO_CHANGE,
@@ -34,7 +35,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SNAPSHOT = ROOT / "tests" / "fixtures" / "snapshots" / "fed-iorb-announcements"
 TABLE = SNAPSHOT / "iorb_changes.csv"
 REGISTRY = json.loads((ROOT / "metadata" / "sources.json").read_text(encoding="utf-8"))
-DECISION = time(16, 0)
+DECISION = DECISION_TIME  # 18:00 since #1312; the registry's scheduled block is declared at the decision instant
 
 
 def weekdays(start: date, end: date):
@@ -252,7 +253,7 @@ class InformationRuleTests(unittest.TestCase):
     def setUp(self):
         self.dates = weekdays(date(2022, 6, 1), date(2022, 6, 30))
 
-    def test_both_features_are_scheduled_and_pass_the_guards_at_16_00(self):
+    def test_both_features_are_scheduled_and_pass_the_guards_at_the_decision_instant(self):
         rule = InformationRule(REGISTRY, ("spread_bps",) + FEATURES, decision_time=DECISION)
         scored = self.dates.index(date(2022, 6, 16))
         info = rule.information_set(self.dates, scored)
@@ -278,7 +279,7 @@ class InformationRuleTests(unittest.TestCase):
     def test_the_declaration_is_the_registrys_and_names_both_fields(self):
         block = REGISTRY["fed_iorb_announcements"]["scheduled_availability"]
         self.assertEqual(sorted(block["fields"]), sorted(FEATURES))
-        self.assertEqual((block["days"], block["available_time"]), (1, "16:00"))
+        self.assertEqual((block["days"], block["available_time"]), (1, DECISION_TIME.isoformat("minutes")))
 
 
 class WithAnnouncedIorbTests(unittest.TestCase):

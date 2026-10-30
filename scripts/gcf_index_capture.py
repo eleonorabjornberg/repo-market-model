@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Keep each business day's DTCC GCF Repo Index value, fetched between 15:30 and 16:00 ET (#962), on Eleonora's Mac.
+"""Keep each business day's DTCC GCF Repo Index value, fetched from 15:30 ET to the decision instant, 18:00 ET (#962, #1312), on Eleonora's Mac.
 
     PYTHONPATH=src python3 scripts/gcf_index_capture.py capture [--out-dir DIR]
     PYTHONPATH=src python3 scripts/gcf_index_capture.py verify [--dir DIR]
@@ -13,9 +13,9 @@ script itself decides, from the ET clock, whether a run fetches. One request per
 `https://cms-prod.dtcc.com/data/gcfindex.csv?v=<epoch ms>` (the cache-busting query the page itself sends).
 
 * Before 15:30 ET, on a weekend or a holiday, or when the day is already stored: nothing is fetched.
-* From 15:30 to 16:00 ET inclusive: fetch. If the file has the day's Treasury row, keep it (`captured`); if not, write
+* From 15:30 ET to the decision instant (`repo_model.decision_instant`, 18:00 ET) inclusive: fetch. If the file has the day's Treasury row, keep it (`captured`); if not, write
   nothing and exit 0, and a later run tries again.
-* After 16:00 ET (or a fetch that returns after it): fetch once and record the day `missed`, with no value:
+* After the decision instant (or a fetch that returns after it): fetch once and record the day `missed`, with no value:
   `fetched_after_decision` if the row is there, `no_posting` if it is not, `unreadable_response` if the file does not
   parse. A day is never back-filled.
 * Business days after the first stored day that have no file at all are recorded `no_run`, with no fetch.

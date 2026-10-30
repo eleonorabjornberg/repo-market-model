@@ -1,0 +1,1226 @@
+{
+ "decision_keyed": [
+  "fed_iorb_announcements.scheduled_availability"
+ ],
+ "directive": 1312,
+ "moves": [
+  {
+   "available_time": "16:15",
+   "basis": "ref_date",
+   "days": 1,
+   "days_moved": 2101,
+   "decision_weekdays": {
+    "Friday": 423,
+    "Monday": 387,
+    "Thursday": 425,
+    "Tuesday": 435,
+    "Wednesday": 431
+   },
+   "field": "EFFR",
+   "kind": "observed",
+   "rows_later": {
+    "1": 2101
+   },
+   "source": "frb_ddp",
+   "unit": "business_days"
+  },
+  {
+   "available_time": "16:15",
+   "basis": "record_date",
+   "days": 0,
+   "days_moved": 2102,
+   "decision_weekdays": {
+    "Friday": 423,
+    "Monday": 387,
+    "Thursday": 425,
+    "Tuesday": 435,
+    "Wednesday": 432
+   },
+   "field": "IOER",
+   "kind": "observed",
+   "rows_later": {
+    "1": 2102
+   },
+   "source": "frb_ddp",
+   "unit": "calendar_days"
+  },
+  {
+   "available_time": "16:15",
+   "basis": "record_date",
+   "days": 0,
+   "days_moved": 2102,
+   "decision_weekdays": {
+    "Friday": 423,
+    "Monday": 387,
+    "Thursday": 425,
+    "Tuesday": 435,
+    "Wednesday": 432
+   },
+   "field": "IORB",
+   "kind": "observed",
+   "rows_later": {
+    "1": 2102
+   },
+   "source": "frb_ddp",
+   "unit": "calendar_days"
+  },
+  {
+   "available_time": "16:15",
+   "basis": "record_date",
+   "days": 12,
+   "days_moved": 1212,
+   "decision_weekdays": {
+    "Monday": 378,
+    "Tuesday": 420,
+    "Wednesday": 414
+   },
+   "field": "total_assets",
+   "kind": "observed",
+   "rows_later": {
+    "1": 1212
+   },
+   "source": "frb_h8",
+   "unit": "calendar_days"
+  },
+  {
+   "available_time": "16:15",
+   "basis": "record_date",
+   "days": 0,
+   "days_moved": 2102,
+   "decision_weekdays": {
+    "Friday": 423,
+    "Monday": 387,
+    "Thursday": 425,
+    "Tuesday": 435,
+    "Wednesday": 432
+   },
+   "field": "IORB",
+   "kind": "observed",
+   "rows_later": {
+    "1": 2102
+   },
+   "source": "fred_macro_latest_vintage",
+   "unit": "calendar_days"
+  },
+  {
+   "available_time": "16:15",
+   "basis": "record_date",
+   "days": 0,
+   "days_moved": 2102,
+   "decision_weekdays": {
+    "Friday": 423,
+    "Monday": 387,
+    "Thursday": 425,
+    "Tuesday": 435,
+    "Wednesday": 432
+   },
+   "field": "IOER",
+   "kind": "observed",
+   "rows_later": {
+    "1": 2102
+   },
+   "source": "fred_macro_latest_vintage",
+   "unit": "calendar_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "record_date",
+   "days": 5,
+   "days_moved": 1215,
+   "decision_weekdays": {
+    "Monday": 379,
+    "Tuesday": 421,
+    "Wednesday": 415
+   },
+   "field": "WRESBAL",
+   "kind": "observed",
+   "rows_later": {
+    "1": 1215
+   },
+   "source": "fred_macro_latest_vintage",
+   "unit": "calendar_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "record_date",
+   "days": 5,
+   "days_moved": 1215,
+   "decision_weekdays": {
+    "Monday": 379,
+    "Tuesday": 421,
+    "Wednesday": 415
+   },
+   "field": "WTREGEN",
+   "kind": "observed",
+   "rows_later": {
+    "1": 1215
+   },
+   "source": "fred_macro_latest_vintage",
+   "unit": "calendar_days"
+  },
+  {
+   "available_time": "16:15",
+   "basis": "record_date",
+   "days": 5,
+   "days_moved": 1215,
+   "decision_weekdays": {
+    "Monday": 379,
+    "Tuesday": 421,
+    "Wednesday": 415
+   },
+   "field": "DFF",
+   "kind": "observed",
+   "rows_later": {
+    "1": 1215
+   },
+   "source": "fred_macro_latest_vintage",
+   "unit": "calendar_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "record_date",
+   "days": 5,
+   "days_moved": 1215,
+   "decision_weekdays": {
+    "Monday": 379,
+    "Tuesday": 421,
+    "Wednesday": 415
+   },
+   "field": "WLRRAOL",
+   "kind": "observed",
+   "rows_later": {
+    "1": 1215
+   },
+   "source": "fred_macro_latest_vintage",
+   "unit": "calendar_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "ref_date",
+   "days": 6,
+   "days_moved": 2096,
+   "decision_weekdays": {
+    "Friday": 422,
+    "Monday": 386,
+    "Thursday": 424,
+    "Tuesday": 434,
+    "Wednesday": 430
+   },
+   "field": "PDPOSGST-TOT",
+   "kind": "observed",
+   "rows_later": {
+    "1": 2096
+   },
+   "source": "nyfed_fr2004",
+   "unit": "business_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "ref_date",
+   "days": 6,
+   "days_moved": 2096,
+   "decision_weekdays": {
+    "Friday": 422,
+    "Monday": 386,
+    "Thursday": 424,
+    "Tuesday": 434,
+    "Wednesday": 430
+   },
+   "field": "PDPOSGS-B",
+   "kind": "observed",
+   "rows_later": {
+    "1": 2096
+   },
+   "source": "nyfed_fr2004",
+   "unit": "business_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "ref_date",
+   "days": 6,
+   "days_moved": 2096,
+   "decision_weekdays": {
+    "Friday": 422,
+    "Monday": 386,
+    "Thursday": 424,
+    "Tuesday": 434,
+    "Wednesday": 430
+   },
+   "field": "PDPOSGS-BFRN",
+   "kind": "observed",
+   "rows_later": {
+    "1": 2096
+   },
+   "source": "nyfed_fr2004",
+   "unit": "business_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "ref_date",
+   "days": 6,
+   "days_moved": 2096,
+   "decision_weekdays": {
+    "Friday": 422,
+    "Monday": 386,
+    "Thursday": 424,
+    "Tuesday": 434,
+    "Wednesday": 430
+   },
+   "field": "PDPOSGSC-L2",
+   "kind": "observed",
+   "rows_later": {
+    "1": 2096
+   },
+   "source": "nyfed_fr2004",
+   "unit": "business_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "ref_date",
+   "days": 6,
+   "days_moved": 2096,
+   "decision_weekdays": {
+    "Friday": 422,
+    "Monday": 386,
+    "Thursday": 424,
+    "Tuesday": 434,
+    "Wednesday": 430
+   },
+   "field": "PDPOSGSC-G2L3",
+   "kind": "observed",
+   "rows_later": {
+    "1": 2096
+   },
+   "source": "nyfed_fr2004",
+   "unit": "business_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "ref_date",
+   "days": 6,
+   "days_moved": 2096,
+   "decision_weekdays": {
+    "Friday": 422,
+    "Monday": 386,
+    "Thursday": 424,
+    "Tuesday": 434,
+    "Wednesday": 430
+   },
+   "field": "PDPOSGSC-G3L6",
+   "kind": "observed",
+   "rows_later": {
+    "1": 2096
+   },
+   "source": "nyfed_fr2004",
+   "unit": "business_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "ref_date",
+   "days": 6,
+   "days_moved": 2096,
+   "decision_weekdays": {
+    "Friday": 422,
+    "Monday": 386,
+    "Thursday": 424,
+    "Tuesday": 434,
+    "Wednesday": 430
+   },
+   "field": "PDPOSGSC-G6L7",
+   "kind": "observed",
+   "rows_later": {
+    "1": 2096
+   },
+   "source": "nyfed_fr2004",
+   "unit": "business_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "ref_date",
+   "days": 6,
+   "days_moved": 2096,
+   "decision_weekdays": {
+    "Friday": 422,
+    "Monday": 386,
+    "Thursday": 424,
+    "Tuesday": 434,
+    "Wednesday": 430
+   },
+   "field": "PDPOSGSC-G7L11",
+   "kind": "observed",
+   "rows_later": {
+    "1": 2096
+   },
+   "source": "nyfed_fr2004",
+   "unit": "business_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "ref_date",
+   "days": 6,
+   "days_moved": 2096,
+   "decision_weekdays": {
+    "Friday": 422,
+    "Monday": 386,
+    "Thursday": 424,
+    "Tuesday": 434,
+    "Wednesday": 430
+   },
+   "field": "PDPOSGSC-G11",
+   "kind": "observed",
+   "rows_later": {
+    "1": 2096
+   },
+   "source": "nyfed_fr2004",
+   "unit": "business_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "ref_date",
+   "days": 6,
+   "days_moved": 2096,
+   "decision_weekdays": {
+    "Friday": 422,
+    "Monday": 386,
+    "Thursday": 424,
+    "Tuesday": 434,
+    "Wednesday": 430
+   },
+   "field": "PDPOSGSC-G11L21",
+   "kind": "observed",
+   "rows_later": {
+    "1": 2096
+   },
+   "source": "nyfed_fr2004",
+   "unit": "business_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "ref_date",
+   "days": 6,
+   "days_moved": 2096,
+   "decision_weekdays": {
+    "Friday": 422,
+    "Monday": 386,
+    "Thursday": 424,
+    "Tuesday": 434,
+    "Wednesday": 430
+   },
+   "field": "PDPOSGSC-G21",
+   "kind": "observed",
+   "rows_later": {
+    "1": 2096
+   },
+   "source": "nyfed_fr2004",
+   "unit": "business_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "ref_date",
+   "days": 6,
+   "days_moved": 2096,
+   "decision_weekdays": {
+    "Friday": 422,
+    "Monday": 386,
+    "Thursday": 424,
+    "Tuesday": 434,
+    "Wednesday": 430
+   },
+   "field": "PDPOSTIPS-L2",
+   "kind": "observed",
+   "rows_later": {
+    "1": 2096
+   },
+   "source": "nyfed_fr2004",
+   "unit": "business_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "ref_date",
+   "days": 6,
+   "days_moved": 2096,
+   "decision_weekdays": {
+    "Friday": 422,
+    "Monday": 386,
+    "Thursday": 424,
+    "Tuesday": 434,
+    "Wednesday": 430
+   },
+   "field": "PDPOSTIPS-G2",
+   "kind": "observed",
+   "rows_later": {
+    "1": 2096
+   },
+   "source": "nyfed_fr2004",
+   "unit": "business_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "ref_date",
+   "days": 6,
+   "days_moved": 2096,
+   "decision_weekdays": {
+    "Friday": 422,
+    "Monday": 386,
+    "Thursday": 424,
+    "Tuesday": 434,
+    "Wednesday": 430
+   },
+   "field": "PDPOSTIPS-G6L11",
+   "kind": "observed",
+   "rows_later": {
+    "1": 2096
+   },
+   "source": "nyfed_fr2004",
+   "unit": "business_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "ref_date",
+   "days": 6,
+   "days_moved": 2096,
+   "decision_weekdays": {
+    "Friday": 422,
+    "Monday": 386,
+    "Thursday": 424,
+    "Tuesday": 434,
+    "Wednesday": 430
+   },
+   "field": "PDPOSTIPS-G11",
+   "kind": "observed",
+   "rows_later": {
+    "1": 2096
+   },
+   "source": "nyfed_fr2004",
+   "unit": "business_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "record_date",
+   "days": 0,
+   "days_moved": 2102,
+   "decision_weekdays": {
+    "Friday": 423,
+    "Monday": 387,
+    "Thursday": 425,
+    "Tuesday": 435,
+    "Wednesday": 432
+   },
+   "field": "tbill_4w_bank_discount",
+   "kind": "observed",
+   "rows_later": {
+    "1": 2102
+   },
+   "source": "treasury_bill_rates",
+   "unit": "calendar_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "record_date",
+   "days": 0,
+   "days_moved": 2102,
+   "decision_weekdays": {
+    "Friday": 423,
+    "Monday": 387,
+    "Thursday": 425,
+    "Tuesday": 435,
+    "Wednesday": 432
+   },
+   "field": "tbill_4w_coupon_equivalent",
+   "kind": "observed",
+   "rows_later": {
+    "1": 2102
+   },
+   "source": "treasury_bill_rates",
+   "unit": "calendar_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "record_date",
+   "days": 0,
+   "days_moved": 2102,
+   "decision_weekdays": {
+    "Friday": 423,
+    "Monday": 387,
+    "Thursday": 425,
+    "Tuesday": 435,
+    "Wednesday": 432
+   },
+   "field": "tbill_6w_bank_discount",
+   "kind": "observed",
+   "rows_later": {
+    "1": 2102
+   },
+   "source": "treasury_bill_rates",
+   "unit": "calendar_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "record_date",
+   "days": 0,
+   "days_moved": 2102,
+   "decision_weekdays": {
+    "Friday": 423,
+    "Monday": 387,
+    "Thursday": 425,
+    "Tuesday": 435,
+    "Wednesday": 432
+   },
+   "field": "tbill_6w_coupon_equivalent",
+   "kind": "observed",
+   "rows_later": {
+    "1": 2102
+   },
+   "source": "treasury_bill_rates",
+   "unit": "calendar_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "record_date",
+   "days": 0,
+   "days_moved": 2102,
+   "decision_weekdays": {
+    "Friday": 423,
+    "Monday": 387,
+    "Thursday": 425,
+    "Tuesday": 435,
+    "Wednesday": 432
+   },
+   "field": "tbill_8w_bank_discount",
+   "kind": "observed",
+   "rows_later": {
+    "1": 2102
+   },
+   "source": "treasury_bill_rates",
+   "unit": "calendar_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "record_date",
+   "days": 0,
+   "days_moved": 2102,
+   "decision_weekdays": {
+    "Friday": 423,
+    "Monday": 387,
+    "Thursday": 425,
+    "Tuesday": 435,
+    "Wednesday": 432
+   },
+   "field": "tbill_8w_coupon_equivalent",
+   "kind": "observed",
+   "rows_later": {
+    "1": 2102
+   },
+   "source": "treasury_bill_rates",
+   "unit": "calendar_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "record_date",
+   "days": 0,
+   "days_moved": 2102,
+   "decision_weekdays": {
+    "Friday": 423,
+    "Monday": 387,
+    "Thursday": 425,
+    "Tuesday": 435,
+    "Wednesday": 432
+   },
+   "field": "tbill_13w_bank_discount",
+   "kind": "observed",
+   "rows_later": {
+    "1": 2102
+   },
+   "source": "treasury_bill_rates",
+   "unit": "calendar_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "record_date",
+   "days": 0,
+   "days_moved": 2102,
+   "decision_weekdays": {
+    "Friday": 423,
+    "Monday": 387,
+    "Thursday": 425,
+    "Tuesday": 435,
+    "Wednesday": 432
+   },
+   "field": "tbill_13w_coupon_equivalent",
+   "kind": "observed",
+   "rows_later": {
+    "1": 2102
+   },
+   "source": "treasury_bill_rates",
+   "unit": "calendar_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "record_date",
+   "days": 0,
+   "days_moved": 2102,
+   "decision_weekdays": {
+    "Friday": 423,
+    "Monday": 387,
+    "Thursday": 425,
+    "Tuesday": 435,
+    "Wednesday": 432
+   },
+   "field": "tbill_17w_bank_discount",
+   "kind": "observed",
+   "rows_later": {
+    "1": 2102
+   },
+   "source": "treasury_bill_rates",
+   "unit": "calendar_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "record_date",
+   "days": 0,
+   "days_moved": 2102,
+   "decision_weekdays": {
+    "Friday": 423,
+    "Monday": 387,
+    "Thursday": 425,
+    "Tuesday": 435,
+    "Wednesday": 432
+   },
+   "field": "tbill_17w_coupon_equivalent",
+   "kind": "observed",
+   "rows_later": {
+    "1": 2102
+   },
+   "source": "treasury_bill_rates",
+   "unit": "calendar_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "record_date",
+   "days": 0,
+   "days_moved": 2102,
+   "decision_weekdays": {
+    "Friday": 423,
+    "Monday": 387,
+    "Thursday": 425,
+    "Tuesday": 435,
+    "Wednesday": 432
+   },
+   "field": "tbill_26w_bank_discount",
+   "kind": "observed",
+   "rows_later": {
+    "1": 2102
+   },
+   "source": "treasury_bill_rates",
+   "unit": "calendar_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "record_date",
+   "days": 0,
+   "days_moved": 2102,
+   "decision_weekdays": {
+    "Friday": 423,
+    "Monday": 387,
+    "Thursday": 425,
+    "Tuesday": 435,
+    "Wednesday": 432
+   },
+   "field": "tbill_26w_coupon_equivalent",
+   "kind": "observed",
+   "rows_later": {
+    "1": 2102
+   },
+   "source": "treasury_bill_rates",
+   "unit": "calendar_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "record_date",
+   "days": 0,
+   "days_moved": 2102,
+   "decision_weekdays": {
+    "Friday": 423,
+    "Monday": 387,
+    "Thursday": 425,
+    "Tuesday": 435,
+    "Wednesday": 432
+   },
+   "field": "tbill_52w_bank_discount",
+   "kind": "observed",
+   "rows_later": {
+    "1": 2102
+   },
+   "source": "treasury_bill_rates",
+   "unit": "calendar_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "record_date",
+   "days": 0,
+   "days_moved": 2102,
+   "decision_weekdays": {
+    "Friday": 423,
+    "Monday": 387,
+    "Thursday": 425,
+    "Tuesday": 435,
+    "Wednesday": 432
+   },
+   "field": "tbill_52w_coupon_equivalent",
+   "kind": "observed",
+   "rows_later": {
+    "1": 2102
+   },
+   "source": "treasury_bill_rates",
+   "unit": "calendar_days"
+  }
+ ],
+ "new_instant": "18:00",
+ "old_instant": "16:00",
+ "other_readers": [
+  {
+   "done": "unchanged: a measurement registry whose instants are declared source publication instants, not the decision instant; every one is at or before 16:00, so no row moves",
+   "instant": "16:00 (ten fields: ON RRP, SRF, OFR, same-day sensitivities)",
+   "reader": "metadata/sources_measurement.json"
+  },
+  {
+   "done": "unchanged: no published declaration reads it (the per-release H.4.1 reading is still off in the registry)",
+   "instant": "16:30 Thursday, measured and off",
+   "reader": "metadata/h41_release_dating.json"
+  },
+  {
+   "done": "unchanged: a record of #1296; its source is not in the registry",
+   "instant": "16:30 Thursday (FR 2004), a dated study's source",
+   "reader": "metadata/sources_pd_financing_1296.json"
+  },
+  {
+   "done": "unchanged: the declared instant is 12:00, before both instants; #1301 found four announcements stated later (12:50, 13:30, 13:30, 16:15), all before 18:00",
+   "instant": "12:00 on the announcement date",
+   "reader": "metadata/settlement_announcement_dating.json"
+  },
+  {
+   "done": "unchanged: a dated study's declaration; `srf_line.DECISION_TIME` keeps the 16:00 it records",
+   "instant": "16:00 (announcement instant of the SRF line)",
+   "reader": "metadata/srf_cap_1241.json"
+  },
+  {
+   "done": "decision instant now 18:00, so a fetch from 16:00 to 18:00 is a capture and not `fetched_after_decision`; a record made at 16:00 still reads against the instant it declares",
+   "instant": "DTCC GCF Repo Index, posted about 16:00 to 16:05 (her Mac, 27 to 29 October)",
+   "reader": "src/repo_model/gcf_index.py"
+  }
+ ],
+ "panel": {
+  "first": "2018-04-03",
+  "last": "2026-09-03",
+  "rows": 2104
+ },
+ "reads_no_outcome": true,
+ "target_day_leaks": [],
+ "unmoved": [
+  "fed_iorb_announcements.iorb_announced_change_bps",
+  "fed_iorb_announcements.iorb_days_to_announced_change",
+  "nyfed_bgcr.BGCR",
+  "nyfed_bgcr.BGCR_p1",
+  "nyfed_bgcr.BGCR_p25",
+  "nyfed_bgcr.BGCR_p75",
+  "nyfed_bgcr.BGCR_p99",
+  "nyfed_bgcr.BGCR_volume",
+  "nyfed_effr.EFFR",
+  "nyfed_effr.EFFR_p1",
+  "nyfed_effr.EFFR_p25",
+  "nyfed_effr.EFFR_p75",
+  "nyfed_effr.EFFR_p99",
+  "nyfed_on_rrp.reverse_repo_total_accepted",
+  "nyfed_sofr.SOFR",
+  "nyfed_sofr.SOFR_p1",
+  "nyfed_sofr.SOFR_p25",
+  "nyfed_sofr.SOFR_p75",
+  "nyfed_sofr.SOFR_p99",
+  "nyfed_sofr.SOFR_volume",
+  "nyfed_srf.srf_total_accepted",
+  "nyfed_tgcr.TGCR",
+  "nyfed_tgcr.TGCR_p1",
+  "nyfed_tgcr.TGCR_p25",
+  "nyfed_tgcr.TGCR_p75",
+  "nyfed_tgcr.TGCR_p99",
+  "nyfed_tgcr.TGCR_volume",
+  "ofr_stfm_repo.REPO-DVP_AR_OO-F",
+  "ofr_stfm_repo.REPO-DVP_AR_OO-P",
+  "ofr_stfm_repo.REPO-DVP_TV_OO-F",
+  "treasury_auctions.treasury_settlement",
+  "treasury_auctions.treasury_settlement_bill",
+  "treasury_auctions.treasury_settlement_coupon",
+  "treasury_auctions.treasury_settlement_soma"
+ ],
+ "window": [
+  {
+   "available_time": "16:15",
+   "basis": "ref_date",
+   "days": 1,
+   "field": "EFFR",
+   "kind": "observed",
+   "source": "frb_ddp",
+   "unit": "business_days"
+  },
+  {
+   "available_time": "16:15",
+   "basis": "record_date",
+   "days": 0,
+   "field": "IOER",
+   "kind": "observed",
+   "source": "frb_ddp",
+   "unit": "calendar_days"
+  },
+  {
+   "available_time": "16:15",
+   "basis": "record_date",
+   "days": 0,
+   "field": "IORB",
+   "kind": "observed",
+   "source": "frb_ddp",
+   "unit": "calendar_days"
+  },
+  {
+   "available_time": "16:15",
+   "basis": "record_date",
+   "days": 12,
+   "field": "total_assets",
+   "kind": "observed",
+   "source": "frb_h8",
+   "unit": "calendar_days"
+  },
+  {
+   "available_time": "16:15",
+   "basis": "record_date",
+   "days": 0,
+   "field": "IORB",
+   "kind": "observed",
+   "source": "fred_macro_latest_vintage",
+   "unit": "calendar_days"
+  },
+  {
+   "available_time": "16:15",
+   "basis": "record_date",
+   "days": 0,
+   "field": "IOER",
+   "kind": "observed",
+   "source": "fred_macro_latest_vintage",
+   "unit": "calendar_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "record_date",
+   "days": 5,
+   "field": "WRESBAL",
+   "kind": "observed",
+   "source": "fred_macro_latest_vintage",
+   "unit": "calendar_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "record_date",
+   "days": 5,
+   "field": "WTREGEN",
+   "kind": "observed",
+   "source": "fred_macro_latest_vintage",
+   "unit": "calendar_days"
+  },
+  {
+   "available_time": "16:15",
+   "basis": "record_date",
+   "days": 5,
+   "field": "DFF",
+   "kind": "observed",
+   "source": "fred_macro_latest_vintage",
+   "unit": "calendar_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "record_date",
+   "days": 5,
+   "field": "WLRRAOL",
+   "kind": "observed",
+   "source": "fred_macro_latest_vintage",
+   "unit": "calendar_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "ref_date",
+   "days": 6,
+   "field": "PDPOSGST-TOT",
+   "kind": "observed",
+   "source": "nyfed_fr2004",
+   "unit": "business_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "ref_date",
+   "days": 6,
+   "field": "PDPOSGS-B",
+   "kind": "observed",
+   "source": "nyfed_fr2004",
+   "unit": "business_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "ref_date",
+   "days": 6,
+   "field": "PDPOSGS-BFRN",
+   "kind": "observed",
+   "source": "nyfed_fr2004",
+   "unit": "business_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "ref_date",
+   "days": 6,
+   "field": "PDPOSGSC-L2",
+   "kind": "observed",
+   "source": "nyfed_fr2004",
+   "unit": "business_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "ref_date",
+   "days": 6,
+   "field": "PDPOSGSC-G2L3",
+   "kind": "observed",
+   "source": "nyfed_fr2004",
+   "unit": "business_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "ref_date",
+   "days": 6,
+   "field": "PDPOSGSC-G3L6",
+   "kind": "observed",
+   "source": "nyfed_fr2004",
+   "unit": "business_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "ref_date",
+   "days": 6,
+   "field": "PDPOSGSC-G6L7",
+   "kind": "observed",
+   "source": "nyfed_fr2004",
+   "unit": "business_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "ref_date",
+   "days": 6,
+   "field": "PDPOSGSC-G7L11",
+   "kind": "observed",
+   "source": "nyfed_fr2004",
+   "unit": "business_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "ref_date",
+   "days": 6,
+   "field": "PDPOSGSC-G11",
+   "kind": "observed",
+   "source": "nyfed_fr2004",
+   "unit": "business_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "ref_date",
+   "days": 6,
+   "field": "PDPOSGSC-G11L21",
+   "kind": "observed",
+   "source": "nyfed_fr2004",
+   "unit": "business_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "ref_date",
+   "days": 6,
+   "field": "PDPOSGSC-G21",
+   "kind": "observed",
+   "source": "nyfed_fr2004",
+   "unit": "business_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "ref_date",
+   "days": 6,
+   "field": "PDPOSTIPS-L2",
+   "kind": "observed",
+   "source": "nyfed_fr2004",
+   "unit": "business_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "ref_date",
+   "days": 6,
+   "field": "PDPOSTIPS-G2",
+   "kind": "observed",
+   "source": "nyfed_fr2004",
+   "unit": "business_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "ref_date",
+   "days": 6,
+   "field": "PDPOSTIPS-G6L11",
+   "kind": "observed",
+   "source": "nyfed_fr2004",
+   "unit": "business_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "ref_date",
+   "days": 6,
+   "field": "PDPOSTIPS-G11",
+   "kind": "observed",
+   "source": "nyfed_fr2004",
+   "unit": "business_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "record_date",
+   "days": 0,
+   "field": "tbill_4w_bank_discount",
+   "kind": "observed",
+   "source": "treasury_bill_rates",
+   "unit": "calendar_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "record_date",
+   "days": 0,
+   "field": "tbill_4w_coupon_equivalent",
+   "kind": "observed",
+   "source": "treasury_bill_rates",
+   "unit": "calendar_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "record_date",
+   "days": 0,
+   "field": "tbill_6w_bank_discount",
+   "kind": "observed",
+   "source": "treasury_bill_rates",
+   "unit": "calendar_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "record_date",
+   "days": 0,
+   "field": "tbill_6w_coupon_equivalent",
+   "kind": "observed",
+   "source": "treasury_bill_rates",
+   "unit": "calendar_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "record_date",
+   "days": 0,
+   "field": "tbill_8w_bank_discount",
+   "kind": "observed",
+   "source": "treasury_bill_rates",
+   "unit": "calendar_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "record_date",
+   "days": 0,
+   "field": "tbill_8w_coupon_equivalent",
+   "kind": "observed",
+   "source": "treasury_bill_rates",
+   "unit": "calendar_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "record_date",
+   "days": 0,
+   "field": "tbill_13w_bank_discount",
+   "kind": "observed",
+   "source": "treasury_bill_rates",
+   "unit": "calendar_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "record_date",
+   "days": 0,
+   "field": "tbill_13w_coupon_equivalent",
+   "kind": "observed",
+   "source": "treasury_bill_rates",
+   "unit": "calendar_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "record_date",
+   "days": 0,
+   "field": "tbill_17w_bank_discount",
+   "kind": "observed",
+   "source": "treasury_bill_rates",
+   "unit": "calendar_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "record_date",
+   "days": 0,
+   "field": "tbill_17w_coupon_equivalent",
+   "kind": "observed",
+   "source": "treasury_bill_rates",
+   "unit": "calendar_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "record_date",
+   "days": 0,
+   "field": "tbill_26w_bank_discount",
+   "kind": "observed",
+   "source": "treasury_bill_rates",
+   "unit": "calendar_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "record_date",
+   "days": 0,
+   "field": "tbill_26w_coupon_equivalent",
+   "kind": "observed",
+   "source": "treasury_bill_rates",
+   "unit": "calendar_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "record_date",
+   "days": 0,
+   "field": "tbill_52w_bank_discount",
+   "kind": "observed",
+   "source": "treasury_bill_rates",
+   "unit": "calendar_days"
+  },
+  {
+   "available_time": "16:30",
+   "basis": "record_date",
+   "days": 0,
+   "field": "tbill_52w_coupon_equivalent",
+   "kind": "observed",
+   "source": "treasury_bill_rates",
+   "unit": "calendar_days"
+  },
+  {
+   "available_time": "18:00",
+   "basis": "announced_before_ref_date",
+   "days": 1,
+   "field": "iorb_announced_change_bps",
+   "kind": "scheduled",
+   "source": "fed_iorb_announcements",
+   "unit": "business_days"
+  },
+  {
+   "available_time": "18:00",
+   "basis": "announced_before_ref_date",
+   "days": 1,
+   "field": "iorb_days_to_announced_change",
+   "kind": "scheduled",
+   "source": "fed_iorb_announcements",
+   "unit": "business_days"
+  }
+ ]
+}

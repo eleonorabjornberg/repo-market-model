@@ -4,7 +4,7 @@ The DTCC GCF Repo Index is the par-weighted overnight rate (and the par volume) 
 at FICC, for U.S. Treasury and for agency MBS collateral. DTCC's fact sheet says the day's value is posted "at
 approximately 3:30 p.m. EST" (quoted in #962; the fact sheet's host, files.dtcc.com, is refused from the capture
 environment, so this repository has not re-read it). If that holds it is the only public repo rate for day T that
-exists at T's 16:00 ET decision instant: SOFR for T prints at 08:00 ET on the next business day.
+exists at T's decision instant (18:00 ET since the amendment of 29 October 2026, #1312; 16:00 before it): SOFR for T prints at 08:00 ET on the next business day.
 
 The page `https://www.dtcc.com/market-index-data/charts/dtcc-gcf-repo-index` is client-rendered and names its data
 file, `/data/gcfindex.csv` on `cms-prod.dtcc.com`, the last year of daily rows:
@@ -21,10 +21,10 @@ does the capture. Without it, a request on 27 October 2026 was answered with a c
 One file per business day, `gcf/<effective date>.json`, as fetched:
 
 * a **captured** record holds the response text as `payload`, its `sha256`, the fetch instant in UTC and in ET, the
-  window (15:30 to 16:00 ET) and the decision instant, the URL, and the day's Treasury rate and par volume read off the
+  window (15:30 ET to the decision instant) and the decision instant, the URL, and the day's Treasury rate and par volume read off the
   payload;
-* a **missed** record holds no value. A day whose first successful fetch came after 16:00 ET
-  (`fetched_after_decision`), a day on which the file had no row for it after 16:00 ET (`no_posting`), a response that
+* a **missed** record holds no value. A day whose first successful fetch came after the decision instant
+  (`fetched_after_decision`), a day on which the file had no row for it after that instant (`no_posting`), a response that
   could not be read (`unreadable_response`) and a day on which no run happened at all (`no_run`) are each recorded as
   such, with the hash of what was fetched, if anything was.
 
@@ -32,7 +32,8 @@ A day's file is written once and never overwritten, and no day is back-filled: a
 
 **The guard** (`check_record`, run when a record is built, written and read back; `read_value` for a reader):
 
-* `LookAheadError` if a captured record was fetched after the day's 16:00 ET decision instant, or, for a reader at
+* `LookAheadError` if a captured record was fetched after the day's decision instant (the one the record declares: 18:00 ET, or 16:00 ET for a record made before the
+  amendment of 29 October 2026), or, for a reader at
   `as_of`, if it was fetched after `as_of`;
 * `ValueError` for a malformed record: a missing or extra key, a payload that fails its hash or has no Treasury row for
   the day, a value that is not the payload's, a naive or disagreeing timestamp, a fetch before the window opens.
@@ -54,6 +55,7 @@ from pathlib import Path
 from typing import List, Mapping, Optional, Set
 from zoneinfo import ZoneInfo
 
+from .decision_instant import DECISION_TIME, LEGACY_DECISION_TIME
 from .data import market_holidays
 from .splits import LookAheadError
 
@@ -83,7 +85,6 @@ CSV_URL = "https://cms-prod.dtcc.com/data/gcfindex.csv"
 #: DTCC's stated posting time ("approximately 3:30 p.m."): no fetch before it.
 WINDOW_START_TIME = time(15, 30)
 #: The decision instant (`docs/decisions/information-set.md`): a fetch after it is a missed day.
-DECISION_TIME = time(16, 0)
 RECORD_VERSION = 1
 HEADER = (
     "Date",
@@ -113,9 +114,24 @@ def window_start(day: date) -> datetime:
 
 
 def decision_instant(day: date) -> datetime:
-    """16:00 ET on `day` (aware): the instant after which a fetch of `day`'s value is too late."""
+    """The decision instant on `day`, New York time (aware): after it a fetch of `day`'s value is too late.
+
+    18:00 since the amendment of 29 October 2026 (#1312), when DTCC's posting at about 16:00 to 16:05 was found to
+    fall after the old 16:00 instant (#1280).
+    """
 
     return _local(day, DECISION_TIME)
+
+
+def legacy_decision_instant(day: date) -> datetime:
+    """16:00 ET on `day` (aware): the instant a record made before the amendment of 29 October 2026 declares.
+
+    Such a record stands as a record of that instant. It is read against the instant it declares, never the new one,
+    so a value fetched between 16:00 and 18:00 is not a late fetch under the new rule and a record written before it
+    is not rewritten.
+    """
+
+    return _local(day, LEGACY_DECISION_TIME)
 
 
 def _is_business_day(day: date) -> bool:
@@ -279,7 +295,7 @@ def _times(record: Mapping, effective: date) -> Optional[datetime]:
         raise ValueError("every instant of a record needs a time zone")
     if fetched != fetched_et or _et(fetched).isoformat() != et_text:
         raise ValueError("fetched_at_utc and fetched_at_et are not one instant, or the ET one is not in New York time")
-    if declared != decision_instant(effective):
+    if declared not in (decision_instant(effective), legacy_decision_instant(effective)):
         raise ValueError("the declared decision instant is not the day's")
     return fetched
 
@@ -304,7 +320,8 @@ def check_record(record: object) -> None:
     except (TypeError, ValueError) as exc:
         raise ValueError(f"a record has an unreadable effective date: {exc}") from exc
     fetched = _times(record, effective)
-    decision = decision_instant(effective)
+    # A record is judged against the instant it declares: one made at 16:00 stays a record of 16:00.
+    decision = datetime.fromisoformat(record["decision_instant"])
     if record["status"] == "missed":
         _check_missed(record, fetched, decision)
         return
@@ -430,9 +447,9 @@ def plan(now: datetime, already: Set[date]) -> Plan:
     * `none`: today is a weekend or a holiday;
     * `done`: today already has its file, which is never fetched again or overwritten;
     * `wait`: before 15:30 ET, nothing is fetched;
-    * `fetch`: 15:30 to 16:00 ET inclusive, fetch and keep the day if the file has its row (otherwise a later slot
-      tries again);
-    * `late`: after 16:00 ET, fetch once and record the day missed (`fetched_after_decision` or `no_posting`).
+    * `fetch`: 15:30 ET to the decision instant (18:00 ET) inclusive, fetch and keep the day if the file has its row
+      (otherwise a later slot tries again);
+    * `late`: after the decision instant, fetch once and record the day missed (`fetched_after_decision` or `no_posting`).
 
     `gaps` lists the business days after the store's earliest day and before today with no file at all, which the run
     records as `no_run`: a day nobody fetched is never filled in later.
