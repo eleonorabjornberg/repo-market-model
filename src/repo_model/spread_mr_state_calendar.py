@@ -132,6 +132,12 @@ IORB_UNIT_BPS = 25.0
 IORB_SIGNED = "iorb_signed"
 IORB_TECHNICAL = "iorb_technical"
 IORB_EXTRAS: Tuple[str, ...] = (IORB_SIGNED, IORB_TECHNICAL)
+#: The settlement sizes that enter beside a 0/1 flag, or in place of one, as `extra` terms (#1321, `s3c_announced.AnnouncedSizeTerms`): the signed
+#: announced net coupon and net bill settlement, and the announced gross coupon offering, each in units of `SIZE_UNIT` (USD 100 bn).
+NET_COUPON, NET_BILL, GROSS_COUPON = "net_coupon", "net_bill", "gross_coupon"
+SIZE_EXTRAS: Tuple[str, ...] = (NET_COUPON, NET_BILL, GROSS_COUPON)
+#: Every `extra` term: it is read from `pair.extras` and not from the flags.
+EXTRA_TERMS: Tuple[str, ...] = IORB_EXTRAS + SIZE_EXTRAS
 #: An IORB change that is not a multiple of 25 bp is a technical adjustment: the rule of `setup_diagnostic`.
 technical = setup_diagnostic.is_technical
 #: (s3+IORBs): (s3), with `iorb_window` and the two terms beside it. The FOMC-day term is not added.
@@ -490,8 +496,8 @@ def fit_state_terms(
     for p, y in zip(pairs, target):
         s = 0.0 if p.state is None else p.state
         pool.append(
-            y - sum(effect[n] * regressor(n, p.flags, p.sizes, p.state, sized) for n in effect if n not in IORB_EXTRAS)
-            - sum(effect[n] * p.extras[n] for n in effect if n in IORB_EXTRAS)
+            y - sum(effect[n] * regressor(n, p.flags, p.sizes, p.state, sized) for n in effect if n not in EXTRA_TERMS)
+            - sum(effect[n] * p.extras[n] for n in effect if n in EXTRA_TERMS)
             - sum(slope[n] * p.flags[n] * s for n in slope)
         )
     return StateEstimate(
@@ -514,8 +520,8 @@ def standardised_shift(
     extras = {} if extras is None else extras
     return sum(
         effect * regressor(name, flags, sizes, state, estimate.sized) for name, effect in estimate.effect.items()
-        if name not in IORB_EXTRAS
-    ) + sum(effect * extras.get(name, 0.0) for name, effect in estimate.effect.items() if name in IORB_EXTRAS) + sum(g * flags[name] * s for name, g in estimate.slope.items())
+        if name not in EXTRA_TERMS
+    ) + sum(effect * extras.get(name, 0.0) for name, effect in estimate.effect.items() if name in EXTRA_TERMS) + sum(g * flags[name] * s for name, g in estimate.slope.items())
 
 
 def lead_quantiles(
