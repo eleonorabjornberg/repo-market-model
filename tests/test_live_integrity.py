@@ -1101,8 +1101,9 @@ class WorkflowIntegrityTests(unittest.TestCase):
     def test_the_workflow_writes_no_existing_path(self):
         # Only the day's record and its panel (one commit) and its anchor (another) are ever staged.
         # `"raw/$DAY"` is staged in a different clone, of the `live-raw` branch (#257).
+        # `"h10/$DAY.json"` is staged in a third clone, of the `live-h10` branch (#1322).
         adds = re.findall(r'git add ("[^"]*"(?: "[^"]*")*)', self.text)
-        self.assertEqual(adds, ['"$file" "$panel"', '"raw/$DAY"', '"live/$day.rekor"'])
+        self.assertEqual(adds, ['"$file" "$panel"', '"raw/$DAY"', '"h10/$DAY.json"', '"live/$day.rekor"'])
 
     def test_the_days_panel_is_copied_beside_its_record_and_required_by_the_append_check(self):
         step = self._step("Append it to live-log")
