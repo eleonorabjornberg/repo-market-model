@@ -8,6 +8,13 @@
   "declaration": "metadata/s3c_pd_1296.json, candidate.transform, from 'The directive's latest public level is read literally' to 'the number skipped is reported': the carry over withheld weeks, 'with no limit on how many weeks are skipped (a limit is a threshold nobody has set)'; and metadata/sources_pd_financing_1296.json, transform.carry. Both stay as declared for the record made under them."
  },
  "version": 2,
+ "variants": {
+  "carry_bounded_v2": {
+   "role": "version 2 of the carry rule of (s3c-pd): the carry is bounded at data.WEEKLY_CARRY_MAX_STALENESS_DAYS days (see `carry`)",
+   "scored": false,
+   "note": "declared, not scored: no run orders it (see what_is_not_known). Version 1, the unbounded read, is the variant of metadata/s3c_pd_1296.json and is not counted again here"
+  }
+ },
  "carry": {
   "rule": "the level of the latest as-of week that has one is carried over withheld weeks for at most data.WEEKLY_CARRY_MAX_STALENESS_DAYS days, measured from the latest public as-of week of the same release (the panel's constant, docs/decisions/weekly-carry.md; repo_model.s3c_pd.MAX_CARRY_DAYS is that constant and not a copy). Beyond it the level is no level, the state is undefined and the term reads 0, as an unknown state does",
   "reading": "on a weekly grid one withheld week is carried (7 days) and two are not (14 days), the 'one missed print is tolerated, two are not' of the record; the bound compares one as-of date with an earlier one and holds no release lag, as the record has it",
