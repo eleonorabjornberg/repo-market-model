@@ -15,9 +15,17 @@ observation, never 0: a week with any of the four withheld has no level.
 may be older than the latest public week), and the state is `(level(w*) - mean) / stdev` over the defined levels of the `TRAILING_WEEKS` as-of weeks
 before `w*`, when at least `MIN_TRAILING` of them are defined and their standard deviation is positive; `None` otherwise (the term is then 0, as the
 scarcity state reads 0 when unknown, `spread_mr_state_calendar.standardised_shift`). The level is carried from `w*` however many withheld weeks lie
-between it and the latest public week; that number is reported (`skipped_weeks`) and no limit is set on it, which would be a threshold nobody has
-set. The transform is declared in `metadata/s3c_pd_1296.json` before any score and is not tuned; the New York Fed withholds many weeks of
+between it and the latest public week, up to the weekly-carry bound (`MAX_CARRY_DAYS`, which is `data.WEEKLY_CARRY_MAX_STALENESS_DAYS`; below);
+that number is reported (`skipped_weeks`). The transform is declared in `metadata/s3c_pd_1296.json` before any score and is not tuned; the New York Fed withholds many weeks of
 its largest total in 2025 and 2026, which is why the minimum is a quarter of the year and not a half.
+
+**The carry bound (#1329).** `docs/decisions/weekly-carry.md` bounds a weekly series' carry at `data.WEEKLY_CARRY_MAX_STALENESS_DAYS` (13 days, one
+missed print tolerated and two not) and, from Eleonora's ruling of 30 October 2026 (draft record, her review), binds every weekly state term read by
+a model arm, not only panel columns. As the record has it, the bound compares one as-of date with an earlier one and has no release lag in it:
+`latest_defined_week` is `None` when the latest public week is more than `MAX_CARRY_DAYS` days after the latest week that has a level, so the state
+is `None` and the term reads 0, as for any unknown state. `max_carry_days=None` is the unbounded read that #1296's published record was made with
+(declaration of `metadata/s3c_pd_1296.json`, "no limit"); `scripts/s3c_pd_1296.py` passes it explicitly to reproduce that record, and nothing else
+may. A new weekly state term takes the default. The corrected declaration is `metadata/s3c_pd_1329.json`.
 
 **Information set.** A week's figures are public once released: `release_instant(week)` is the declared lag after the as-of date, 6 business
 days on `metadata/market_holidays.json` (the Thursday of the following week) at 16:30 America/New_York, which is what the New York Fed's page
@@ -58,7 +66,7 @@ from .splits import LookAheadError, SplitError
 
 __all__ = [
     "ARM", "PD", "PdEstimate", "PdWalk", "SERIES", "decision_states", "fit_pd_terms", "forecast_leads", "latest_defined_week",
-    "latest_public_week", "load_levels", "public_weeks", "read_level", "release_instant", "skipped_weeks", "state_at", "walk",
+    "latest_public_week", "load_levels", "MAX_CARRY_DAYS", "public_weeks", "read_level", "release_instant", "skipped_weeks", "state_at", "walk",
 ]
 
 #: The four New York Fed totals whose sum is the level (USD millions in the file, USD billions here).
@@ -79,6 +87,9 @@ MIN_STATE_PAIRS = smr.MIN_PAIRS
 MILLIONS_PER_BILLION = 1000.0
 #: (s3)'s arm, whose terms, fit and ridge the new term joins.
 ARM = sc.ARMS[2]
+#: The weekly-carry bound (`docs/decisions/weekly-carry.md`): the days a level may be older than the latest public week (13: one missed weekly print is
+#: tolerated, two are not). It is the panel's constant, never a copy.
+MAX_CARRY_DAYS: int = data_module.WEEKLY_CARRY_MAX_STALENESS_DAYS
 
 
 def _series_rows(path: Path) -> Dict[date, Optional[float]]:
@@ -168,11 +179,24 @@ def latest_public_week(levels: Mapping[date, Optional[float]], decision_day: dat
     return public[-1] if public else None
 
 
-def latest_defined_week(levels: Mapping[date, Optional[float]], decision_day: date, *, decision_time: time = DECISION_TIME) -> Optional[date]:
-    """The latest as-of week released at or before the decision instant that has a level, or `None`."""
+def latest_defined_week(
+    levels: Mapping[date, Optional[float]], decision_day: date, *, decision_time: time = DECISION_TIME,
+    max_carry_days: Optional[int] = MAX_CARRY_DAYS,
+) -> Optional[date]:
+    """The latest as-of week released at or before the decision instant that has a level, or `None`.
 
-    for week in reversed(public_weeks(levels, decision_day, decision_time=decision_time)):
+    It is also `None` when that week is more than `max_carry_days` days before the latest public week (the weekly-carry bound of
+    `docs/decisions/weekly-carry.md`, #1329: the level is then too stale to stand for the present). `max_carry_days=None` sets no bound, the read
+    of #1296's published record.
+
+    Mutation record: see `tests/test_s3c_pd.py` (`latest_defined_week`).
+    """
+
+    public = public_weeks(levels, decision_day, decision_time=decision_time)
+    for week in reversed(public):
         if levels[week] is not None:
+            if max_carry_days is not None and (public[-1] - week).days > max_carry_days:
+                return None
             return week
     return None
 
@@ -181,19 +205,22 @@ def skipped_weeks(levels: Mapping[date, Optional[float]], decision_day: date, *,
     """How many weeks older than the latest public week the latest public level is (0 when the latest public week has a level), or `None`."""
 
     latest = latest_public_week(levels, decision_day, decision_time=decision_time)
-    defined = latest_defined_week(levels, decision_day, decision_time=decision_time)
+    defined = latest_defined_week(levels, decision_day, decision_time=decision_time, max_carry_days=None)
     return None if latest is None or defined is None else (latest - defined).days // 7
 
 
-def state_at(levels: Mapping[date, Optional[float]], decision_day: date, *, decision_time: time = DECISION_TIME) -> Optional[float]:
+def state_at(
+    levels: Mapping[date, Optional[float]], decision_day: date, *, decision_time: time = DECISION_TIME,
+    max_carry_days: Optional[int] = MAX_CARRY_DAYS,
+) -> Optional[float]:
     """The state a decision on `decision_day` reads: the z-score of the latest public level against the year before it.
 
-    `None` where no public week has a level, where fewer than `MIN_TRAILING` of the `TRAILING_WEEKS` weeks before the latest public level have
+    `None` where no public week has a level within `max_carry_days` of the latest public week (the weekly-carry bound), where fewer than `MIN_TRAILING` of the `TRAILING_WEEKS` weeks before the latest public level have
     one, or where their standard deviation is not positive. Every week it reads is read through `read_level`, so none is released after the
     decision.
     """
 
-    week = latest_defined_week(levels, decision_day, decision_time=decision_time)
+    week = latest_defined_week(levels, decision_day, decision_time=decision_time, max_carry_days=max_carry_days)
     if week is None:
         return None
     latest = read_level(levels, week, decision_day, decision_time=decision_time)
@@ -211,11 +238,12 @@ def state_at(levels: Mapping[date, Optional[float]], decision_day: date, *, deci
 
 
 def decision_states(
-    levels: Mapping[date, Optional[float]], dates: Sequence[date], *, decision_time: time = DECISION_TIME
+    levels: Mapping[date, Optional[float]], dates: Sequence[date], *, decision_time: time = DECISION_TIME,
+    max_carry_days: Optional[int] = MAX_CARRY_DAYS,
 ) -> Dict[date, Optional[float]]:
     """`states[d]`: the state a decision on panel day `d` could read (what `spread_mr_state_calendar.read_state` and `pair_state` look up)."""
 
-    return {d: state_at(levels, d, decision_time=decision_time) for d in dates}
+    return {d: state_at(levels, d, decision_time=decision_time, max_carry_days=max_carry_days) for d in dates}
 
 
 @dataclass(frozen=True)
