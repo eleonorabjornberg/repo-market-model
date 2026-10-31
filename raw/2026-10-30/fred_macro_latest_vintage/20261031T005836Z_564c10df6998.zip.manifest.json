@@ -1,0 +1,8 @@
+{
+  "byte_count": 134063,
+  "path": "fred_macro_latest_vintage/20261031T005836Z_564c10df6998.zip",
+  "retrieved_at": "2026-10-31T00:58:36.281588+00:00",
+  "sha256": "564c10df6998bfdd492da335e88a60fe369fd0420fbc6548b4783382cec6b0ed",
+  "source_id": "fred_macro_latest_vintage",
+  "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=IORB%2CIOER%2CWRESBAL%2CWTREGEN%2CRRPONTSYD%2CDFF%2CRRPONTSYAWARD%2CTREAST%2CWLRRAOL"
+}
