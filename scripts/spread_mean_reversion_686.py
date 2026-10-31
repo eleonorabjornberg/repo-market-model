@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 from datetime import date, time
@@ -65,7 +66,28 @@ VARIANT_632_B = "spread_q_gbm+two_part+settle+h41+dist_roll"
 NAME = "spread_mr_level10"
 SEED = 686
 LAST_DAY = date(2025, 12, 31)
-DECISION_TIME = time(16, 0)
+
+
+def _decision_time() -> time:
+    """16:00, the instant every record of this study family was made at (the family's scripts take it from here).
+
+    `RMM_DECISION_TIME=18:00` in the environment of a run re-runs the scripts that take it from here at the decision instant in force since #1312
+    (`repo_model.decision_instant`), as #1314 does; no other value is admitted. Left unset, nothing moves: the earlier studies' re-runs and their tests
+    stay at 16:00, and their records stay the records of that instant.
+
+    Raises:
+        ValueError: the variable names an instant other than 16:00 or 18:00.
+    """
+
+    text = os.environ.get("RMM_DECISION_TIME")
+    if not text:
+        return time(16, 0)
+    if text not in ("16:00", "18:00"):
+        raise ValueError(f"RMM_DECISION_TIME={text!r}: only 16:00 (the records of this family) and 18:00 (#1314) are admitted")
+    return time.fromisoformat(text)
+
+
+DECISION_TIME = _decision_time()
 INTERVAL = (0.05, 0.95)
 MIN_GROUP_DAYS = 20
 FIVE = (0.05, 0.25, 0.5, 0.75, 0.95)

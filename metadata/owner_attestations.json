@@ -149,6 +149,13 @@
     },
     {
       "kind": "decisions",
+      "issue": 1329,
+      "comment_id": 6535722307,
+      "phrase": "GO #1329",
+      "what": "the weekly-carry decision record: the 13-day bound binds every weekly state term (#1303); her 30 October 2026 ruling (ledger item 88)"
+    },
+    {
+      "kind": "decisions",
       "issue": 1327,
       "comment_id": 6535719408,
       "phrase": "GO #1327",
