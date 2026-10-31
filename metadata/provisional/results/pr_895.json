@@ -1,0 +1,17 @@
+{
+  "order": 232,
+  "directive": 870,
+  "pull_request": 895,
+  "hypothesis": "H4",
+  "result": "The back-fill's 2018-19 cost re-read by half-year and by back-filled share",
+  "declarations": [
+    "metadata/backfill_h5_726_reread.json"
+  ],
+  "model": "#759's ten walks of `gbm_funding` with and without the back-filled rows, re-run under the per-series admitted guard",
+  "pairing": "one_step",
+  "class": "a+b",
+  "on_the_page": [
+    "2026-10-17-model-00895-H4-step3"
+  ],
+  "concluded": "2018-19 stays a cost on the ruled interval, carried by 2018 H2; the walks are one-step and calendar-blind, so the figures are provisional until re-run. Whether H4's kill is read is not settled here."
+}
