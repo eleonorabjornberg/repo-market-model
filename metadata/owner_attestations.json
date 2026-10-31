@@ -146,6 +146,13 @@
       "comment_id": 6512786796,
       "phrase": "GO #1312",
       "what": "move the decision instant from 16:00 to 18:00 America/New_York (step 1 of 3): the amendment to docs/decisions/information-set.md, the final-test pre-registration amendment and re-pin, metadata/sources.json and metadata/funding_panel_manifest.json; her 29 October 2026 ruling (ledger item 77)"
+    },
+    {
+      "kind": "decisions",
+      "issue": 1329,
+      "comment_id": 6535722307,
+      "phrase": "GO #1329",
+      "what": "the weekly-carry decision record: the 13-day bound binds every weekly state term (#1303); her 30 October 2026 ruling (ledger item 88)"
     }
   ],
   "rule": "docs/decisions/drafts/owner-attestation.md",
