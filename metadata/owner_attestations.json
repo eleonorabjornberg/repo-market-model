@@ -146,6 +146,13 @@
       "comment_id": 6512786796,
       "phrase": "GO #1312",
       "what": "move the decision instant from 16:00 to 18:00 America/New_York (step 1 of 3): the amendment to docs/decisions/information-set.md, the final-test pre-registration amendment and re-pin, metadata/sources.json and metadata/funding_panel_manifest.json; her 29 October 2026 ruling (ledger item 77)"
+    },
+    {
+      "kind": "decisions",
+      "issue": 1327,
+      "comment_id": 6535719408,
+      "phrase": "GO #1327",
+      "what": "the information-set decision record's corrections for the settlement dating (#1317), and the owner-attestation binding of metadata/settlement_announcement_dating.json and metadata/net_settlement.json; her 30 October 2026 ruling (ledger item 86)"
     }
   ],
   "rule": "docs/decisions/drafts/owner-attestation.md",

@@ -31,7 +31,10 @@ are the ones a pull request may make only with her own approval:
   these two are the ones the check watches until Eleonora names another);
 * `decisions`: any file under `docs/decisions/`, `docs/decisions/drafts/` included, added, changed, deleted or
   moved (ruling on #1068, 21 October 2026; #1074). Moving a draft out of `drafts/` is a delete and an add, both
-  listed.
+  listed. The two settlement-dating declarations, `metadata/settlement_announcement_dating.json` and
+  `metadata/net_settlement.json`, are bound under this kind too (#1327, her ruling of 30 October 2026): they hold the
+  announcement instant the H5 candidate's information set rests on, so a change to either is a decision. One kind, not a
+  new one, so that a change to the record and to a declaration together needs one `GO`.
 
 A pull request that makes one cites her approval by appending an entry to
 `metadata/owner_attestations.json`: its kind, the issue, the comment id, and the
@@ -87,6 +90,8 @@ CLAUDE_FILES = ("CLAUDE.md",)
 CLAUDE_DIRS = (".claude/",)
 REGISTRATION_DIRS = ("metadata/registrations/", "docs/registrations/")
 DECISIONS_DIRS = ("docs/decisions/",)
+#: Data declarations bound under `decisions` (#1327): the announcement instants of the H5 candidate's settlement terms.
+DATING_FILES = ("metadata/settlement_announcement_dating.json", "metadata/net_settlement.json")
 ENTRY_KEYS = {"kind", "issue", "comment_id", "phrase", "what"}
 
 
@@ -240,7 +245,7 @@ def path_kinds(paths) -> set:
             kinds.add("claude-files")
         if path.startswith(REGISTRATION_DIRS):
             kinds.add("registration")
-        if path.startswith(DECISIONS_DIRS):
+        if path.startswith(DECISIONS_DIRS) or path in DATING_FILES:
             kinds.add("decisions")
     return kinds
 

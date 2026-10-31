@@ -239,7 +239,8 @@ class PublishedPathsTests(unittest.TestCase):
 
     def test_the_dating_is_declared_measured_and_not_in_force(self):
         document = json.loads(script.DATING.read_text(encoding="utf-8"))
-        self.assertIn("measured and off", document["status"])
+        # #1327: the status no longer says "measured and off"; it says what "off in the published declarations" means.
+        self.assertIn("off in the published declarations at every lead above 1", document["status"])
 
 
 class DirectArmTests(NeedsExtra):

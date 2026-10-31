@@ -542,6 +542,65 @@ class DecisionsPathTests(unittest.TestCase):
             oa.check(base, head, CheckTests._fetch({OWNER["id"]: _owner_go()}), lambda: [self.PATH], cited={63})
 
 
+class SettlementDatingFilesTests(unittest.TestCase):
+    """#1327 (her ruling of 30 October 2026, ledger item 86; finding #1317): the two settlement-dating declarations are
+    binding by their path, under the kind `decisions`.
+
+    `metadata/settlement_announcement_dating.json` holds the H5 candidate's announcement instant (read by
+    `repo_model.settlement_dating`, `repo_model.s3c_announced`) and `metadata/net_settlement.json` holds the instant that sizes
+    its net terms. Neither the final-test freeze nor this check covered them, so a pull request could move the candidate's
+    information set without her `GO`. They share the kind `decisions` and not a new one: a change that edits the decision record
+    and the declaration together then needs one entry, because the registry refuses one comment cited twice by a change (#1225).
+
+    Tests written first and watched failing: three raised `AssertionError` (`set()` is not `{'decisions'}`, or
+    `NotOwnerAttested not raised`) before the change.
+
+    Recorded mutation (30 October 2026), on the path guard: in `path_kinds`,
+    `if path.startswith(DECISIONS_DIRS) or path in DATING_FILES:` -> `if path.startswith(DECISIONS_DIRS) or False:`. Run alone
+    with `PYTHONPATH=src:tests python3 -B -m unittest test_owner_attested.SettlementDatingFilesTests`,
+    `test_the_announcement_dating_is_binding` and `test_the_net_settlement_declaration_is_binding` failed with `AssertionError`
+    (`Items in the second set but not the first`) and `test_a_dating_change_without_a_citation_fails` with `AssertionError`
+    (`NotOwnerAttested not raised`). Restored, all pass.
+    """
+
+    FILES = ("metadata/settlement_announcement_dating.json", "metadata/net_settlement.json")
+
+    def test_the_announcement_dating_is_binding(self):
+        self.assertEqual(oa.path_kinds([self.FILES[0]]), {"decisions"})
+
+    def test_the_net_settlement_declaration_is_binding(self):
+        self.assertEqual(oa.path_kinds([self.FILES[1]]), {"decisions"})
+
+    def test_both_files_exist_in_the_tree(self):
+        for path in self.FILES:
+            self.assertTrue((ROOT / path).is_file(), path)
+
+    def test_look_alike_paths_are_not(self):
+        paths = ["metadata/settlement_result_dating.json", "metadata/net_settlement_inputs.json",
+                 "metadata/sources_measurement.json", "tests/fixtures/net_settlement.json",
+                 "metadata/net_settlement.json.bak", "docs/metadata/settlement_announcement_dating.json"]
+        self.assertEqual(oa.path_kinds(paths), set())
+
+    def test_a_dating_change_without_a_citation_fails(self):
+        tree = _tree(**{REGISTRY: _registry()})
+        for path in self.FILES:
+            with self.assertRaisesRegex(oa.NotOwnerAttested, "decisions"):
+                oa.check(tree, tree, CheckTests._no_fetch, lambda: [path], cited={1327})
+
+    def test_a_dating_change_citing_a_relay_fails(self):
+        base = _tree(**{REGISTRY: _registry()})
+        head = _tree(**{REGISTRY: _registry(_entry(kind="decisions", issue=151, comment_id=GO_RELAY["id"]))})
+        with self.assertRaises(oa.NotOwnerAttested):
+            oa.check(base, head, CheckTests._fetch({GO_RELAY["id"]: GO_RELAY}), lambda: [self.FILES[0]], cited={151})
+
+    def test_one_go_covers_the_record_and_both_declarations(self):
+        base = _tree(**{REGISTRY: _registry()})
+        head = _tree(**{REGISTRY: _registry(_entry(kind="decisions"))})
+        changed = ["docs/decisions/information-set.md", *self.FILES]
+        verified = oa.check(base, head, CheckTests._fetch({OWNER["id"]: _owner_go()}), lambda: changed, cited={63})
+        self.assertEqual([c["id"] for c in verified], [OWNER["id"]])
+
+
 class GitPathTests(unittest.TestCase):
     def test_a_commit_against_itself_changes_no_path(self):
         head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True)
