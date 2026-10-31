@@ -208,11 +208,12 @@ class StateTests(unittest.TestCase):
         weeks = wednesdays(self.FIRST, 70)
         day = self.decision_for(levels, weeks[60])
         self.assertEqual(pd.latest_public_week(levels, day), weeks[60])
-        self.assertEqual(pd.latest_defined_week(levels, day), weeks[58])
+        self.assertEqual(pd.latest_defined_week(levels, day, max_carry_days=None), weeks[58])
         self.assertEqual(pd.skipped_weeks(levels, day), 2)
         trailing = [x for x in values[6:58] if x is not None]  # the 52 weeks before week 58
         expected = (values[58] - statistics.fmean(trailing)) / statistics.stdev(trailing)
-        self.assertAlmostEqual(pd.state_at(levels, day), expected, places=12)
+        # two weeks skipped is past the weekly-carry bound (#1329): only the unbounded read of #1296's record carries the level
+        self.assertAlmostEqual(pd.state_at(levels, day, max_carry_days=None), expected, places=12)
         # the day before the withheld week is released, week 60 is not yet public: the same level, two weeks skipped less one
         before = pd.release_instant(weeks[60]).date()
         self.assertEqual(pd.latest_public_week(levels, before, decision_time=LEGACY_DECISION_TIME), weeks[59])
@@ -286,6 +287,134 @@ def planted(effect=0.6, n=80, with_state=60, noise=0.3, scale=1.0):
 
 
 FIT = dict(regressors=(), terms=cal.NO_FOMC_IORB, training_pairs="direct")
+
+
+class CarryBoundTests(unittest.TestCase):
+    """The weekly-carry bound binds the weekly state term (#1329; `docs/decisions/weekly-carry.md`): a level more than
+    `data.WEEKLY_CARRY_MAX_STALENESS_DAYS` days older than the latest public week is no level, and the state is `None` (the term reads 0).
+
+    Recorded mutation (applied to the tree, confirmed by grep, the named tests run, and reverted): in `s3c_pd.latest_defined_week`,
+    `if max_carry_days is not None and (public[-1] - week).days > max_carry_days:` replaced with
+    `if max_carry_days is not None and (public[-1] - week).days > max_carry_days + 7:`, so a level two missed prints old (14 days) is carried
+    as if it were within the bound. Four tests failed with `AssertionError`: `test_two_missed_prints_leave_no_level_and_no_state`
+    (`datetime.date(2025, 2, 12) is not None`), `test_the_bound_is_the_panels_constant_and_a_level_one_day_over_it_is_refused` (the same),
+    `test_decision_states_honour_the_bound` (`1.06... is not None`) and `test_the_snapshot_states_that_are_older_than_the_bound_are_gone`
+    (`2.58... is not None : 2025-05-01`).
+    """
+
+    FIRST = date(2024, 1, 3)
+
+    def levels(self, withhold=()):
+        values = [100.0 + (i % 7) * 3.0 + i * 0.5 for i in range(70)]
+        for i in withhold:
+            values[i] = None
+        return weekly(values, first=self.FIRST)
+
+    def day(self, week):
+        return pd.release_instant(week).date() + timedelta(days=1)
+
+    def test_the_bound_is_the_panels_constant_not_a_copy(self):
+        from repo_model import data
+        self.assertEqual(pd.MAX_CARRY_DAYS, data.WEEKLY_CARRY_MAX_STALENESS_DAYS)
+        self.assertEqual(pd.MAX_CARRY_DAYS, 13)
+
+    def test_one_missed_print_is_carried(self):
+        levels = self.levels(withhold=(60,))
+        weeks = wednesdays(self.FIRST, 70)
+        day = self.day(weeks[60])
+        self.assertEqual(pd.latest_public_week(levels, day), weeks[60])
+        self.assertEqual(pd.skipped_weeks(levels, day), 1)
+        self.assertEqual(pd.latest_defined_week(levels, day), weeks[59])
+        self.assertIsNotNone(pd.state_at(levels, day))
+        self.assertEqual(pd.state_at(levels, day), pd.state_at(levels, day, max_carry_days=None))
+
+    def test_two_missed_prints_leave_no_level_and_no_state(self):
+        levels = self.levels(withhold=(59, 60))
+        weeks = wednesdays(self.FIRST, 70)
+        day = self.day(weeks[60])
+        self.assertEqual((weeks[60] - weeks[58]).days, 14)
+        self.assertIsNone(pd.latest_defined_week(levels, day))
+        self.assertIsNone(pd.state_at(levels, day))
+        # the age is still reported, and the unbounded read of #1296's record still carries the level
+        self.assertEqual(pd.skipped_weeks(levels, day), 2)
+        self.assertEqual(pd.latest_defined_week(levels, day, max_carry_days=None), weeks[58])
+        self.assertIsNotNone(pd.state_at(levels, day, max_carry_days=None))
+
+    def test_the_bound_is_the_panels_constant_and_a_level_one_day_over_it_is_refused(self):
+        levels = self.levels(withhold=(59, 60))
+        weeks = wednesdays(self.FIRST, 70)
+        day = self.day(weeks[60])
+        self.assertEqual(pd.latest_defined_week(levels, day, max_carry_days=14), weeks[58])  # 14 days old is within a bound of 14
+        self.assertIsNone(pd.latest_defined_week(levels, day, max_carry_days=13))
+        self.assertEqual(pd.latest_defined_week(levels, day, max_carry_days=pd.MAX_CARRY_DAYS), None)
+
+    def test_the_level_recovers_when_a_print_returns(self):
+        levels = self.levels(withhold=(59, 60))
+        weeks = wednesdays(self.FIRST, 70)
+        later = self.day(weeks[61])
+        self.assertEqual(pd.latest_defined_week(levels, later), weeks[61])
+        self.assertIsNotNone(pd.state_at(levels, later))
+
+    def test_decision_states_honour_the_bound(self):
+        levels = self.levels(withhold=(59, 60))
+        weeks = wednesdays(self.FIRST, 70)
+        days = [self.day(weeks[59]), self.day(weeks[60]), self.day(weeks[61])]
+        bounded = pd.decision_states(levels, days)
+        legacy = pd.decision_states(levels, days, max_carry_days=None)
+        self.assertIsNone(bounded[days[1]])
+        self.assertIsNotNone(legacy[days[1]])
+        self.assertIsNotNone(bounded[days[2]])
+        self.assertEqual(bounded[days[2]], legacy[days[2]])
+
+    def test_the_snapshot_states_that_are_older_than_the_bound_are_gone(self):
+        panel_days = [d for d in DATES if date(2025, 1, 1) <= d <= date(2026, 9, 3)]
+        bounded = pd.decision_states(SNAPSHOT_LEVELS, panel_days)
+        legacy = pd.decision_states(SNAPSHOT_LEVELS, panel_days, max_carry_days=None)
+        for d in panel_days:
+            age = pd.skipped_weeks(SNAPSHOT_LEVELS, d)
+            if age is not None and age * 7 > pd.MAX_CARRY_DAYS:
+                self.assertIsNone(bounded[d], d)
+            else:
+                self.assertEqual(bounded[d], legacy[d], d)
+        self.assertTrue(any(bounded[d] is None and legacy[d] is not None for d in panel_days))
+
+
+class SourceEntryTests(unittest.TestCase):
+    """The study's source declaration points at the measurement registry's entry of the same id (#1329) and agrees with it on the release."""
+
+    MEASUREMENT = ROOT / "metadata" / "sources_measurement.json"
+    VERSION_2 = ROOT / "metadata" / "s3c_pd_1329.json"
+
+    def test_the_declaration_points_at_the_existing_entry(self):
+        decl = json.loads(SOURCE_DECLARATION.read_text())
+        pointer = decl["same_release_as"]
+        self.assertEqual(pointer["registry_file"], "metadata/sources_measurement.json")
+        self.assertEqual(pointer["entry"], decl["source_id"])
+        self.assertIn(decl["source_id"], json.loads(self.MEASUREMENT.read_text()))
+
+    def test_both_declarations_state_one_release(self):
+        mine = json.loads(SOURCE_DECLARATION.read_text())["proposed_registry_entry"]
+        theirs = json.loads(self.MEASUREMENT.read_text())["nyfed_pd_financing"]
+        for key in ("available_time", "basis", "days", "timezone", "unit", "worst_case_calendar_days"):
+            self.assertEqual(mine["release_lag"][key], theirs["release_lag"][key], key)
+        self.assertEqual(mine["provider"], theirs["provider"])
+        self.assertIn("PDSIRRA-UTSETTOT", theirs["fields"])
+        self.assertIn("PDSIRRA-UTSETTOT", mine["fields"])
+
+    def test_the_measurement_entry_states_the_same_bound_the_state_term_reads(self):
+        from repo_model import data
+        text = json.loads(self.MEASUREMENT.read_text())["nyfed_pd_financing"]["limitation"]
+        self.assertIn("data.WEEKLY_CARRY_MAX_STALENESS_DAYS", text)
+        self.assertIn(f"({data.WEEKLY_CARRY_MAX_STALENESS_DAYS} days)", text)
+        self.assertEqual(pd.MAX_CARRY_DAYS, data.WEEKLY_CARRY_MAX_STALENESS_DAYS)
+
+    def test_the_new_declaration_version_names_the_constant_and_the_unbounded_read(self):
+        decl = json.loads(self.VERSION_2.read_text())
+        self.assertEqual((decl["issue"], decl["version"]), (1329, 2))
+        self.assertIn("data.WEEKLY_CARRY_MAX_STALENESS_DAYS", decl["carry"]["rule"])
+        self.assertIn("max_carry_days=None", decl["carry"]["implementation"])
+        old = json.loads((ROOT / "metadata" / "s3c_pd_1296.json").read_text())
+        self.assertIn("no limit", old["candidate"]["transform"])  # version 1 is left as it was declared
 
 
 class FitTests(unittest.TestCase):

@@ -27,6 +27,13 @@ a figure that counts an auction announced after that decision raises `LookAheadE
 no clock time for an announcement, and a cash management bill is ad hoc, announced the same or the previous day; the 12:00 instant is
 unverified.
 
+**Size terms (#1321; H5 step 3; her ruling of 30 October 2026 on avenue #1318, ledger item 81).** `AnnouncedSizeTerms` serves, at every lead, the
+announced size of the settlement as extra terms of the fit (`spread_mr_state_calendar.SIZE_EXTRAS`, read through `walk`'s `iorb` argument): the
+signed announced net coupon and net bill (`net_coupon`, `net_bill`, #1273's net) and the announced gross coupon offering (`gross_coupon`), each in
+USD 100 bn, each counting an auction only when it was announced by the decision instant (`repo_model.decision_instant`). `FLAGNET_ARM` is
+(s3c-ann) with the two net terms beside its two flags (two terms per leg); `GROSS_ARM` replaces the coupon flag by the gross coupon offering and
+keeps the bill flag. Both are (s3) with that change only, on direct pairs.
+
 Stdlib only.
 """
 
@@ -48,7 +55,7 @@ from .splits import LookAheadError
 
 __all__ = [
     "ANN_ARM", "ANN_NET_ARM", "BILL_ARM", "COLUMN", "COUPON_ARM", "LEGS", "TRAINING_PAIRS",
-    "AnnouncedNetSizeTable", "AnnouncedTermTable",
+    "AnnouncedNetSizeTable", "AnnouncedSizeTerms", "AnnouncedTermTable", "FLAGNET_ARM", "GROSS_ARM",
 ]
 
 #: The fit trains on direct pairs only: the settlement terms are read at the target day (`one_step_guard` holds, no allow-list entry).
@@ -70,6 +77,18 @@ ANN_NET_ARM = dataclasses.replace(
 #: The leg references of (s3c-ann): one flag announced at leads 2 to 5, the other at lead 1 only.
 COUPON_ARM = dataclasses.replace(ANN_ARM, name="sc_s3_ann_coupon", role="(s3-ann-coupon) (s3-ann) with the coupon flag alone announced")
 BILL_ARM = dataclasses.replace(ANN_ARM, name="sc_s3_ann_bill", role="(s3-ann-bill) (s3-ann) with the bill flag alone announced")
+#: (s3c-ann-flagnet) (#1321): (s3c-ann) with #1273's announced net beside each flag, the two net terms entering as extras after the flags.
+FLAGNET_ARM = dataclasses.replace(
+    sc.ARMS[2], name="sc_s3_ann_flagnet",
+    role="(s3-ann-flagnet) (s3-ann) with the announced net coupon and net bill beside the two announced flags",
+    extra=(sc.NET_COUPON, sc.NET_BILL),
+)
+#: (s3c-ann-gross) (#1321): the coupon leg sized by the announced gross offering in place of its flag, the bill leg the announced 0/1 flag.
+GROSS_ARM = dataclasses.replace(
+    sc.ARMS[2], name="sc_s3_ann_gross",
+    role="(s3-ann-gross) (s3-ann) with the coupon flag replaced by the announced gross coupon offering; the bill leg stays the flag",
+    location=tuple(name for name in sc.ARMS[2].location if name != "settlement_coupon"), extra=(sc.GROSS_COUPON,),
+)
 
 
 def _by_day(results: Sequence[sd.AuctionResult]) -> Dict[date, List[sd.AuctionResult]]:
@@ -217,4 +236,71 @@ class AnnouncedNetSizeTable(s3c_net.NetSizeTable):
                     f"net {name!r} for {self.dates[row]} is {out[name]}, but {announced[name]} was announced by the decision instant "
                     f"{instant} of the forecast made {lead} panel day(s) ahead"
                 )
+        return out
+
+
+class AnnouncedSizeTerms:
+    """The size terms of `sc.SIZE_EXTRAS` at every lead, as the decision `lead` rows before could read them; the `iorb` table of `sc.walk`.
+
+    `gross_coupon` is the sum of the offering amounts of the coupon auctions settling on the target row that were announced by the decision
+    instant of row `row - lead`, over `sc.SIZE_UNIT` (USD 100 bn); `net_coupon` and `net_bill` are `net`'s announced net over the same unit. A
+    row with no decision row `lead` rows before reads 0 gross (`AnnouncedTermTable`) and is not a training row of the net. `names` picks which
+    are served. `terms` serves the announced auctions (it is read only for them) and `net` the announced net.
+    """
+
+    def __init__(self, terms: AnnouncedTermTable, net: AnnouncedNetSizeTable, names: Sequence[str] = sc.SIZE_EXTRAS):
+        unknown = [name for name in names if name not in sc.SIZE_EXTRAS]
+        if unknown:
+            raise ValueError(f"names must be among {list(sc.SIZE_EXTRAS)}, got {unknown}")
+        self.terms, self.net = terms, net
+        self.names = tuple(name for name in sc.SIZE_EXTRAS if name in names)
+        self.dates = terms.dates
+        self._time = terms._time
+
+    def at(self, lead: int, row: int) -> Dict[str, float]:
+        """The sizes of target row `row` as the decision `lead` rows earlier read them (a training row: public by construction).
+
+        Mutation record: see `tests/test_s3c_announced_sizes_1321.py` (`AnnouncedSizeTerms.at`).
+        """
+
+        out: Dict[str, float] = {}
+        if sc.GROSS_COUPON in self.names:
+            counted = self.terms._counted(lead, row)["settlement_coupon"]
+            out[sc.GROSS_COUPON] = sum(r.amount for r in counted) / sc.SIZE_UNIT
+        if sc.NET_COUPON in self.names or sc.NET_BILL in self.names:
+            net = self.net.sizes_at(lead, row)
+            if sc.NET_COUPON in self.names:
+                out[sc.NET_COUPON] = net["settlement_coupon"] / sc.SIZE_UNIT
+            if sc.NET_BILL in self.names:
+                out[sc.NET_BILL] = net["settlement_bill"] / sc.SIZE_UNIT
+        return out
+
+    def read(self, lead: int, decision_index: int) -> Dict[str, float]:
+        """The sizes a forecast of the decision on row `decision_index` at `lead` reads, from its target row.
+
+        Raises:
+            LookAheadError: a gross figure that counts an auction announced after the decision instant, or a net that is not the one announced by it.
+            StaleReadError: a gross figure that leaves out an auction announced by the decision instant.
+        """
+
+        row = cal.target_row(decision_index, lead)
+        instant = datetime.combine(self.dates[decision_index], self._time)
+        out = self.at(lead, row)
+        if sc.GROSS_COUPON in self.names:
+            announced = sum(
+                r.amount for r in self.terms._results.get(self.dates[row], ())
+                if r.column == COLUMN["settlement_coupon"] and r.public_at is not None and r.public_at <= instant
+            ) / sc.SIZE_UNIT
+            if out[sc.GROSS_COUPON] > announced + 1e-9:
+                raise LookAheadError(
+                    f"term {sc.GROSS_COUPON!r} for {self.dates[row]} is {out[sc.GROSS_COUPON]}, but {announced} was announced by the decision "
+                    f"instant {instant} of the forecast made {lead} panel day(s) ahead: it counts an auction announced later"
+                )
+            if out[sc.GROSS_COUPON] < announced - 1e-9:
+                raise StaleReadError(
+                    f"term {sc.GROSS_COUPON!r} for {self.dates[row]} is {out[sc.GROSS_COUPON]}, but {announced} was announced by the decision "
+                    f"instant {instant}: it leaves out an announced auction"
+                )
+        if sc.NET_COUPON in self.names or sc.NET_BILL in self.names:
+            self.net.read(lead, decision_index)
         return out
