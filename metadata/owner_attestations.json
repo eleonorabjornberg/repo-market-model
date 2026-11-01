@@ -149,6 +149,20 @@
     },
     {
       "kind": "decisions",
+      "issue": 1329,
+      "comment_id": 6535722307,
+      "phrase": "GO #1329",
+      "what": "the weekly-carry decision record: the 13-day bound binds every weekly state term (#1303); her 30 October 2026 ruling (ledger item 88)"
+    },
+    {
+      "kind": "decisions",
+      "issue": 1327,
+      "comment_id": 6535719408,
+      "phrase": "GO #1327",
+      "what": "the information-set decision record's corrections for the settlement dating (#1317), and the owner-attestation binding of metadata/settlement_announcement_dating.json and metadata/net_settlement.json; her 30 October 2026 ruling (ledger item 86)"
+    },
+    {
+      "kind": "decisions",
       "issue": 1313,
       "comment_id": 6534020982,
       "phrase": "GO #1313",

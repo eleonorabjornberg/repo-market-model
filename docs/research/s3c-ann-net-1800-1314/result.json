@@ -1,0 +1,3124 @@
+{
+ "amendments": [
+  "The per-cell scores of (s3c), (s3c-ann) and (s3c-ann-net) were equal at 16:00 and at 18:00 on every one of the 10,100 cells (9,275 development, 825 on the 2026 days) in the scratch comparison made before this declaration was committed; 20 development-window cells (the five leads of four decision days: 2020-04-06, 2023-01-09, 2025-09-08 and 2025-10-27) carry a different scarcity-state label, because #1145's state (the own-leg grid, `scripts/state_calendar_1145.py` `decision_states`) is read at the decision instant and a series it reads is public between 16:00 and 18:00 on those days. The model's own state is held at its maximum (s3c_net.constant_states) and the label only groups cells in #1320's state split (Table 4c), so no score moves; the study reports the four days and does not investigate the series further. These per-cell scores came from the current tree running at 16:00, see the next amendment, so they show that the code and data of the two trees agree, not that the instant is without effect.",
+  "Found while running, before any figure of this study was read: the unchanged scripts of #1288 and #1320 took their decision instant from one hard-coded `DECISION_TIME = time(16, 0)` in scripts/spread_mean_reversion_686.py (every script of the family reads it from there), so a first run of them on this tree was a run at 16:00 and wrote #1288's record byte for byte. scripts/spread_mean_reversion_686.py now reads RMM_DECISION_TIME from the environment (default 16:00, and 18:00 the only other admitted value), so every earlier script and test stays at 16:00 and the 18:00 runs of this study set it; `score` refuses to run unless the family's instant is 18:00 (`require_instant`). The runs of #1288's and #1320's scripts were repeated with it set."
+ ],
+ "b3": {
+  "2026": {
+   "days": 165,
+   "first": "2025-12-31",
+   "last": "2026-08-27",
+   "levels": [
+    0.05,
+    0.25,
+    0.5,
+    0.75,
+    0.95
+   ],
+   "means": {
+    "B3": 1.6641183521123128,
+    "sc_s3c@16": 1.5183469608321476,
+    "sc_s3c@18": 1.5183469608321476,
+    "sc_s3c_ann_net@16": 1.4728875994176132,
+    "sc_s3c_ann_net@18": 1.4728875994176132
+   },
+   "note": "B3's forecasts are the published record's, made at 16:00 and not re-run; lead 1 only",
+   "rows": {
+    "sc_s3c@16": {
+     "benchmark_mean": 1.6641183521123128,
+     "candidate_mean": 1.5183469608321478,
+     "days": 165,
+     "difference": 0.14577139128016514,
+     "difference_interval": [
+      -0.16775612852506538,
+      0.3805922825762177
+     ],
+     "dm_p_value": 0.14176670789731727,
+     "dm_statistic": 1.0724155741257086,
+     "skill": 0.08759676924128225,
+     "skill_interval": [
+      -0.13639416442293173,
+      0.2236407964276237
+     ]
+    },
+    "sc_s3c@18": {
+     "benchmark_mean": 1.6641183521123128,
+     "candidate_mean": 1.5183469608321478,
+     "days": 165,
+     "difference": 0.14577139128016514,
+     "difference_interval": [
+      -0.16775612852506538,
+      0.3805922825762177
+     ],
+     "dm_p_value": 0.14176670789731727,
+     "dm_statistic": 1.0724155741257086,
+     "skill": 0.08759676924128225,
+     "skill_interval": [
+      -0.13639416442293173,
+      0.2236407964276237
+     ]
+    },
+    "sc_s3c_ann_net@16": {
+     "benchmark_mean": 1.6641183521123128,
+     "candidate_mean": 1.4728875994176143,
+     "days": 165,
+     "difference": 0.19123075269469866,
+     "difference_interval": [
+      -0.11580952976525813,
+      0.4071940862893456
+     ],
+     "dm_p_value": 0.06609505898015533,
+     "dm_statistic": 1.5055212491972205,
+     "skill": 0.11491415406360012,
+     "skill_interval": [
+      -0.11526972365415747,
+      0.23974770182877997
+     ]
+    },
+    "sc_s3c_ann_net@18": {
+     "benchmark_mean": 1.6641183521123128,
+     "candidate_mean": 1.4728875994176143,
+     "days": 165,
+     "difference": 0.19123075269469866,
+     "difference_interval": [
+      -0.11580952976525813,
+      0.4071940862893456
+     ],
+     "dm_p_value": 0.06609505898015533,
+     "dm_statistic": 1.5055212491972205,
+     "skill": 0.11491415406360012,
+     "skill_interval": [
+      -0.11526972365415747,
+      0.23974770182877997
+     ]
+    }
+   }
+  },
+  "development": {
+   "days": 1855,
+   "first": "2018-07-19",
+   "last": "2025-12-23",
+   "levels": [
+    0.05,
+    0.25,
+    0.5,
+    0.75,
+    0.95
+   ],
+   "means": {
+    "B3": 1.635699129632858,
+    "sc_s3c@16": 1.4756564159045988,
+    "sc_s3c@18": 1.4756564159045988,
+    "sc_s3c_ann_net@16": 1.4786292921919078,
+    "sc_s3c_ann_net@18": 1.4786292921919078
+   },
+   "note": "B3's forecasts are the published record's, made at 16:00 and not re-run; lead 1 only",
+   "rows": {
+    "sc_s3c@16": {
+     "benchmark_mean": 1.635699129632858,
+     "candidate_mean": 1.4756564159046022,
+     "days": 1855,
+     "difference": 0.16004271372825582,
+     "difference_interval": [
+      0.059706985797236475,
+      0.23503264636696525
+     ],
+     "dm_p_value": 0.0007651505701964378,
+     "dm_statistic": 3.1688751528273205,
+     "skill": 0.09784361367495398,
+     "skill_interval": [
+      -0.004767614452304586,
+      0.15494602434939703
+     ]
+    },
+    "sc_s3c@18": {
+     "benchmark_mean": 1.635699129632858,
+     "candidate_mean": 1.4756564159046022,
+     "days": 1855,
+     "difference": 0.16004271372825582,
+     "difference_interval": [
+      0.059706985797236475,
+      0.23503264636696525
+     ],
+     "dm_p_value": 0.0007651505701964378,
+     "dm_statistic": 3.1688751528273205,
+     "skill": 0.09784361367495398,
+     "skill_interval": [
+      -0.004767614452304586,
+      0.15494602434939703
+     ]
+    },
+    "sc_s3c_ann_net@16": {
+     "benchmark_mean": 1.635699129632858,
+     "candidate_mean": 1.478629292191914,
+     "days": 1855,
+     "difference": 0.157069837440944,
+     "difference_interval": [
+      0.06632350352391352,
+      0.2263832428897707
+     ],
+     "dm_p_value": 0.0004785568346480362,
+     "dm_statistic": 3.3028388698435327,
+     "skill": 0.09602611788159306,
+     "skill_interval": [
+      0.0019913993599837837,
+      0.14941374899286536
+     ]
+    },
+    "sc_s3c_ann_net@18": {
+     "benchmark_mean": 1.635699129632858,
+     "candidate_mean": 1.478629292191914,
+     "days": 1855,
+     "difference": 0.157069837440944,
+     "difference_interval": [
+      0.06632350352391352,
+      0.2263832428897707
+     ],
+     "dm_p_value": 0.0004785568346480362,
+     "dm_statistic": 3.3028388698435327,
+     "skill": 0.09602611788159306,
+     "skill_interval": [
+      0.0019913993599837837,
+      0.14941374899286536
+     ]
+    }
+   }
+  }
+ },
+ "cells_1600": {
+  "commit": "29732943ea64882bdf81bc1337278fb2c9cf67a7",
+  "path": "docs/research/s3c-ann-net-1800-1314/cells-1600.json"
+ },
+ "compare": {
+  "announced": {
+   "all": {
+    "compared": 51481,
+    "differ": 0,
+    "max_abs": 0.0,
+    "only_new": [],
+    "only_old": [],
+    "paths": []
+   },
+   "sections": {
+    "against_records/1255/2026": {
+     "compared": 12,
+     "differ": 0,
+     "max_abs": 0.0,
+     "only_one_side": 0
+    },
+    "against_records/1255/development": {
+     "compared": 12,
+     "differ": 0,
+     "max_abs": 0.0,
+     "only_one_side": 0
+    },
+    "against_records/1273/2026": {
+     "compared": 18,
+     "differ": 0,
+     "max_abs": 0.0,
+     "only_one_side": 0
+    },
+    "against_records/1273/development": {
+     "compared": 18,
+     "differ": 0,
+     "max_abs": 0.0,
+     "only_one_side": 0
+    },
+    "draws": {
+     "compared": 1,
+     "differ": 0,
+     "max_abs": 0.0,
+     "only_one_side": 0
+    },
+    "issue": {
+     "compared": 1,
+     "differ": 0,
+     "max_abs": 0.0,
+     "only_one_side": 0
+    },
+    "margin_bp": {
+     "compared": 1,
+     "differ": 0,
+     "max_abs": 0.0,
+     "only_one_side": 0
+    },
+    "reps": {
+     "compared": 1,
+     "differ": 0,
+     "max_abs": 0.0,
+     "only_one_side": 0
+    },
+    "seed": {
+     "compared": 1,
+     "differ": 0,
+     "max_abs": 0.0,
+     "only_one_side": 0
+    },
+    "windows/2026/announced_days": {
+     "compared": 16,
+     "differ": 0,
+     "max_abs": 0.0,
+     "only_one_side": 0
+    },
+    "windows/2026/announcement_check": {
+     "compared": 42,
+     "differ": 0,
+     "max_abs": 0.0,
+     "only_one_side": 0
+    },
+    "windows/2026/effects": {
+     "compared": 396,
+     "differ": 0,
+     "max_abs": 0.0,
+     "only_one_side": 0
+    },
+    "windows/2026/groups": {
+     "compared": 22509,
+     "differ": 0,
+     "max_abs": 0.0,
+     "only_one_side": 0
+    },
+    "windows/2026/lead_difference": {
+     "compared": 30,
+     "differ": 0,
+     "max_abs": 0.0,
+     "only_one_side": 0
+    },
+    "windows/2026/notes": {
+     "compared": 6,
+     "differ": 0,
+     "max_abs": 0.0,
+     "only_one_side": 0
+    },
+    "windows/2026/pressure_day_type_counts": {
+     "compared": 5,
+     "differ": 0,
+     "max_abs": 0.0,
+     "only_one_side": 0
+    },
+    "windows/2026/refits": {
+     "compared": 1,
+     "differ": 0,
+     "max_abs": 0.0,
+     "only_one_side": 0
+    },
+    "windows/2026/skipped_groups": {
+     "compared": 14,
+     "differ": 0,
+     "max_abs": 0.0,
+     "only_one_side": 0
+    },
+    "windows/development/announced_days": {
+     "compared": 16,
+     "differ": 0,
+     "max_abs": 0.0,
+     "only_one_side": 0
+    },
+    "windows/development/announcement_check": {
+     "compared": 42,
+     "differ": 0,
+     "max_abs": 0.0,
+     "only_one_side": 0
+    },
+    "windows/development/effects": {
+     "compared": 1188,
+     "differ": 0,
+     "max_abs": 0.0,
+     "only_one_side": 0
+    },
+    "windows/development/groups": {
+     "compared": 27108,
+     "differ": 0,
+     "max_abs": 0.0,
+     "only_one_side": 0
+    },
+    "windows/development/lead_difference": {
+     "compared": 30,
+     "differ": 0,
+     "max_abs": 0.0,
+     "only_one_side": 0
+    },
+    "windows/development/notes": {
+     "compared": 6,
+     "differ": 0,
+     "max_abs": 0.0,
+     "only_one_side": 0
+    },
+    "windows/development/pressure_day_type_counts": {
+     "compared": 5,
+     "differ": 0,
+     "max_abs": 0.0,
+     "only_one_side": 0
+    },
+    "windows/development/refits": {
+     "compared": 1,
+     "differ": 0,
+     "max_abs": 0.0,
+     "only_one_side": 0
+    },
+    "windows/development/skipped_groups": {
+     "compared": 1,
+     "differ": 0,
+     "max_abs": 0.0,
+     "only_one_side": 0
+    }
+   }
+  },
+  "diagnosis": {
+   "all": {
+    "compared": 5241,
+    "differ": 344,
+    "max_abs": 3.557956077202334,
+    "only_new": [],
+    "only_old": [],
+    "paths": [
+     {
+      "new": 0.2783996464625878,
+      "old": 0.28883499197891443,
+      "path": "windows/development/table_2/h=1/bill/0 (abundant)/fit/g"
+     },
+     {
+      "new": 0.19413064876503527,
+      "old": 0.1925229085845626,
+      "path": "windows/development/table_2/h=1/bill/0 (abundant)/fit/g_plus_m"
+     },
+     {
+      "new": 0.20363905796841744,
+      "old": 0.20335083364607945,
+      "path": "windows/development/table_2/h=1/bill/0 (abundant)/fit/gross_only"
+     },
+     {
+      "new": -0.19868440513552355,
+      "old": -0.193505835748146,
+      "path": "windows/development/table_2/h=1/bill/0 (abundant)/fit/intervals/g/0"
+     },
+     {
+      "new": 0.7357882234432462,
+      "old": 0.7461606033709315,
+      "path": "windows/development/table_2/h=1/bill/0 (abundant)/fit/intervals/g/1"
+     },
+     {
+      "new": -0.10382944015716415,
+      "old": -0.11067644639717071,
+      "path": "windows/development/table_2/h=1/bill/0 (abundant)/fit/intervals/g_plus_m/0"
+     },
+     {
+      "new": 0.4542042845160731,
+      "old": 0.4587647706387068,
+      "path": "windows/development/table_2/h=1/bill/0 (abundant)/fit/intervals/g_plus_m/1"
+     },
+     {
+      "new": -0.6996007752333823,
+      "old": -0.7226354950545891,
+      "path": "windows/development/table_2/h=1/bill/0 (abundant)/fit/intervals/m/0"
+     },
+     {
+      "new": 0.5893360100946716,
+      "old": 0.5902007430574927,
+      "path": "windows/development/table_2/h=1/bill/0 (abundant)/fit/intervals/m/1"
+     },
+     {
+      "new": -0.05227076895417353,
+      "old": -0.05336382462844136,
+      "path": "windows/development/table_2/h=1/bill/0 (abundant)/fit/intervals/mse_gross_less_net/0"
+     },
+     {
+      "new": 0.02828367134890182,
+      "old": 0.029997174563003166,
+      "path": "windows/development/table_2/h=1/bill/0 (abundant)/fit/intervals/mse_gross_less_net/1"
+     },
+     {
+      "new": 0.00011209734991088901,
+      "old": 9.649197687042751e-05,
+      "path": "windows/development/table_2/h=1/bill/0 (abundant)/fit/intervals/mse_net_less_full/0"
+     },
+     {
+      "new": 0.06659232790983935,
+      "old": 0.06802213496928103,
+      "path": "windows/development/table_2/h=1/bill/0 (abundant)/fit/intervals/mse_net_less_full/1"
+     },
+     {
+      "new": -0.36404054748793435,
+      "old": -0.35903889924328813,
+      "path": "windows/development/table_2/h=1/bill/0 (abundant)/fit/intervals/n/0"
+     },
+     {
+      "new": 0.7147640304942262,
+      "old": 0.7180327456855594,
+      "path": "windows/development/table_2/h=1/bill/0 (abundant)/fit/intervals/n/1"
+     },
+     {
+      "new": -0.08426899769755251,
+      "old": -0.09631208339435182,
+      "path": "windows/development/table_2/h=1/bill/0 (abundant)/fit/m"
+     },
+     {
+      "new": 5.084795079208737,
+      "old": 5.084332630715034,
+      "path": "windows/development/table_2/h=1/bill/0 (abundant)/fit/mse_full"
+     },
+     {
+      "new": 5.085310596254873,
+      "old": 5.0849928730510525,
+      "path": "windows/development/table_2/h=1/bill/0 (abundant)/fit/mse_gross"
+     },
+     {
+      "new": 5.09703014442371,
+      "old": 5.0963716424246455,
+      "path": "windows/development/table_2/h=1/bill/0 (abundant)/fit/mse_net"
+     },
+     {
+      "new": 0.18222811082774146,
+      "old": 0.19508345231468674,
+      "path": "windows/development/table_2/h=1/bill/0 (abundant)/fit/n"
+     },
+     {
+      "new": 158.0,
+      "old": 159.0,
+      "path": "windows/development/table_2/h=1/bill/1 to 2/fit/days"
+     },
+     {
+      "new": 1.5158354244040138,
+      "old": 1.5978691627841837,
+      "path": "windows/development/table_2/h=1/bill/1 to 2/fit/g"
+     },
+     {
+      "new": 1.1316752332020465,
+      "old": 1.2591319858746237,
+      "path": "windows/development/table_2/h=1/bill/1 to 2/fit/g_plus_m"
+     },
+     {
+      "new": 1.2158010259710308,
+      "old": 1.332551101346281,
+      "path": "windows/development/table_2/h=1/bill/1 to 2/fit/gross_only"
+     },
+     {
+      "new": 0.8035980134121903,
+      "old": 0.8031858543092054,
+      "path": "windows/development/table_2/h=1/bill/1 to 2/fit/intervals/g/0"
+     },
+     {
+      "new": 2.5460379646963993,
+      "old": 2.5559245087944156,
+      "path": "windows/development/table_2/h=1/bill/1 to 2/fit/intervals/g/1"
+     },
+     {
+      "new": -0.08620177806719284,
+      "old": -0.03246699502884654,
+      "path": "windows/development/table_2/h=1/bill/1 to 2/fit/intervals/g_plus_m/0"
+     },
+     {
+      "new": 2.1296836857669175,
+      "old": 2.3591066155223395,
+      "path": "windows/development/table_2/h=1/bill/1 to 2/fit/intervals/g_plus_m/1"
+     },
+     {
+      "new": -2.1556124963142564,
+      "old": -2.1004525540786667,
+      "path": "windows/development/table_2/h=1/bill/1 to 2/fit/intervals/m/0"
+     },
+     {
+      "new": 0.937971413553952,
+      "old": 1.034455865103869,
+      "path": "windows/development/table_2/h=1/bill/1 to 2/fit/intervals/m/1"
+     },
+     {
+      "new": -1.3758352524197266,
+      "old": -1.726119815146162,
+      "path": "windows/development/table_2/h=1/bill/1 to 2/fit/intervals/mse_gross_less_net/0"
+     },
+     {
+      "new": 0.4121961613861719,
+      "old": 0.38216042128841093,
+      "path": "windows/development/table_2/h=1/bill/1 to 2/fit/intervals/mse_gross_less_net/1"
+     },
+     {
+      "new": 0.0035234363493564565,
+      "old": 0.0037625577757981012,
+      "path": "windows/development/table_2/h=1/bill/1 to 2/fit/intervals/mse_net_less_full/0"
+     },
+     {
+      "new": 1.5087180225066275,
+      "old": 1.7989616144929363,
+      "path": "windows/development/table_2/h=1/bill/1 to 2/fit/intervals/mse_net_less_full/1"
+     },
+     {
+      "new": -0.09713070867529469,
+      "old": -0.1657743548016989,
+      "path": "windows/development/table_2/h=1/bill/1 to 2/fit/intervals/n/0"
+     },
+     {
+      "new": 2.3140347737775593,
+      "old": 2.3361221963296197,
+      "path": "windows/development/table_2/h=1/bill/1 to 2/fit/intervals/n/1"
+     },
+     {
+      "new": -0.3841601912019672,
+      "old": -0.33873717690956007,
+      "path": "windows/development/table_2/h=1/bill/1 to 2/fit/m"
+     },
+     {
+      "new": 7.264543430268427,
+      "old": 7.466347376920312,
+      "path": "windows/development/table_2/h=1/bill/1 to 2/fit/mse_full"
+     },
+     {
+      "new": 7.2848796832067375,
+      "old": 7.4824206383413525,
+      "path": "windows/development/table_2/h=1/bill/1 to 2/fit/mse_gross"
+     },
+     {
+      "new": 7.661057391481523,
+      "old": 7.961348991162562,
+      "path": "windows/development/table_2/h=1/bill/1 to 2/fit/mse_net"
+     },
+     {
+      "new": 0.9409704982930022,
+      "old": 0.9470169317366528,
+      "path": "windows/development/table_2/h=1/bill/1 to 2/fit/n"
+     },
+     {
+      "new": 158.0,
+      "old": 159.0,
+      "path": "windows/development/table_2/h=1/bill/1 to 2/target_days"
+     },
+     {
+      "new": 177.0,
+      "old": 176.0,
+      "path": "windows/development/table_2/h=1/bill/3 (scarce)/fit/days"
+     },
+     {
+      "new": -2.71172195545458,
+      "old": -3.2504829495058023,
+      "path": "windows/development/table_2/h=1/bill/3 (scarce)/fit/g"
+     },
+     {
+      "new": -1.4556350534754283,
+      "old": -1.7016796799498186,
+      "path": "windows/development/table_2/h=1/bill/3 (scarce)/fit/g_plus_m"
+     },
+     {
+      "new": -1.5230087381036725,
+      "old": -1.7778331065251949,
+      "path": "windows/development/table_2/h=1/bill/3 (scarce)/fit/gross_only"
+     },
+     {
+      "new": -12.574711153154777,
+      "old": -13.610903244057024,
+      "path": "windows/development/table_2/h=1/bill/3 (scarce)/fit/intervals/g/0"
+     },
+     {
+      "new": 3.4273003102474555,
+      "old": 3.2506186725006176,
+      "path": "windows/development/table_2/h=1/bill/3 (scarce)/fit/intervals/g/1"
+     },
+     {
+      "new": -2.9068007606377586,
+      "old": -3.2610983140376915,
+      "path": "windows/development/table_2/h=1/bill/3 (scarce)/fit/intervals/g_plus_m/0"
+     },
+     {
+      "new": 1.8327485887703063,
+      "old": 1.7064263168482652,
+      "path": "windows/development/table_2/h=1/bill/3 (scarce)/fit/intervals/g_plus_m/1"
+     },
+     {
+      "new": -4.072147047270214,
+      "old": -3.984207939248671,
+      "path": "windows/development/table_2/h=1/bill/3 (scarce)/fit/intervals/m/0"
+     },
+     {
+      "new": 11.960126211986482,
+      "old": 12.24665917948367,
+      "path": "windows/development/table_2/h=1/bill/3 (scarce)/fit/intervals/m/1"
+     },
+     {
+      "new": -2.70991177959304,
+      "old": -3.082295292273421,
+      "path": "windows/development/table_2/h=1/bill/3 (scarce)/fit/intervals/mse_gross_less_net/0"
+     },
+     {
+      "new": 2.0624245634388667,
+      "old": 2.1313532907422403,
+      "path": "windows/development/table_2/h=1/bill/3 (scarce)/fit/intervals/mse_gross_less_net/1"
+     },
+     {
+      "new": 0.004079499410079278,
+      "old": 0.007058146162713539,
+      "path": "windows/development/table_2/h=1/bill/3 (scarce)/fit/intervals/mse_net_less_full/0"
+     },
+     {
+      "new": 3.3713714376341555,
+      "old": 3.802692469852365,
+      "path": "windows/development/table_2/h=1/bill/3 (scarce)/fit/intervals/mse_net_less_full/1"
+     },
+     {
+      "new": -12.335950929291739,
+      "old": -12.818967874535012,
+      "path": "windows/development/table_2/h=1/bill/3 (scarce)/fit/intervals/n/0"
+     },
+     {
+      "new": 3.4579110209704114,
+      "old": 3.3582764034429133,
+      "path": "windows/development/table_2/h=1/bill/3 (scarce)/fit/intervals/n/1"
+     },
+     {
+      "new": 1.2560869019791518,
+      "old": 1.5488032695559837,
+      "path": "windows/development/table_2/h=1/bill/3 (scarce)/fit/m"
+     },
+     {
+      "new": 623.5053722739876,
+      "old": 626.6110489588245,
+      "path": "windows/development/table_2/h=1/bill/3 (scarce)/fit/mse_full"
+     },
+     {
+      "new": 623.5455554779015,
+      "old": 626.6721829234046,
+      "path": "windows/development/table_2/h=1/bill/3 (scarce)/fit/mse_gross"
+     },
+     {
+      "new": 624.1623847138289,
+      "old": 627.4766469305787,
+      "path": "windows/development/table_2/h=1/bill/3 (scarce)/fit/mse_net"
+     },
+     {
+      "new": -2.206662174659676,
+      "old": -2.5301931220808673,
+      "path": "windows/development/table_2/h=1/bill/3 (scarce)/fit/n"
+     },
+     {
+      "new": 177.0,
+      "old": 176.0,
+      "path": "windows/development/table_2/h=1/bill/3 (scarce)/target_days"
+     },
+     {
+      "new": 0.29882930915447736,
+      "old": 0.3027252913913511,
+      "path": "windows/development/table_2/h=3/bill/0 (abundant)/fit/g"
+     },
+     {
+      "new": 0.288040997684951,
+      "old": 0.2898337745517677,
+      "path": "windows/development/table_2/h=3/bill/0 (abundant)/fit/g_plus_m"
+     },
+     {
+      "new": 0.2894519659329408,
+      "old": 0.2915229756641999,
+      "path": "windows/development/table_2/h=3/bill/0 (abundant)/fit/gross_only"
+     },
+     {
+      "new": -0.40283078904404834,
+      "old": -0.3936416545139929,
+      "path": "windows/development/table_2/h=3/bill/0 (abundant)/fit/intervals/g/0"
+     },
+     {
+      "new": 0.9495167001562381,
+      "old": 0.9522893512026469,
+      "path": "windows/development/table_2/h=3/bill/0 (abundant)/fit/intervals/g/1"
+     },
+     {
+      "new": -0.12169395289524941,
+      "old": -0.11629290368485001,
+      "path": "windows/development/table_2/h=3/bill/0 (abundant)/fit/intervals/g_plus_m/0"
+     },
+     {
+      "new": 0.6832299603976391,
+      "old": 0.6918780224810649,
+      "path": "windows/development/table_2/h=3/bill/0 (abundant)/fit/intervals/g_plus_m/1"
+     },
+     {
+      "new": -0.8537362107915016,
+      "old": -0.8500256769409024,
+      "path": "windows/development/table_2/h=3/bill/0 (abundant)/fit/intervals/m/0"
+     },
+     {
+      "new": 0.9097767020148191,
+      "old": 0.9111719230059221,
+      "path": "windows/development/table_2/h=3/bill/0 (abundant)/fit/intervals/m/1"
+     },
+     {
+      "new": -0.11081426027962499,
+      "old": -0.11211681268833813,
+      "path": "windows/development/table_2/h=3/bill/0 (abundant)/fit/intervals/mse_gross_less_net/0"
+     },
+     {
+      "new": 0.037930623758060805,
+      "old": 0.039848246528066206,
+      "path": "windows/development/table_2/h=3/bill/0 (abundant)/fit/intervals/mse_gross_less_net/1"
+     },
+     {
+      "new": 0.0002743105808251211,
+      "old": 0.0002622821171324395,
+      "path": "windows/development/table_2/h=3/bill/0 (abundant)/fit/intervals/mse_net_less_full/0"
+     },
+     {
+      "new": 0.14433693115380625,
+      "old": 0.1390821134258351,
+      "path": "windows/development/table_2/h=3/bill/0 (abundant)/fit/intervals/mse_net_less_full/1"
+     },
+     {
+      "new": -0.602444805912275,
+      "old": -0.5912557328854513,
+      "path": "windows/development/table_2/h=3/bill/0 (abundant)/fit/intervals/n/0"
+     },
+     {
+      "new": 0.8908646739432071,
+      "old": 0.9005917253837016,
+      "path": "windows/development/table_2/h=3/bill/0 (abundant)/fit/intervals/n/1"
+     },
+     {
+      "new": -0.010788311469526331,
+      "old": -0.012891516839583462,
+      "path": "windows/development/table_2/h=3/bill/0 (abundant)/fit/m"
+     },
+     {
+      "new": 6.022071860573453,
+      "old": 6.022712275710346,
+      "path": "windows/development/table_2/h=3/bill/0 (abundant)/fit/mse_full"
+     },
+     {
+      "new": 6.02207969257586,
+      "old": 6.022723421891443,
+      "path": "windows/development/table_2/h=3/bill/0 (abundant)/fit/mse_gross"
+     },
+     {
+      "new": 6.047824830966305,
+      "old": 6.048824895913649,
+      "path": "windows/development/table_2/h=3/bill/0 (abundant)/fit/mse_net"
+     },
+     {
+      "new": 0.18455676148599293,
+      "old": 0.1889110010073519,
+      "path": "windows/development/table_2/h=3/bill/0 (abundant)/fit/n"
+     },
+     {
+      "new": 154.0,
+      "old": 155.0,
+      "path": "windows/development/table_2/h=3/bill/1 to 2/fit/days"
+     },
+     {
+      "new": 3.188936286150787,
+      "old": 3.186635349551244,
+      "path": "windows/development/table_2/h=3/bill/1 to 2/fit/g"
+     },
+     {
+      "new": 1.7564498820943415,
+      "old": 1.7554874856852223,
+      "path": "windows/development/table_2/h=3/bill/1 to 2/fit/g_plus_m"
+     },
+     {
+      "new": 2.0449101640556133,
+      "old": 2.037286969197074,
+      "path": "windows/development/table_2/h=3/bill/1 to 2/fit/gross_only"
+     },
+     {
+      "new": 1.9869903183080528,
+      "old": 1.9915625371625794,
+      "path": "windows/development/table_2/h=3/bill/1 to 2/fit/intervals/g/0"
+     },
+     {
+      "new": 4.569667007056958,
+      "old": 4.5628709579640665,
+      "path": "windows/development/table_2/h=3/bill/1 to 2/fit/intervals/g/1"
+     },
+     {
+      "new": 0.2984309945775177,
+      "old": 0.24675351228985953,
+      "path": "windows/development/table_2/h=3/bill/1 to 2/fit/intervals/g_plus_m/0"
+     },
+     {
+      "new": 3.0621326667783975,
+      "old": 2.9404443521692105,
+      "path": "windows/development/table_2/h=3/bill/1 to 2/fit/intervals/g_plus_m/1"
+     },
+     {
+      "new": -3.1620047855970497,
+      "old": -3.0409818662443615,
+      "path": "windows/development/table_2/h=3/bill/1 to 2/fit/intervals/m/0"
+     },
+     {
+      "new": -0.04112051393867726,
+      "old": -0.0374684482409074,
+      "path": "windows/development/table_2/h=3/bill/1 to 2/fit/intervals/m/1"
+     },
+     {
+      "new": -3.0416920954511917,
+      "old": -2.837933917733151,
+      "path": "windows/development/table_2/h=3/bill/1 to 2/fit/intervals/mse_gross_less_net/0"
+     },
+     {
+      "new": 0.7534600984206675,
+      "old": 0.7339901083574791,
+      "path": "windows/development/table_2/h=3/bill/1 to 2/fit/intervals/mse_gross_less_net/1"
+     },
+     {
+      "new": 0.01882162456839331,
+      "old": 0.013922830022776016,
+      "path": "windows/development/table_2/h=3/bill/1 to 2/fit/intervals/mse_net_less_full/0"
+     },
+     {
+      "new": 3.2398562345374953,
+      "old": 2.996008775237754,
+      "path": "windows/development/table_2/h=3/bill/1 to 2/fit/intervals/mse_net_less_full/1"
+     },
+     {
+      "new": 1.189471277069735,
+      "old": 1.1336516412171218,
+      "path": "windows/development/table_2/h=3/bill/1 to 2/fit/intervals/n/0"
+     },
+     {
+      "new": 3.8024296043413295,
+      "old": 3.8839739290219315,
+      "path": "windows/development/table_2/h=3/bill/1 to 2/fit/intervals/n/1"
+     },
+     {
+      "new": -1.4324864040564456,
+      "old": -1.4311478638660216,
+      "path": "windows/development/table_2/h=3/bill/1 to 2/fit/m"
+     },
+     {
+      "new": 6.700835466325177,
+      "old": 6.657006123989774,
+      "path": "windows/development/table_2/h=3/bill/1 to 2/fit/mse_full"
+     },
+     {
+      "new": 6.957965292852628,
+      "old": 6.913223446009054,
+      "path": "windows/development/table_2/h=3/bill/1 to 2/fit/mse_gross"
+     },
+     {
+      "new": 7.622538104361464,
+      "old": 7.597707412248664,
+      "path": "windows/development/table_2/h=3/bill/1 to 2/fit/mse_net"
+     },
+     {
+      "new": 2.2757806632749245,
+      "old": 2.274618975433385,
+      "path": "windows/development/table_2/h=3/bill/1 to 2/fit/n"
+     },
+     {
+      "new": 154.0,
+      "old": 155.0,
+      "path": "windows/development/table_2/h=3/bill/1 to 2/target_days"
+     },
+     {
+      "new": 174.0,
+      "old": 173.0,
+      "path": "windows/development/table_2/h=3/bill/3 (scarce)/fit/days"
+     },
+     {
+      "new": -2.2673081598993097,
+      "old": -2.550619989835505,
+      "path": "windows/development/table_2/h=3/bill/3 (scarce)/fit/g"
+     },
+     {
+      "new": -1.9701960942301884,
+      "old": -2.123873040343393,
+      "path": "windows/development/table_2/h=3/bill/3 (scarce)/fit/g_plus_m"
+     },
+     {
+      "new": -1.9854356809453453,
+      "old": -2.1435789362022426,
+      "path": "windows/development/table_2/h=3/bill/3 (scarce)/fit/gross_only"
+     },
+     {
+      "new": -9.411213526701339,
+      "old": -10.460704886011165,
+      "path": "windows/development/table_2/h=3/bill/3 (scarce)/fit/intervals/g/0"
+     },
+     {
+      "new": 3.4974559314041027,
+      "old": 3.609545752766331,
+      "path": "windows/development/table_2/h=3/bill/3 (scarce)/fit/intervals/g/1"
+     },
+     {
+      "new": -4.039520301159371,
+      "old": -4.352603242860187,
+      "path": "windows/development/table_2/h=3/bill/3 (scarce)/fit/intervals/g_plus_m/0"
+     },
+     {
+      "new": 0.8116690640061646,
+      "old": 0.7606809098887083,
+      "path": "windows/development/table_2/h=3/bill/3 (scarce)/fit/intervals/g_plus_m/1"
+     },
+     {
+      "new": -4.651061125090714,
+      "old": -4.777009940864872,
+      "path": "windows/development/table_2/h=3/bill/3 (scarce)/fit/intervals/m/0"
+     },
+     {
+      "new": 7.807784371796918,
+      "old": 8.12056369978037,
+      "path": "windows/development/table_2/h=3/bill/3 (scarce)/fit/intervals/m/1"
+     },
+     {
+      "new": -4.603643878255163,
+      "old": -4.7546528194980855,
+      "path": "windows/development/table_2/h=3/bill/3 (scarce)/fit/intervals/mse_gross_less_net/0"
+     },
+     {
+      "new": 0.43967364611696946,
+      "old": 0.4588155774727962,
+      "path": "windows/development/table_2/h=3/bill/3 (scarce)/fit/intervals/mse_gross_less_net/1"
+     },
+     {
+      "new": 0.013690970615590454,
+      "old": 0.013633006201969146,
+      "path": "windows/development/table_2/h=3/bill/3 (scarce)/fit/intervals/mse_net_less_full/0"
+     },
+     {
+      "new": 5.221416728893216,
+      "old": 5.464506641399895,
+      "path": "windows/development/table_2/h=3/bill/3 (scarce)/fit/intervals/mse_net_less_full/1"
+     },
+     {
+      "new": -8.749031585811691,
+      "old": -9.226104639198441,
+      "path": "windows/development/table_2/h=3/bill/3 (scarce)/fit/intervals/n/0"
+     },
+     {
+      "new": 3.6839999998193487,
+      "old": 3.8752006368081453,
+      "path": "windows/development/table_2/h=3/bill/3 (scarce)/fit/intervals/n/1"
+     },
+     {
+      "new": 0.29711206566912124,
+      "old": 0.42674694949211184,
+      "path": "windows/development/table_2/h=3/bill/3 (scarce)/fit/m"
+     },
+     {
+      "new": 614.5073389142984,
+      "old": 617.9579136675519,
+      "path": "windows/development/table_2/h=3/bill/3 (scarce)/fit/mse_full"
+     },
+     {
+      "new": 614.5095403988383,
+      "old": 617.962462699948,
+      "path": "windows/development/table_2/h=3/bill/3 (scarce)/fit/mse_gross"
+     },
+     {
+      "new": 615.6770330476727,
+      "old": 619.234989124875,
+      "path": "windows/development/table_2/h=3/bill/3 (scarce)/fit/mse_net"
+     },
+     {
+      "new": -1.5181824488635574,
+      "old": -1.5383138002666668,
+      "path": "windows/development/table_2/h=3/bill/3 (scarce)/fit/n"
+     },
+     {
+      "new": 174.0,
+      "old": 173.0,
+      "path": "windows/development/table_2/h=3/bill/3 (scarce)/target_days"
+     },
+     {
+      "new": 0.001588532168923549,
+      "old": 0.0015455699940618178,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 0 (abundant), highest third of settlement size/brier_gt5/mean_arm"
+     },
+     {
+      "new": -0.0002215112636019934,
+      "old": -0.0002801398204609945,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 0 (abundant), highest third of settlement size/brier_gt5/mean_d"
+     },
+     {
+      "new": 0.0018100434325255424,
+      "old": 0.0018257098145228123,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 0 (abundant), highest third of settlement size/brier_gt5/mean_ref"
+     },
+     {
+      "new": 0.12237897700218181,
+      "old": 0.15344159199484553,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 0 (abundant), highest third of settlement size/brier_gt5/skill"
+     },
+     {
+      "new": 4.0,
+      "old": 2.0,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 0 (abundant), highest third of settlement size/cells"
+     },
+     {
+      "new": 1.7873253171049965,
+      "old": 1.6659139948056971,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 0 (abundant), highest third of settlement size/grid_crps/mean_arm"
+     },
+     {
+      "new": 0.0675610384302543,
+      "old": -0.051362070706579166,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 0 (abundant), highest third of settlement size/grid_crps/mean_d"
+     },
+     {
+      "new": 1.7197642786747425,
+      "old": 1.7172760655122763,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 0 (abundant), highest third of settlement size/grid_crps/mean_ref"
+     },
+     {
+      "new": -0.03928505741630883,
+      "old": 0.029909035441693765,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 0 (abundant), highest third of settlement size/grid_crps/skill"
+     },
+     {
+      "new": 0.003569471815303913,
+      "old": -0.0013568135424091015,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 0 (abundant), highest third of settlement size/share_of_loss"
+     },
+     {
+      "new": 2.0,
+      "old": 1.0,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 0 (abundant), highest third of settlement size/units"
+     },
+     {
+      "new": 0.04850640841990392,
+      "old": 0.048308267054715255,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 0 (abundant), highest third of settlement size/upper_tail_twcrps/mean_arm"
+     },
+     {
+      "new": -0.007000618615473214,
+      "old": -0.008334527135736458,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 0 (abundant), highest third of settlement size/upper_tail_twcrps/mean_d"
+     },
+     {
+      "new": 0.05550702703537713,
+      "old": 0.05664279419045171,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 0 (abundant), highest third of settlement size/upper_tail_twcrps/mean_ref"
+     },
+     {
+      "new": 0.12612130372270536,
+      "old": 0.1471418784128663,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 0 (abundant), highest third of settlement size/upper_tail_twcrps/skill"
+     },
+     {
+      "new": 0.0013753268469698554,
+      "old": 0.0014602041460904502,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 0 (abundant), no settlement/brier_gt5/mean_arm"
+     },
+     {
+      "new": -0.0004186551385129527,
+      "old": -0.00038179848826296807,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 0 (abundant), no settlement/brier_gt5/mean_d"
+     },
+     {
+      "new": 0.0017939819854828083,
+      "old": 0.0018420026343534182,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 0 (abundant), no settlement/brier_gt5/mean_ref"
+     },
+     {
+      "new": 0.23336641164781913,
+      "old": 0.20727358427312315,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 0 (abundant), no settlement/brier_gt5/skill"
+     },
+     {
+      "new": 2.0,
+      "old": 1.0,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 0 (abundant), no settlement/cells"
+     },
+     {
+      "new": 1.0490392319729538,
+      "old": 1.0404204504157206,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 0 (abundant), no settlement/grid_crps/mean_arm"
+     },
+     {
+      "new": 0.08554668044294311,
+      "old": 0.09827604909131749,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 0 (abundant), no settlement/grid_crps/mean_d"
+     },
+     {
+      "new": 0.9634925515300107,
+      "old": 0.9421444013244031,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 0 (abundant), no settlement/grid_crps/mean_ref"
+     },
+     {
+      "new": -0.08878810770991064,
+      "old": -0.10431102594588215,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 0 (abundant), no settlement/grid_crps/skill"
+     },
+     {
+      "new": 0.0022598562117212466,
+      "old": 0.0012980617065004802,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 0 (abundant), no settlement/share_of_loss"
+     },
+     {
+      "new": 2.0,
+      "old": 1.0,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 0 (abundant), no settlement/units"
+     },
+     {
+      "new": 0.042126604248478985,
+      "old": 0.04372172054497691,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 0 (abundant), no settlement/upper_tail_twcrps/mean_arm"
+     },
+     {
+      "new": -0.012791473682509102,
+      "old": -0.012551570290192937,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 0 (abundant), no settlement/upper_tail_twcrps/mean_d"
+     },
+     {
+      "new": 0.05491807793098809,
+      "old": 0.05627329083516985,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 0 (abundant), no settlement/upper_tail_twcrps/mean_ref"
+     },
+     {
+      "new": 0.23291918006641277,
+      "old": 0.22304667283379165,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 0 (abundant), no settlement/upper_tail_twcrps/skill"
+     },
+     {
+      "new": 0.003855942999514276,
+      "old": 0.006113583347837168,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 0 (abundant), other settlement days/brier_gt5/mean_arm"
+     },
+     {
+      "new": 0.0017529511012095663,
+      "old": 0.003813057843661175,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 0 (abundant), other settlement days/brier_gt5/mean_d"
+     },
+     {
+      "new": 0.0021029918983047095,
+      "old": 0.0023005255041759925,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 0 (abundant), other settlement days/brier_gt5/mean_ref"
+     },
+     {
+      "new": -0.8335510482102557,
+      "old": -1.6574725369223606,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 0 (abundant), other settlement days/brier_gt5/skill"
+     },
+     {
+      "new": 2.0,
+      "old": 1.0,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 0 (abundant), other settlement days/cells"
+     },
+     {
+      "new": 1.4986800749143545,
+      "old": 2.2046178996111925,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 0 (abundant), other settlement days/grid_crps/mean_arm"
+     },
+     {
+      "new": 0.6090724543239338,
+      "old": 1.2350577143160653,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 0 (abundant), other settlement days/grid_crps/mean_d"
+     },
+     {
+      "new": 0.8896076205904206,
+      "old": 0.9695601852951271,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 0 (abundant), other settlement days/grid_crps/mean_ref"
+     },
+     {
+      "new": -0.6846529191372042,
+      "old": -1.2738329533819734,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 0 (abundant), other settlement days/grid_crps/skill"
+     },
+     {
+      "new": 0.01608965026071669,
+      "old": 0.01631304004480307,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 0 (abundant), other settlement days/share_of_loss"
+     },
+     {
+      "new": 2.0,
+      "old": 1.0,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 0 (abundant), other settlement days/units"
+     },
+     {
+      "new": 0.09796233669168211,
+      "old": 0.14578077597993208,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 0 (abundant), other settlement days/upper_tail_twcrps/mean_arm"
+     },
+     {
+      "new": 0.03230066557809123,
+      "old": 0.07418015710684742,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 0 (abundant), other settlement days/upper_tail_twcrps/mean_d"
+     },
+     {
+      "new": 0.06566167111359088,
+      "old": 0.07160061887308466,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 0 (abundant), other settlement days/upper_tail_twcrps/mean_ref"
+     },
+     {
+      "new": -0.4919257312567169,
+      "old": -1.036026758907421,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 0 (abundant), other settlement days/upper_tail_twcrps/skill"
+     },
+     {
+      "new": 0.0014309540581925932,
+      "old": 0.0013233710099431896,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 1 to 2, highest third of settlement size/brier_gt5/interval/0"
+     },
+     {
+      "new": 0.01789998673373561,
+      "old": 0.017757984070963306,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 1 to 2, highest third of settlement size/brier_gt5/interval/1"
+     },
+     {
+      "new": 0.017850396645406285,
+      "old": 0.01764509408462627,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 1 to 2, highest third of settlement size/brier_gt5/mean_arm"
+     },
+     {
+      "new": 0.008772670145721822,
+      "old": 0.00865956188176657,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 1 to 2, highest third of settlement size/brier_gt5/mean_d"
+     },
+     {
+      "new": 0.009077726499684453,
+      "old": 0.00898553220285969,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 1 to 2, highest third of settlement size/brier_gt5/mean_ref"
+     },
+     {
+      "new": -0.9663950710595626,
+      "old": -0.963722758570787,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 1 to 2, highest third of settlement size/brier_gt5/skill"
+     },
+     {
+      "new": 101.0,
+      "old": 103.0,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 1 to 2, highest third of settlement size/cells"
+     },
+     {
+      "new": 0.014229030205727432,
+      "old": 0.009173313561744542,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 1 to 2, highest third of settlement size/grid_crps/interval/0"
+     },
+     {
+      "new": 0.4372556607226056,
+      "old": 0.4387633573707771,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 1 to 2, highest third of settlement size/grid_crps/interval/1"
+     },
+     {
+      "new": 1.526782962054742,
+      "old": 1.5316178187300526,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 1 to 2, highest third of settlement size/grid_crps/mean_arm"
+     },
+     {
+      "new": 0.20341575966730518,
+      "old": 0.203201435463505,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 1 to 2, highest third of settlement size/grid_crps/mean_d"
+     },
+     {
+      "new": 1.3233672023874365,
+      "old": 1.3284163832665474,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 1 to 2, highest third of settlement size/grid_crps/mean_ref"
+     },
+     {
+      "new": -0.1537107458159237,
+      "old": -0.15296516816800865,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 1 to 2, highest third of settlement size/grid_crps/skill"
+     },
+     {
+      "new": 0.21240482006919517,
+      "old": 0.21733110542690823,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 1 to 2, highest third of settlement size/share_of_loss"
+     },
+     {
+      "new": 78.0,
+      "old": 79.0,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 1 to 2, highest third of settlement size/units"
+     },
+     {
+      "new": 0.06692392372794173,
+      "old": 0.06253947941051573,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 1 to 2, highest third of settlement size/upper_tail_twcrps/interval/0"
+     },
+     {
+      "new": 0.4055076927612842,
+      "old": 0.4034351445950183,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 1 to 2, highest third of settlement size/upper_tail_twcrps/interval/1"
+     },
+     {
+      "new": 0.4779343232753958,
+      "old": 0.4725010350033667,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 1 to 2, highest third of settlement size/upper_tail_twcrps/mean_arm"
+     },
+     {
+      "new": 0.22535185209835454,
+      "old": 0.22242756650096762,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 1 to 2, highest third of settlement size/upper_tail_twcrps/mean_d"
+     },
+     {
+      "new": 0.2525824711770414,
+      "old": 0.25007346850239914,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 1 to 2, highest third of settlement size/upper_tail_twcrps/mean_ref"
+     },
+     {
+      "new": -0.8921911764035264,
+      "old": -0.8894488800951454,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 1 to 2, highest third of settlement size/upper_tail_twcrps/skill"
+     },
+     {
+      "new": -0.0010666047839154185,
+      "old": -0.0010652940287471742,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 1 to 2, no settlement/brier_gt5/interval/0"
+     },
+     {
+      "new": -0.000504288395432205,
+      "old": -0.0004920400447216154,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 1 to 2, no settlement/brier_gt5/interval/1"
+     },
+     {
+      "new": 0.002235647483611167,
+      "old": 0.002230482467568752,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 1 to 2, no settlement/brier_gt5/mean_arm"
+     },
+     {
+      "new": -0.000790370457065874,
+      "old": -0.0007885406282773335,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 1 to 2, no settlement/brier_gt5/mean_d"
+     },
+     {
+      "new": 0.00302601794067704,
+      "old": 0.0030190230958460846,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 1 to 2, no settlement/brier_gt5/mean_ref"
+     },
+     {
+      "new": 0.2611915965339703,
+      "old": 0.2611906577867179,
+      "path": "windows/development/table_4/4c/sc_s3c_ann/groups/state 1 to 2, no settlement/brier_gt5/skill"
+     }
+    ]
+   },
+   "sections": {
+    "block": {
+     "compared": 1,
+     "differ": 0,
+     "max_abs": 0.0,
+     "only_one_side": 0
+    },
+    "issue": {
+     "compared": 1,
+     "differ": 0,
+     "max_abs": 0.0,
+     "only_one_side": 0
+    },
+    "reps": {
+     "compared": 1,
+     "differ": 0,
+     "max_abs": 0.0,
+     "only_one_side": 0
+    },
+    "seed": {
+     "compared": 1,
+     "differ": 0,
+     "max_abs": 0.0,
+     "only_one_side": 0
+    },
+    "windows/2026/cells": {
+     "compared": 1,
+     "differ": 0,
+     "max_abs": 0.0,
+     "only_one_side": 0
+    },
+    "windows/2026/decision_days": {
+     "compared": 1,
+     "differ": 0,
+     "max_abs": 0.0,
+     "only_one_side": 0
+    },
+    "windows/2026/reproduction": {
+     "compared": 9,
+     "differ": 0,
+     "max_abs": 0.0,
+     "only_one_side": 0
+    },
+    "windows/2026/table_1": {
+     "compared": 261,
+     "differ": 0,
+     "max_abs": 0.0,
+     "only_one_side": 0
+    },
+    "windows/2026/table_2": {
+     "compared": 188,
+     "differ": 0,
+     "max_abs": 0.0,
+     "only_one_side": 0
+    },
+    "windows/2026/table_3": {
+     "compared": 1259,
+     "differ": 0,
+     "max_abs": 0.0,
+     "only_one_side": 0
+    },
+    "windows/development/cells": {
+     "compared": 1,
+     "differ": 0,
+     "max_abs": 0.0,
+     "only_one_side": 0
+    },
+    "windows/development/decision_days": {
+     "compared": 1,
+     "differ": 0,
+     "max_abs": 0.0,
+     "only_one_side": 0
+    },
+    "windows/development/reproduction": {
+     "compared": 9,
+     "differ": 0,
+     "max_abs": 0.0,
+     "only_one_side": 0
+    },
+    "windows/development/table_1": {
+     "compared": 290,
+     "differ": 0,
+     "max_abs": 0.0,
+     "only_one_side": 0
+    },
+    "windows/development/table_2": {
+     "compared": 356,
+     "differ": 128,
+     "max_abs": 3.557956077202334,
+     "only_one_side": 0
+    },
+    "windows/development/table_3": {
+     "compared": 1540,
+     "differ": 0,
+     "max_abs": 0.0,
+     "only_one_side": 0
+    },
+    "windows/development/table_4": {
+     "compared": 1321,
+     "differ": 216,
+     "max_abs": 2.0,
+     "only_one_side": 0
+    }
+   }
+  }
+ },
+ "declaration": "metadata/s3c_ann_net_1800_1314.json",
+ "draws": 10000,
+ "earlier_instant": "16:00",
+ "instant": "18:00",
+ "issue": 1314,
+ "label": "development, not a verdict",
+ "paired": {
+  "2026": {
+   "sc_s3c": {
+    "by_lead": {
+     "1": {
+      "cells": 165,
+      "days": 165,
+      "differing_cells": 0,
+      "max_abs": 0.0,
+      "scores": [
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 1.524128926968387,
+        "mean_18": 1.524128926968387,
+        "score": "grid_crps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.4938549621554038,
+        "mean_18": 0.4938549621554038,
+        "score": "upper_tail_twcrps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.03911177437005477,
+        "mean_18": 0.03911177437005477,
+        "score": "brier_gt5",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       }
+      ]
+     },
+     "2": {
+      "cells": 165,
+      "days": 165,
+      "differing_cells": 0,
+      "max_abs": 0.0,
+      "scores": [
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 1.7594341022904332,
+        "mean_18": 1.7594341022904332,
+        "score": "grid_crps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.5908784962796596,
+        "mean_18": 0.5908784962796596,
+        "score": "upper_tail_twcrps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.04194919581300964,
+        "mean_18": 0.04194919581300964,
+        "score": "brier_gt5",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       }
+      ]
+     },
+     "3": {
+      "cells": 165,
+      "days": 165,
+      "differing_cells": 0,
+      "max_abs": 0.0,
+      "scores": [
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 1.81394926761433,
+        "mean_18": 1.81394926761433,
+        "score": "grid_crps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.6034538159815788,
+        "mean_18": 0.6034538159815788,
+        "score": "upper_tail_twcrps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.0417553993603262,
+        "mean_18": 0.0417553993603262,
+        "score": "brier_gt5",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       }
+      ]
+     },
+     "4": {
+      "cells": 165,
+      "days": 165,
+      "differing_cells": 0,
+      "max_abs": 0.0,
+      "scores": [
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 1.815496638419359,
+        "mean_18": 1.815496638419359,
+        "score": "grid_crps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.594128030829878,
+        "mean_18": 0.594128030829878,
+        "score": "upper_tail_twcrps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.03963256966519751,
+        "mean_18": 0.03963256966519751,
+        "score": "brier_gt5",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       }
+      ]
+     },
+     "5": {
+      "cells": 165,
+      "days": 165,
+      "differing_cells": 0,
+      "max_abs": 0.0,
+      "scores": [
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 1.8478492035782128,
+        "mean_18": 1.8478492035782128,
+        "score": "grid_crps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.6116738703874379,
+        "mean_18": 0.6116738703874379,
+        "score": "upper_tail_twcrps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.04007736259330107,
+        "mean_18": 0.04007736259330107,
+        "score": "brier_gt5",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       }
+      ]
+     }
+    },
+    "cells": 825,
+    "days": 165,
+    "differing_cells": 0,
+    "max_abs": 0.0,
+    "scores": [
+     {
+      "difference": 0.0,
+      "identical": true,
+      "interval": [
+       0.0,
+       0.0
+      ],
+      "mean_16": 1.7521716277741448,
+      "mean_18": 1.7521716277741448,
+      "score": "grid_crps",
+      "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+     },
+     {
+      "difference": 0.0,
+      "identical": true,
+      "interval": [
+       0.0,
+       0.0
+      ],
+      "mean_16": 0.5787978351267916,
+      "mean_18": 0.5787978351267916,
+      "score": "upper_tail_twcrps",
+      "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+     },
+     {
+      "difference": 0.0,
+      "identical": true,
+      "interval": [
+       0.0,
+       0.0
+      ],
+      "mean_16": 0.040505260360377805,
+      "mean_18": 0.040505260360377805,
+      "score": "brier_gt5",
+      "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+     }
+    ]
+   },
+   "sc_s3c_ann": {
+    "by_lead": {
+     "1": {
+      "cells": 165,
+      "days": 165,
+      "differing_cells": 0,
+      "max_abs": 0.0,
+      "scores": [
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 1.524128926968387,
+        "mean_18": 1.524128926968387,
+        "score": "grid_crps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.4938549621554038,
+        "mean_18": 0.4938549621554038,
+        "score": "upper_tail_twcrps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.03911177437005477,
+        "mean_18": 0.03911177437005477,
+        "score": "brier_gt5",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       }
+      ]
+     },
+     "2": {
+      "cells": 165,
+      "days": 165,
+      "differing_cells": 0,
+      "max_abs": 0.0,
+      "scores": [
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 1.6984459524765554,
+        "mean_18": 1.6984459524765554,
+        "score": "grid_crps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.5487645495003387,
+        "mean_18": 0.5487645495003387,
+        "score": "upper_tail_twcrps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.04139200213211768,
+        "mean_18": 0.04139200213211768,
+        "score": "brier_gt5",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       }
+      ]
+     },
+     "3": {
+      "cells": 165,
+      "days": 165,
+      "differing_cells": 0,
+      "max_abs": 0.0,
+      "scores": [
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 1.755072750319485,
+        "mean_18": 1.755072750319485,
+        "score": "grid_crps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.5662961654609243,
+        "mean_18": 0.5662961654609243,
+        "score": "upper_tail_twcrps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.04141789638884269,
+        "mean_18": 0.04141789638884269,
+        "score": "brier_gt5",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       }
+      ]
+     },
+     "4": {
+      "cells": 165,
+      "days": 165,
+      "differing_cells": 0,
+      "max_abs": 0.0,
+      "scores": [
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 1.7659763877763814,
+        "mean_18": 1.7659763877763814,
+        "score": "grid_crps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.5571568399778762,
+        "mean_18": 0.5571568399778762,
+        "score": "upper_tail_twcrps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.039308843093396106,
+        "mean_18": 0.039308843093396106,
+        "score": "brier_gt5",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       }
+      ]
+     },
+     "5": {
+      "cells": 165,
+      "days": 165,
+      "differing_cells": 0,
+      "max_abs": 0.0,
+      "scores": [
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 1.806460171536114,
+        "mean_18": 1.806460171536114,
+        "score": "grid_crps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.5756661022594249,
+        "mean_18": 0.5756661022594249,
+        "score": "upper_tail_twcrps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.03957421918832278,
+        "mean_18": 0.03957421918832278,
+        "score": "brier_gt5",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       }
+      ]
+     }
+    },
+    "cells": 825,
+    "days": 165,
+    "differing_cells": 0,
+    "max_abs": 0.0,
+    "scores": [
+     {
+      "difference": 0.0,
+      "identical": true,
+      "interval": [
+       0.0,
+       0.0
+      ],
+      "mean_16": 1.7100168378153853,
+      "mean_18": 1.7100168378153853,
+      "score": "grid_crps",
+      "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+     },
+     {
+      "difference": 0.0,
+      "identical": true,
+      "interval": [
+       0.0,
+       0.0
+      ],
+      "mean_16": 0.5483477238707934,
+      "mean_18": 0.5483477238707934,
+      "score": "upper_tail_twcrps",
+      "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+     },
+     {
+      "difference": 0.0,
+      "identical": true,
+      "interval": [
+       0.0,
+       0.0
+      ],
+      "mean_16": 0.040160947034546805,
+      "mean_18": 0.040160947034546805,
+      "score": "brier_gt5",
+      "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+     }
+    ]
+   },
+   "sc_s3c_ann_net": {
+    "by_lead": {
+     "1": {
+      "cells": 165,
+      "days": 165,
+      "differing_cells": 0,
+      "max_abs": 0.0,
+      "scores": [
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 1.4804558889246668,
+        "mean_18": 1.4804558889246668,
+        "score": "grid_crps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.46804075089708963,
+        "mean_18": 0.46804075089708963,
+        "score": "upper_tail_twcrps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.03486813816809696,
+        "mean_18": 0.03486813816809696,
+        "score": "brier_gt5",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       }
+      ]
+     },
+     "2": {
+      "cells": 165,
+      "days": 165,
+      "differing_cells": 0,
+      "max_abs": 0.0,
+      "scores": [
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 1.650805290312129,
+        "mean_18": 1.650805290312129,
+        "score": "grid_crps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.5109278971429722,
+        "mean_18": 0.5109278971429722,
+        "score": "upper_tail_twcrps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.03584049049711288,
+        "mean_18": 0.03584049049711288,
+        "score": "brier_gt5",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       }
+      ]
+     },
+     "3": {
+      "cells": 165,
+      "days": 165,
+      "differing_cells": 0,
+      "max_abs": 0.0,
+      "scores": [
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 1.7147898345811934,
+        "mean_18": 1.7147898345811934,
+        "score": "grid_crps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.5280676828732315,
+        "mean_18": 0.5280676828732315,
+        "score": "upper_tail_twcrps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.035409768771851376,
+        "mean_18": 0.035409768771851376,
+        "score": "brier_gt5",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       }
+      ]
+     },
+     "4": {
+      "cells": 165,
+      "days": 165,
+      "differing_cells": 0,
+      "max_abs": 0.0,
+      "scores": [
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 1.7278361586925688,
+        "mean_18": 1.7278361586925688,
+        "score": "grid_crps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.5215653235325999,
+        "mean_18": 0.5215653235325999,
+        "score": "upper_tail_twcrps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.03422050380317502,
+        "mean_18": 0.03422050380317502,
+        "score": "brier_gt5",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       }
+      ]
+     },
+     "5": {
+      "cells": 165,
+      "days": 165,
+      "differing_cells": 0,
+      "max_abs": 0.0,
+      "scores": [
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 1.7687337023344285,
+        "mean_18": 1.7687337023344285,
+        "score": "grid_crps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.5425016330024841,
+        "mean_18": 0.5425016330024841,
+        "score": "upper_tail_twcrps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.03542984216743274,
+        "mean_18": 0.03542984216743274,
+        "score": "brier_gt5",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       }
+      ]
+     }
+    },
+    "cells": 825,
+    "days": 165,
+    "differing_cells": 0,
+    "max_abs": 0.0,
+    "scores": [
+     {
+      "difference": 0.0,
+      "identical": true,
+      "interval": [
+       0.0,
+       0.0
+      ],
+      "mean_16": 1.6685241749689974,
+      "mean_18": 1.6685241749689974,
+      "score": "grid_crps",
+      "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+     },
+     {
+      "difference": 0.0,
+      "identical": true,
+      "interval": [
+       0.0,
+       0.0
+      ],
+      "mean_16": 0.5142206574896756,
+      "mean_18": 0.5142206574896756,
+      "score": "upper_tail_twcrps",
+      "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+     },
+     {
+      "difference": 0.0,
+      "identical": true,
+      "interval": [
+       0.0,
+       0.0
+      ],
+      "mean_16": 0.0351537486815338,
+      "mean_18": 0.0351537486815338,
+      "score": "brier_gt5",
+      "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+     }
+    ]
+   }
+  },
+  "development": {
+   "sc_s3c": {
+    "by_lead": {
+     "1": {
+      "cells": 1855,
+      "days": 1855,
+      "differing_cells": 0,
+      "max_abs": 0.0,
+      "scores": [
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 1.4731985034777422,
+        "mean_18": 1.4731985034777422,
+        "score": "grid_crps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.8150941757648729,
+        "mean_18": 0.8150941757648729,
+        "score": "upper_tail_twcrps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.039393577465001633,
+        "mean_18": 0.039393577465001633,
+        "score": "brier_gt5",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       }
+      ]
+     },
+     "2": {
+      "cells": 1855,
+      "days": 1855,
+      "differing_cells": 0,
+      "max_abs": 0.0,
+      "scores": [
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 1.6004036032273077,
+        "mean_18": 1.6004036032273077,
+        "score": "grid_crps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.8594838405859552,
+        "mean_18": 0.8594838405859552,
+        "score": "upper_tail_twcrps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.046688052301162374,
+        "mean_18": 0.046688052301162374,
+        "score": "brier_gt5",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       }
+      ]
+     },
+     "3": {
+      "cells": 1855,
+      "days": 1855,
+      "differing_cells": 0,
+      "max_abs": 0.0,
+      "scores": [
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 1.6424905611688356,
+        "mean_18": 1.6424905611688356,
+        "score": "grid_crps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.8614301928964169,
+        "mean_18": 0.8614301928964169,
+        "score": "upper_tail_twcrps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.04964332652855585,
+        "mean_18": 0.04964332652855585,
+        "score": "brier_gt5",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       }
+      ]
+     },
+     "4": {
+      "cells": 1855,
+      "days": 1855,
+      "differing_cells": 0,
+      "max_abs": 0.0,
+      "scores": [
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 1.6894399846136325,
+        "mean_18": 1.6894399846136325,
+        "score": "grid_crps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.8749238160796698,
+        "mean_18": 0.8749238160796698,
+        "score": "upper_tail_twcrps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.05028255964085867,
+        "mean_18": 0.05028255964085867,
+        "score": "brier_gt5",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       }
+      ]
+     },
+     "5": {
+      "cells": 1855,
+      "days": 1855,
+      "differing_cells": 0,
+      "max_abs": 0.0,
+      "scores": [
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 1.7405549819128032,
+        "mean_18": 1.7405549819128032,
+        "score": "grid_crps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.8920916655619926,
+        "mean_18": 0.8920916655619926,
+        "score": "upper_tail_twcrps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.051003070431550855,
+        "mean_18": 0.051003070431550855,
+        "score": "brier_gt5",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       }
+      ]
+     }
+    },
+    "cells": 9275,
+    "days": 1855,
+    "differing_cells": 0,
+    "max_abs": 0.0,
+    "scores": [
+     {
+      "difference": 0.0,
+      "identical": true,
+      "interval": [
+       0.0,
+       0.0
+      ],
+      "mean_16": 1.6292175268800677,
+      "mean_18": 1.6292175268800677,
+      "score": "grid_crps",
+      "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+     },
+     {
+      "difference": 0.0,
+      "identical": true,
+      "interval": [
+       0.0,
+       0.0
+      ],
+      "mean_16": 0.8606047381777814,
+      "mean_18": 0.8606047381777814,
+      "score": "upper_tail_twcrps",
+      "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+     },
+     {
+      "difference": 0.0,
+      "identical": true,
+      "interval": [
+       0.0,
+       0.0
+      ],
+      "mean_16": 0.04740211727342587,
+      "mean_18": 0.04740211727342587,
+      "score": "brier_gt5",
+      "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+     }
+    ]
+   },
+   "sc_s3c_ann": {
+    "by_lead": {
+     "1": {
+      "cells": 1855,
+      "days": 1855,
+      "differing_cells": 0,
+      "max_abs": 0.0,
+      "scores": [
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 1.4731985034777422,
+        "mean_18": 1.4731985034777422,
+        "score": "grid_crps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.8150941757648729,
+        "mean_18": 0.8150941757648729,
+        "score": "upper_tail_twcrps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.039393577465001633,
+        "mean_18": 0.039393577465001633,
+        "score": "brier_gt5",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       }
+      ]
+     },
+     "2": {
+      "cells": 1855,
+      "days": 1855,
+      "differing_cells": 0,
+      "max_abs": 0.0,
+      "scores": [
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 1.564196972560206,
+        "mean_18": 1.564196972560206,
+        "score": "grid_crps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.8294269833592256,
+        "mean_18": 0.8294269833592256,
+        "score": "upper_tail_twcrps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.0425333080620731,
+        "mean_18": 0.0425333080620731,
+        "score": "brier_gt5",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       }
+      ]
+     },
+     "3": {
+      "cells": 1855,
+      "days": 1855,
+      "differing_cells": 0,
+      "max_abs": 0.0,
+      "scores": [
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 1.6099197585366973,
+        "mean_18": 1.6099197585366973,
+        "score": "grid_crps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.8331018959771532,
+        "mean_18": 0.8331018959771532,
+        "score": "upper_tail_twcrps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.0452214464626854,
+        "mean_18": 0.0452214464626854,
+        "score": "brier_gt5",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       }
+      ]
+     },
+     "4": {
+      "cells": 1855,
+      "days": 1855,
+      "differing_cells": 0,
+      "max_abs": 0.0,
+      "scores": [
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 1.6550012191946384,
+        "mean_18": 1.6550012191946384,
+        "score": "grid_crps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.8475382698462502,
+        "mean_18": 0.8475382698462502,
+        "score": "upper_tail_twcrps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.04628012197096371,
+        "mean_18": 0.04628012197096371,
+        "score": "brier_gt5",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       }
+      ]
+     },
+     "5": {
+      "cells": 1855,
+      "days": 1855,
+      "differing_cells": 0,
+      "max_abs": 0.0,
+      "scores": [
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 1.7106986285313128,
+        "mean_18": 1.7106986285313128,
+        "score": "grid_crps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.8675311460619421,
+        "mean_18": 0.8675311460619421,
+        "score": "upper_tail_twcrps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.047099704326652225,
+        "mean_18": 0.047099704326652225,
+        "score": "brier_gt5",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       }
+      ]
+     }
+    },
+    "cells": 9275,
+    "days": 1855,
+    "differing_cells": 0,
+    "max_abs": 0.0,
+    "scores": [
+     {
+      "difference": 0.0,
+      "identical": true,
+      "interval": [
+       0.0,
+       0.0
+      ],
+      "mean_16": 1.6026030164601157,
+      "mean_18": 1.6026030164601157,
+      "score": "grid_crps",
+      "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+     },
+     {
+      "difference": 0.0,
+      "identical": true,
+      "interval": [
+       0.0,
+       0.0
+      ],
+      "mean_16": 0.8385384942018872,
+      "mean_18": 0.8385384942018872,
+      "score": "upper_tail_twcrps",
+      "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+     },
+     {
+      "difference": 0.0,
+      "identical": true,
+      "interval": [
+       0.0,
+       0.0
+      ],
+      "mean_16": 0.04410563165747516,
+      "mean_18": 0.04410563165747516,
+      "score": "brier_gt5",
+      "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+     }
+    ]
+   },
+   "sc_s3c_ann_net": {
+    "by_lead": {
+     "1": {
+      "cells": 1855,
+      "days": 1855,
+      "differing_cells": 0,
+      "max_abs": 0.0,
+      "scores": [
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 1.47792331188851,
+        "mean_18": 1.47792331188851,
+        "score": "grid_crps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.8262696813076443,
+        "mean_18": 0.8262696813076443,
+        "score": "upper_tail_twcrps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.04195795283341241,
+        "mean_18": 0.04195795283341241,
+        "score": "brier_gt5",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       }
+      ]
+     },
+     "2": {
+      "cells": 1855,
+      "days": 1855,
+      "differing_cells": 0,
+      "max_abs": 0.0,
+      "scores": [
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 1.566649049583999,
+        "mean_18": 1.566649049583999,
+        "score": "grid_crps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.8382091046068856,
+        "mean_18": 0.8382091046068856,
+        "score": "upper_tail_twcrps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.04445805987651197,
+        "mean_18": 0.04445805987651197,
+        "score": "brier_gt5",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       }
+      ]
+     },
+     "3": {
+      "cells": 1855,
+      "days": 1855,
+      "differing_cells": 0,
+      "max_abs": 0.0,
+      "scores": [
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 1.6072513331446825,
+        "mean_18": 1.6072513331446825,
+        "score": "grid_crps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.8389575035487097,
+        "mean_18": 0.8389575035487097,
+        "score": "upper_tail_twcrps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.047238349162344755,
+        "mean_18": 0.047238349162344755,
+        "score": "brier_gt5",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       }
+      ]
+     },
+     "4": {
+      "cells": 1855,
+      "days": 1855,
+      "differing_cells": 0,
+      "max_abs": 0.0,
+      "scores": [
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 1.6502144231228573,
+        "mean_18": 1.6502144231228573,
+        "score": "grid_crps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.8507494024114184,
+        "mean_18": 0.8507494024114184,
+        "score": "upper_tail_twcrps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.04798204373563463,
+        "mean_18": 0.04798204373563463,
+        "score": "brier_gt5",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       }
+      ]
+     },
+     "5": {
+      "cells": 1855,
+      "days": 1855,
+      "differing_cells": 0,
+      "max_abs": 0.0,
+      "scores": [
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 1.7037727354712697,
+        "mean_18": 1.7037727354712697,
+        "score": "grid_crps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.8693725157324336,
+        "mean_18": 0.8693725157324336,
+        "score": "upper_tail_twcrps",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       },
+       {
+        "difference": 0.0,
+        "identical": true,
+        "interval": [
+         0.0,
+         0.0
+        ],
+        "mean_16": 0.04887305401419108,
+        "mean_18": 0.04887305401419108,
+        "score": "brier_gt5",
+        "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+       }
+      ]
+     }
+    },
+    "cells": 9275,
+    "days": 1855,
+    "differing_cells": 0,
+    "max_abs": 0.0,
+    "scores": [
+     {
+      "difference": 0.0,
+      "identical": true,
+      "interval": [
+       0.0,
+       0.0
+      ],
+      "mean_16": 1.6011621706422636,
+      "mean_18": 1.6011621706422636,
+      "score": "grid_crps",
+      "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+     },
+     {
+      "difference": 0.0,
+      "identical": true,
+      "interval": [
+       0.0,
+       0.0
+      ],
+      "mean_16": 0.8447116415214198,
+      "mean_18": 0.8447116415214198,
+      "score": "upper_tail_twcrps",
+      "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+     },
+     {
+      "difference": 0.0,
+      "identical": true,
+      "interval": [
+       0.0,
+       0.0
+      ],
+      "mean_16": 0.04610189192441889,
+      "mean_18": 0.04610189192441889,
+      "score": "brier_gt5",
+      "test": "exact: no cell differs, so the studentized bound has no variance and the difference is 0 on every day"
+     }
+    ]
+   }
+  }
+ },
+ "panel_sha256": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+ "seed": 1314,
+ "state_labels": {
+  "2026": {
+   "cells": 0,
+   "decision_days": []
+  },
+  "development": {
+   "cells": 20,
+   "decision_days": [
+    {
+     "day": "2020-04-06",
+     "state_16": 2.0,
+     "state_18": 0.0
+    },
+    {
+     "day": "2023-01-09",
+     "state_16": 0.0,
+     "state_18": 1.0
+    },
+    {
+     "day": "2025-09-08",
+     "state_16": 1.0,
+     "state_18": 2.0
+    },
+    {
+     "day": "2025-10-27",
+     "state_16": 2.0,
+     "state_18": 3.0
+    }
+   ]
+  }
+ }
+}

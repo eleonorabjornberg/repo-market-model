@@ -3,6 +3,12 @@
  "issue": 1296,
  "ledger": "item 72 on #1116",
  "source_id": "nyfed_pd_financing",
+ "same_release_as": {
+  "registry_file": "metadata/sources_measurement.json",
+  "entry": "nyfed_pd_financing",
+  "what": "The same source id as the entry #630 declared (corrected by #680), pointed at here and not duplicated. Both name one release, the New York Fed's Primary Dealer Statistics (FR 2004), with the same release lag (6 business days, 16:30 America/New_York); a test pins that they agree (tests/test_s3c_pd.py, SourceEntryTests). They differ in what they cover, which is why this file keeps its own series list and snapshot: the entry in sources_measurement.json lists five series (financing by repurchase and reverse repurchase agreements on Treasuries, agency MBS financing, fails), read by the panel builder (new_sources.py) from an extract to 2025-12-31; this study reads four Treasury totals (reverse repo and securities borrowed, excluding TIPS and TIPS) of which only PDSIRRA-UTSETTOT is in that entry, from a full snapshot to the as-of week of 2026-10-14. Its fields, its limitation line and its snapshot are not edited by #1329. One id with two field lists is a drift risk that is hers to settle (the pull request of #1329 asks); until she does, the stale-level rule is the same for both, the weekly-carry bound.",
+  "carry_rule": "metadata/sources_measurement.json states a carry of at most data.WEEKLY_CARRY_MAX_STALENESS_DAYS (13 days) for the panel columns; the weekly state term here is bound by the same constant from #1329 (metadata/s3c_pd_1329.json)."
+ },
  "access": "public",
  "provider": "Federal Reserve Bank of New York, Primary Dealer Statistics (report FR 2004)",
  "series_behind_the_chart": {
@@ -82,5 +88,6 @@
  },
  "registry_status": "not registered. metadata/sources.json is unchanged; the final-test pre-registration's checksums do not move. The question whether to register the source is hers (marked on the result page).",
  "fetch": "scripts/fetch_pd_financing_1296.py fetch <keyid>, one plain GET per series of https://markets.newyorkfed.org/api/pd/get/<keyid>.json; `check` verifies the tracked bytes offline",
- "lockbox": "the tracked series run to the as-of week of 2026-10-14, released after the lockbox cut-off. No scored day reads a week released after its own decision instant (read_level raises LookAheadError), and the study refuses every decision day after 2026-09-03"
+ "lockbox": "the tracked series run to the as-of week of 2026-10-14, released after the lockbox cut-off. No scored day reads a week released after its own decision instant (read_level raises LookAheadError), and the study refuses every decision day after 2026-09-03",
+ "carry_superseded_by": "metadata/s3c_pd_1329.json (#1329): the 'carry' line of 'transform' ('however many, no limit') is the declaration of the published record of #1296 and is left as it was declared; a weekly state term read from this source later is bound by data.WEEKLY_CARRY_MAX_STALENESS_DAYS."
 }
