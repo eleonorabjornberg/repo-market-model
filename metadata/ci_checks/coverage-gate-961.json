@@ -1,0 +1,8 @@
+{
+  "command": [
+    "scripts/coverage_gate_961.py",
+    "check"
+  ],
+  "where": "suite",
+  "pre_review": false
+}
