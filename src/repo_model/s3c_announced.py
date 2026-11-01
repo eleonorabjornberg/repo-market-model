@@ -4,8 +4,9 @@ item 71 on #1116; her ruling of 28 October 2026 on avenue #1286).
 (s3c)'s two settlement terms, `settlement_coupon` and `settlement_bill`, are scheduled fields of the *target* row
 (`spread_mr_calendar.TERMS`: scheduled, span `(0,)`). `metadata/sources.json` declares a settlement public at 15:00 on the panel day before it
 settles, so `spread_mr_calendar.readable_offsets` keeps the terms at lead 1 only, and at leads 2 to 5 (four of the five leads of the primary
-score) (s3c) cannot see a settlement announced days earlier. `metadata/settlement_announcement_dating.json` (#541, measured and off) dates a
-settlement from its auction's announcement instead: 12:00 on the `announcemt_date`. These two arms read that dating as a measurement. Nothing in
+score) (s3c) cannot see a settlement announced days earlier. `metadata/settlement_announcement_dating.json` (#541; adopted by reference in `metadata/sources.json` by #1311) dates a
+settlement from its auction's announcement instead: 12:00 on the `announcemt_date`. The published declaration still reads a settlement at lead 1 only,
+so these arms are the readers at leads 2 to 5. Nothing in
 `spread_mr_calendar`, `spread_mr_state_calendar`, `s3c_net`, `metadata/sources.json` or the dating declaration is edited, and no published
 declaration reads this module.
 
@@ -23,9 +24,11 @@ declaration reads this module.
 before 16:00 on the panel day `h` rows before `T`. A training pair reads the figure of its own decision, `T - h`, so a training figure and a
 forecast figure are the same function of the same announcements. `read` re-checks the figure it serves against the decision it is asked for:
 a figure that counts an auction announced after that decision raises `LookAheadError`, one that leaves an announced auction out raises
-`StaleReadError` (the analogue of `settlement_dating.check_known_columns`). Lens E's caveat (item G) applies to the bill leg: Treasury publishes
-no clock time for an announcement, and a cash management bill is ad hoc, announced the same or the previous day; the 12:00 instant is
-unverified.
+`StaleReadError` (the analogue of `settlement_dating.check_known_columns`). Lens E's caveat (item G) is settled in part by #1301
+(`metadata/announcement_release_times_1301.json`): Treasury's announcement files do state a release time (3665 of 3828; the 12:00 instant is a
+declared setting checked against them), 163 announcements say "for immediate release" (153 of them cash management bills), and a cash management
+bill is mostly not announced the same or the previous day: 403 of the 458 settling inside the panel were announced five Monday-to-Friday days
+before settlement. The bill leg's remaining caveat is the immediate-release bills, whose release time the files cannot show.
 
 **Size terms (#1321; H5 step 3; her ruling of 30 October 2026 on avenue #1318, ledger item 81).** `AnnouncedSizeTerms` serves, at every lead, the
 announced size of the settlement as extra terms of the fit (`spread_mr_state_calendar.SIZE_EXTRAS`, read through `walk`'s `iorb` argument): the
