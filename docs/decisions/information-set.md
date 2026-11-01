@@ -10,9 +10,18 @@ under the previous rule was re-scored or archived.
 > bullet records her ruling of 10 October 2026 (relayed on #541): a settlement is dated from the auction
 > announcement, not the auction results, and the H.4.1 is read per release, at the release's own publication
 > instant. It is in force as wording from her ruling of 29 October 2026 on #1299 (ledger item 73 on #1116,
-> option 1 of decision 1 in the 28 October message). Both readings are still off in the published registry:
-> `metadata/sources.json` is frozen by the final-test pre-registration (bytes), so turning either on is a
-> later pull request, with the re-pin that needs, under her own `GO`.
+> option 1 of decision 1 in the 28 October message). The H.4.1 reading is still off in the published registry:
+> `metadata/sources.json` is frozen by the final-test pre-registration (bytes), so turning it on is a later
+> pull request, with the re-pin that needs, under her own `GO`. The settlement reading was adopted in
+> `metadata/sources.json` by #1311 (her ruling of 29 October 2026 on #1310): the `treasury_auctions` note and
+> evidence date a settlement from its auction's announcement and take `metadata/settlement_announcement_dating.json`'s
+> rule and evidence as their own. Its machine-read availability is still the one instant that block can state (15:00 on
+> the panel day before a settlement, days = 1), so every published record and the live record read a settlement at
+> h = 1 only, where the announcement dating gives the same column. Only the development arms of the H5 candidate
+> (`repo_model.settlement_dating`, `repo_model.s3c_announced`) read the announcement dating at h = 2 to 5.
+> **Proposed in #1327, for Eleonora to review:** this paragraph and the "no clock time" sentence in rule 2 below
+> are corrected to #1301's check (`metadata/announcement_release_times_1301.json`). It is **not in force** until she
+> merges it, with her own `GO #1327`.
 >
 > **Proposed in #586, for Eleonora to review:** the amendment at the end of this record, which records her
 > ruling of 11 October 2026 on #571 (relayed by the orchestrating session): the reserve-scarcity state reads each
@@ -44,8 +53,14 @@ A forecast for scored day `T` is made at the declared decision time on the last 
    - FOMC schedules, under `docs/decisions/fomc-point-in-time.md`;
    - Treasury settlements, under a `treasury_auctions` availability declaration dated from the
      auction announcement: each settlement's first-observable instant is the announcement time of its
-     auction. Treasury publishes no clock time for an individual announcement, so the declared
-     instant and what it rests on are recorded as evidence in the declaration. The risk-date calendar then marks a settlement as known at the
+     auction. Treasury's own announcement files state a release time for most announcements: 3,665 of 3,828 state
+     one (almost all 11:00 or earlier; one, for a note settling eleven business days later, states 16:15, after the
+     16:00 decision, and a few state a time between 12:00 and 16:00), and 163 say "for immediate release", 153 of
+     them cash management bills (`metadata/announcement_release_times_1301.json`, #1301). The 12:00 instant is a
+     declared setting checked against those files, not a published clock time, and the declaration records what it
+     rests on. On the 2020 development days the net arm's loss is not separable from the immediate-release cash
+     management bills (they carry 67.5% of it; `docs/research/s3c-ann-net-diagnosis-1319-result.md`, #1320, Table 4d):
+     development evidence, not a verdict. The risk-date calendar then marks a settlement as known at the
      decision instant from the day it is announced.
    Each scheduled input passes the same availability check as any other input.
 3. **A training target is admissible only if it was observable by the fold's decision instant.**

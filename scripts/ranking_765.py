@@ -16,7 +16,7 @@ v1, #640): the result is exploration on development data.
         --score docs/pivot/evidence/ranking-924/score.json --output docs/pivot/ranking-924-result.md \\
         --title "H8 step 2 re-scored with the calendar read as announced (#924)" --note docs/pivot/evidence/ranking-924/note.md
 
-The scarcity state is read from the measurement panel (`scripts/pressure_judge.py::_scarcity_states`), which builds it from the
+The scarcity state is read from the measurement panel (`scripts/scarcity_states.py::scarcity_states`), which builds it from the
 tracked fixtures. Stdlib only.
 """
 
@@ -68,8 +68,7 @@ def scarcity_by_decision_day(days: Sequence[date], panel_dates: Sequence[date]) 
     """The as-of scarcity state of each decision day: the state read for the next panel day at horizon 1, whose forecast is
     made at this day's decision instant (each leg at its own latest public row, #586)."""
 
-    pj = _load("pressure_judge")
-    states = pj._scarcity_states(1, ranking.LAST_DAY)
+    states = _load("scarcity_states").scarcity_states(1, ranking.LAST_DAY)
     position = {d: i for i, d in enumerate(panel_dates)}
     out = {}
     for day in days:
