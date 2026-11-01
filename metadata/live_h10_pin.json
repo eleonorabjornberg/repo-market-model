@@ -1,0 +1,10 @@
+{
+  "liquidity_commit": "783848316995d4f2d425abea0c6bd0be3e157c26",
+  "method_digest": "43bf1303164c3c085b33ccf762268b721a5bddc9d7a4dcf68524c67ea33d15bb",
+  "parent_commit": "08ff67e27bc3d7e357491cf8e1da59793702b3fb",
+  "parent_panel_sha256": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+  "registered_on": "2026-10-22",
+  "registration": "https://github.com/eleonorabjornberg/repo-market-liquidity/issues/23#issuecomment-6353434164",
+  "report_days": 10,
+  "version": 1
+}

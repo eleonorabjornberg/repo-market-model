@@ -160,6 +160,13 @@
       "comment_id": 6535719408,
       "phrase": "GO #1327",
       "what": "the information-set decision record's corrections for the settlement dating (#1317), and the owner-attestation binding of metadata/settlement_announcement_dating.json and metadata/net_settlement.json; her 30 October 2026 ruling (ledger item 86)"
+    },
+    {
+      "kind": "live-model",
+      "issue": 1322,
+      "comment_id": 6534011497,
+      "phrase": "GO #1322",
+      "what": "the live job's H10 step: onset detection and attribution with liquidity's registered h10_live.attribute_onset (metadata/live_h10_pin.json, scripts/live_h10.py, .github/workflows/live-log.yml); her 30 October 2026 ruling (a') (ledger item 83)"
     }
   ],
   "rule": "docs/decisions/drafts/owner-attestation.md",
