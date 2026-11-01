@@ -231,7 +231,7 @@ class GroupTests(unittest.TestCase):
                          {x: date(2025, 12, 1) for x in frame.days}, ())
         expected = []
         for d in frame.days:
-            week = cc.latest_defined_week(levels, d)
+            week = cc.latest_defined_week(levels, d, decision_time=script.k.DECISION_TIME, max_carry_days=None)
             expected.append(st.stdev([levels[w] for w in levels if 0 < (week - w).days <= 7 * cc.TRAILING_WEEKS and levels[w] is not None]))
         out = script.fitted_effect(frame, walk, levels)["standard_unit_usd_bn"]
         self.assertEqual(out["decision_days"], len(frame.days))
