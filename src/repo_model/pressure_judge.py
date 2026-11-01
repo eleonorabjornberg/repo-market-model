@@ -2451,7 +2451,7 @@ def build_grid(
 
     The groupings are read from the day alone or as of its decision instant:
     the regime, the pressure-day type (`splits.reporting_day_type`, #278) and
-    the scheduled risk date (`_scheduled_risk_date`) from the calendar, and the
+    the scheduled risk date (`risk_dates.scheduled_risk_date`) from the calendar, and the
     reserve-scarcity state from `scarcity_state`, which
     `scarcity.pressure_days_by_state` reads at the forecast's decision.
     `extra_groups` supplies any grouping a later track declares (a policy
@@ -2472,7 +2472,7 @@ def build_grid(
         values = by_date[day].values
         groups["regime"].append(splits.regime(day))
         groups["day_type"].append(splits.reporting_day_type(day, values))
-        groups["risk_date"].append("1" if _scheduled_risk_date(values) else "0")
+        groups["risk_date"].append("1" if risk_dates.scheduled_risk_date(values) else "0")
         state = scarcity_state.get(day)
         groups["scarcity_state"].append("unknown" if state is None else str(int(state)))
     for dimension, labels in (extra_groups or {}).items():
@@ -2490,12 +2490,3 @@ def build_grid(
             tau: tuple(1 if day in days else 0 for day in scored_dates) for tau, days in onset_days.items()
         },
     )
-
-
-def _scheduled_risk_date(values: Mapping[str, Optional[float]]) -> bool:
-    """A quarter-end, a tax date or a day with a coupon settlement (the "large Treasury settlement").
-
-    Calendar facts, known ahead of the day, as the day-type grouping already reads them.
-    """
-
-    return risk_dates.is_risk_date(values, risk_dates.SCHEDULED)
