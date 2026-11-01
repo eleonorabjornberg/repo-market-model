@@ -186,13 +186,17 @@ def latest_defined_week(
     """The latest as-of week released at or before the decision instant that has a level, or `None`.
 
     It is also `None` when that week is more than `max_carry_days` days before the latest public week (the weekly-carry bound of
-    `docs/decisions/weekly-carry.md`, #1329: the level is then too stale to stand for the present). `max_carry_days=None` sets no bound, the read
-    of #1296's published record.
+    `docs/decisions/weekly-carry.md`, #1329: the level is then too stale to stand for the present). It is also `None` when the decision day is more
+    than `max_carry_days` days after the day the latest public week was released, that is when the newest public week is older than the bound plus
+    the source's declared release lag (#1341, "Weekly state terms" of that record): a snapshot that stops short of the decision day reads as an
+    unknown state. `max_carry_days=None` sets neither bound, the read of #1296's published record.
 
     Mutation record: see `tests/test_s3c_pd.py` (`latest_defined_week`).
     """
 
     public = public_weeks(levels, decision_day, decision_time=decision_time)
+    if max_carry_days is not None and public and (decision_day - release_instant(public[-1]).date()).days > max_carry_days:
+        return None
     for week in reversed(public):
         if levels[week] is not None:
             if max_carry_days is not None and (public[-1] - week).days > max_carry_days:

@@ -78,6 +78,24 @@ no print, and the term reads as an unknown state does. The bound is the panel's 
 A study that reads a weekly state term with a longer or no bound says so in its declaration before it scores, and the choice is hers. The
 published record of #1296, made before this paragraph and with no bound, stands as a record and is not re-scored here.
 
+### The bound also runs from the decision day
+
+*Drafted for Eleonora's review on the pull request of #1341, from her ruling of 1 November 2026 on #1339, option (a). It is in force once she
+merges it.*
+
+The bound above is measured from the latest public week, so a snapshot that stops short of the decision day would carry its last print indefinitely:
+the latest public week is then the last week there is, however old. A second check is measured from the decision day. A weekly state is unknown once
+its newest public week is older than `data.WEEKLY_CARRY_MAX_STALENESS_DAYS` days plus the source's declared release lag: for the primary dealers'
+financing level (FR 2004), 6 business days after the as-of Wednesday at 16:30 (`s3c_pd.RELEASE_LAG_BUSINESS_DAYS`, `s3c_pd.RELEASE_TIME`). In
+calendar terms, the state is unknown when the decision day is more than `data.WEEKLY_CARRY_MAX_STALENESS_DAYS` days after the day the newest public
+week was released; the day that is exactly that many days after still reads it. This is the one place the release lag enters a bound, and it enters
+the decision-day check only, never the comparison of one `ref_date` with an earlier one above, which stays free of it. A study that reads a weekly
+state term with no bound says so in its declaration, as above.
+
+The same pull request makes `scripts/s3c_pd_1296.py` read the state at the walk's own instant (#1335, her ruling of 1 November 2026, option (a)), and
+shows that a run with `RMM_DECISION_TIME` unset reproduces #1296's committed `result.json` byte for byte. The published record is not re-scored or
+edited.
+
 ## What this record does not settle
 
 Whether a carried value should be a *feature* is a separate question from whether the panel
