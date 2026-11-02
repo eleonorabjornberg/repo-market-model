@@ -16,6 +16,10 @@
   "changes": false,
   "statement": "The candidate (s3c-ann-net) does not change: docs/research/h5-candidate.json and its declaration are untouched. Whether and how it is registered is a separate act of hers; this draft only adds the arm beside whatever she registers."
  },
+ "variants": {
+  "sc_s3c_ann_net": {"role": "control", "label": "(s3c-ann-net)", "statement": "The candidate, unchanged; the control the arm is compared with."},
+  "sc_s3c_ann_flagnet": {"role": "secondary candidate", "label": "(s3c-ann-flagnet)", "statement": "The arm this draft proposes to test prospectively; defined under `arm`."}
+ },
  "days": {
   "statement": "Prospective confirmation days only (scoring-protocol.md section 1): the business days after the registration, the forecasts produced by the live pipeline at the decision instant and committed with hash and timestamp before the outcome is published. No 2018 to 2025 day and none of the 2026 days (all seen) is scored; the blind tier from 2026-09-04 stays locked until she opens it at a checkpoint, an attested action each time (scoring-protocol.md, item 3 of the amendments). Checkpoints at 60, 125 and 250 confirmation days, alpha spent by Lan-DeMets O'Brien-Fleming (nominal one-sided levels from scoring_protocol.nominal_levels)."
  },
