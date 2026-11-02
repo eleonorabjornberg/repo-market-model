@@ -14,708 +14,6 @@
    "ell": 50,
    "flag_effect": null,
    "group": "main",
-   "key": "main/block/n250/ell50/0-0",
-   "main": {
-    "fail": 78,
-    "inconclusive": 122,
-    "pass": 0
-   },
-   "n": 250,
-   "scheme": "block"
-  },
-  {
-   "count": 200,
-   "effects": [
-    0.03,
-    0.03
-   ],
-   "ell": 50,
-   "flag_effect": null,
-   "group": "main",
-   "key": "main/block/n250/ell50/0.03-0.03",
-   "main": {
-    "fail": 20,
-    "inconclusive": 179,
-    "pass": 1
-   },
-   "n": 250,
-   "scheme": "block"
-  },
-  {
-   "count": 200,
-   "effects": [
-    0.05,
-    0.05
-   ],
-   "ell": 50,
-   "flag_effect": null,
-   "group": "main",
-   "key": "main/block/n250/ell50/0.05-0.05",
-   "main": {
-    "fail": 11,
-    "inconclusive": 184,
-    "pass": 5
-   },
-   "n": 250,
-   "scheme": "block"
-  },
-  {
-   "count": 200,
-   "effects": [
-    0.1,
-    0.1
-   ],
-   "ell": 50,
-   "flag_effect": null,
-   "group": "main",
-   "key": "main/block/n250/ell50/0.1-0.1",
-   "main": {
-    "fail": 6,
-    "inconclusive": 157,
-    "pass": 37
-   },
-   "n": 250,
-   "scheme": "block"
-  },
-  {
-   "count": 200,
-   "effects": [
-    null,
-    null
-   ],
-   "ell": 50,
-   "flag_effect": null,
-   "group": "observed",
-   "key": "observed/block/n250/ell50/observed-observed",
-   "main": {
-    "fail": 0,
-    "inconclusive": 5,
-    "pass": 195
-   },
-   "n": 250,
-   "scheme": "block"
-  },
-  {
-   "count": 200,
-   "effects": [
-    0.03,
-    0.1
-   ],
-   "ell": 50,
-   "flag_effect": null,
-   "group": "binding",
-   "key": "binding/block/n250/ell50/0.03-0.1",
-   "main": {
-    "fail": 16,
-    "inconclusive": 179,
-    "pass": 5
-   },
-   "n": 250,
-   "scheme": "block"
-  },
-  {
-   "count": 200,
-   "effects": [
-    0.1,
-    0.03
-   ],
-   "ell": 50,
-   "flag_effect": null,
-   "group": "binding",
-   "key": "binding/block/n250/ell50/0.1-0.03",
-   "main": {
-    "fail": 16,
-    "inconclusive": 176,
-    "pass": 8
-   },
-   "n": 250,
-   "scheme": "block"
-  },
-  {
-   "count": 200,
-   "effects": [
-    0.1,
-    0.1
-   ],
-   "ell": 50,
-   "flag_effect": 0.0,
-   "gated": {
-    "reject": 19
-   },
-   "group": "gated",
-   "joint": {
-    "pass_and_reject": 9
-   },
-   "key": "gated/block/n250/ell50/0.1-0.1_b0",
-   "main": {
-    "fail": 2,
-    "inconclusive": 155,
-    "pass": 43
-   },
-   "n": 250,
-   "scheme": "block"
-  },
-  {
-   "count": 200,
-   "effects": [
-    0.1,
-    0.1
-   ],
-   "ell": 50,
-   "flag_effect": 0.01,
-   "gated": {
-    "reject": 127
-   },
-   "group": "gated",
-   "joint": {
-    "pass_and_reject": 27
-   },
-   "key": "gated/block/n250/ell50/0.1-0.1_b0.01",
-   "main": {
-    "fail": 2,
-    "inconclusive": 158,
-    "pass": 40
-   },
-   "n": 250,
-   "scheme": "block"
-  },
-  {
-   "count": 200,
-   "effects": [
-    0.1,
-    0.1
-   ],
-   "ell": 50,
-   "flag_effect": 0.02,
-   "gated": {
-    "reject": 189
-   },
-   "group": "gated",
-   "joint": {
-    "pass_and_reject": 31
-   },
-   "key": "gated/block/n250/ell50/0.1-0.1_b0.02",
-   "main": {
-    "fail": 1,
-    "inconclusive": 166,
-    "pass": 33
-   },
-   "n": 250,
-   "scheme": "block"
-  },
-  {
-   "count": 200,
-   "effects": [
-    0.1,
-    0.1
-   ],
-   "ell": 50,
-   "flag_effect": 0.03,
-   "gated": {
-    "reject": 200
-   },
-   "group": "gated",
-   "joint": {
-    "pass_and_reject": 49
-   },
-   "key": "gated/block/n250/ell50/0.1-0.1_b0.03",
-   "main": {
-    "fail": 4,
-    "inconclusive": 147,
-    "pass": 49
-   },
-   "n": 250,
-   "scheme": "block"
-  },
-  {
-   "count": 200,
-   "effects": [
-    0.0,
-    0.0
-   ],
-   "ell": 50,
-   "flag_effect": null,
-   "group": "main",
-   "key": "main/block/n500/ell50/0-0",
-   "main": {
-    "fail": 65,
-    "inconclusive": 135,
-    "pass": 0
-   },
-   "n": 500,
-   "scheme": "block"
-  },
-  {
-   "count": 200,
-   "effects": [
-    0.03,
-    0.03
-   ],
-   "ell": 50,
-   "flag_effect": null,
-   "group": "main",
-   "key": "main/block/n500/ell50/0.03-0.03",
-   "main": {
-    "fail": 17,
-    "inconclusive": 179,
-    "pass": 4
-   },
-   "n": 500,
-   "scheme": "block"
-  },
-  {
-   "count": 200,
-   "effects": [
-    0.05,
-    0.05
-   ],
-   "ell": 50,
-   "flag_effect": null,
-   "group": "main",
-   "key": "main/block/n500/ell50/0.05-0.05",
-   "main": {
-    "fail": 10,
-    "inconclusive": 181,
-    "pass": 9
-   },
-   "n": 500,
-   "scheme": "block"
-  },
-  {
-   "count": 200,
-   "effects": [
-    0.1,
-    0.1
-   ],
-   "ell": 50,
-   "flag_effect": null,
-   "group": "main",
-   "key": "main/block/n500/ell50/0.1-0.1",
-   "main": {
-    "fail": 3,
-    "inconclusive": 151,
-    "pass": 46
-   },
-   "n": 500,
-   "scheme": "block"
-  },
-  {
-   "count": 200,
-   "effects": [
-    null,
-    null
-   ],
-   "ell": 50,
-   "flag_effect": null,
-   "group": "observed",
-   "key": "observed/block/n500/ell50/observed-observed",
-   "main": {
-    "fail": 0,
-    "inconclusive": 6,
-    "pass": 194
-   },
-   "n": 500,
-   "scheme": "block"
-  },
-  {
-   "count": 200,
-   "effects": [
-    0.03,
-    0.1
-   ],
-   "ell": 50,
-   "flag_effect": null,
-   "group": "binding",
-   "key": "binding/block/n500/ell50/0.03-0.1",
-   "main": {
-    "fail": 19,
-    "inconclusive": 178,
-    "pass": 3
-   },
-   "n": 500,
-   "scheme": "block"
-  },
-  {
-   "count": 200,
-   "effects": [
-    0.1,
-    0.03
-   ],
-   "ell": 50,
-   "flag_effect": null,
-   "group": "binding",
-   "key": "binding/block/n500/ell50/0.1-0.03",
-   "main": {
-    "fail": 14,
-    "inconclusive": 173,
-    "pass": 13
-   },
-   "n": 500,
-   "scheme": "block"
-  },
-  {
-   "count": 200,
-   "effects": [
-    0.1,
-    0.1
-   ],
-   "ell": 50,
-   "flag_effect": 0.0,
-   "gated": {
-    "reject": 21
-   },
-   "group": "gated",
-   "joint": {
-    "pass_and_reject": 5
-   },
-   "key": "gated/block/n500/ell50/0.1-0.1_b0",
-   "main": {
-    "fail": 4,
-    "inconclusive": 162,
-    "pass": 34
-   },
-   "n": 500,
-   "scheme": "block"
-  },
-  {
-   "count": 200,
-   "effects": [
-    0.1,
-    0.1
-   ],
-   "ell": 50,
-   "flag_effect": 0.01,
-   "gated": {
-    "reject": 121
-   },
-   "group": "gated",
-   "joint": {
-    "pass_and_reject": 27
-   },
-   "key": "gated/block/n500/ell50/0.1-0.1_b0.01",
-   "main": {
-    "fail": 2,
-    "inconclusive": 161,
-    "pass": 37
-   },
-   "n": 500,
-   "scheme": "block"
-  },
-  {
-   "count": 200,
-   "effects": [
-    0.1,
-    0.1
-   ],
-   "ell": 50,
-   "flag_effect": 0.02,
-   "gated": {
-    "reject": 194
-   },
-   "group": "gated",
-   "joint": {
-    "pass_and_reject": 35
-   },
-   "key": "gated/block/n500/ell50/0.1-0.1_b0.02",
-   "main": {
-    "fail": 3,
-    "inconclusive": 162,
-    "pass": 35
-   },
-   "n": 500,
-   "scheme": "block"
-  },
-  {
-   "count": 200,
-   "effects": [
-    0.1,
-    0.1
-   ],
-   "ell": 50,
-   "flag_effect": 0.03,
-   "gated": {
-    "reject": 200
-   },
-   "group": "gated",
-   "joint": {
-    "pass_and_reject": 40
-   },
-   "key": "gated/block/n500/ell50/0.1-0.1_b0.03",
-   "main": {
-    "fail": 4,
-    "inconclusive": 156,
-    "pass": 40
-   },
-   "n": 500,
-   "scheme": "block"
-  },
-  {
-   "count": 200,
-   "effects": [
-    0.0,
-    0.0
-   ],
-   "ell": 50,
-   "flag_effect": null,
-   "group": "main",
-   "key": "main/block/n750/ell50/0-0",
-   "main": {
-    "fail": 75,
-    "inconclusive": 125,
-    "pass": 0
-   },
-   "n": 750,
-   "scheme": "block"
-  },
-  {
-   "count": 200,
-   "effects": [
-    0.03,
-    0.03
-   ],
-   "ell": 50,
-   "flag_effect": null,
-   "group": "main",
-   "key": "main/block/n750/ell50/0.03-0.03",
-   "main": {
-    "fail": 35,
-    "inconclusive": 163,
-    "pass": 2
-   },
-   "n": 750,
-   "scheme": "block"
-  },
-  {
-   "count": 200,
-   "effects": [
-    0.05,
-    0.05
-   ],
-   "ell": 50,
-   "flag_effect": null,
-   "group": "main",
-   "key": "main/block/n750/ell50/0.05-0.05",
-   "main": {
-    "fail": 13,
-    "inconclusive": 185,
-    "pass": 2
-   },
-   "n": 750,
-   "scheme": "block"
-  },
-  {
-   "count": 200,
-   "effects": [
-    0.1,
-    0.1
-   ],
-   "ell": 50,
-   "flag_effect": null,
-   "group": "main",
-   "key": "main/block/n750/ell50/0.1-0.1",
-   "main": {
-    "fail": 0,
-    "inconclusive": 168,
-    "pass": 32
-   },
-   "n": 750,
-   "scheme": "block"
-  },
-  {
-   "count": 200,
-   "effects": [
-    null,
-    null
-   ],
-   "ell": 50,
-   "flag_effect": null,
-   "group": "observed",
-   "key": "observed/block/n750/ell50/observed-observed",
-   "main": {
-    "fail": 0,
-    "inconclusive": 4,
-    "pass": 196
-   },
-   "n": 750,
-   "scheme": "block"
-  },
-  {
-   "count": 200,
-   "effects": [
-    0.03,
-    0.1
-   ],
-   "ell": 50,
-   "flag_effect": null,
-   "group": "binding",
-   "key": "binding/block/n750/ell50/0.03-0.1",
-   "main": {
-    "fail": 20,
-    "inconclusive": 177,
-    "pass": 3
-   },
-   "n": 750,
-   "scheme": "block"
-  },
-  {
-   "count": 200,
-   "effects": [
-    0.1,
-    0.03
-   ],
-   "ell": 50,
-   "flag_effect": null,
-   "group": "binding",
-   "key": "binding/block/n750/ell50/0.1-0.03",
-   "main": {
-    "fail": 15,
-    "inconclusive": 172,
-    "pass": 13
-   },
-   "n": 750,
-   "scheme": "block"
-  },
-  {
-   "count": 200,
-   "effects": [
-    0.1,
-    0.1
-   ],
-   "ell": 50,
-   "flag_effect": 0.0,
-   "gated": {
-    "reject": 15
-   },
-   "group": "gated",
-   "joint": {
-    "pass_and_reject": 1
-   },
-   "key": "gated/block/n750/ell50/0.1-0.1_b0",
-   "main": {
-    "fail": 4,
-    "inconclusive": 158,
-    "pass": 38
-   },
-   "n": 750,
-   "scheme": "block"
-  },
-  {
-   "count": 200,
-   "effects": [
-    0.1,
-    0.1
-   ],
-   "ell": 50,
-   "flag_effect": 0.01,
-   "gated": {
-    "reject": 116
-   },
-   "group": "gated",
-   "joint": {
-    "pass_and_reject": 15
-   },
-   "key": "gated/block/n750/ell50/0.1-0.1_b0.01",
-   "main": {
-    "fail": 5,
-    "inconclusive": 165,
-    "pass": 30
-   },
-   "n": 750,
-   "scheme": "block"
-  },
-  {
-   "count": 200,
-   "effects": [
-    0.1,
-    0.1
-   ],
-   "ell": 50,
-   "flag_effect": 0.02,
-   "gated": {
-    "reject": 191
-   },
-   "group": "gated",
-   "joint": {
-    "pass_and_reject": 41
-   },
-   "key": "gated/block/n750/ell50/0.1-0.1_b0.02",
-   "main": {
-    "fail": 1,
-    "inconclusive": 157,
-    "pass": 42
-   },
-   "n": 750,
-   "scheme": "block"
-  },
-  {
-   "count": 200,
-   "effects": [
-    0.1,
-    0.1
-   ],
-   "ell": 50,
-   "flag_effect": 0.03,
-   "gated": {
-    "reject": 200
-   },
-   "group": "gated",
-   "joint": {
-    "pass_and_reject": 36
-   },
-   "key": "gated/block/n750/ell50/0.1-0.1_b0.03",
-   "main": {
-    "fail": 2,
-    "inconclusive": 162,
-    "pass": 36
-   },
-   "n": 750,
-   "scheme": "block"
-  },
-  {
-   "count": 200,
-   "effects": [
-    0.1,
-    0.1
-   ],
-   "ell": 50,
-   "flag_effect": null,
-   "group": "extension",
-   "key": "extension/block/n1000/ell50/0.1-0.1",
-   "main": {
-    "fail": 5,
-    "inconclusive": 153,
-    "pass": 42
-   },
-   "n": 1000,
-   "scheme": "block"
-  },
-  {
-   "count": 200,
-   "effects": [
-    0.1,
-    0.1
-   ],
-   "ell": 50,
-   "flag_effect": null,
-   "group": "extension",
-   "key": "extension/block/n1500/ell50/0.1-0.1",
-   "main": {
-    "fail": 3,
-    "inconclusive": 160,
-    "pass": 37
-   },
-   "n": 1500,
-   "scheme": "block"
-  },
-  {
-   "count": 200,
-   "effects": [
-    0.0,
-    0.0
-   ],
-   "ell": 50,
-   "flag_effect": null,
-   "group": "main",
    "key": "main/regime/n250/ell50/0-0",
    "main": {
     "fail": 70,
@@ -1408,6 +706,1140 @@
    },
    "n": 1500,
    "scheme": "regime"
+  },
+  {
+   "count": 200,
+   "effects": [
+    0.03,
+    null
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "binding_observed",
+   "key": "binding_observed/regime/n250/ell50/0.03-observed",
+   "main": {
+    "fail": 18,
+    "inconclusive": 162,
+    "pass": 20
+   },
+   "n": 250,
+   "scheme": "regime"
+  },
+  {
+   "count": 200,
+   "effects": [
+    0.05,
+    null
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "binding_observed",
+   "key": "binding_observed/regime/n250/ell50/0.05-observed",
+   "main": {
+    "fail": 7,
+    "inconclusive": 175,
+    "pass": 18
+   },
+   "n": 250,
+   "scheme": "regime"
+  },
+  {
+   "count": 200,
+   "effects": [
+    0.1,
+    null
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "binding_observed",
+   "key": "binding_observed/regime/n250/ell50/0.1-observed",
+   "main": {
+    "fail": 4,
+    "inconclusive": 154,
+    "pass": 42
+   },
+   "n": 250,
+   "scheme": "regime"
+  },
+  {
+   "count": 200,
+   "effects": [
+    0.03,
+    null
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "binding_observed",
+   "key": "binding_observed/regime/n500/ell50/0.03-observed",
+   "main": {
+    "fail": 19,
+    "inconclusive": 170,
+    "pass": 11
+   },
+   "n": 500,
+   "scheme": "regime"
+  },
+  {
+   "count": 200,
+   "effects": [
+    0.05,
+    null
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "binding_observed",
+   "key": "binding_observed/regime/n500/ell50/0.05-observed",
+   "main": {
+    "fail": 5,
+    "inconclusive": 171,
+    "pass": 24
+   },
+   "n": 500,
+   "scheme": "regime"
+  },
+  {
+   "count": 200,
+   "effects": [
+    0.1,
+    null
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "binding_observed",
+   "key": "binding_observed/regime/n500/ell50/0.1-observed",
+   "main": {
+    "fail": 2,
+    "inconclusive": 153,
+    "pass": 45
+   },
+   "n": 500,
+   "scheme": "regime"
+  },
+  {
+   "count": 200,
+   "effects": [
+    0.03,
+    null
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "binding_observed",
+   "key": "binding_observed/regime/n750/ell50/0.03-observed",
+   "main": {
+    "fail": 13,
+    "inconclusive": 176,
+    "pass": 11
+   },
+   "n": 750,
+   "scheme": "regime"
+  },
+  {
+   "count": 200,
+   "effects": [
+    0.05,
+    null
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "binding_observed",
+   "key": "binding_observed/regime/n750/ell50/0.05-observed",
+   "main": {
+    "fail": 2,
+    "inconclusive": 173,
+    "pass": 25
+   },
+   "n": 750,
+   "scheme": "regime"
+  },
+  {
+   "count": 200,
+   "effects": [
+    0.1,
+    null
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "binding_observed",
+   "key": "binding_observed/regime/n750/ell50/0.1-observed",
+   "main": {
+    "fail": 0,
+    "inconclusive": 126,
+    "pass": 74
+   },
+   "n": 750,
+   "scheme": "regime"
+  },
+  {
+   "count": 200,
+   "effects": [
+    0.1,
+    null
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "extension_observed",
+   "key": "extension_observed/regime/n1000/ell50/0.1-observed",
+   "main": {
+    "fail": 1,
+    "inconclusive": 109,
+    "pass": 90
+   },
+   "n": 1000,
+   "scheme": "regime"
+  },
+  {
+   "count": 200,
+   "effects": [
+    0.1,
+    null
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "extension_observed",
+   "key": "extension_observed/regime/n1500/ell50/0.1-observed",
+   "main": {
+    "fail": 0,
+    "inconclusive": 64,
+    "pass": 136
+   },
+   "n": 1500,
+   "scheme": "regime"
+  },
+  {
+   "count": 200,
+   "effects": [
+    0.1,
+    null
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "extension_observed",
+   "key": "extension_observed/regime/n2500/ell50/0.1-observed",
+   "main": {
+    "fail": 0,
+    "inconclusive": 31,
+    "pass": 169
+   },
+   "n": 2500,
+   "scheme": "regime"
+  },
+  {
+   "count": 200,
+   "effects": [
+    0.0,
+    0.0
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "main",
+   "key": "main/block/n250/ell50/0-0",
+   "main": {
+    "fail": 59,
+    "inconclusive": 141,
+    "pass": 0
+   },
+   "n": 250,
+   "scheme": "block"
+  },
+  {
+   "count": 200,
+   "effects": [
+    0.03,
+    0.03
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "main",
+   "key": "main/block/n250/ell50/0.03-0.03",
+   "main": {
+    "fail": 48,
+    "inconclusive": 152,
+    "pass": 0
+   },
+   "n": 250,
+   "scheme": "block"
+  },
+  {
+   "count": 200,
+   "effects": [
+    0.05,
+    0.05
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "main",
+   "key": "main/block/n250/ell50/0.05-0.05",
+   "main": {
+    "fail": 37,
+    "inconclusive": 158,
+    "pass": 5
+   },
+   "n": 250,
+   "scheme": "block"
+  },
+  {
+   "count": 200,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "main",
+   "key": "main/block/n250/ell50/0.1-0.1",
+   "main": {
+    "fail": 26,
+    "inconclusive": 162,
+    "pass": 12
+   },
+   "n": 250,
+   "scheme": "block"
+  },
+  {
+   "count": 200,
+   "effects": [
+    null,
+    null
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "observed",
+   "key": "observed/block/n250/ell50/observed-observed",
+   "main": {
+    "fail": 1,
+    "inconclusive": 145,
+    "pass": 54
+   },
+   "n": 250,
+   "scheme": "block"
+  },
+  {
+   "count": 200,
+   "effects": [
+    0.03,
+    null
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "binding_observed",
+   "key": "binding_observed/block/n250/ell50/0.03-observed",
+   "main": {
+    "fail": 27,
+    "inconclusive": 160,
+    "pass": 13
+   },
+   "n": 250,
+   "scheme": "block"
+  },
+  {
+   "count": 200,
+   "effects": [
+    0.05,
+    null
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "binding_observed",
+   "key": "binding_observed/block/n250/ell50/0.05-observed",
+   "main": {
+    "fail": 20,
+    "inconclusive": 161,
+    "pass": 19
+   },
+   "n": 250,
+   "scheme": "block"
+  },
+  {
+   "count": 200,
+   "effects": [
+    0.1,
+    null
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "binding_observed",
+   "key": "binding_observed/block/n250/ell50/0.1-observed",
+   "main": {
+    "fail": 4,
+    "inconclusive": 159,
+    "pass": 37
+   },
+   "n": 250,
+   "scheme": "block"
+  },
+  {
+   "count": 200,
+   "effects": [
+    0.03,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "binding",
+   "key": "binding/block/n250/ell50/0.03-0.1",
+   "main": {
+    "fail": 41,
+    "inconclusive": 155,
+    "pass": 4
+   },
+   "n": 250,
+   "scheme": "block"
+  },
+  {
+   "count": 200,
+   "effects": [
+    0.1,
+    0.03
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "binding",
+   "key": "binding/block/n250/ell50/0.1-0.03",
+   "main": {
+    "fail": 35,
+    "inconclusive": 156,
+    "pass": 9
+   },
+   "n": 250,
+   "scheme": "block"
+  },
+  {
+   "count": 200,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": 0.0,
+   "gated": {
+    "reject": 42
+   },
+   "group": "gated",
+   "joint": {
+    "pass_and_reject": 0
+   },
+   "key": "gated/block/n250/ell50/0.1-0.1_b0",
+   "main": {
+    "fail": 14,
+    "inconclusive": 179,
+    "pass": 7
+   },
+   "n": 250,
+   "scheme": "block"
+  },
+  {
+   "count": 200,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": 0.01,
+   "gated": {
+    "reject": 84
+   },
+   "group": "gated",
+   "joint": {
+    "pass_and_reject": 4
+   },
+   "key": "gated/block/n250/ell50/0.1-0.1_b0.01",
+   "main": {
+    "fail": 23,
+    "inconclusive": 166,
+    "pass": 11
+   },
+   "n": 250,
+   "scheme": "block"
+  },
+  {
+   "count": 200,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": 0.02,
+   "gated": {
+    "reject": 114
+   },
+   "group": "gated",
+   "joint": {
+    "pass_and_reject": 2
+   },
+   "key": "gated/block/n250/ell50/0.1-0.1_b0.02",
+   "main": {
+    "fail": 26,
+    "inconclusive": 170,
+    "pass": 4
+   },
+   "n": 250,
+   "scheme": "block"
+  },
+  {
+   "count": 200,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": 0.03,
+   "gated": {
+    "reject": 131
+   },
+   "group": "gated",
+   "joint": {
+    "pass_and_reject": 6
+   },
+   "key": "gated/block/n250/ell50/0.1-0.1_b0.03",
+   "main": {
+    "fail": 22,
+    "inconclusive": 170,
+    "pass": 8
+   },
+   "n": 250,
+   "scheme": "block"
+  },
+  {
+   "count": 200,
+   "effects": [
+    0.0,
+    0.0
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "main",
+   "key": "main/block/n500/ell50/0-0",
+   "main": {
+    "fail": 58,
+    "inconclusive": 142,
+    "pass": 0
+   },
+   "n": 500,
+   "scheme": "block"
+  },
+  {
+   "count": 200,
+   "effects": [
+    0.03,
+    0.03
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "main",
+   "key": "main/block/n500/ell50/0.03-0.03",
+   "main": {
+    "fail": 43,
+    "inconclusive": 152,
+    "pass": 5
+   },
+   "n": 500,
+   "scheme": "block"
+  },
+  {
+   "count": 200,
+   "effects": [
+    0.05,
+    0.05
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "main",
+   "key": "main/block/n500/ell50/0.05-0.05",
+   "main": {
+    "fail": 21,
+    "inconclusive": 176,
+    "pass": 3
+   },
+   "n": 500,
+   "scheme": "block"
+  },
+  {
+   "count": 200,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "main",
+   "key": "main/block/n500/ell50/0.1-0.1",
+   "main": {
+    "fail": 15,
+    "inconclusive": 167,
+    "pass": 18
+   },
+   "n": 500,
+   "scheme": "block"
+  },
+  {
+   "count": 200,
+   "effects": [
+    null,
+    null
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "observed",
+   "key": "observed/block/n500/ell50/observed-observed",
+   "main": {
+    "fail": 0,
+    "inconclusive": 89,
+    "pass": 111
+   },
+   "n": 500,
+   "scheme": "block"
+  },
+  {
+   "count": 200,
+   "effects": [
+    0.03,
+    null
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "binding_observed",
+   "key": "binding_observed/block/n500/ell50/0.03-observed",
+   "main": {
+    "fail": 24,
+    "inconclusive": 162,
+    "pass": 14
+   },
+   "n": 500,
+   "scheme": "block"
+  },
+  {
+   "count": 200,
+   "effects": [
+    0.05,
+    null
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "binding_observed",
+   "key": "binding_observed/block/n500/ell50/0.05-observed",
+   "main": {
+    "fail": 16,
+    "inconclusive": 167,
+    "pass": 17
+   },
+   "n": 500,
+   "scheme": "block"
+  },
+  {
+   "count": 200,
+   "effects": [
+    0.1,
+    null
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "binding_observed",
+   "key": "binding_observed/block/n500/ell50/0.1-observed",
+   "main": {
+    "fail": 0,
+    "inconclusive": 128,
+    "pass": 72
+   },
+   "n": 500,
+   "scheme": "block"
+  },
+  {
+   "count": 200,
+   "effects": [
+    0.03,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "binding",
+   "key": "binding/block/n500/ell50/0.03-0.1",
+   "main": {
+    "fail": 33,
+    "inconclusive": 165,
+    "pass": 2
+   },
+   "n": 500,
+   "scheme": "block"
+  },
+  {
+   "count": 200,
+   "effects": [
+    0.1,
+    0.03
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "binding",
+   "key": "binding/block/n500/ell50/0.1-0.03",
+   "main": {
+    "fail": 23,
+    "inconclusive": 163,
+    "pass": 14
+   },
+   "n": 500,
+   "scheme": "block"
+  },
+  {
+   "count": 200,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": 0.0,
+   "gated": {
+    "reject": 26
+   },
+   "group": "gated",
+   "joint": {
+    "pass_and_reject": 2
+   },
+   "key": "gated/block/n500/ell50/0.1-0.1_b0",
+   "main": {
+    "fail": 12,
+    "inconclusive": 183,
+    "pass": 5
+   },
+   "n": 500,
+   "scheme": "block"
+  },
+  {
+   "count": 200,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": 0.01,
+   "gated": {
+    "reject": 73
+   },
+   "group": "gated",
+   "joint": {
+    "pass_and_reject": 5
+   },
+   "key": "gated/block/n500/ell50/0.1-0.1_b0.01",
+   "main": {
+    "fail": 7,
+    "inconclusive": 182,
+    "pass": 11
+   },
+   "n": 500,
+   "scheme": "block"
+  },
+  {
+   "count": 200,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": 0.02,
+   "gated": {
+    "reject": 140
+   },
+   "group": "gated",
+   "joint": {
+    "pass_and_reject": 7
+   },
+   "key": "gated/block/n500/ell50/0.1-0.1_b0.02",
+   "main": {
+    "fail": 4,
+    "inconclusive": 183,
+    "pass": 13
+   },
+   "n": 500,
+   "scheme": "block"
+  },
+  {
+   "count": 200,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": 0.03,
+   "gated": {
+    "reject": 176
+   },
+   "group": "gated",
+   "joint": {
+    "pass_and_reject": 11
+   },
+   "key": "gated/block/n500/ell50/0.1-0.1_b0.03",
+   "main": {
+    "fail": 9,
+    "inconclusive": 180,
+    "pass": 11
+   },
+   "n": 500,
+   "scheme": "block"
+  },
+  {
+   "count": 200,
+   "effects": [
+    0.0,
+    0.0
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "main",
+   "key": "main/block/n750/ell50/0-0",
+   "main": {
+    "fail": 67,
+    "inconclusive": 133,
+    "pass": 0
+   },
+   "n": 750,
+   "scheme": "block"
+  },
+  {
+   "count": 200,
+   "effects": [
+    0.03,
+    0.03
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "main",
+   "key": "main/block/n750/ell50/0.03-0.03",
+   "main": {
+    "fail": 36,
+    "inconclusive": 162,
+    "pass": 2
+   },
+   "n": 750,
+   "scheme": "block"
+  },
+  {
+   "count": 200,
+   "effects": [
+    0.05,
+    0.05
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "main",
+   "key": "main/block/n750/ell50/0.05-0.05",
+   "main": {
+    "fail": 22,
+    "inconclusive": 177,
+    "pass": 1
+   },
+   "n": 750,
+   "scheme": "block"
+  },
+  {
+   "count": 200,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "main",
+   "key": "main/block/n750/ell50/0.1-0.1",
+   "main": {
+    "fail": 5,
+    "inconclusive": 178,
+    "pass": 17
+   },
+   "n": 750,
+   "scheme": "block"
+  },
+  {
+   "count": 200,
+   "effects": [
+    null,
+    null
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "observed",
+   "key": "observed/block/n750/ell50/observed-observed",
+   "main": {
+    "fail": 0,
+    "inconclusive": 52,
+    "pass": 148
+   },
+   "n": 750,
+   "scheme": "block"
+  },
+  {
+   "count": 200,
+   "effects": [
+    0.03,
+    null
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "binding_observed",
+   "key": "binding_observed/block/n750/ell50/0.03-observed",
+   "main": {
+    "fail": 13,
+    "inconclusive": 180,
+    "pass": 7
+   },
+   "n": 750,
+   "scheme": "block"
+  },
+  {
+   "count": 200,
+   "effects": [
+    0.05,
+    null
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "binding_observed",
+   "key": "binding_observed/block/n750/ell50/0.05-observed",
+   "main": {
+    "fail": 7,
+    "inconclusive": 169,
+    "pass": 24
+   },
+   "n": 750,
+   "scheme": "block"
+  },
+  {
+   "count": 200,
+   "effects": [
+    0.1,
+    null
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "binding_observed",
+   "key": "binding_observed/block/n750/ell50/0.1-observed",
+   "main": {
+    "fail": 0,
+    "inconclusive": 115,
+    "pass": 85
+   },
+   "n": 750,
+   "scheme": "block"
+  },
+  {
+   "count": 200,
+   "effects": [
+    0.03,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "binding",
+   "key": "binding/block/n750/ell50/0.03-0.1",
+   "main": {
+    "fail": 28,
+    "inconclusive": 171,
+    "pass": 1
+   },
+   "n": 750,
+   "scheme": "block"
+  },
+  {
+   "count": 200,
+   "effects": [
+    0.1,
+    0.03
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "binding",
+   "key": "binding/block/n750/ell50/0.1-0.03",
+   "main": {
+    "fail": 23,
+    "inconclusive": 168,
+    "pass": 9
+   },
+   "n": 750,
+   "scheme": "block"
+  },
+  {
+   "count": 200,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": 0.0,
+   "gated": {
+    "reject": 17
+   },
+   "group": "gated",
+   "joint": {
+    "pass_and_reject": 1
+   },
+   "key": "gated/block/n750/ell50/0.1-0.1_b0",
+   "main": {
+    "fail": 11,
+    "inconclusive": 166,
+    "pass": 23
+   },
+   "n": 750,
+   "scheme": "block"
+  },
+  {
+   "count": 200,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": 0.01,
+   "gated": {
+    "reject": 79
+   },
+   "group": "gated",
+   "joint": {
+    "pass_and_reject": 13
+   },
+   "key": "gated/block/n750/ell50/0.1-0.1_b0.01",
+   "main": {
+    "fail": 10,
+    "inconclusive": 168,
+    "pass": 22
+   },
+   "n": 750,
+   "scheme": "block"
+  },
+  {
+   "count": 200,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": 0.02,
+   "gated": {
+    "reject": 141
+   },
+   "group": "gated",
+   "joint": {
+    "pass_and_reject": 16
+   },
+   "key": "gated/block/n750/ell50/0.1-0.1_b0.02",
+   "main": {
+    "fail": 7,
+    "inconclusive": 175,
+    "pass": 18
+   },
+   "n": 750,
+   "scheme": "block"
+  },
+  {
+   "count": 200,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": 0.03,
+   "gated": {
+    "reject": 192
+   },
+   "group": "gated",
+   "joint": {
+    "pass_and_reject": 20
+   },
+   "key": "gated/block/n750/ell50/0.1-0.1_b0.03",
+   "main": {
+    "fail": 4,
+    "inconclusive": 176,
+    "pass": 20
+   },
+   "n": 750,
+   "scheme": "block"
+  },
+  {
+   "count": 200,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "extension",
+   "key": "extension/block/n1000/ell50/0.1-0.1",
+   "main": {
+    "fail": 5,
+    "inconclusive": 171,
+    "pass": 24
+   },
+   "n": 1000,
+   "scheme": "block"
+  },
+  {
+   "count": 200,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "extension",
+   "key": "extension/block/n1500/ell50/0.1-0.1",
+   "main": {
+    "fail": 4,
+    "inconclusive": 166,
+    "pass": 30
+   },
+   "n": 1500,
+   "scheme": "block"
+  },
+  {
+   "count": 200,
+   "effects": [
+    0.1,
+    null
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "extension_observed",
+   "key": "extension_observed/block/n1000/ell50/0.1-observed",
+   "main": {
+    "fail": 0,
+    "inconclusive": 84,
+    "pass": 116
+   },
+   "n": 1000,
+   "scheme": "block"
+  },
+  {
+   "count": 200,
+   "effects": [
+    0.1,
+    null
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "extension_observed",
+   "key": "extension_observed/block/n1500/ell50/0.1-observed",
+   "main": {
+    "fail": 0,
+    "inconclusive": 56,
+    "pass": 144
+   },
+   "n": 1500,
+   "scheme": "block"
+  },
+  {
+   "count": 200,
+   "effects": [
+    0.1,
+    null
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "extension_observed",
+   "key": "extension_observed/block/n2500/ell50/0.1-observed",
+   "main": {
+    "fail": 0,
+    "inconclusive": 26,
+    "pass": 174
+   },
+   "n": 2500,
+   "scheme": "block"
   }
  ],
  "chain": {

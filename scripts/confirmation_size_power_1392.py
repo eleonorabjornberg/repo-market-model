@@ -518,6 +518,11 @@ def headline(r: Mapping[str, object]) -> str:
             parts.append(f"power at 10% skill with 500 origins is {100 * p:.1f}% under the {scheme} scheme (SE {100 * se:.1f})"
                          + ("" if p >= 0.8 else f", and the shortest tested length at or above 80% is {la['shortest_at_80']}" if la["shortest_at_80"] else ", and no tested length reaches 80%"))
     for scheme in ("block", "regime"):
+        cell = index.get(("gated", scheme, 500, 50, (0.10, 0.10), 0.0))
+        if cell is not None:
+            p, se = _rate(cell, "reject")
+            parts.append(f"claim B's rejection rate at 0% net-over-flag skill with 500 origins is {100 * p:.1f}% under the {scheme} scheme (SE {100 * se:.1f}; nominal 5%)")
+    for scheme in ("block", "regime"):
         la = length_answer(r, scheme, True)
         if 500 in la["power"]:
             p, se = la["power"][500]
