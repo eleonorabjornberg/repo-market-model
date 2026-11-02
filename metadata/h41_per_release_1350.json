@@ -1,0 +1,135 @@
+{
+ "status": "declared by the pull request that closes #1350 before any score was computed; a development comparison, never a verdict. The registry's reading of the H.4.1 is not changed: metadata/sources.json, metadata/h41_release_dating.json, docs/decisions/information-set.md, every published record and every published declaration are untouched. Nothing is registered or published. Whether the registry should read the weeklies per release is hers, and goes back to her as a marked question on the result page.",
+ "issue": 1350,
+ "avenue": "#1338",
+ "ruling": "Eleonora, 1 November 2026, chat, relayed (ledger item 99) on avenue #1338 and on her open question 2 on PR #1315 ('kept, revisit in step 3'): test it. Queued as #1350, a development comparison with the registry unchanged.",
+ "hypothesis": "H5 (primary goal): the SOFR - IORB spread distribution in bp. Step 3, a measurement on the candidate (s3c-ann-net) and on the arms that read the scarcity state. Development tier",
+ "target": "spread_bps at the scored day, in basis points, as a 23-quantile distribution at each lead h = 1..5 (scoring_protocol.GRID)",
+ "question": "Does reading the H.4.1 weekly series that feed the scarcity state per release (a Wednesday level is public from its Thursday 16:30 print, so from the 18:00 decision of that Thursday) change the forecasts or their scores, against the current reading (the level is public five calendar days after its Wednesday at 16:30, so from the Monday), at the 18:00 decision instant?",
+ "decision_instant": "18:00 America/New_York on the decision day (repo_model.decision_instant.DECISION_TIME, amended on 29 October 2026, #1312), pinned explicitly: the run's decision_time is checked against it and the study modules run under decision_instant_pinned (#1321's context). The panel is the published panel built at 18:00 (digest 4ddc3882...).",
+ "the_two_readings": {
+  "carried": "the registry in force (metadata/sources.json, fred_macro_latest_vintage, field_release_lags: five calendar days at 16:30 from the Wednesday), as the weekly-carry rule (docs/decisions/weekly-carry.md) and the as-of rule serve it. A decision reads a Wednesday level from the first panel row whose date is five calendar days after that Wednesday, so on the Monday.",
+  "per_release": "metadata/h41_release_dating.json (#541, #576, #625), read through repo_model.h41_release.release_dated_registry and release_dating(): a Wednesday level is public at the print of its release, the Thursday after at 16:30, or the exception date the Board moved it to (a holiday week; the declared exceptions, evidence in docs/pivot/evidence/settlement-h41-dating/). The decision at 18:00 on that Thursday (or on the moved date) reads the level. The fields are WLRRAOL, WRESBAL and WTREGEN. The five-day release lag the registry declares stays in the purge and is not the instant any read is dated by.",
+  "what_differs": "only the decisions on a Thursday and on a Friday (and on the day a release was moved to), and, where the Wednesday is a holiday with no panel row (4 July 2018), the Monday after, because the carried reading counts its five days from a row date: from the Monday on both readings otherwise serve the same level. The study therefore shows Thursday decisions and Friday decisions separately, and the Monday to Wednesday decisions beside them as the control on which the two readings must agree.",
+  "fields_that_feed_the_state": "the scarcity state (repo_model.scarcity.own_leg_states, #586) reads three legs each at its own latest public row: reserve_balances (the H.4.1's WRESBAL), bank_total_assets (the H.8) and on_rrp (the Desk). Only the first is an H.4.1 weekly, so it is the only leg the per-release reading moves; the H.8 leg and the ON RRP leg are read exactly as before in both readings. The TGA (WTREGEN) and the other H.4.1 lines are dated per release too in the variant registry, but no arm of this study reads them; the study says so rather than counting them as tested.",
+  "weekly_carry_rules": "the 13-day bound (data.WEEKLY_CARRY_MAX_STALENESS_DAYS) is the panel's own and is applied by the build of the measurement panel for both readings. The study also reports, for every state read in both readings, the age in calendar days of the level read at the decision day (the decision-day check that #1341 will make binding when it merges; #1341 is not merged, so the check is reported and the run refuses a read older than the bound, but no existing read is changed by it)."
+ },
+ "arms": [
+  {
+   "name": "sc_s3c_ann_net",
+   "label": "(s3c-ann-net)",
+   "role": "the candidate of avenue #1318 on the carried reading, as #1321 and #1356 ran it; reference. It holds the scarcity state at its maximum (s3c_net.constant_states), so it reads no H.4.1 series at all."
+  },
+  {
+   "name": "sc_s3c_ann_net_perrel",
+   "label": "(s3c-ann-net), per release",
+   "role": "(s3c-ann-net) walked inside repo_model.h41_release.release_dating() with the release-dated registry. The ruling names (s3c-ann-net); the study runs it as named and reports whether it moves. Because the state is constant it is expected to equal (s3c-ann-net) cell for cell; that is a finding, not an assumption, and the run reports the cells that differ."
+  },
+  {
+   "name": "sc_s3c_state_carried",
+   "label": "(s3c+state), carried",
+   "role": "(s3+state) of #1196 (spread_mr_state_calendar.S3_STATE: (s3)'s terms and each term times the as-of scarcity state, the Huber fit and the ridge of 5) with the SRF cap of (s3c) applied as (s3c) applies it, the state read on the carried reading. The scarcity-state arm of the avenue."
+  },
+  {
+   "name": "sc_s3c_state_perrel",
+   "label": "(s3c+state), per release",
+   "role": "the same arm with the state read per release."
+  },
+  {
+   "name": "sc_s3c_ann_net_state_carried",
+   "label": "(s3c-ann-net x state), carried",
+   "role": "the candidate's state-interacted terms: (s3c-ann-net)'s signed announced net coupon and net bill (USD 100 bn, read from the announcement at every lead) each times the as-of scarcity state / 3 (the sized arm of #1172, 'r3', on the announced net; spread_mr_state_calendar.StateArm sized=True, with the real state in place of s3c_net.constant_states), the SRF cap applied, the state read on the carried reading. Built for this comparison: it is the minimal arm on which the candidate reads the state, and the avenue asks for 'the candidate's state-interacted terms'. It is a measuring arm, not a proposal, and the page asks whether it should become one."
+  },
+  {
+   "name": "sc_s3c_ann_net_state_perrel",
+   "label": "(s3c-ann-net x state), per release",
+   "role": "the same arm with the state read per release."
+  }
+ ],
+ "references": [
+  {
+   "name": "sc_s3c_ann_net",
+   "label": "(s3c-ann-net)",
+   "role": "named by the ruling"
+  },
+  {
+   "name": "sc_s3c",
+   "label": "(s3c)",
+   "role": "the H5 candidate; named by the ruling"
+  },
+  {
+   "name": "B1",
+   "label": "B1",
+   "role": "scored beside them (means only)"
+  },
+  {
+   "name": "B1_prime",
+   "label": "B1'",
+   "role": "scored beside them (means only)"
+  },
+  {
+   "name": "B2",
+   "label": "B2",
+   "role": "scored beside them (means only)"
+  }
+ ],
+ "models": [
+  "B1",
+  "B1_prime",
+  "B2",
+  "sc_s3c",
+  "sc_s3c_ann_net",
+  "sc_s3c_ann_net_perrel",
+  "sc_s3c_state_carried",
+  "sc_s3c_state_perrel",
+  "sc_s3c_ann_net_state_carried",
+  "sc_s3c_ann_net_state_perrel"
+ ],
+ "comparisons": "each per-release arm against its carried counterpart (the question), against (s3c-ann-net) and against (s3c), paired; each carried state arm against (s3c-ann-net) and (s3c) (context: what the state arm is worth on the carried reading). (s3c-ann-net), per release, is tested against (s3c-ann-net) and (s3c), where an identical group is listed as identical and not tested.",
+ "new_read": {
+  "what": "repo_model.h41_release.require_release_read: a guard on the per-release reading, re-derived from the declaration file and not from the registry the as-of rule was served",
+  "availability": "a Wednesday level is printed at 16:30 on the Thursday after (the exception date for a week the Board moved), metadata/h41_release_dating.json. The decision at 18:00 on day D may read the level of a panel row only if its week's print is at or before 18:00 on D (else LookAheadError), and must read the latest such row (else StaleReadError).",
+  "leakage_boundary": "every scarcity-state read of the per-release run (one per scored decision day) is passed through the guard; a registry that dates a release earlier than the declaration (the recorded mutation: offset_days read as 0) makes the as-of rule serve the Wednesday level on the Wednesday and the guard raises LookAheadError",
+  "not_read_elsewhere": "no published declaration, record or live path reads it; the variant registry exists for the length of the run (release_dating() restores the as-of rule on the way out)"
+ },
+ "pairs": "direct: every walk is spread_mr_state_calendar.walk with training_pairs = 'direct' (guarded by one_step_guard with no allow-list entry; ONE_STEP_ALLOW_LIST is not changed). No gradient-boosted fit is called.",
+ "frame": {
+  "windows": "the two windows of #1255, as #1356 loads them: the development window (decision days whose five targets fall on or before 2025-12-31) and the 2026 development days (targets from 2026-01-02 to 2026-09-03, the near-blind tier open since GO #151), shown separately. The blind tier and every lockbox day are refused by the frames' own guards.",
+  "walk": "every walk runs over the same decision days as #1255's, refit every 21 decision days; a day on which any arm has no forecast is an error, not a skip.",
+  "coverage": "metadata/h41_release_dating.json covers Wednesdays up to 2026-09-02, the last week inside the window; release_instant refuses a week outside it, so the run cannot read an undeclared week."
+ },
+ "primary": {
+  "metric": "grid CRPS (23 levels) averaged over leads h = 1..5",
+  "key_secondary": "upper-tail twCRPS (weight 1{z > 0 bp})",
+  "pressure_probability": "the Brier score of P(spread > +5 bp), as in #1356",
+  "calibration": "the central 90% band's coverage is reported as a mean, not tested"
+ },
+ "scoring": {
+  "scorer": "repo_model.scoring_protocol (#655), the development tier: no verdict, no registration",
+  "test": "scoring_protocol.paired_tests, the studentized stationary bootstrap (ruling 1), mean block 10 business days, 10,000 draws, seed 1350, two-sided 90% interval (the lower end is the one-sided 95% bound); a reading is taken from the mean-d bound (her ruling on #1009), with the skill interval beside it; where the studentized bound cannot be computed the unstudentized interval of mean d is given beside it and no reading is taken from it. Lens C's caveat (the lag-10 HAC standard error is understated about 2x after 2020) is printed on the page.",
+  "splits": "all decision days; by lead; by regime; by pressure-day type of the target day; each of these again on the Thursday decisions, the Friday decisions and the Monday-to-Wednesday decisions alone (the series of a scope are the cells of that scope's decision days); both windows, so the 2026 days are separate. A group of fewer than 20 days is listed and not tested; a group in which the two models score alike on every day is listed as identical.",
+  "seed": 1350
+ },
+ "checks_reported": [
+  "the decision days on which the reserve level read differs between the two readings, by weekday of the decision; the days on which the scarcity state differs, listed with both values",
+  "the age of the level read at the decision day under both readings, against the 13-day bound",
+  "the cells (decision day, lead) on which each per-release arm differs from its carried counterpart, by weekday and lead",
+  "(s3c) and (s3c-ann-net) against #1321's record (made at 18:00): the pooled means agree to 1e-9, or the run refuses to write",
+  "the carried state of this run against repo_model's #1145 decision_states, element for element"
+ ],
+ "reading_rules": [
+  "A figure is a check on days that were already seen. Nothing here is a verdict, nothing is registered and no choice is made on it; (s3c-ann-net) stays the candidate of avenue #1318 and (s3c) the H5 candidate until she rules.",
+  "A gain or loss is read from the 90% interval of mean d excluding zero; a group that is identical is not a gain or a loss.",
+  "A small state change on few days is expected (avenue #1338: reserves move slowly); a null is reported as one.",
+  "The result is development evidence on seen days. Whether the registry should read the weeklies per release goes back to her as a marked question; it touches the final-test freeze (metadata/sources.json) and is her decision."
+ ],
+ "limits": {
+  "last_day": "2026-09-03",
+  "named_candidate": "unchanged; docs/research/h5-candidate.json is not changed",
+  "preregistration": "scripts/final_test_preregistration.py is not touched; metadata/sources.json is not edited",
+  "allow_list": "repo_model.one_step_guard.ONE_STEP_ALLOW_LIST is not changed",
+  "sources": "metadata/h41_release_dating.json is read, not changed; docs/runs/ is not touched; the only change in src/ is the added guard h41_release.require_release_read"
+ },
+ "long_run": "cloud first: six walks per window (minutes each) and the paired tests (the longer part, most groups identical or skipped). If the measured time exceeds about two hours the run goes to her Mac with a needs-mac comment (.claude/skills/long-run).",
+ "amendments": []
+}
