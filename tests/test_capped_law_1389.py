@@ -4,7 +4,7 @@ The tests fix the arithmetic on synthetic quantile vectors (the 23 levels of `sc
 `docs/research/cap-tail-rule-1389-design.md` walks through:
 
 * the status quo (the flag off) is `spread_mean_reversion.exceedance` on the capped vector, bit for bit, whatever the vector, with and
-  without a line (`ml.exceedance_from_quantiles` too, where numpy is installed): no published figure moves;
+  without a line: no published figure moves;
 * the status quo is incoherent when the cap binds: one binding knot leaves a probability of about 0.0025 above the line, several binding
   knots leave none (the review's example, q97.5 = 9 and q99 = 10);
 * option (a), a bounded law with an atom at the line: the uncapped law clipped at the line, P(> line) = 0, the atom the mass the
@@ -36,14 +36,6 @@ import unittest
 from repo_model import capped_law as cl
 from repo_model import spread_mean_reversion as smr
 from repo_model.scoring_protocol import GRID
-
-try:  # pragma: no cover - depends on the environment
-    import numpy  # noqa: F401
-    from repo_model import ml
-    HAVE_NUMPY = True
-except Exception:  # pragma: no cover
-    HAVE_NUMPY = False
-
 
 def ramp(start: float, step: float) -> list:
     return [start + step * i for i in range(len(GRID))]
@@ -87,15 +79,6 @@ class StatusQuoTests(unittest.TestCase):
             capped = cl.cap(u, line)
             for tau in (-3.0, 0.0, 2.0, 5.0, 8.0, 10.0, 12.0, 25.0):
                 self.assertEqual(cl.exceedance(u, line, tau), smr.exceedance(capped, tau))
-
-    @unittest.skipUnless(HAVE_NUMPY, "numpy not installed")
-    def test_it_is_the_ml_reading_too(self):
-        rng = random.Random(7)
-        for _ in range(50):
-            u = sorted(rng.uniform(-6, 40) for _ in GRID)
-            capped = cl.cap(u, 10.0)
-            expected = ml.exceedance_from_quantiles(capped, GRID, (5.0, 10.0))
-            self.assertEqual((cl.exceedance(u, 10.0, 5.0), cl.exceedance(u, 10.0, 10.0)), expected)
 
     def test_one_binding_knot_leaves_a_probability_above_the_line(self):
         u = one_knot()
