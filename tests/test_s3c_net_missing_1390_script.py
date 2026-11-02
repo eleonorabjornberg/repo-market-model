@@ -3,7 +3,7 @@ figure, and (s3c-ann-net) with those days read as now and with the missing class
 18:00 decision instant on both windows of #1255.
 
 Written first, against the declaration. The reader's state and the two new tables and their leakage tests are in `test_net_missing_1390`. What these tests
-pin: that the declaration names what the module has (seed, models, readings, the last day, no amendment) and that the cleared register row exists; the test
+pin: that the declaration names what the module has (seed, models, the two readings keyed as `arms`, the last day, the one recorded amendment) and that the cleared register row exists; the test
 plan; the count on hand cases (the day-level categories exclude one another, a genuine zero is not missing, a CMB announced later is counted in hindsight and
 is not a state); the per-forecast log and the missing-state groups on hand cases; the refusal to write a walk that lacks a scored day and a record whose
 references are not #1356's; the page (the marked question carries numbered options and a default); a small run of `score` and `page` end to end on the
@@ -78,11 +78,12 @@ class DeclarationTests(unittest.TestCase):
         self.assertEqual(declaration["issue"], 1390)
         self.assertEqual(script.SEED, 1390)
         self.assertIn("seed 1390", declaration["scoring"]["test"])
-        self.assertEqual([r["model"] for r in declaration["readings"]], [script.ANNNET, script.DROP])
+        self.assertEqual([r["model"] for r in declaration["arms"]], [script.ANNNET, script.DROP])
         self.assertEqual([r["name"] for r in declaration["references"]], [script.ANNNET, script.S3C, "B1", "B1_prime", "B2"])
         self.assertEqual(declaration["models"], ["B1", "B1_prime", "B2", script.S3C, script.ANNNET, script.DROP])
         self.assertEqual(declaration["limits"]["last_day"], script.LAST_DAY.isoformat())
-        self.assertEqual(declaration["amendments"], [])
+        self.assertEqual(len(declaration["amendments"]), 1)
+        self.assertIn("keyed `arms`", declaration["amendments"][0])
         self.assertIn("18:00", declaration["decision_instant"])
         self.assertEqual(sorted(declaration["states"]), sorted(
             ["source", "absent", "complete", "missing_maturing", "incomplete", "unannounced", "cmb_pending", "day_level"]))
