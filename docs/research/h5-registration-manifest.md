@@ -26,7 +26,7 @@ The candidate forecasts the SOFR minus IORB spread at leads 1 to 5 business days
 
 ## Open items the manifest records and does not settle
 
-- The study scripts take the decision instant from the environment variable `RMM_DECISION_TIME`, whose default is 16:00, while the library constant is 18:00. A registered run must set 18:00. Whether the script default moves is hers.
+- The study scripts take the decision instant from the environment variable `RMM_DECISION_TIME`, whose default is now the library constant, 18:00 (her ruling of 2 November 2026, #1397). Historical records and declarations keep the instant they were made at, and a re-run of an old record sets `RMM_DECISION_TIME=16:00` explicitly. Settled; listed here so a reader sees it moved.
 - `repo_model.srf_line.DECISION_TIME` is still the 16:00 of the dated declarations of #1241 and #1252, kept as a legacy constant (#1312). The cap reads the instant the walk passes. Re-declaring the cap's availability at 18:00 is a later directive.
 - #1389 asks for one coherent rule for the cap, the tail completion and the probabilities. The manifest records the code as it stands on main; if that rule changes any of them, the manifest and its test change with it, in that pull request.
 - Inference settings (the number of origins, the minimum skill, the bootstrap) belong to the confirmation design (#1393) and are not part of the candidate's identity.

@@ -1,7 +1,7 @@
 {
  "status": "DRAFT for her review (#1391; H5 registration design, identity). Freezing it is the registration, her own GO; until then nothing here is in force and no choice below is changed by this file. No figure changes.",
  "issue": 1391,
- "hypothesis": "H5 (primary goal), registration design (identity). Part of the H5 registration priority on #46. Her ruling of 2 November 2026 (chat, relayed): queue the new items of the second outside review; her default: the specification-search inventory goes into this manifest now.",
+ "serves": "H5 (primary goal), registration design (identity). Part of the H5 registration priority on #46. Her ruling of 2 November 2026 (chat, relayed): queue the new items of the second outside review; her default: the specification-search inventory goes into this manifest now.",
  "reading": "A choice has a value and one place where it lives: `code` (a dotted path into a repo_model module), `json` (a file and a path) or `text` (a rule written in code with no constant, and the line that holds it). tests/test_h5_registration_manifest_1391.py fails if the code, a declaration or a quoted line no longer matches. The inventory lists each study on the way to the candidate with its pull request, date, page and declaration; outcomes are the research log's own words condensed, development data, never a verdict.",
  "candidate": {
   "name": "sc_s3c_ann_net",
@@ -14,11 +14,11 @@
   "dating_declaration": "metadata/settlement_announcement_dating.json",
   "sizing_declaration": "metadata/s3c_announced_settlement_1288.json",
   "cap_declaration": "metadata/s3c_candidate_1255.json",
-  "builder": "scripts/s3c_announced_settlement_1288.py (build, extra_walks) with scripts/s3c_candidate_1255.py (s3c_forecasts); at 18:00 every command sets RMM_DECISION_TIME=18:00 (the study family's default is 16:00 and nothing else moves; see the note on the page)",
+  "builder": "scripts/s3c_announced_settlement_1288.py (build, extra_walks) with scripts/s3c_candidate_1255.py (s3c_forecasts); the study family reads the decision instant in force (18:00) unless RMM_DECISION_TIME says 16:00, which a re-run of an older record sets explicitly (#1397)",
   "freeze_target": "the code at the commit she names with her GO"
  },
  "open_items": [
-  "The study scripts read the decision instant from RMM_DECISION_TIME, default 16:00 (scripts/spread_mean_reversion_686.py, #1314); the library constant repo_model.decision_instant.DECISION_TIME is 18:00. A registered run must set 18:00; whether the script default should move is hers.",
+  "SETTLED by her ruling of 2 November 2026 (#1397): the study scripts' default decision instant (RMM_DECISION_TIME, scripts/spread_mean_reversion_686.py) is the library's 18:00 for new runs; historical records and declarations keep the instant they were made at, and a re-run of an old record sets 16:00 explicitly.",
   "repo_model.srf_line.DECISION_TIME is still the 16:00 of the dated declarations of #1241 and #1252 (tests/test_decision_instant_1312.py keeps it as a legacy constant). The cap reads the as_of the walk passes. Re-declaring the cap's availability at 18:00 is a later directive.",
   "#1389 (one coherent rule for the cap, tail completion and probabilities) may change cap_*, probability_* and the tail completion; this manifest records the code on main when it was written.",
   "#1393 (the draft confirmation-design decision record) decides the inference settings; they are not part of the candidate's identity and are not listed here."

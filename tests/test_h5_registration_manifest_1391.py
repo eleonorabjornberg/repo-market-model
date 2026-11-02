@@ -87,7 +87,7 @@ class ManifestShapeTests(unittest.TestCase):
         self.assertEqual(self.m["issue"], 1391)
         self.assertIn("draft", self.m["status"].lower())
         self.assertIn("GO", self.m["status"])
-        self.assertIn("H5", self.m["hypothesis"])
+        self.assertIn("H5", self.m["serves"])
         self.assertEqual(self.m["candidate"]["name"], json.loads(CANDIDATE.read_text(encoding="utf-8"))["candidate"])
 
     def test_choice_ids_are_unique_and_each_choice_has_one_source(self):
