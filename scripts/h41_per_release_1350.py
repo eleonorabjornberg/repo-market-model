@@ -430,7 +430,9 @@ def _score(args) -> int:
     results = m1288.load_results()
     carried, carried_reads, _dates = read_states(False)
     per_release, per_release_reads, _ = read_states(True)
-    if carried != d1145.decision_states(c.SOURCES):
+    # #1145's states end at its own last day (2025-12-31); the 2026 days need the same arithmetic to 2026-09-03.
+    theirs = d1145.decision_states(c.SOURCES)
+    if any(carried.get(d) != v for d, v in theirs.items() if d < d1145.LAST_DAY):
         raise ValueError("the carried state of this run is not #1145's decision_states")
     states = {"constant": s3c_net.constant_states(panel), "carried": carried, "per_release": per_release}
     result: dict = {
@@ -558,7 +560,7 @@ def render(r: dict) -> str:
         "the Monday. *Per release* (`metadata/h41_release_dating.json`, #541, through `repo_model.h41_release`, switched on for the length of a walk only): the "
         f"level is public at its release's print, the Thursday after at {r['release_dating']} (the Board's moved date in a holiday week), so the 18:00 "
         "decision on that Thursday reads it. The two readings serve the same level from the Monday on, so they can differ only on Thursday and Friday decisions "
-        "(and on the day a release was moved to, and on the Monday after a Wednesday that is a holiday with no panel row). Thursdays and Fridays are shown separately, with the Monday-to-Wednesday decisions beside them as the control.", "",
+        "(and on the day a release was moved to, and on the Monday after a Wednesday that is a holiday with no panel row). Thursdays and Fridays are shown separately, with the Monday-to-Wednesday decisions beside them: on those both readings serve the same state, so their forecasts can differ there only through the refits, whose training pairs include earlier Thursday and Friday states.", "",
         "**What reads the H.4.1.** The scarcity state has three legs, each read at its own latest public row: the reserve balances (the H.4.1's WRESBAL), the "
         "H.8 bank assets and ON RRP. Only the first is an H.4.1 weekly, so the per-release reading moves one leg of the state. The TGA is dated per release too "
         "in the variant registry, but no arm here reads it, so it is not tested. (s3c-ann-net) holds the state constant (`s3c_net.constant_states`) and reads no "
