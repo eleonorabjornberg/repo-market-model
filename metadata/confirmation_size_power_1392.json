@@ -141,5 +141,10 @@
    "why": "found when the power at 10% skill did not rise with the length (flat at about 20% from 250 to 1,500 origins), which a consistent test cannot do",
    "computed_before": "all block-scheme cells of the first two runs (the result.json committed at the previous commit)"
   }
- ]
+ ],
+ "variants": {
+  "block": "arm: the block scheme, a stationary resample of whole origin vectors from the pool; one of the two data-generating schemes of the study, not a model variant",
+  "regime": "arm: the regime scheme, a first-order Markov chain on the development regime labels; the second data-generating scheme, not a model variant"
+ },
+ "variants_note": "This file declares a size-and-power simulation of the #1393 draft test, not a model: no model is fitted, tuned or selected, and the candidate's origin-level losses are used as they are. The block above names the two schemes so that the count of declared arms (#803) can read the file; it changes no cell, no grid and no number, and is not an amendment."
 }
