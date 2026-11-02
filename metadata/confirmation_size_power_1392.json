@@ -132,8 +132,14 @@
   {
    "date": "2026-11-02",
    "what": "cell groups binding_observed and extension_observed added, and the lengths 1000, 1500 and 2500 for the latter",
-   "why": "the first reduced run (groups main, observed, binding, gated, extension; committed result before this amendment) put the power at 10% skill against both baselines at 23% or less at every length: the long-run variance of W against B2, which the candidate beats by about 36% in development, is several times that against B1'*, so imposing 10% on B2 (a 28% deflation of its losses) makes B2 the binding baseline at every length. That cell group is kept as declared; the added groups hold B2 as developed and impose skill on B1'* alone. Added after the figures of the first run were seen",
+   "why": "the first reduced run (groups main, observed, binding, gated, extension; committed result before this amendment) put the power at 10% skill against both baselines at 23% or less at every length: the long-run variance of W against B2, which the candidate beats by about 36% in development, is several times that against B1'*, so imposing 10% on B2 (a 28% deflation of its losses) makes B2 the binding baseline at every length. That cell group is kept as declared; the added groups hold B2 as developed and impose skill on B1'* alone. Added after the figures of the first run were seen; the regime scheme's cells of that run, which are valid, show the same limit (power at 10% against both baselines at most 13.5% up to 1500 origins)",
    "computed_before": "groups main, observed, binding, gated, extension at M=200, reps=199"
+  },
+  {
+   "date": "2026-11-02",
+   "what": "correction of a defect in the block scheme: `block_sample` returned a resample of the pool's length (2,020 origins) whatever the requested length n, so every block-scheme cell of the first reduced run and of the second run (groups binding_observed and extension_observed) was run at n = 2,020, not at the declared n. Fixed (the sample is n values drawn from the whole pool; test `test_the_block_sample_has_the_requested_length_and_draws_from_the_whole_pool`, written first and seen to fail); every block-scheme cell is re-run from the corrected script and replaces the earlier ones. No setting of the declaration changes. The regime scheme was not affected (its sampler honours n) and its cells are kept",
+   "why": "found when the power at 10% skill did not rise with the length (flat at about 20% from 250 to 1,500 origins), which a consistent test cannot do",
+   "computed_before": "all block-scheme cells of the first two runs (the result.json committed at the previous commit)"
   }
  ]
 }

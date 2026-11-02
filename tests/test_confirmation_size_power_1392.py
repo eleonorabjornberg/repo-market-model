@@ -48,6 +48,13 @@ class ArithmeticTests(unittest.TestCase):
         lengths = [length for _ in range(4000) for _s, length in script.segments(10_000, 50, rng)[:-1]]
         self.assertAlmostEqual(sum(lengths) / len(lengths), 50, delta=3)
 
+    def test_the_block_sample_has_the_requested_length_and_draws_from_the_whole_pool(self):
+        rng = random.Random(5)
+        picked = script.block_sample(500, 120, 30, rng)
+        self.assertEqual(len(picked), 120)
+        self.assertTrue(all(0 <= i < 500 for i in picked))
+        self.assertGreater(len({i for _ in range(20) for i in script.block_sample(500, 120, 30, rng)}), 150)
+
     def test_a_resample_has_n_values(self):
         rng = random.Random(2)
         self.assertEqual(sum(length for _s, length in script.segments(317, 20, rng)), 317)
@@ -125,7 +132,7 @@ class DeclarationTests(unittest.TestCase):
         self.assertEqual(self.declaration["grid"]["hac_lag"], script.HAC_LAG)
         self.assertEqual(self.declaration["seed"], script.SEED)
         self.assertEqual(script.THRESHOLD, 0.03)
-        self.assertEqual([a["date"] for a in self.declaration["amendments"]], ["2026-11-02"])
+        self.assertEqual([a["date"] for a in self.declaration["amendments"]], ["2026-11-02", "2026-11-02"])
 
     def test_every_mode_names_only_declared_groups_and_the_full_mode_adds_the_sensitivities(self):
         groups = {c["group"] for c in script.cells_of(self.declaration)}

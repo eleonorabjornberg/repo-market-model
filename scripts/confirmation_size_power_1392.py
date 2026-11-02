@@ -70,15 +70,17 @@ def hac_se(values: Sequence[float], lag: int) -> float:
     return math.sqrt(variance / n) if variance > 0.0 else 0.0
 
 
-def segments(n: int, ell: float, rng: random.Random) -> List[tuple]:
-    """A stationary resample of range(n) as (start, length) runs over the doubled series; geometric lengths of mean `ell`, the last one cut."""
+def segments(n: int, ell: float, rng: random.Random, pool: Optional[int] = None) -> List[tuple]:
+    """A stationary resample of `n` values drawn from range(pool) (default: range(n)) as (start, length) runs over the doubled series; geometric lengths
+    of mean `ell`, the last one cut."""
 
+    pool = n if pool is None else pool
     keep = 1.0 / ell
     out, total = [], 0
     while total < n:
         length = 1 if keep >= 1.0 else 1 + int(math.log(1.0 - rng.random()) / math.log1p(-keep))
         length = min(length, n - total)
-        out.append((rng.randrange(n), length))
+        out.append((rng.randrange(pool), length))
         total += length
     return out
 
@@ -152,7 +154,7 @@ def regime_chain(regimes: Sequence[str]) -> dict:
 
 def block_sample(pool_size: int, n: int, gen_block: float, rng: random.Random) -> List[int]:
     out: List[int] = []
-    for start, length in segments(pool_size, gen_block, rng):
+    for start, length in segments(n, gen_block, rng, pool_size):
         out += [(start + j) % pool_size for j in range(length)]
     return out
 
@@ -312,7 +314,7 @@ def run(args) -> int:
     pool = load_losses(Path(args.losses))
     cells = cells_of(decl)
     wanted = args.only.split(",") if args.only else mode["groups"]
-    cells = [c for c in cells if c["group"] in wanted]
+    cells = [c for c in cells if c["group"] in wanted and (not args.schemes or c["scheme"] in args.schemes.split(","))]
     jobs = []
     chunk = max(1, mode["M"] // 20)
     for cell in cells:
@@ -341,10 +343,10 @@ def run(args) -> int:
               "chain": regime_chain(pool["regime"]), "cells": []}
     fresh = [dict(cell, **totals[cell["key"]]) for cell in cells]
     out_path = Path(args.out)
-    if args.only and out_path.exists():
+    if (args.only or args.schemes) and out_path.exists():
         before = json.loads(out_path.read_text(encoding="utf-8"))
         if (before["M"], before["reps"], before["seed"]) != (result["M"], result["reps"], result["seed"]):
-            raise SystemExit("--only adds cells to an existing result of the same M, reps and seed")
+            raise SystemExit("--only and --schemes add cells to an existing result of the same M, reps and seed")
         kept = [c for c in before["cells"] if c["key"] not in {f["key"] for f in fresh}]
         result["cells"] = kept + fresh
     else:
@@ -552,6 +554,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     r.add_argument("--mode", choices=("reduced", "full"), default="reduced")
     r.add_argument("--workers", type=int, default=4)
     r.add_argument("--only", default="", help="comma list of cell groups (main, observed, binding, gated, extension, sensitivity); default: the mode's own")
+    r.add_argument("--schemes", default="", help="comma list of schemes (block, regime) to run, merged into an existing result")
     r.set_defaults(func=run)
     g = sub.add_parser("page")
     g.add_argument("--result", required=True)
