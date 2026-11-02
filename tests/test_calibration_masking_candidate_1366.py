@@ -95,6 +95,13 @@ class ClosureTests(unittest.TestCase):
         hits = script.forbidden_hits({"m": "settings['calibration_masking'] = 'held_out_row'\n"})
         self.assertEqual([hit.split(": ")[1] for hit in hits], ["calibration_masking"])
 
+    def test_a_docstring_or_comment_that_names_a_token_is_not_code(self):
+        source = '"""cross_conformal is mentioned here."""\n\ndef f():\n    """calibration_masking too."""\n    return 1  # cross_conformal\n'
+        self.assertEqual(script.forbidden_hits({"m": source}), [])
+
+    def test_a_keyword_argument_is_code(self):
+        self.assertEqual(script.forbidden_hits({"m": "f(x, calibration_masking='held_out_row')\n"}), ["m: calibration_masking"])
+
     def test_a_clean_module_is_clean(self):
         self.assertEqual(script.forbidden_hits({"m": "def f():\n    return 1\n"}), [])
 

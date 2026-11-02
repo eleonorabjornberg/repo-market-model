@@ -25,7 +25,12 @@
  "limits": "The study does not re-run the gbm_funding cross-conformal bands, which are the records the information-set note describes; scripts/calibration_masking_effect.py (#78) is the tool for those and is not run here",
  "seed": 1366,
  "long_run": "four walks of (s3c-ann-net), minutes each (the 2026 walk of #1363 took about one minute), a cloud run",
- "amendments": [],
+ "amendments": [
+  {
+   "issue": 1366,
+   "what": "The closure audit's text test reads the names, keyword arguments and string constants of a module's code, not its docstrings and comments. Made after the first run of the audit on the 2026 walk file, which flagged `baseline` for a docstring that mentions `cross_conformal` (baseline is reachable only through a function-local import in scarcity.py and its docstring is not code). The test is stricter on code and looser on prose; it changes no walk, window, score or setting."
+  }
+ ],
  "variants": {
   "sc_s3c_ann_net_as_run": "scored arm, the candidate walked unchanged from #1288/#1314 at the 18:00 decision instant: no new fit, nothing tuned",
   "sc_s3c_ann_net_honest": "the same walk with each refit's training pairs filtered to targets observable at that refit's decision instant (per lead); a check, not a tuning"

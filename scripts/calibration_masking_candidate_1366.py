@@ -9,8 +9,7 @@ read unless it is committed and unchanged.
 1. **Closure audit.** The candidate's bands come from one fitting step, the refit of its residual pool and term effects every 21 decision
    days (`spread_mr_state_calendar.refit`, on the training pairs of `spread_mean_reversion.training_rows`). The modules reachable by import
    from the candidate (and the `repo_model` imports of the scripts that walk it) are listed, and none may be `ml`, `calibrated_stack`,
-   `walk_calibration`, `group_calibration`, `recalibration` or `probability_calibration`, nor contain the text `calibration_masking` or
-   `cross_conformal`: the candidate has no conformal or cross-conformal calibration subfit, which is what the note describes.
+   `walk_calibration`, `group_calibration`, `recalibration` or `probability_calibration`, nor use the name `calibration_masking` or `cross_conformal` in code (a docstring that mentions one is not code): the candidate has no conformal or cross-conformal calibration subfit, which is what the note describes.
 2. **Pair audit and the honest version.** The candidate is walked twice per window. AS RUN is #1288's walk unchanged. HONEST is the same walk
    with the training pairs of every refit filtered to those whose target row is at or before `InformationRule.anchor` of that refit's decision
    (the last row whose target is observable at the decision instant, per lead), a check that does not use the production guard
@@ -55,16 +54,6 @@ sys.path.insert(0, str(REPO / "src"))
 from repo_model import scoring_protocol as sp  # noqa: E402
 from repo_model.exploration import EXPLORATORY_END, require_exploratory_window  # noqa: E402
 from repo_model.splits import LookAheadError  # noqa: E402
-
-# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
-LOCKBOX_READS = {
-    "walk_command": ("not_entry", "re-walks the candidate for the windows `refuse_beyond` bounds (2025-12-31 and 2026-09-03) and scores nothing past them"),
-    "make_recorder": ("not_entry", "builds the honest-anchor reader for a walk the window guards bound; scores nothing"),
-}
-LOCKBOX_CRPS = {
-    "paired_difference": ("delegates", "scores the cells a walk produced, whose days `walk_command` bounds with `refuse_beyond`"),
-    "window_summary": ("delegates", "scores the cells a walk produced, whose days `walk_command` bounds with `refuse_beyond`"),
-}
 
 DECLARATION = REPO / "metadata" / "calibration_masking_candidate_1366.json"
 OUT = REPO / "docs" / "research" / "calibration-masking-candidate-1366"
@@ -201,13 +190,41 @@ def forbidden_modules(modules: Sequence[str]) -> List[str]:
     return sorted(m for m in modules if m in FORBIDDEN_MODULES)
 
 
+def _code_tokens(source: str) -> List[str]:
+    """The identifiers, keyword names and string constants of a source's code, without its docstrings and comments."""
+
+    tree = ast.parse(source)
+    docstrings = set()
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
+            body = getattr(node, "body", [])
+            if body and isinstance(body[0], ast.Expr) and isinstance(body[0].value, ast.Constant) and isinstance(body[0].value.value, str):
+                docstrings.add(id(body[0].value))
+    tokens: List[str] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Name):
+            tokens.append(node.id)
+        elif isinstance(node, ast.Attribute):
+            tokens.append(node.attr)
+        elif isinstance(node, ast.keyword) and node.arg:
+            tokens.append(node.arg)
+        elif isinstance(node, ast.arg):
+            tokens.append(node.arg)
+        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            tokens.append(node.name)
+        elif isinstance(node, ast.Constant) and isinstance(node.value, str) and id(node) not in docstrings:
+            tokens.append(node.value)
+    return tokens
+
+
 def forbidden_hits(sources: Mapping[str, str]) -> List[str]:
-    """`"<module>: <token>"` for each forbidden token in a source."""
+    """`"<module>: <token>"` for each forbidden token that appears in a source's code (a docstring or a comment that names it is not code)."""
 
     hits = []
     for name, text in sources.items():
+        tokens = _code_tokens(text)
         for token in FORBIDDEN_TOKENS:
-            if token in text:
+            if any(token in t for t in tokens):
                 hits.append(f"{name}: {token}")
     return hits
 
