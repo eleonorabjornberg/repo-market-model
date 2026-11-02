@@ -12,6 +12,10 @@ quantiles of `scoring_protocol.GRID` at leads h = 1..5, made at the decision ins
   declaration. Scored on its own five levels against the candidate's same five, as a
   secondary comparison (`b3_forecast`; ruling of 13 October 2026, PR #660).
 
+**B1* (#1388, development tier, not a benchmark of the protocol).** `b1_anchor_forecast` counts the change from the last public
+anchor to the target, `h + lag` rows (`anchor_lag`), where B1 counts `h`; `b1_calendar.b1_calendar_anchor_forecast` is B1'*. Whether
+they replace B1 and B1' is Eleonora's.
+
 **What is read, and when.** The decision for lead h on decision row `t` is the forecast of row
 `t + h` under `InformationRule(horizon=h)`, so every lead of one decision day shares one
 decision instant and one anchor: the latest row whose spread was public at it. Both guards of
@@ -154,6 +158,63 @@ def _window_start(panel: Sequence[DailyObservation], decision_index: int, years:
         if row.date > start:
             return index
     raise ProtocolError(f"no row after {start}")
+
+
+def anchor_lag(
+    panel: Sequence[DailyObservation],
+    decision_index: int,
+    registry: Mapping[str, Mapping[str, object]],
+    decision_time: time,
+) -> int:
+    """The lag of the decision on row `decision_index`, in panel rows: the decision row less the anchor row (#1388).
+
+    The anchor is the last public row, so on an ordinary day it is the row before the decision day (a lag of 1) and the
+    elapsed horizon from the anchor to the target row `decision_index + h` is `h + lag`. B1* and B1'* count the change
+    over that span; B1 and B1' count `h`.
+    """
+
+    return decision_index - _anchor(panel, decision_index, registry, decision_time)
+
+
+def b1_anchor_forecast(
+    panel: Sequence[DailyObservation],
+    decision_index: int,
+    *,
+    registry: Mapping[str, Mapping[str, object]],
+    decision_time: time,
+) -> Dict[int, List[float]]:
+    """B1*: B1 with the change window anchor-to-target (#1388; development tier, `metadata/b1_anchor_horizon_1388.json`).
+
+    The last public spread plus the trailing two years' changes over `h + lag` rows, `spread[s] - spread[s - h - lag]` for every
+    row `s` in the window up to the anchor, where `lag` is `anchor_lag`. Everything else is B1's: the window, the centre and the
+    guard. It is not a benchmark of the protocol; whether it replaces B1 is Eleonora's.
+
+    Mutation record: see `tests/test_b1_anchor_horizon_1388.py`.
+    """
+
+    anchor = _anchor(panel, decision_index, registry, decision_time)
+    lag = decision_index - anchor
+    dates = [row.date for row in panel]
+    first = _window_start(panel, decision_index, B1_YEARS)
+    last = panel[anchor].spread_bps
+    out = {}
+    for h in HORIZONS:
+        span = h + lag
+        ends = [s for s in range(max(first, span), anchor + 1)]
+        if not ends:
+            raise ProtocolError(f"B1* has no {span}-day change before {dates[anchor]}")
+        _require_public(ends, anchor, dates, f"B1* for {dates[decision_index]}, lead {h}")
+        changes = sorted(panel[s].spread_bps - panel[s - span].spread_bps for s in ends)
+        out[h] = empirical_quantiles(changes, last)
+    return out
+
+
+def b1_calendar_anchor_forecast(panel: Sequence[DailyObservation], decision_index: int, **settings) -> Dict[int, List[float]]:
+    """B1'*: `b1_calendar.b1_calendar_anchor_forecast`, reachable from here beside B1* (#1388)."""
+
+    from . import b1_calendar  # b1_calendar imports this module
+
+    return b1_calendar.b1_calendar_anchor_forecast(panel, decision_index, **settings)
 
 
 def b1_forecast(
