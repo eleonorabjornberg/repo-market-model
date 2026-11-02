@@ -15,18 +15,18 @@ Recorded mutations (each applied to the tree, the named test run, and reverted):
 * `read_reserves`: `if row > decision_index:` replaced with `if row > decision_index + 1:`, so the reserve value of the day after the
   decision is admitted. `ReserveTests.test_a_reserve_read_after_the_decision_is_refused` failed with `AssertionError`
   (`LookAheadError` not raised).
-* `ReserveTable.__init__`: `rule.information_set(dates, row + 1)` replaced with `rule.information_set(dates, row + 2)`, so the decision
-  reads one panel day later than it was made. `ReserveTests.test_a_wednesday_decision_does_not_see_the_wednesday_level` failed with
-  `AssertionError` (the reserve value read on 2021-11-10 was the one public a day later).
+* `ReserveTable.__init__`: `panel[read.row].values.get(RESERVE_COLUMN)` replaced with `panel[row].values.get(RESERVE_COLUMN)`, so a decision reads
+  its own row's level, which is public only after the decision. `ReserveTests.test_a_wednesday_decision_does_not_see_the_wednesday_level` failed with
+  `AssertionError` (`4.169041 != 4.086336`: the Wednesday level was read on the Wednesday).
 * `fit_quantile_regression`: delete the `@guard_one_step_fit` line. `GuardTests.test_a_one_step_fit_of_a_calendar_column_is_refused_by_the_guard`
   failed with `AssertionError` (the `ValueError` raised was the function's own "direct pairs only", not the guard's message naming the
   column).
-* `refit`: `flags_at(h, target)` replaced with `flags_at(h, origin)`, so a flag is read from the pair's origin, not from the
-  target (a calendar column learned one row off). `TargetDayTests.test_a_quarter_end_target_is_forecast_higher_than_an_ordinary_one`
-  failed with `AssertionError` (the quarter-end target's median was not above the ordinary target's).
+* `refit`: `flags_at(h, target)` replaced with `flags_at(h, origin)`, so a flag is read from the pair's origin, not from the target (a calendar
+  column learned one row off). `TargetDayTests.test_a_quarter_end_target_is_forecast_higher_than_an_ordinary_one` failed with `AssertionError`
+  (the quarter-end target's median was 5.85 against 2.04, not above it by 8 bp).
 * `training_pairs`: `for target in range(k, anchor + 1)` replaced with `range(k, anchor + 2)`, so a pair's target is the first row not yet
-  public. `CausalityTests.test_a_forecast_ignores_what_is_public_only_after_the_decision` failed with `LookAheadError` (raised by
-  `protocol_benchmarks._require_public`, naming the row after the anchor).
+  public. `CausalityTests.test_a_forecast_ignores_what_is_public_only_after_the_decision` and `test_a_pair_never_ends_after_the_anchor` both
+  errored with `LookAheadError` (raised by `protocol_benchmarks._require_public`, naming the row after the anchor).
 """
 
 from __future__ import annotations
