@@ -521,6 +521,26 @@ def differ_table(differ: Mapping[str, dict], model: str) -> List[str]:
     return out
 
 
+def largest_change(r: Mapping[str, object]) -> Dict[str, dict]:
+    """For each window, the per-release arm and group with the largest absolute relative change in grid CRPS against its carried counterpart, among the
+    tested groups (an identical group has none)."""
+
+    out: Dict[str, dict] = {}
+    for window, w in r["windows"].items():
+        best = {"skill": 0.0}
+        for scope, splits in w["groups"].items():
+            for split, labels in splits.items():
+                for label, g in labels.items():
+                    for arm, ref in COUNTERPART.items():
+                        row = g.get("grid_crps", {}).get("vs", {}).get(arm, {}).get(ref)
+                        if row is None or row.get("identical") or row.get("skill") is None:
+                            continue
+                        if abs(row["skill"]) > abs(best["skill"]):
+                            best = {"skill": row["skill"], "arm": arm, "scope": scope, "split": split, "label": label, "days": g["days"]}
+        out[window] = best
+    return out
+
+
 def answer(r: Mapping[str, object]) -> List[str]:
     """The plain answer, built from the intervals: does reading the weeklies per release move the forecasts or their grid CRPS, on Thursdays and Fridays."""
 
@@ -541,6 +561,11 @@ def answer(r: Mapping[str, object]) -> List[str]:
                     parts.append(f"{title.replace(' decisions', '')}: {cell(_vs(g, 'grid_crps', arm, ref))}")
             n_cells = sum(sum(v.values()) for v in w["cells_differ"][f"{arm}|{ref}"]["differing_cells"].values())
             out.append(f"- {SHORT[arm]} against {SHORT[ref]} ({n_cells} forecast cells differ): " + "; ".join(parts) + ".")
+        big = largest_change(r)[window]
+        if "arm" in big:
+            out.append(f"- Size: the largest relative change in grid CRPS from the per-release reading, over every tested group of this window, is "
+                       f"{big['skill']:+.2%} ({SHORT[big['arm']]}, {SCOPE_TITLES[big['scope']].lower()}, {big['split'].replace('_', ' ')}: {big['label']}, "
+                       f"{big['days']} days). A reading of 'gain' or 'loss' says that the interval of mean d excludes zero; it is not a size.")
         out.append("")
     return out
 
@@ -579,7 +604,11 @@ def render(r: dict) -> str:
     out += answer(r)
     out += ["## What the per-release reading moves in the state", "",
             "The decisions at which the two readings read the reserve level of a different week, and at which the scarcity state differs, by weekday of the "
-            "decision (both windows, every scored decision day).", ""] + state_table(check) + [""]
+            "decision (both windows, every scored decision day).", ""] + state_table(check) + [
+            "", "On a Monday where the readings differ, the Wednesday five days before is not a panel day (a holiday, for example 4 July 2018): the carried "
+            "reading counts its five days from a row date and so reads the row before the holiday, while the per-release reading reads the print of the week. "
+            "`test_h41_per_release_read_1350` pins this for the 2018 start of the range; for the whole range it was checked with the same function when this "
+            "page was written, and the record does not list those Mondays.", ""]
     if check["state_changes"]:
         out += ["The decisions at which the state differs:", "", "| decision day | weekday | carried | per release |", "|---|---|---|---|"]
         out += [f"| {x['decision_day']} | {x['weekday']} | {x['carried']} | {x['per_release']} |" for x in check["state_changes"]] + [""]
