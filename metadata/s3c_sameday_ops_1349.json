@@ -1,0 +1,102 @@
+{
+ "status": "declared by the pull request that closes #1349 before any score was computed; a development study, never a verdict. (s3c-ann-net) stays the candidate of avenue #1318 and (s3c) stays the H5 candidate: nothing here changes either. Nothing is registered or published: no record in docs/runs/ is edited, the live record and its pin do not change, no declaration already merged changes (metadata/sources.json, metadata/sources_measurement.json, metadata/s3c_announced_settlement_1288.json, metadata/s3c_flagnet_gross_1321.json, metadata/net_settlement.json and docs/decisions/information-set.md included), docs/research/h5-candidate.json and scripts/final_test_preregistration.py do not change, no day after 2026-09-03 is scored and no lockbox day is scored. Amendments made after a number was computed are listed in `amendments`; there are none.",
+ "issue": 1349,
+ "avenue": "#1337",
+ "ledger": "item 98",
+ "ruling": "Eleonora, 1 November 2026, chat, relayed on #1337: \"use the same day and test it\". Queued as #1349: a development arm, the 18:00 availability shown first; whether the same-day reading enters a published declaration comes back to her as a marked question and the registry is not changed here.",
+ "hypothesis": "H5 (primary goal): the SOFR - IORB spread distribution in bp. Step 3, one arm on the candidate (s3c-ann-net). Development tier",
+ "target": "spread_bps at the scored day, in basis points, as a 23-quantile distribution at each lead h = 1..5 (scoring_protocol.GRID)",
+ "why": "#442 tested the same-day reading of the Desk's repo operation results only under the retired +5 bp judge, on a hierarchical logistic, and found no gain; it has never been scored on a spread distribution or on a model of the (s3) family. Nothing in the (s3) family reads ON RRP or SRF take-up. SRF use became frequent and large in late 2025 and 2026 with ON RRP near zero, the regime where the candidate's calibration matters most and where the 2026 development days sit. fed_liquidity keeps the 16:00 reading and leaves open whether to re-read the same-day take-up at the new decision instant (comment on its DECISION_TIME, #1315).",
+ "decision_instant": "18:00 America/New_York on the decision day (repo_model.decision_instant.DECISION_TIME, amended on 29 October 2026, #1312). Every walk of this study, the references included, is made at that instant and the instant is pinned for the run (scripts/s3c_flagnet_gross_1321.decision_instant_pinned, as in #1326); no record made at 16:00 is edited.",
+ "availability": {
+  "evidence": "docs/research/s3c-sameday-ops-1349/availability.json, written by `scripts/s3c_sameday_ops_1349.py availability` from the tracked snapshots (tests/fixtures/snapshots/on_rrp_inputs/nyfed_on_rrp and tests/fixtures/snapshots/srf_inputs/nyfed_srf) and committed before any score. The Desk's own data are the evidence: each operation record states its close time (closeTime) and the time it was last written (lastUpdated). The Desk states no publication clock time for its results.",
+  "rule": "a date's figure is public at the decision instant of its own day when the latest lastUpdated of the records it sums is at or before 18:00 New York on that day. A record cannot have been first written later than its last write, and the API is assumed to serve a record from the time it is written (not verifiable from outside; the same assumption as nyfed_on_rrp_sameday and nyfed_repo_ops_sameday). A date written after the instant, or rewritten later (first publication not visible), is withheld and reads as no take-up, which is how fed_liquidity reads a withheld date.",
+  "sources_used": "both. The ruling: if either is not reliably out by 18:00, use only the one that is. The evidence file records, for each of ON RRP and the SRF, the share of operation dates public by 18:00 on their own day, the hours of the last writes and the margin of the closest one to the instant; the sources are used when that share is 99% or more. The result is stated on the page and in availability.json (`used`).",
+  "not_changed": "metadata/sources.json and metadata/sources_measurement.json are not edited: nyfed_repo_ops_sameday (16:00) and nyfed_on_rrp_sameday (15:00) stay as declared and off in every published declaration; the 18:00 reading is a development reading made by repo_model.same_day_operations."
+ },
+ "candidates": [
+  {
+   "name": "sc_s3c_ann_net_sameday",
+   "label": "(s3c-ann-net-sameday)",
+   "definition": "(s3c-ann-net) of #1288 (the announced net settlement per leg, in USD 100 bn, scarcity state held at its maximum; repo_model.s3c_announced.ANN_NET_ARM) with three extra terms of the decision day D = T - h, read at every lead h = 1..5: srf_flag, 1 when the overnight Standing Repo Facility take-up on D is above zero; srf_size, that take-up in units of USD 100 bn; on_rrp_change, the ON RRP amount accepted on D less that on the previous panel day, in units of USD 100 bn. A term enters a lead's fit when at least three training pairs carry it non-zero. Everything else is (s3)'s: the other terms, the Huber fit (k = 1.345), the ridge of 5, the pool of standardised residuals and the direct pairs; the SRF cap at the line from full allotment, margin 0 bp, is applied to its quantiles exactly as to (s3)'s (repo_model.s3c_candidate, unchanged).",
+   "module": "repo_model.same_day_operations (SAMEDAY_ARM = ANN_NET_ARM with extra = OPS_EXTRAS; SameDayOperationTerms is the table walk reads through its iorb argument); the fit is repo_model.spread_mr_state_calendar's with its extra terms generalised to the three names (OPS_EXTRAS, EXTRA_TERMS); no behaviour of an existing arm changes",
+   "units": "srf_flag: 0/1; srf_size, on_rrp_change: USD 100 bn (a USD 25 bn take-up reads 0.25; the sign of the ON RRP change is kept); effect reported in bp per flagged day and bp per USD 100 bn"
+  }
+ ],
+ "new_read": {
+  "what": "the Desk's own operation results for the decision day: the overnight SRF take-up (the operations and amount of ingest._nyfed_srf_rows) and the ON RRP amount accepted (the sum of ingest._nyfed_on_rrp_rows)",
+  "leakage_boundary": "repo_model.same_day_operations.SameDayOperationTerms.read re-derives the three terms from the day figures at the decision instant and compares them with the figures the table serves: a figure that counts a record last written after the instant raises LookAheadError, one that leaves a public record out raises StaleReadError. tests/test_same_day_operations_1349.py holds the leakage test with one recorded mutation (the instant of the figure taken from the target day instead of the decision day; LookAheadError). A training figure and a forecast figure are the same function of the same records (at(lead, row) equals read(lead, row - lead)).",
+  "not_read_elsewhere": "no published declaration, record or live path reads it"
+ },
+ "references": [
+  {
+   "name": "sc_s3c",
+   "label": "(s3c)",
+   "role": "the H5 candidate, re-run at 18:00 in the same run (the frame of #1255)"
+  },
+  {
+   "name": "sc_s3c_ann_net",
+   "label": "(s3c-ann-net)",
+   "role": "the candidate of avenue #1318, re-run at 18:00 in the same run; the reference the arm is first measured against"
+  }
+ ],
+ "pairs": "direct: the terms are a state of the decision day read at the decision, and the fit trains on direct pairs with training_pairs = 'direct' (spread_mr_state_calendar.fit_state_terms is guarded by one_step_guard with no allow-list entry; repo_model.one_step_guard.ONE_STEP_ALLOW_LIST is not changed); the provisional-register row is metadata/provisional/cleared/s3c_sameday_ops_1349.json",
+ "frame": {
+  "windows": "the two windows of #1255, loaded as #1255 loads them: the development window (decision days whose five targets fall on or before 2025-12-31) and the 2026 development days (decision days whose five targets fall from 2026-01-02 to 2026-09-03, the near-blind tier open since GO #151). The 2026 days are reported on their own, as a window",
+  "walk": "(s3) is #1145's walk (refit every 21 decision days, direct pairs); every walk of this study starts on the same first decision day and runs over the same decision days as #1255's, so the arms are compared on the same days. The study refuses to write a record unless every scored decision day has a forecast of every model",
+  "guards": "a scored decision day or target day passes lockbox.require_unlocked through spread_mean_reversion_686.require_scored_days with the last day of the window; the blind tier (from 2026-09-04) and every lockbox day are refused; the operation tables are read only for panel dates, which end at the last unlocked day"
+ },
+ "arms": [
+  {
+   "name": "sc_s3c",
+   "role": "(s3c), the H5 candidate; reference",
+   "margin_bp": 0.0
+  },
+  {
+   "name": "sc_s3c_ann_net",
+   "role": "(s3c-ann-net), the candidate of avenue #1318; reference",
+   "margin_bp": 0.0
+  },
+  {
+   "name": "sc_s3c_ann_net_sameday",
+   "role": "(s3c-ann-net-sameday), the arm",
+   "margin_bp": 0.0
+  }
+ ],
+ "models": [
+  "sc_s3_robust",
+  "sc_s3c",
+  "sc_s3c_ann_net",
+  "sc_s3c_ann_net_sameday"
+ ],
+ "primary": {
+  "metric": "grid CRPS (23 levels) averaged over leads h = 1..5",
+  "key_secondary": "upper-tail twCRPS (weight 1{z > 0 bp})",
+  "pressure_probability": "the Brier score of P(spread > +5 bp), the probability read off the 23 quantiles as 1 - F(floor(tau) + 0.5), F linear between them (spread_mean_reversion.exceedance), the event strict and on whole basis points (data.exceeds_bp)",
+  "calibration": "the coverage of the central 90% band (q5 to q95, closed) of every model, pooled and by regime; a rate, reported as a mean and not tested",
+  "comparisons": "the arm against (s3c-ann-net) (the candidate) and against (s3c), paired; the benchmarks B1, B1' and B2 are not part of this directive's comparisons and are not re-scored here"
+ },
+ "scoring": {
+  "scorer": "repo_model.scoring_protocol (#655), the development tier: no verdict, no registration",
+  "test": "scoring_protocol.paired_tests, the studentized stationary bootstrap (ruling 1), mean block 10 business days, 10,000 draws, seed 1349, two-sided 90% interval (the lower end is the one-sided 95% bound); the skill interval and the studentized interval on mean d are reported for every tested row; where the studentized bound cannot be computed the unstudentized percentile interval of mean d is given beside it, with no reading taken from it",
+  "reading": "a reading is taken from the mean-d bound (her ruling on #1009): the arm is read better than a reference when the lower end of the 90% interval of mean d is above zero, worse when the upper end is below zero, otherwise undecided. Lens C's caveat (the lag-10 HAC standard error is understated about 2x after 2020) is stated on the page",
+  "splits": "pooled; by lead; by regime (the declared regimes, 2018-19 and 2020 on their own among them); by pressure-day type of the target day (turn_days.reporting_day_type, the record in force); by the decision day's own take-up (SRF take-up above zero or not; the ON RRP amount moved by USD 10 bn or more or not). The 2026 development days are the second window and carry the same splits. The intervals of a group of days keep the current method (the group's days, scattered, resampled in date order as if consecutive), which #1221 questions and #1228 will decide",
+  "identical_groups": "a group in which the arm's score equals the reference's on every day is listed as identical and not tested against it; a group of fewer than 20 days is listed and not tested",
+  "seed": 1349
+ },
+ "reading_rules": [
+  "A figure is a check on days that were already seen. Nothing here is a verdict, nothing is registered and no choice is made on it; (s3c-ann-net) stays the candidate of avenue #1318 and (s3c) the H5 candidate until she rules.",
+  "A gain or loss is read from the 90% interval of mean d excluding zero; otherwise undecided. A point estimate alone is not read.",
+  "A pooled figure is never read without the lead, regime and take-up splits beside it.",
+  "Whether the same-day reading enters a published declaration, or the arm goes back to her as a candidate, is a marked question with numbered options and a default that changes no claim; the registry is not changed in this directive."
+ ],
+ "limits": {
+  "last_day": "2026-09-03",
+  "named_candidate": "unchanged; docs/research/h5-candidate.json is not changed",
+  "preregistration": "scripts/final_test_preregistration.py is not touched; test_final_test_freeze and test_live_score_freeze are run before the push",
+  "allow_list": "repo_model.one_step_guard.ONE_STEP_ALLOW_LIST is not changed",
+  "sources": "metadata/sources.json, metadata/sources_measurement.json, the settlement-dating and net-settlement declarations and docs/decisions/information-set.md are not changed; no declaration already merged and no page already merged is changed; docs/runs/ is not touched; fed_liquidity, ingest, spread_mr_calendar and s3c_announced are not edited; spread_mr_state_calendar gains the names of the take-up extras and changes no existing arm's behaviour"
+ },
+ "long_run": "cloud first: one walk of the reference and the arm per window (minutes each) and the paired tests of the arm against two references on about thirty groups and three metrics per window (the longer part). If the measured time on a subset says the full run exceeds about two hours, the run goes to the Mac as a `needs-mac:` comment",
+ "amendments": []
+}
