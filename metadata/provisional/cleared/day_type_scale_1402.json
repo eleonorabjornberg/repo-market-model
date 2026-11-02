@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/day_type_scale_1402.json",
+  "script": "scripts/day_type_scale_1402.py",
+  "pairing": "direct",
+  "why": "(s3c-ann-net-typed) and (s3c-ann-net-pooled): (s3c-ann-net) with its residual pool rescaled by a multiplier per pressure-day type of the target day. The fit is (s3)'s estimation routine, spread_mr_state_calendar.walk with training_pairs = direct (guarded by one_step_guard with no allow-list entry), unchanged, and no gradient-boosted fit is called, so the study is not provisional; the arms add no fit, only a ratio of second moments of that fit's own residuals over training pairs whose target is at or before the anchor (repo_model.day_type_scale, leakage-tested), the type of a day is a calendar function of its date read at the target day, and the settlement terms are those of (s3c-ann-net) (each figure counting an auction only when it was announced at or before the decision instant); no outcome after the anchor is an input"
+}
