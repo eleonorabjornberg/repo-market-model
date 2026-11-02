@@ -27,6 +27,11 @@ One record per effective date holds what was fetched, as fetched:
 
 A day's file is written once and never overwritten (`write_first_print`).
 
+**A missed day** (#1404). A day whose print was not kept by its revision instant is lost and never back-filled. The
+days that were lost are listed in `metadata/sofr_missed_first_prints.json` (date and reason), so the confirmation's
+rule for missing outcomes can count them. `unflagged_misses` names the business days that are due (their revision
+instant has passed), have no file and are not on the list; `read_missed` refuses a list that contradicts the branch.
+
 Stdlib only.
 """
 
@@ -44,17 +49,23 @@ from .data import market_holidays, next_business_day
 from .splits import LookAheadError
 
 __all__ = [
+    "FIRST_EFFECTIVE",
     "FIRST_PRINT_KEYS",
+    "MISSED_LIST",
     "IORB_TABLE",
     "PUBLICATION_TIME",
     "REVISION_TIME",
+    "captured_days",
     "check_first_print",
+    "due_days",
     "first_print_record",
     "iorb_source",
     "latest_published",
     "publication_instant",
     "read_all",
+    "read_missed",
     "revision_instant",
+    "unflagged_misses",
     "write_first_print",
 ]
 
@@ -81,6 +92,11 @@ IORB_KEYS = ("source", "rate_percent", "effective_date", "announced_at", "implem
 IORB_TABLE = (
     Path(__file__).parents[2] / "tests" / "fixtures" / "snapshots" / "fed-iorb-announcements" / "iorb_changes.csv"
 )
+
+
+#: The first effective date the capture kept (published 20 October 2026, the morning after the workflow's merge).
+FIRST_EFFECTIVE = date(2026, 10, 19)
+MISSED_LIST = Path(__file__).parents[2] / "metadata" / "sofr_missed_first_prints.json"
 
 
 def _local(day: date, at: time) -> datetime:
@@ -254,8 +270,8 @@ def check_first_print(record: object) -> None:
         )
     if retrieved >= revision:
         raise LookAheadError(
-            f"fetched at {retrieved.isoformat()}, at or after the revision instant {revision.isoformat()}: "
-            "the payload may be a revision, not the first print"
+            f"the first print of {effective.isoformat()} is lost: fetched at {retrieved.isoformat()}, at or after the "
+            f"revision instant {revision.isoformat()}, so the payload may be a revision, not the first print"
         )
 
 
@@ -293,3 +309,85 @@ def read_all(root: Path) -> list:
             raise ValueError(f"{path} holds the record of {record['effective_date']}")
         out.append(record)
     return out
+
+
+def due_days(now: datetime, first: date = FIRST_EFFECTIVE) -> list:
+    """The business days from `first` on whose revision instant has passed at `now`: by then the first print is kept or lost."""
+
+    if now.tzinfo is None:
+        raise ValueError("the instant needs a time zone")
+    out = []
+    day = first
+    while day <= now.astimezone(EASTERN).date():
+        if _is_business_day(day) and _aware(revision_instant(day)) <= now:
+            out.append(day)
+        day += timedelta(days=1)
+    return out
+
+
+def captured_days(root: Path) -> set:
+    """The effective dates that have a file `sofr/<date>.json` under `root` (names only; `read_all` checks the content).
+
+    Raises:
+        ValueError: no `sofr/` directory, or a file not named for a date.
+    """
+
+    if not (Path(root) / "sofr").is_dir():
+        raise ValueError(f"{root} has no sofr/ directory: a checkout that failed is not a branch with no prints")
+    out = set()
+    for path in (Path(root) / "sofr").glob("*.json"):
+        try:
+            out.add(date.fromisoformat(path.stem))
+        except ValueError as exc:
+            raise ValueError(f"{path} is not named for an effective date") from exc
+    return out
+
+
+def read_missed(path: Path = MISSED_LIST) -> dict:
+    """`{effective date: reason}` from the tracked list of days whose first print was lost.
+
+    Raises:
+        ValueError: a malformed list, a duplicate, a day that is not a business day or is before `FIRST_EFFECTIVE`, or
+            an empty reason.
+    """
+
+    try:
+        document = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise ValueError(f"the missed-days list {path} is unreadable: {exc}") from exc
+    if not isinstance(document, dict) or set(document) != {"description", "days"} or not isinstance(document["days"], list):
+        raise ValueError("the missed-days list has exactly the keys 'description' and 'days' (a list)")
+    out = {}
+    for entry in document["days"]:
+        if not isinstance(entry, dict) or set(entry) != {"effective_date", "reason"}:
+            raise ValueError("a missed day has exactly the keys 'effective_date' and 'reason'")
+        try:
+            day = date.fromisoformat(entry["effective_date"])
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"unreadable date in the missed-days list: {entry['effective_date']!r}") from exc
+        if not isinstance(entry["reason"], str) or not entry["reason"].strip():
+            raise ValueError(f"{day.isoformat()}: a missed day needs a reason")
+        if day in out:
+            raise ValueError(f"{day.isoformat()} is listed twice")
+        if day < FIRST_EFFECTIVE or not _is_business_day(day):
+            raise ValueError(f"{day.isoformat()} is not a business day on or after {FIRST_EFFECTIVE.isoformat()}")
+        out[day] = entry["reason"].strip()
+    return out
+
+
+def unflagged_misses(captured, now: datetime, missed: Mapping, first: date = FIRST_EFFECTIVE) -> list:
+    """The due business days with no file that are not on the missed-days list, oldest first.
+
+    Raises:
+        ValueError: a listed day that has a file (it was not missed) or whose revision instant has not passed (it is
+            not yet lost): the list never says more than the branch shows.
+    """
+
+    captured = set(captured)
+    due = due_days(now, first)
+    for day in sorted(missed):
+        if day in captured:
+            raise ValueError(f"{day.isoformat()} is listed as missed but has a first print on the branch")
+        if day not in due:
+            raise ValueError(f"{day.isoformat()} is listed as missed but its revision instant has not passed")
+    return [day for day in due if day not in captured and day not in missed]
