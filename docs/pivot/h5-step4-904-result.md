@@ -3,6 +3,8 @@
 **Development data, not a verdict.** A measurement run on development days to 2025-12-31 and nothing later; no locked day is scored (`docs/decisions/lockbox.md`). Nothing is registered, no declaration or published record is edited, and no rule moves.
 Hypothesis and step: H5, step 4 (an input to milestone M4 and to H2.M3). Directive #904; Eleonora's rulings of 19 October 2026 on #904 and #900 (option (c)).
 
+**provisional: calendar not read at the target day.** The candidates' rows and the headroom this page will report rest on the walks of `gbm_funding` and (c), one-step models whose calendar columns are learned a day off (class b). The result is a row of the provisional register (`docs/research/provisional-calendar-register.md`, directive #904, #1359) and stays provisional until those walks are re-run on direct pairs. H2's ceiling and reachable line are aligned and are not provisional. No figure here is edited.
+
 ## Status: the run is waiting for Eleonora's Mac
 
 The fits take about three hours each on three cores and each walk 15 to 40 minutes (`h5-step4-result.md`), so by the rule on #46 the run is not made in the cloud. This page holds what is settled without it: which two panels, how each is built and checked, and the commands. **The tables below are empty until the result commit comes back on this branch.**
