@@ -25,9 +25,12 @@ from pathlib import Path
 from typing import Iterator, Mapping, Optional, Sequence
 
 from . import asof, baseline
-from .asof import InformationRule
+from .asof import InformationRule, StaleReadError
+from .splits import LookAheadError
 
-__all__ = ["RELEASE_CALENDAR_KEY", "load_release_dating", "release_dated_registry", "release_instant", "release_dating"]
+__all__ = [
+    "RELEASE_CALENDAR_KEY", "load_release_dating", "release_dated_registry", "release_instant", "release_dating", "require_release_read",
+]
 
 #: A source-level block dating a weekly field by its release's own instant. Absent from every published registry.
 RELEASE_CALENDAR_KEY = "release_calendar"
@@ -187,3 +190,59 @@ def release_dating() -> Iterator[None]:
         asof.declared_availability = original_availability
         baseline._declared_availability = original_baseline
         InformationRule._observation_available = original_observation
+
+
+def _declared_print(declaration: Mapping[str, object], wednesday: date) -> datetime:
+    """The print of the release of `wednesday`'s level, from the declaration alone (not from a registry's `release_calendar` block)."""
+
+    moved = (declaration.get("exceptions") or {}).get(wednesday.isoformat())
+    printed = date.fromisoformat(str(moved)) if moved else wednesday + timedelta(days=int(declaration["offset_days"]))
+    return datetime.combine(printed, time.fromisoformat(str(declaration["available_time"])))
+
+
+def require_release_read(
+    declaration: Mapping[str, object], dates: Sequence[date], decision_day: date, read_date: date, decision_time: time
+) -> None:
+    """The weekly level read from panel row `read_date` by the decision on `decision_day` is the latest one released by the decision instant (#1350).
+
+    A guard on the per-release reading, re-derived from the declaration (`metadata/h41_release_dating.json`) and not from the registry the as-of
+    rule was served: the row `read_date` carries the level of its own Wednesday, printed at the declared instant of that week's release, and the
+    decision instant is `decision_time` on `decision_day`. The row must be public by then, and no later row at or before `decision_day` may be
+    public by then either.
+
+    Raises:
+        LookAheadError: the level read was printed after the decision instant.
+        StaleReadError: a later row, public by the decision instant, carries a newer level.
+        ValueError: `read_date` or `decision_day` is not a panel date, or a week is outside the declared coverage.
+    """
+
+    position = {day: i for i, day in enumerate(dates)}
+    for name, day in (("read_date", read_date), ("decision_day", decision_day)):
+        if day not in position:
+            raise ValueError(f"{name} {day.isoformat()} is not a panel date")
+    if position[read_date] > position[decision_day]:
+        raise LookAheadError(f"the row {read_date.isoformat()} is after the decision day {decision_day.isoformat()}")
+    first, last = _covers(declaration["covers"], "H.4.1 release dating")
+    instant = datetime.combine(decision_day, decision_time)
+
+    def printed(row_date: date) -> datetime:
+        behind = (row_date.weekday() - asof.WEEKLY_OBSERVATION_WEEKDAY) % 7
+        wednesday = row_date - timedelta(days=behind)
+        if not (first <= wednesday <= last):
+            raise ValueError(
+                f"the H.4.1 week of Wednesday {wednesday.isoformat()} is outside the declared coverage {first.isoformat()} to {last.isoformat()}"
+            )
+        return _declared_print(declaration, wednesday)
+
+    released = printed(read_date)
+    if released > instant:
+        raise LookAheadError(
+            f"the H.4.1 level of row {read_date.isoformat()} is printed {released.isoformat(sep=' ')}, after the decision "
+            f"{instant.isoformat(sep=' ')} of {decision_day.isoformat()}"
+        )
+    for later in dates[position[read_date] + 1: position[decision_day] + 1]:
+        if printed(later) <= instant:
+            raise StaleReadError(
+                f"the decision of {decision_day.isoformat()} at {decision_time.isoformat(timespec='minutes')} reads row {read_date.isoformat()}, "
+                f"but row {later.isoformat()} is public by then (printed {printed(later).isoformat(sep=' ')})"
+            )

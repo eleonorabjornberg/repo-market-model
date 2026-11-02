@@ -1,0 +1,2012 @@
+{
+ "amendments": [],
+ "declaration": "metadata/cap_tail_rule_1389.json",
+ "draws": 10000,
+ "issue": 1389,
+ "label": "development, not a verdict",
+ "panel_sha256": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+ "seed": 1389,
+ "walk_files": {
+  "2026": {
+   "sha256": "cbb56179a2d77f98a219b800f57b1c8dd2722ec008c00cfbbc488cedbe4867b4"
+  },
+  "development": {
+   "sha256": "906028d4636ae1720fdd9c9122fefd188634af8b8e945b885df19cc30f449738"
+  }
+ },
+ "windows": {
+  "2026": {
+   "binding_classes": {
+    "0": {
+     "cells": 421,
+     "mean_p10": {
+      "atom_at_line": 0.0,
+      "open_tail": 0.00056694826031478,
+      "status_quo": 0.00056694826031478
+     },
+     "mean_p_line": {
+      "atom_at_line": 0.0,
+      "open_tail": 0.00056694826031478,
+      "status_quo": 0.00056694826031478
+     },
+     "mean_tail_extent_bp": {
+      "atom_at_line": 0.0,
+      "open_tail": 0.19787609942010037,
+      "status_quo": 0.19787609942010037
+     },
+     "observed_above_10": 0.0,
+     "status_quo_p10_under_1e-6": 355
+    },
+    "1": {
+     "cells": 184,
+     "mean_p10": {
+      "atom_at_line": 0.0,
+      "open_tail": 0.003534002829574434,
+      "status_quo": 0.0035341461970361298
+     },
+     "mean_p_line": {
+      "atom_at_line": 0.0,
+      "open_tail": 0.003534002829574434,
+      "status_quo": 0.0035341461970361298
+     },
+     "mean_tail_extent_bp": {
+      "atom_at_line": 0.0,
+      "open_tail": 0.9197932649902221,
+      "status_quo": 0.9198159316568877
+     },
+     "observed_above_10": 0.0,
+     "status_quo_p10_under_1e-6": 60
+    },
+    "2-3": {
+     "cells": 166,
+     "mean_p10": {
+      "atom_at_line": 0.0,
+      "open_tail": 0.0013195305933405357,
+      "status_quo": 0.0
+     },
+     "mean_p_line": {
+      "atom_at_line": 0.0,
+      "open_tail": 0.0013195305933405357,
+      "status_quo": 0.0
+     },
+     "mean_tail_extent_bp": {
+      "atom_at_line": 0.0,
+      "open_tail": 0.47630527069342116,
+      "status_quo": 2.2666666666282254e-05
+     },
+     "observed_above_10": 0.0,
+     "status_quo_p10_under_1e-6": 166
+    },
+    "4+": {
+     "cells": 54,
+     "mean_p10": {
+      "atom_at_line": 0.0,
+      "open_tail": 0.0,
+      "status_quo": 0.0
+     },
+     "mean_p_line": {
+      "atom_at_line": 0.0,
+      "open_tail": 0.0,
+      "status_quo": 0.0
+     },
+     "mean_tail_extent_bp": {
+      "atom_at_line": 0.0,
+      "open_tail": 0.20390084456546193,
+      "status_quo": 2.2666666666282254e-05
+     },
+     "observed_above_10": 0.0,
+     "status_quo_p10_under_1e-6": 54
+    }
+   },
+   "cells": 825,
+   "cells_at_full_allotment": 825,
+   "cells_where_the_cap_binds": 404,
+   "decision_days": 165,
+   "exceedances": {
+    "above_10_bp": {
+     "all cells": {
+      "cells": 825,
+      "observed": 0,
+      "predicted": {
+       "atom_at_line": 0.0,
+       "open_tail": 1.1079838167287464,
+       "status_quo": 0.8889681178471702
+      }
+     },
+     "at full allotment": {
+      "cells": 825,
+      "observed": 0,
+      "predicted": {
+       "atom_at_line": 0.0,
+       "open_tail": 1.1079838167287464,
+       "status_quo": 0.8889681178471702
+      }
+     }
+    },
+    "above_5_bp": {
+     "all cells": {
+      "cells": 825,
+      "observed": 21,
+      "predicted": {
+       "atom_at_line": 73.84745924423706,
+       "open_tail": 73.84714728338244,
+       "status_quo": 73.84744113328617
+      }
+     },
+     "at full allotment": {
+      "cells": 825,
+      "observed": 21,
+      "predicted": {
+       "atom_at_line": 73.84745924423706,
+       "open_tail": 73.84714728338244,
+       "status_quo": 73.84744113328617
+      }
+     }
+    },
+    "above_the_line": {
+     "at full allotment": {
+      "cells": 825,
+      "observed": 0,
+      "predicted": {
+       "atom_at_line": 0.0,
+       "open_tail": 1.1079838167287464,
+       "status_quo": 0.8889681178471702
+      }
+     },
+     "the cap binds": {
+      "cells": 404,
+      "observed": 0,
+      "predicted": {
+       "atom_at_line": 0.0,
+       "open_tail": 0.8692985991362248,
+       "status_quo": 0.6502829002546479
+      }
+     }
+    }
+   },
+   "grid_scores": {
+    "identical_under_every_rule": true,
+    "mean_grid_crps": 1.6685241749689996,
+    "mean_upper_tail_twcrps": 0.5142206574896754
+   },
+   "groups": {
+    "cap_binds": {
+     "the cap binds (the uncapped q99 is above the line)": {
+      "cells": 404,
+      "grid_crps_mean": 1.4589460087949977,
+      "metrics": {
+       "brier10": {
+        "days": 112,
+        "means": {
+         "atom_at_line": 0.0,
+         "open_tail": 1.4822153943843863e-05,
+         "status_quo": 1.2937184409707763e-05
+        },
+        "vs": {
+         "atom_at_line": {
+          "benchmark_mean": 1.2937184409707763e-05,
+          "candidate_mean": 0.0,
+          "days": 112,
+          "difference": 1.2937184409707763e-05,
+          "difference_interval": [
+           7.996652399965928e-06,
+           1.9476208995511518e-05
+          ],
+          "dm_p_value": 2.5848417262164247e-06,
+          "dm_statistic": 4.557781266778792,
+          "skill": null,
+          "skill_interval": null,
+          "skill_undefined": "skill's linearised series has no long-run variance; it cannot be studentized"
+         },
+         "open_tail": {
+          "benchmark_mean": 1.2937184409707763e-05,
+          "candidate_mean": 1.482215394384386e-05,
+          "days": 112,
+          "difference": -1.8849695341360968e-06,
+          "difference_interval": [
+           -4.546579734664573e-06,
+           -7.084405788146203e-07
+          ],
+          "dm_p_value": 0.9929763608060675,
+          "dm_statistic": -2.4560521162046203,
+          "skill": -0.14570168240947848,
+          "skill_interval": [
+           -0.4181281172098693,
+           -0.02711265749537521
+          ]
+         }
+        }
+       },
+       "brier5": {
+        "days": 112,
+        "means": {
+         "atom_at_line": 0.0658249195684789,
+         "open_tail": 0.06582474192684817,
+         "status_quo": 0.06582491802843855
+        },
+        "vs": {
+         "atom_at_line": {
+          "benchmark_mean": 0.06582491802843855,
+          "candidate_mean": 0.0658249195684789,
+          "days": 112,
+          "difference": -1.5400403529432016e-09,
+          "difference_interval": [
+           -2.7940691934056804e-09,
+           -3.102980303134313e-10
+          ],
+          "dm_p_value": 0.9423265422250096,
+          "dm_statistic": -1.5746081713491824,
+          "draws": 10000,
+          "dropped_resamples": 854,
+          "skill": null,
+          "skill_interval": null,
+          "skill_undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+         },
+         "open_tail": {
+          "benchmark_mean": 0.06582491802843855,
+          "candidate_mean": 0.06582474192684819,
+          "days": 112,
+          "difference": 1.761015903676235e-07,
+          "difference_interval": [
+           1.6733490020312484e-08,
+           2.756993637415759e-07
+          ],
+          "dm_p_value": 0.0026064096953624105,
+          "dm_statistic": 2.793579624581352,
+          "skill": 2.675302843393466e-06,
+          "skill_interval": [
+           -6.3587311861892204e-06,
+           6.726665131684194e-06
+          ]
+         }
+        }
+       },
+       "brier_line": {
+        "days": 112,
+        "means": {
+         "atom_at_line": 0.0,
+         "open_tail": 1.4822153943843863e-05,
+         "status_quo": 1.2937184409707763e-05
+        },
+        "vs": {
+         "atom_at_line": {
+          "benchmark_mean": 1.2937184409707763e-05,
+          "candidate_mean": 0.0,
+          "days": 112,
+          "difference": 1.2937184409707763e-05,
+          "difference_interval": [
+           7.996652399965928e-06,
+           1.9476208995511518e-05
+          ],
+          "dm_p_value": 2.5848417262164247e-06,
+          "dm_statistic": 4.557781266778792,
+          "skill": null,
+          "skill_interval": null,
+          "skill_undefined": "skill's linearised series has no long-run variance; it cannot be studentized"
+         },
+         "open_tail": {
+          "benchmark_mean": 1.2937184409707763e-05,
+          "candidate_mean": 1.482215394384386e-05,
+          "days": 112,
+          "difference": -1.8849695341360968e-06,
+          "difference_interval": [
+           -4.546579734664573e-06,
+           -7.084405788146203e-07
+          ],
+          "dm_p_value": 0.9929763608060675,
+          "dm_statistic": -2.4560521162046203,
+          "skill": -0.14570168240947848,
+          "skill_interval": [
+           -0.4181281172098693,
+           -0.02711265749537521
+          ]
+         }
+        }
+       }
+      },
+      "twcrps_mean": 0.7353565953963606
+     }
+    },
+    "full_allotment": {
+     "target days at full allotment": {
+      "cells": 825,
+      "grid_crps_mean": 1.6685241749689996,
+      "metrics": {
+       "brier10": {
+        "days": 165,
+        "means": {
+         "atom_at_line": 0.0,
+         "open_tail": 7.158483347664665e-06,
+         "status_quo": 5.983310279672854e-06
+        },
+        "vs": {
+         "atom_at_line": {
+          "benchmark_mean": 5.983310279672854e-06,
+          "candidate_mean": 0.0,
+          "days": 165,
+          "difference": 5.983310279672854e-06,
+          "difference_interval": [
+           3.451368892024074e-06,
+           1.0115816960093515e-05
+          ],
+          "dm_p_value": 6.050332088669563e-06,
+          "dm_statistic": 4.3757662393717105,
+          "skill": null,
+          "skill_interval": null,
+          "skill_undefined": "skill's linearised series has no long-run variance; it cannot be studentized"
+         },
+         "open_tail": {
+          "benchmark_mean": 5.983310279672854e-06,
+          "candidate_mean": 7.158483347664666e-06,
+          "days": 165,
+          "difference": -1.175173067991812e-06,
+          "difference_interval": [
+           -3.4858426709788687e-06,
+           -3.844203650426866e-07
+          ],
+          "dm_p_value": 0.986132314908274,
+          "dm_statistic": -2.201009233413561,
+          "skill": -0.19640851185408797,
+          "skill_interval": [
+           -0.6631842128368857,
+           -0.01781959428115426
+          ]
+         }
+        }
+       },
+       "brier5": {
+        "days": 165,
+        "means": {
+         "atom_at_line": 0.035153749726894536,
+         "open_tail": 0.03515364693633397,
+         "status_quo": 0.0351537486815338
+        },
+        "vs": {
+         "atom_at_line": {
+          "benchmark_mean": 0.0351537486815338,
+          "candidate_mean": 0.035153749726894536,
+          "days": 165,
+          "difference": -1.045360724422052e-09,
+          "difference_interval": [
+           -1.915038115759613e-09,
+           -2.061570187605718e-10
+          ],
+          "dm_p_value": 0.9349146606064348,
+          "dm_statistic": -1.5134291753372853,
+          "draws": 10000,
+          "dropped_resamples": 972,
+          "skill": null,
+          "skill_interval": null,
+          "skill_undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+         },
+         "open_tail": {
+          "benchmark_mean": 0.0351537486815338,
+          "candidate_mean": 0.035153646936333986,
+          "days": 165,
+          "difference": 1.0174519981092012e-07,
+          "difference_interval": [
+           5.685166838401475e-08,
+           1.7090667241247168e-07
+          ],
+          "dm_p_value": 0.00039480895422205897,
+          "dm_statistic": 3.3564086867354135,
+          "skill": 2.8942916083474957e-06,
+          "skill_interval": [
+           -5.042904989475677e-07,
+           5.195714034924769e-06
+          ]
+         }
+        }
+       },
+       "brier_line": {
+        "days": 165,
+        "means": {
+         "atom_at_line": 0.0,
+         "open_tail": 7.158483347664665e-06,
+         "status_quo": 5.983310279672854e-06
+        },
+        "vs": {
+         "atom_at_line": {
+          "benchmark_mean": 5.983310279672854e-06,
+          "candidate_mean": 0.0,
+          "days": 165,
+          "difference": 5.983310279672854e-06,
+          "difference_interval": [
+           3.451368892024074e-06,
+           1.0115816960093515e-05
+          ],
+          "dm_p_value": 6.050332088669563e-06,
+          "dm_statistic": 4.3757662393717105,
+          "skill": null,
+          "skill_interval": null,
+          "skill_undefined": "skill's linearised series has no long-run variance; it cannot be studentized"
+         },
+         "open_tail": {
+          "benchmark_mean": 5.983310279672854e-06,
+          "candidate_mean": 7.158483347664666e-06,
+          "days": 165,
+          "difference": -1.175173067991812e-06,
+          "difference_interval": [
+           -3.4858426709788687e-06,
+           -3.844203650426866e-07
+          ],
+          "dm_p_value": 0.986132314908274,
+          "dm_statistic": -2.201009233413561,
+          "skill": -0.19640851185408797,
+          "skill_interval": [
+           -0.6631842128368857,
+           -0.01781959428115426
+          ]
+         }
+        }
+       }
+      },
+      "twcrps_mean": 0.5142206574896754
+     }
+    },
+    "pooled": {
+     "all cells": {
+      "cells": 825,
+      "grid_crps_mean": 1.6685241749689996,
+      "metrics": {
+       "brier10": {
+        "days": 165,
+        "means": {
+         "atom_at_line": 0.0,
+         "open_tail": 7.158483347664665e-06,
+         "status_quo": 5.983310279672854e-06
+        },
+        "vs": {
+         "atom_at_line": {
+          "benchmark_mean": 5.983310279672854e-06,
+          "candidate_mean": 0.0,
+          "days": 165,
+          "difference": 5.983310279672854e-06,
+          "difference_interval": [
+           3.451368892024074e-06,
+           1.0115816960093515e-05
+          ],
+          "dm_p_value": 6.050332088669563e-06,
+          "dm_statistic": 4.3757662393717105,
+          "skill": null,
+          "skill_interval": null,
+          "skill_undefined": "skill's linearised series has no long-run variance; it cannot be studentized"
+         },
+         "open_tail": {
+          "benchmark_mean": 5.983310279672854e-06,
+          "candidate_mean": 7.158483347664666e-06,
+          "days": 165,
+          "difference": -1.175173067991812e-06,
+          "difference_interval": [
+           -3.4858426709788687e-06,
+           -3.844203650426866e-07
+          ],
+          "dm_p_value": 0.986132314908274,
+          "dm_statistic": -2.201009233413561,
+          "skill": -0.19640851185408797,
+          "skill_interval": [
+           -0.6631842128368857,
+           -0.01781959428115426
+          ]
+         }
+        }
+       },
+       "brier5": {
+        "days": 165,
+        "means": {
+         "atom_at_line": 0.035153749726894536,
+         "open_tail": 0.03515364693633397,
+         "status_quo": 0.0351537486815338
+        },
+        "vs": {
+         "atom_at_line": {
+          "benchmark_mean": 0.0351537486815338,
+          "candidate_mean": 0.035153749726894536,
+          "days": 165,
+          "difference": -1.045360724422052e-09,
+          "difference_interval": [
+           -1.915038115759613e-09,
+           -2.061570187605718e-10
+          ],
+          "dm_p_value": 0.9349146606064348,
+          "dm_statistic": -1.5134291753372853,
+          "draws": 10000,
+          "dropped_resamples": 972,
+          "skill": null,
+          "skill_interval": null,
+          "skill_undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+         },
+         "open_tail": {
+          "benchmark_mean": 0.0351537486815338,
+          "candidate_mean": 0.035153646936333986,
+          "days": 165,
+          "difference": 1.0174519981092012e-07,
+          "difference_interval": [
+           5.685166838401475e-08,
+           1.7090667241247168e-07
+          ],
+          "dm_p_value": 0.00039480895422205897,
+          "dm_statistic": 3.3564086867354135,
+          "skill": 2.8942916083474957e-06,
+          "skill_interval": [
+           -5.042904989475677e-07,
+           5.195714034924769e-06
+          ]
+         }
+        }
+       },
+       "brier_line": {
+        "days": 165,
+        "means": {
+         "atom_at_line": 0.0,
+         "open_tail": 7.158483347664665e-06,
+         "status_quo": 5.983310279672854e-06
+        },
+        "vs": {
+         "atom_at_line": {
+          "benchmark_mean": 5.983310279672854e-06,
+          "candidate_mean": 0.0,
+          "days": 165,
+          "difference": 5.983310279672854e-06,
+          "difference_interval": [
+           3.451368892024074e-06,
+           1.0115816960093515e-05
+          ],
+          "dm_p_value": 6.050332088669563e-06,
+          "dm_statistic": 4.3757662393717105,
+          "skill": null,
+          "skill_interval": null,
+          "skill_undefined": "skill's linearised series has no long-run variance; it cannot be studentized"
+         },
+         "open_tail": {
+          "benchmark_mean": 5.983310279672854e-06,
+          "candidate_mean": 7.158483347664666e-06,
+          "days": 165,
+          "difference": -1.175173067991812e-06,
+          "difference_interval": [
+           -3.4858426709788687e-06,
+           -3.844203650426866e-07
+          ],
+          "dm_p_value": 0.986132314908274,
+          "dm_statistic": -2.201009233413561,
+          "skill": -0.19640851185408797,
+          "skill_interval": [
+           -0.6631842128368857,
+           -0.01781959428115426
+          ]
+         }
+        }
+       }
+      },
+      "twcrps_mean": 0.5142206574896754
+     }
+    },
+    "pressure_day_type": {
+     "ordinary": {
+      "cells": 717,
+      "grid_crps_mean": 1.7160906197166292,
+      "metrics": {
+       "brier10": {
+        "days": 165,
+        "means": {
+         "atom_at_line": 0.0,
+         "open_tail": 7.3443048484493535e-06,
+         "status_quo": 5.995190659281983e-06
+        },
+        "vs": {
+         "atom_at_line": {
+          "benchmark_mean": 5.995190659281983e-06,
+          "candidate_mean": 0.0,
+          "days": 165,
+          "difference": 5.995190659281983e-06,
+          "difference_interval": [
+           3.254742461959096e-06,
+           1.0232905078436334e-05
+          ],
+          "dm_p_value": 1.0911920640288564e-05,
+          "dm_statistic": 4.2453644458398,
+          "skill": null,
+          "skill_interval": null,
+          "skill_undefined": "skill's linearised series has no long-run variance; it cannot be studentized"
+         },
+         "open_tail": {
+          "benchmark_mean": 5.995190659281983e-06,
+          "candidate_mean": 7.344304848449357e-06,
+          "days": 165,
+          "difference": -1.3491141891673735e-06,
+          "difference_interval": [
+           -4.526886681919528e-06,
+           -4.2510776626652545e-07
+          ],
+          "dm_p_value": 0.9804517175620562,
+          "dm_statistic": -2.0631690995577463,
+          "skill": -0.22503274138223167,
+          "skill_interval": [
+           -0.828392828497807,
+           -0.017609586760041207
+          ]
+         }
+        }
+       },
+       "brier5": {
+        "days": 165,
+        "means": {
+         "atom_at_line": 0.02598448352660806,
+         "open_tail": 0.025984377434353938,
+         "status_quo": 0.025984481620987678
+        },
+        "vs": {
+         "atom_at_line": {
+          "benchmark_mean": 0.025984481620987678,
+          "candidate_mean": 0.02598448352660806,
+          "days": 165,
+          "difference": -1.90562038088236e-09,
+          "difference_interval": [
+           -6.391408717225433e-09,
+           -1.325187145432245e-10
+          ],
+          "dm_p_value": 0.9094189855589703,
+          "dm_statistic": -1.3371856988247997,
+          "draws": 10000,
+          "dropped_resamples": 972,
+          "skill": null,
+          "skill_interval": null,
+          "skill_undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+         },
+         "open_tail": {
+          "benchmark_mean": 0.025984481620987678,
+          "candidate_mean": 0.02598437743435394,
+          "days": 165,
+          "difference": 1.0418663373580174e-07,
+          "difference_interval": [
+           5.320195766234974e-08,
+           1.8582611110085557e-07
+          ],
+          "dm_p_value": 0.0012121552404942282,
+          "dm_statistic": 3.0326319936041397,
+          "skill": 4.0095713763113965e-06,
+          "skill_interval": [
+           -4.701962618834318e-06,
+           7.1461360838392155e-06
+          ]
+         }
+        }
+       },
+       "brier_line": {
+        "days": 165,
+        "means": {
+         "atom_at_line": 0.0,
+         "open_tail": 7.3443048484493535e-06,
+         "status_quo": 5.995190659281983e-06
+        },
+        "vs": {
+         "atom_at_line": {
+          "benchmark_mean": 5.995190659281983e-06,
+          "candidate_mean": 0.0,
+          "days": 165,
+          "difference": 5.995190659281983e-06,
+          "difference_interval": [
+           3.254742461959096e-06,
+           1.0232905078436334e-05
+          ],
+          "dm_p_value": 1.0911920640288564e-05,
+          "dm_statistic": 4.2453644458398,
+          "skill": null,
+          "skill_interval": null,
+          "skill_undefined": "skill's linearised series has no long-run variance; it cannot be studentized"
+         },
+         "open_tail": {
+          "benchmark_mean": 5.995190659281983e-06,
+          "candidate_mean": 7.344304848449357e-06,
+          "days": 165,
+          "difference": -1.3491141891673735e-06,
+          "difference_interval": [
+           -4.526886681919528e-06,
+           -4.2510776626652545e-07
+          ],
+          "dm_p_value": 0.9804517175620562,
+          "dm_statistic": -2.0631690995577463,
+          "skill": -0.22503274138223167,
+          "skill_interval": [
+           -0.828392828497807,
+           -0.017609586760041207
+          ]
+         }
+        }
+       }
+      },
+      "twcrps_mean": 0.46376317015855867
+     },
+     "quarter_end_turn": {
+      "cells": 20,
+      "grid_crps_mean": 0.9086654470158664,
+      "metrics": {
+       "brier10": {
+        "days": 12,
+        "means": {
+         "atom_at_line": 0.0,
+         "open_tail": 6.569611689539144e-06,
+         "status_quo": 6.407786693512536e-06
+        },
+        "not_tested": "fewer than 20 decision days",
+        "vs": {}
+       },
+       "brier5": {
+        "days": 12,
+        "means": {
+         "atom_at_line": 0.04712582895257575,
+         "open_tail": 0.04712541418855946,
+         "status_quo": 0.04712582895257575
+        },
+        "not_tested": "fewer than 20 decision days",
+        "vs": {}
+       },
+       "brier_line": {
+        "days": 12,
+        "means": {
+         "atom_at_line": 0.0,
+         "open_tail": 6.569611689539144e-06,
+         "status_quo": 6.407786693512536e-06
+        },
+        "not_tested": "fewer than 20 decision days",
+        "vs": {}
+       }
+      },
+      "twcrps_mean": 0.6459068779212254
+     },
+     "tax_date": {
+      "cells": 30,
+      "grid_crps_mean": 1.7636572037346587,
+      "metrics": {
+       "brier10": {
+        "days": 15,
+        "means": {
+         "atom_at_line": 0.0,
+         "open_tail": 1.0691009175584991e-05,
+         "status_quo": 8.338924951992167e-06
+        },
+        "not_tested": "fewer than 20 decision days",
+        "vs": {}
+       },
+       "brier5": {
+        "days": 15,
+        "means": {
+         "atom_at_line": 0.1896367401175066,
+         "open_tail": 0.18963674451074417,
+         "status_quo": 0.1896367401175066
+        },
+        "not_tested": "fewer than 20 decision days",
+        "vs": {}
+       },
+       "brier_line": {
+        "days": 15,
+        "means": {
+         "atom_at_line": 0.0,
+         "open_tail": 1.0691009175584991e-05,
+         "status_quo": 8.338924951992167e-06
+        },
+        "not_tested": "fewer than 20 decision days",
+        "vs": {}
+       }
+      },
+      "twcrps_mean": 1.1406831974635037
+     },
+     "turn": {
+      "cells": 57,
+      "grid_crps_mean": 1.2623781858216168,
+      "metrics": {
+       "brier10": {
+        "days": 34,
+        "means": {
+         "atom_at_line": 0.0,
+         "open_tail": 3.626988291473478e-06,
+         "status_quo": 3.5762738322356174e-06
+        },
+        "vs": {
+         "atom_at_line": {
+          "benchmark_mean": 3.5762738322356174e-06,
+          "candidate_mean": 0.0,
+          "days": 34,
+          "difference": 3.5762738322356174e-06,
+          "difference_interval": [
+           -4.7114347197189096e-07,
+           1.4815261170964544e-05
+          ],
+          "dm_p_value": 0.054672565123761174,
+          "dm_statistic": 1.6011435414529938,
+          "draws": 10000,
+          "dropped_resamples": 394,
+          "skill": null,
+          "skill_interval": null,
+          "skill_undefined": "skill's linearised series has no long-run variance; it cannot be studentized"
+         },
+         "open_tail": {
+          "benchmark_mean": 3.5762738322356174e-06,
+          "candidate_mean": 3.626988291473478e-06,
+          "days": 34,
+          "difference": -5.071445923786069e-08,
+          "difference_interval": [
+           -9.899333833134396e-08,
+           -3.329276115203136e-10
+          ],
+          "dm_p_value": 0.9563687299640409,
+          "dm_statistic": -1.710018024328087,
+          "draws": 10000,
+          "dropped_resamples": 300,
+          "skill": null,
+          "skill_interval": null,
+          "skill_undefined": "a resampled benchmark scores zero; skill is undefined"
+         }
+        }
+       },
+       "brier5": {
+        "days": 34,
+        "means": {
+         "atom_at_line": 0.0628221073666618,
+         "open_tail": 0.06282206832737576,
+         "status_quo": 0.0628221073666618
+        },
+        "vs": {
+         "atom_at_line": {
+          "days": 34,
+          "identical": true
+         },
+         "open_tail": {
+          "benchmark_mean": 0.0628221073666618,
+          "candidate_mean": 0.06282206832737579,
+          "days": 34,
+          "difference": 3.903928601843147e-08,
+          "difference_interval": [
+           -6.055148181999981e-07,
+           2.1022193908911092e-07
+          ],
+          "dm_p_value": 0.38320735068664824,
+          "dm_statistic": 0.2970678599437652,
+          "skill": 6.214259224157878e-07,
+          "skill_interval": [
+           -2.7800036691630608e-05,
+           5.017729539179846e-06
+          ]
+         }
+        }
+       },
+       "brier_line": {
+        "days": 34,
+        "means": {
+         "atom_at_line": 0.0,
+         "open_tail": 3.626988291473478e-06,
+         "status_quo": 3.5762738322356174e-06
+        },
+        "vs": {
+         "atom_at_line": {
+          "benchmark_mean": 3.5762738322356174e-06,
+          "candidate_mean": 0.0,
+          "days": 34,
+          "difference": 3.5762738322356174e-06,
+          "difference_interval": [
+           -4.7114347197189096e-07,
+           1.4815261170964544e-05
+          ],
+          "dm_p_value": 0.054672565123761174,
+          "dm_statistic": 1.6011435414529938,
+          "draws": 10000,
+          "dropped_resamples": 394,
+          "skill": null,
+          "skill_interval": null,
+          "skill_undefined": "skill's linearised series has no long-run variance; it cannot be studentized"
+         },
+         "open_tail": {
+          "benchmark_mean": 3.5762738322356174e-06,
+          "candidate_mean": 3.626988291473478e-06,
+          "days": 34,
+          "difference": -5.071445923786069e-08,
+          "difference_interval": [
+           -9.899333833134396e-08,
+           -3.329276115203136e-10
+          ],
+          "dm_p_value": 0.9563687299640409,
+          "dm_statistic": -1.710018024328087,
+          "draws": 10000,
+          "dropped_resamples": 300,
+          "skill": null,
+          "skill_interval": null,
+          "skill_undefined": "a resampled benchmark scores zero; skill is undefined"
+         }
+        }
+       }
+      },
+      "twcrps_mean": 0.7289713505443906
+     },
+     "year_end": {
+      "cells": 1,
+      "grid_crps_mean": 3.0568883684108634,
+      "metrics": {
+       "brier10": {
+        "days": 1,
+        "means": {
+         "atom_at_line": 0.0,
+         "open_tail": 0.0,
+         "status_quo": 0.0
+        },
+        "not_tested": "fewer than 20 decision days",
+        "vs": {}
+       },
+       "brier5": {
+        "days": 1,
+        "means": {
+         "atom_at_line": 0.3936365715434013,
+         "open_tail": 0.393638011692717,
+         "status_quo": 0.3936365715434013
+        },
+        "not_tested": "fewer than 20 decision days",
+        "vs": {}
+       },
+       "brier_line": {
+        "days": 1,
+        "means": {
+         "atom_at_line": 0.0,
+         "open_tail": 0.0,
+         "status_quo": 0.0
+        },
+        "not_tested": "fewer than 20 decision days",
+        "vs": {}
+       }
+      },
+      "twcrps_mean": 3.0238489619357756
+     }
+    },
+    "regime": {
+     "2025-26": {
+      "cells": 825,
+      "grid_crps_mean": 1.6685241749689996,
+      "metrics": {
+       "brier10": {
+        "days": 165,
+        "means": {
+         "atom_at_line": 0.0,
+         "open_tail": 7.158483347664665e-06,
+         "status_quo": 5.983310279672854e-06
+        },
+        "vs": {
+         "atom_at_line": {
+          "benchmark_mean": 5.983310279672854e-06,
+          "candidate_mean": 0.0,
+          "days": 165,
+          "difference": 5.983310279672854e-06,
+          "difference_interval": [
+           3.451368892024074e-06,
+           1.0115816960093515e-05
+          ],
+          "dm_p_value": 6.050332088669563e-06,
+          "dm_statistic": 4.3757662393717105,
+          "skill": null,
+          "skill_interval": null,
+          "skill_undefined": "skill's linearised series has no long-run variance; it cannot be studentized"
+         },
+         "open_tail": {
+          "benchmark_mean": 5.983310279672854e-06,
+          "candidate_mean": 7.158483347664666e-06,
+          "days": 165,
+          "difference": -1.175173067991812e-06,
+          "difference_interval": [
+           -3.4858426709788687e-06,
+           -3.844203650426866e-07
+          ],
+          "dm_p_value": 0.986132314908274,
+          "dm_statistic": -2.201009233413561,
+          "skill": -0.19640851185408797,
+          "skill_interval": [
+           -0.6631842128368857,
+           -0.01781959428115426
+          ]
+         }
+        }
+       },
+       "brier5": {
+        "days": 165,
+        "means": {
+         "atom_at_line": 0.035153749726894536,
+         "open_tail": 0.03515364693633397,
+         "status_quo": 0.0351537486815338
+        },
+        "vs": {
+         "atom_at_line": {
+          "benchmark_mean": 0.0351537486815338,
+          "candidate_mean": 0.035153749726894536,
+          "days": 165,
+          "difference": -1.045360724422052e-09,
+          "difference_interval": [
+           -1.915038115759613e-09,
+           -2.061570187605718e-10
+          ],
+          "dm_p_value": 0.9349146606064348,
+          "dm_statistic": -1.5134291753372853,
+          "draws": 10000,
+          "dropped_resamples": 972,
+          "skill": null,
+          "skill_interval": null,
+          "skill_undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+         },
+         "open_tail": {
+          "benchmark_mean": 0.0351537486815338,
+          "candidate_mean": 0.035153646936333986,
+          "days": 165,
+          "difference": 1.0174519981092012e-07,
+          "difference_interval": [
+           5.685166838401475e-08,
+           1.7090667241247168e-07
+          ],
+          "dm_p_value": 0.00039480895422205897,
+          "dm_statistic": 3.3564086867354135,
+          "skill": 2.8942916083474957e-06,
+          "skill_interval": [
+           -5.042904989475677e-07,
+           5.195714034924769e-06
+          ]
+         }
+        }
+       },
+       "brier_line": {
+        "days": 165,
+        "means": {
+         "atom_at_line": 0.0,
+         "open_tail": 7.158483347664665e-06,
+         "status_quo": 5.983310279672854e-06
+        },
+        "vs": {
+         "atom_at_line": {
+          "benchmark_mean": 5.983310279672854e-06,
+          "candidate_mean": 0.0,
+          "days": 165,
+          "difference": 5.983310279672854e-06,
+          "difference_interval": [
+           3.451368892024074e-06,
+           1.0115816960093515e-05
+          ],
+          "dm_p_value": 6.050332088669563e-06,
+          "dm_statistic": 4.3757662393717105,
+          "skill": null,
+          "skill_interval": null,
+          "skill_undefined": "skill's linearised series has no long-run variance; it cannot be studentized"
+         },
+         "open_tail": {
+          "benchmark_mean": 5.983310279672854e-06,
+          "candidate_mean": 7.158483347664666e-06,
+          "days": 165,
+          "difference": -1.175173067991812e-06,
+          "difference_interval": [
+           -3.4858426709788687e-06,
+           -3.844203650426866e-07
+          ],
+          "dm_p_value": 0.986132314908274,
+          "dm_statistic": -2.201009233413561,
+          "skill": -0.19640851185408797,
+          "skill_interval": [
+           -0.6631842128368857,
+           -0.01781959428115426
+          ]
+         }
+        }
+       }
+      },
+      "twcrps_mean": 0.5142206574896754
+     }
+    }
+   },
+   "largest_uncapped_q99_above_the_line_bp": 25.998630510132294,
+   "pit_deciles_at_full_allotment": {
+    "atom_at_line": [
+     106,
+     110,
+     94,
+     79,
+     63,
+     84,
+     72,
+     91,
+     68,
+     58
+    ],
+    "open_tail": [
+     103,
+     122,
+     83,
+     61,
+     79,
+     85,
+     62,
+     104,
+     69,
+     57
+    ],
+    "status_quo": [
+     101,
+     118,
+     81,
+     74,
+     77,
+     79,
+     75,
+     87,
+     77,
+     56
+    ]
+   },
+   "reproduction": {
+    "mean_grid_crps": 1.6685241749689996,
+    "record_1314": 1.6685241749689974
+   }
+  },
+  "development": {
+   "binding_classes": {
+    "2-3": {
+     "cells": 3,
+     "mean_p10": {
+      "atom_at_line": 0.0,
+      "open_tail": 0.0,
+      "status_quo": 0.0
+     },
+     "mean_p_line": {
+      "atom_at_line": 0.0,
+      "open_tail": 0.0,
+      "status_quo": 0.0
+     },
+     "mean_tail_extent_bp": {
+      "atom_at_line": 0.0,
+      "open_tail": 0.19228269681021418,
+      "status_quo": 2.2666666666282254e-05
+     },
+     "observed_above_10": 0.0,
+     "status_quo_p10_under_1e-6": 3
+    },
+    "4+": {
+     "cells": 47,
+     "mean_p10": {
+      "atom_at_line": 0.0,
+      "open_tail": 0.00013515739846279627,
+      "status_quo": 0.0
+     },
+     "mean_p_line": {
+      "atom_at_line": 0.0,
+      "open_tail": 0.00013515739846279627,
+      "status_quo": 0.0
+     },
+     "mean_tail_extent_bp": {
+      "atom_at_line": 0.0,
+      "open_tail": 0.22495349669275555,
+      "status_quo": 2.2666666666282254e-05
+     },
+     "observed_above_10": 0.1702127659574468,
+     "status_quo_p10_under_1e-6": 47
+    }
+   },
+   "cells": 9275,
+   "cells_at_full_allotment": 50,
+   "cells_where_the_cap_binds": 50,
+   "decision_days": 1855,
+   "exceedances": {
+    "above_10_bp": {
+     "all cells": {
+      "cells": 9275,
+      "observed": 293,
+      "predicted": {
+       "atom_at_line": 388.99836739160895,
+       "open_tail": 389.0047197893368,
+       "status_quo": 388.99836739160895
+      }
+     },
+     "at full allotment": {
+      "cells": 50,
+      "observed": 8,
+      "predicted": {
+       "atom_at_line": 0.0,
+       "open_tail": 0.006352397727751424,
+       "status_quo": 0.0
+      }
+     }
+    },
+    "above_5_bp": {
+     "all cells": {
+      "cells": 9275,
+      "observed": 680,
+      "predicted": {
+       "atom_at_line": 880.3129182787469,
+       "open_tail": 880.3128905897722,
+       "status_quo": 880.3129182787469
+      }
+     },
+     "at full allotment": {
+      "cells": 50,
+      "observed": 13,
+      "predicted": {
+       "atom_at_line": 18.8500588537993,
+       "open_tail": 18.85003116482449,
+       "status_quo": 18.8500588537993
+      }
+     }
+    },
+    "above_the_line": {
+     "at full allotment": {
+      "cells": 50,
+      "observed": 8,
+      "predicted": {
+       "atom_at_line": 0.0,
+       "open_tail": 0.006352397727751424,
+       "status_quo": 0.0
+      }
+     },
+     "the cap binds": {
+      "cells": 50,
+      "observed": 8,
+      "predicted": {
+       "atom_at_line": 0.0,
+       "open_tail": 0.006352397727751424,
+       "status_quo": 0.0
+      }
+     }
+    }
+   },
+   "grid_scores": {
+    "identical_under_every_rule": true,
+    "mean_grid_crps": 1.6011621706422519,
+    "mean_upper_tail_twcrps": 0.8447116415214196
+   },
+   "groups": {
+    "cap_binds": {
+     "the cap binds (the uncapped q99 is above the line)": {
+      "cells": 50,
+      "grid_crps_mean": 2.154024909941972,
+      "metrics": {
+       "brier10": {
+        "days": 10,
+        "means": {
+         "atom_at_line": 0.16,
+         "open_tail": 0.1598673992391712,
+         "status_quo": 0.16
+        },
+        "not_tested": "fewer than 20 decision days",
+        "vs": {}
+       },
+       "brier5": {
+        "days": 10,
+        "means": {
+         "atom_at_line": 0.12874820653777852,
+         "open_tail": 0.12874807104655805,
+         "status_quo": 0.12874820653777852
+        },
+        "not_tested": "fewer than 20 decision days",
+        "vs": {}
+       },
+       "brier_line": {
+        "days": 10,
+        "means": {
+         "atom_at_line": 0.16,
+         "open_tail": 0.1598673992391712,
+         "status_quo": 0.16
+        },
+        "not_tested": "fewer than 20 decision days",
+        "vs": {}
+       }
+      },
+      "twcrps_mean": 1.7693519292474391
+     }
+    },
+    "full_allotment": {
+     "target days at full allotment": {
+      "cells": 50,
+      "grid_crps_mean": 2.154024909941972,
+      "metrics": {
+       "brier10": {
+        "days": 10,
+        "means": {
+         "atom_at_line": 0.16,
+         "open_tail": 0.1598673992391712,
+         "status_quo": 0.16
+        },
+        "not_tested": "fewer than 20 decision days",
+        "vs": {}
+       },
+       "brier5": {
+        "days": 10,
+        "means": {
+         "atom_at_line": 0.12874820653777852,
+         "open_tail": 0.12874807104655805,
+         "status_quo": 0.12874820653777852
+        },
+        "not_tested": "fewer than 20 decision days",
+        "vs": {}
+       },
+       "brier_line": {
+        "days": 10,
+        "means": {
+         "atom_at_line": 0.16,
+         "open_tail": 0.1598673992391712,
+         "status_quo": 0.16
+        },
+        "not_tested": "fewer than 20 decision days",
+        "vs": {}
+       }
+      },
+      "twcrps_mean": 1.7693519292474391
+     }
+    },
+    "pooled": {
+     "all cells": {
+      "cells": 9275,
+      "grid_crps_mean": 1.6011621706422519,
+      "metrics": {
+       "brier10": {
+        "days": 1855,
+        "means": {
+         "atom_at_line": 0.02700864392282722,
+         "open_tail": 0.02700792909392787,
+         "status_quo": 0.02700864392282722
+        },
+        "vs": {
+         "atom_at_line": {
+          "days": 1855,
+          "identical": true
+         },
+         "open_tail": {
+          "benchmark_mean": 0.02700864392282722,
+          "candidate_mean": 0.02700792909392787,
+          "days": 1855,
+          "difference": 7.148288993464923e-07,
+          "difference_interval": [
+           -1.1797385991978271e-07,
+           0.000984184701655568
+          ],
+          "dm_p_value": 0.15864196603467295,
+          "dm_statistic": 1.0000549168155983,
+          "draws": 10000,
+          "dropped_resamples": 2540,
+          "skill": null,
+          "skill_interval": null,
+          "skill_undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+         }
+        }
+       },
+       "brier5": {
+        "days": 1855,
+        "means": {
+         "atom_at_line": 0.04610189192441889,
+         "open_tail": 0.046101891194007975,
+         "status_quo": 0.04610189192441889
+        },
+        "vs": {
+         "atom_at_line": {
+          "days": 1855,
+          "identical": true
+         },
+         "open_tail": {
+          "benchmark_mean": 0.04610189192441889,
+          "candidate_mean": 0.046101891194007975,
+          "days": 1855,
+          "difference": 7.304108919818637e-10,
+          "difference_interval": [
+           -3.2610383069238723e-10,
+           3.5561153256026553e-09
+          ],
+          "dm_p_value": 0.2132720886517483,
+          "dm_statistic": 0.7951191823448519,
+          "draws": 10000,
+          "dropped_resamples": 1503,
+          "skill": null,
+          "skill_interval": null,
+          "skill_undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+         }
+        }
+       },
+       "brier_line": {
+        "days": 10,
+        "means": {
+         "atom_at_line": 0.16,
+         "open_tail": 0.1598673992391712,
+         "status_quo": 0.16
+        },
+        "not_tested": "fewer than 20 decision days",
+        "vs": {}
+       }
+      },
+      "twcrps_mean": 0.8447116415214196
+     }
+    },
+    "pressure_day_type": {
+     "ordinary": {
+      "cells": 7939,
+      "grid_crps_mean": 1.285186069935684,
+      "metrics": {
+       "brier10": {
+        "days": 1855,
+        "means": {
+         "atom_at_line": 0.0235917953025528,
+         "open_tail": 0.023591795833180208,
+         "status_quo": 0.0235917953025528
+        },
+        "vs": {
+         "atom_at_line": {
+          "days": 1855,
+          "identical": true
+         },
+         "open_tail": {
+          "benchmark_mean": 0.0235917953025528,
+          "candidate_mean": 0.023591795833180208,
+          "days": 1855,
+          "difference": -5.306274069287577e-10,
+          "difference_interval": [
+           -7.036245260314455e-10,
+           8.674162932198929e-11
+          ],
+          "dm_p_value": 0.8459500930678565,
+          "dm_statistic": -1.0192173029863119,
+          "draws": 10000,
+          "dropped_resamples": 3330,
+          "skill": null,
+          "skill_interval": null,
+          "skill_undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+         }
+        }
+       },
+       "brier5": {
+        "days": 1855,
+        "means": {
+         "atom_at_line": 0.04526711532632436,
+         "open_tail": 0.045267114687619285,
+         "status_quo": 0.04526711532632436
+        },
+        "vs": {
+         "atom_at_line": {
+          "days": 1855,
+          "identical": true
+         },
+         "open_tail": {
+          "benchmark_mean": 0.04526711532632436,
+          "candidate_mean": 0.045267114687619285,
+          "days": 1855,
+          "difference": 6.38705054104742e-10,
+          "difference_interval": [
+           -4.0534617942282045e-10,
+           2.9809847457859024e-09
+          ],
+          "dm_p_value": 0.24167270881593106,
+          "dm_statistic": 0.7009320567013201,
+          "draws": 10000,
+          "dropped_resamples": 1503,
+          "skill": null,
+          "skill_interval": null,
+          "skill_undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+         }
+        }
+       },
+       "brier_line": {
+        "days": 10,
+        "means": {
+         "atom_at_line": 0.15,
+         "open_tail": 0.15000009843138398,
+         "status_quo": 0.15
+        },
+        "not_tested": "fewer than 20 decision days",
+        "vs": {}
+       }
+      },
+      "twcrps_mean": 0.5381844595346488
+     },
+     "quarter_end_turn": {
+      "cells": 220,
+      "grid_crps_mean": 3.511998522629195,
+      "metrics": {
+       "brier10": {
+        "days": 132,
+        "means": {
+         "atom_at_line": 0.08601082661907548,
+         "open_tail": 0.08601082661907548,
+         "status_quo": 0.08601082661907548
+        },
+        "vs": {
+         "atom_at_line": {
+          "days": 132,
+          "identical": true
+         },
+         "open_tail": {
+          "days": 132,
+          "identical": true
+         }
+        }
+       },
+       "brier5": {
+        "days": 132,
+        "means": {
+         "atom_at_line": 0.09503916896961419,
+         "open_tail": 0.09503916896961419,
+         "status_quo": 0.09503916896961419
+        },
+        "vs": {
+         "atom_at_line": {
+          "days": 132,
+          "identical": true
+         },
+         "open_tail": {
+          "days": 132,
+          "identical": true
+         }
+        }
+       }
+      },
+      "twcrps_mean": 2.136048267366674
+     },
+     "tax_date": {
+      "cells": 445,
+      "grid_crps_mean": 5.08268227993474,
+      "metrics": {
+       "brier10": {
+        "days": 214,
+        "means": {
+         "atom_at_line": 0.04019978805681537,
+         "open_tail": 0.04019978805681537,
+         "status_quo": 0.04019978805681537
+        },
+        "vs": {
+         "atom_at_line": {
+          "days": 214,
+          "identical": true
+         },
+         "open_tail": {
+          "days": 214,
+          "identical": true
+         }
+        }
+       },
+       "brier5": {
+        "days": 214,
+        "means": {
+         "atom_at_line": 0.055237333858448964,
+         "open_tail": 0.05523732198463274,
+         "status_quo": 0.055237333858448964
+        },
+        "vs": {
+         "atom_at_line": {
+          "days": 214,
+          "identical": true
+         },
+         "open_tail": {
+          "benchmark_mean": 0.055237333858448964,
+          "candidate_mean": 0.05523732198463274,
+          "days": 214,
+          "difference": 1.1873816210440608e-08,
+          "difference_interval": [
+           -2.9701537020028694e-09,
+           4.204961909290477e-08
+          ],
+          "dm_p_value": 0.13736030231346907,
+          "dm_statistic": 1.0922559765149693,
+          "draws": 10000,
+          "dropped_resamples": 2288,
+          "skill": null,
+          "skill_interval": null,
+          "skill_undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+         }
+        }
+       },
+       "brier_line": {
+        "days": 5,
+        "means": {
+         "atom_at_line": 0.0,
+         "open_tail": 0.0,
+         "status_quo": 0.0
+        },
+        "not_tested": "fewer than 20 decision days",
+        "vs": {}
+       }
+      },
+      "twcrps_mean": 4.364554047722575
+     },
+     "turn": {
+      "cells": 600,
+      "grid_crps_mean": 1.686548482250012,
+      "metrics": {
+       "brier10": {
+        "days": 360,
+        "means": {
+         "atom_at_line": 0.039757707226961966,
+         "open_tail": 0.039757707226961966,
+         "status_quo": 0.039757707226961966
+        },
+        "vs": {
+         "atom_at_line": {
+          "days": 360,
+          "identical": true
+         },
+         "open_tail": {
+          "days": 360,
+          "identical": true
+         }
+        }
+       },
+       "brier5": {
+        "days": 360,
+        "means": {
+         "atom_at_line": 0.03892498050518466,
+         "open_tail": 0.03892498050518466,
+         "status_quo": 0.03892498050518466
+        },
+        "vs": {
+         "atom_at_line": {
+          "days": 360,
+          "identical": true
+         },
+         "open_tail": {
+          "days": 360,
+          "identical": true
+         }
+        }
+       }
+      },
+      "twcrps_mean": 0.9969176296440552
+     },
+     "year_end": {
+      "cells": 71,
+      "grid_crps_mean": 8.469359782933088,
+      "metrics": {
+       "brier10": {
+        "days": 43,
+        "means": {
+         "atom_at_line": 0.08657052527523748,
+         "open_tail": 0.08641622388894357,
+         "status_quo": 0.08657052527523748
+        },
+        "vs": {
+         "atom_at_line": {
+          "days": 43,
+          "identical": true
+         },
+         "open_tail": {
+          "benchmark_mean": 0.08657052527523748,
+          "candidate_mean": 0.08641622388894357,
+          "days": 43,
+          "difference": 0.00015430138629390393,
+          "difference_interval": [
+           -1.3400899700132863e-05,
+           0.00015430138629390393
+          ],
+          "dm_p_value": 0.1530996442367767,
+          "dm_statistic": 1.02322962598684,
+          "draws": 10000,
+          "dropped_resamples": 2860,
+          "skill": null,
+          "skill_interval": null,
+          "skill_undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+         }
+        }
+       },
+       "brier5": {
+        "days": 43,
+        "means": {
+         "atom_at_line": 0.05827081858699642,
+         "open_tail": 0.05827081858699642,
+         "status_quo": 0.05827081858699642
+        },
+        "vs": {
+         "atom_at_line": {
+          "days": 43,
+          "identical": true
+         },
+         "open_tail": {
+          "days": 43,
+          "identical": true
+         }
+        }
+       },
+       "brier_line": {
+        "days": 1,
+        "means": {
+         "atom_at_line": 1.0,
+         "open_tail": 0.9933650403893621,
+         "status_quo": 1.0
+        },
+        "not_tested": "fewer than 20 decision days",
+        "vs": {}
+       }
+      },
+      "twcrps_mean": 7.771074690450026
+     }
+    },
+    "regime": {
+     "2018-19": {
+      "cells": 1795,
+      "grid_crps_mean": 3.654724457438306,
+      "metrics": {
+       "brier10": {
+        "days": 361,
+        "means": {
+         "atom_at_line": 0.08751953517438747,
+         "open_tail": 0.08751953517438747,
+         "status_quo": 0.08751953517438747
+        },
+        "vs": {
+         "atom_at_line": {
+          "days": 361,
+          "identical": true
+         },
+         "open_tail": {
+          "days": 361,
+          "identical": true
+         }
+        }
+       },
+       "brier5": {
+        "days": 361,
+        "means": {
+         "atom_at_line": 0.1650709057094255,
+         "open_tail": 0.1650709057094255,
+         "status_quo": 0.1650709057094255
+        },
+        "vs": {
+         "atom_at_line": {
+          "days": 361,
+          "identical": true
+         },
+         "open_tail": {
+          "days": 361,
+          "identical": true
+         }
+        }
+       }
+      },
+      "twcrps_mean": 3.222327907609633
+     },
+     "2020": {
+      "cells": 1255,
+      "grid_crps_mean": 1.4897730225096644,
+      "metrics": {
+       "brier10": {
+        "days": 255,
+        "means": {
+         "atom_at_line": 0.014517989733540963,
+         "open_tail": 0.014517989733540963,
+         "status_quo": 0.014517989733540963
+        },
+        "vs": {
+         "atom_at_line": {
+          "days": 255,
+          "identical": true
+         },
+         "open_tail": {
+          "days": 255,
+          "identical": true
+         }
+        }
+       },
+       "brier5": {
+        "days": 255,
+        "means": {
+         "atom_at_line": 0.02246385410507431,
+         "open_tail": 0.02246385410507431,
+         "status_quo": 0.02246385410507431
+        },
+        "vs": {
+         "atom_at_line": {
+          "days": 255,
+          "identical": true
+         },
+         "open_tail": {
+          "days": 255,
+          "identical": true
+         }
+        }
+       }
+      },
+      "twcrps_mean": 0.57815435393096
+     },
+     "2021-23": {
+      "cells": 3740,
+      "grid_crps_mean": 0.6335841000702993,
+      "metrics": {
+       "brier10": {
+        "days": 752,
+        "means": {
+         "atom_at_line": 3.123608274223523e-05,
+         "open_tail": 3.123608274223523e-05,
+         "status_quo": 3.123608274223523e-05
+        },
+        "vs": {
+         "atom_at_line": {
+          "days": 752,
+          "identical": true
+         },
+         "open_tail": {
+          "days": 752,
+          "identical": true
+         }
+        }
+       },
+       "brier5": {
+        "days": 752,
+        "means": {
+         "atom_at_line": 0.00016934484851672236,
+         "open_tail": 0.00016934484851672236,
+         "status_quo": 0.00016934484851672236
+        },
+        "vs": {
+         "atom_at_line": {
+          "days": 752,
+          "identical": true
+         },
+         "open_tail": {
+          "days": 752,
+          "identical": true
+         }
+        }
+       }
+      },
+      "twcrps_mean": 0.006882854247367363
+     },
+     "2024": {
+      "cells": 1250,
+      "grid_crps_mean": 1.0738202194006292,
+      "metrics": {
+       "brier10": {
+        "days": 254,
+        "means": {
+         "atom_at_line": 0.009631786857881245,
+         "open_tail": 0.009631786857881245,
+         "status_quo": 0.009631786857881245
+        },
+        "vs": {
+         "atom_at_line": {
+          "days": 254,
+          "identical": true
+         },
+         "open_tail": {
+          "days": 254,
+          "identical": true
+         }
+        }
+       },
+       "brier5": {
+        "days": 254,
+        "means": {
+         "atom_at_line": 0.018146249550244114,
+         "open_tail": 0.018146249550244114,
+         "status_quo": 0.018146249550244114
+        },
+        "vs": {
+         "atom_at_line": {
+          "days": 254,
+          "identical": true
+         },
+         "open_tail": {
+          "days": 254,
+          "identical": true
+         }
+        }
+       }
+      },
+      "twcrps_mean": 0.1694453306440583
+     },
+     "2025-26": {
+      "cells": 1235,
+      "grid_crps_mean": 2.193525327807209,
+      "metrics": {
+       "brier10": {
+        "days": 249,
+        "means": {
+         "atom_at_line": 0.050935204015630675,
+         "open_tail": 0.05092987868387049,
+         "status_quo": 0.050935204015630675
+        },
+        "vs": {
+         "atom_at_line": {
+          "days": 249,
+          "identical": true
+         },
+         "open_tail": {
+          "benchmark_mean": 0.050935204015630675,
+          "candidate_mean": 0.05092987868387049,
+          "days": 249,
+          "difference": 5.32533176019174e-06,
+          "difference_interval": [
+           -1.2690333935650959e-06,
+           0.007469657255549167
+          ],
+          "dm_p_value": 0.1581452145785308,
+          "dm_statistic": 1.0021100818467235,
+          "draws": 10000,
+          "dropped_resamples": 2348,
+          "skill": null,
+          "skill_interval": null,
+          "skill_undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+         }
+        }
+       },
+       "brier5": {
+        "days": 249,
+        "means": {
+         "atom_at_line": 0.06450149761715626,
+         "open_tail": 0.06450149217574179,
+         "status_quo": 0.06450149761715626
+        },
+        "vs": {
+         "atom_at_line": {
+          "days": 249,
+          "identical": true
+         },
+         "open_tail": {
+          "benchmark_mean": 0.06450149761715626,
+          "candidate_mean": 0.06450149217574179,
+          "days": 249,
+          "difference": 5.441414476411073e-09,
+          "difference_interval": [
+           -2.5234367595154216e-09,
+           2.6020945768400008e-08
+          ],
+          "dm_p_value": 0.2096352631210776,
+          "dm_statistic": 0.8076874565980061,
+          "draws": 10000,
+          "dropped_resamples": 1355,
+          "skill": null,
+          "skill_interval": null,
+          "skill_undefined": "a resampled difference has no long-run variance; it cannot be studentized"
+         }
+        }
+       },
+       "brier_line": {
+        "days": 10,
+        "means": {
+         "atom_at_line": 0.16,
+         "open_tail": 0.1598673992391712,
+         "status_quo": 0.16
+        },
+        "not_tested": "fewer than 20 decision days",
+        "vs": {}
+       }
+      },
+      "twcrps_mean": 0.8805584037071216
+     }
+    }
+   },
+   "largest_uncapped_q99_above_the_line_bp": 51.74002747607629,
+   "pit_deciles_at_full_allotment": {
+    "atom_at_line": [
+     0,
+     0,
+     2,
+     9,
+     6,
+     10,
+     9,
+     6,
+     0,
+     8
+    ],
+    "open_tail": [
+     0,
+     0,
+     4,
+     6,
+     8,
+     10,
+     8,
+     6,
+     0,
+     8
+    ],
+    "status_quo": [
+     0,
+     0,
+     2,
+     7,
+     6,
+     11,
+     11,
+     4,
+     0,
+     9
+    ]
+   },
+   "reproduction": {
+    "mean_grid_crps": 1.6011621706422519,
+    "record_1314": 1.6011621706422636
+   }
+  }
+ }
+}

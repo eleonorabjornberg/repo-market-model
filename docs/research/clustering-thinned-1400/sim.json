@@ -1,0 +1,328 @@
+{
+ "declaration": "metadata/clustering_thinned_1400.json",
+ "issue": 1400,
+ "label": "development, a simulation; not a verdict",
+ "paths": 500,
+ "seed": 1400,
+ "sizes": {
+  "165": {
+   "by_lead_event": {
+    "1": {
+     "band50": {
+      "any_phase": 0.06,
+      "mean_phase": 0.06,
+      "phase0": 0.06,
+      "unthinned": 0.054
+     },
+     "band90": {
+      "any_phase": 0.066,
+      "mean_phase": 0.066,
+      "phase0": 0.066,
+      "unthinned": 0.03
+     },
+     "lower": {
+      "any_phase": 0.028,
+      "mean_phase": 0.028,
+      "phase0": 0.028,
+      "unthinned": 0.032
+     },
+     "upper": {
+      "any_phase": 0.012,
+      "mean_phase": 0.012,
+      "phase0": 0.012,
+      "unthinned": 0.016
+     }
+    },
+    "2": {
+     "band50": {
+      "any_phase": 0.096,
+      "mean_phase": 0.05,
+      "phase0": 0.054,
+      "unthinned": 0.186
+     },
+     "band90": {
+      "any_phase": 0.046,
+      "mean_phase": 0.025,
+      "phase0": 0.026,
+      "unthinned": 0.318
+     },
+     "lower": {
+      "any_phase": 0.028,
+      "mean_phase": 0.014,
+      "phase0": 0.012,
+      "unthinned": 0.44
+     },
+     "upper": {
+      "any_phase": 0.024,
+      "mean_phase": 0.012,
+      "phase0": 0.008,
+      "unthinned": 0.406
+     }
+    },
+    "3": {
+     "band50": {
+      "any_phase": 0.14,
+      "mean_phase": 0.04799999999999997,
+      "phase0": 0.048,
+      "unthinned": 0.712
+     },
+     "band90": {
+      "any_phase": 0.062,
+      "mean_phase": 0.021333333333333336,
+      "phase0": 0.028,
+      "unthinned": 0.736
+     },
+     "lower": {
+      "any_phase": 0.044,
+      "mean_phase": 0.015333333333333329,
+      "phase0": 0.012,
+      "unthinned": 0.63
+     },
+     "upper": {
+      "any_phase": 0.032,
+      "mean_phase": 0.011999999999999999,
+      "phase0": 0.01,
+      "unthinned": 0.684
+     }
+    },
+    "4": {
+     "band50": {
+      "any_phase": 0.216,
+      "mean_phase": 0.064,
+      "phase0": 0.066,
+      "unthinned": 0.94
+     },
+     "band90": {
+      "any_phase": 0.078,
+      "mean_phase": 0.0225,
+      "phase0": 0.028,
+      "unthinned": 0.872
+     },
+     "lower": {
+      "any_phase": 0.058,
+      "mean_phase": 0.0185,
+      "phase0": 0.022,
+      "unthinned": 0.726
+     },
+     "upper": {
+      "any_phase": 0.04,
+      "mean_phase": 0.0115,
+      "phase0": 0.006,
+      "unthinned": 0.722
+     }
+    },
+    "5": {
+     "band50": {
+      "any_phase": 0.232,
+      "mean_phase": 0.0503999999999999,
+      "phase0": 0.046,
+      "unthinned": 0.982
+     },
+     "band90": {
+      "any_phase": 0.074,
+      "mean_phase": 0.015600000000000008,
+      "phase0": 0.022,
+      "unthinned": 0.898
+     },
+     "lower": {
+      "any_phase": 0.022,
+      "mean_phase": 0.0048000000000000004,
+      "phase0": 0.004,
+      "unthinned": 0.752
+     },
+     "upper": {
+      "any_phase": 0.016,
+      "mean_phase": 0.0035999999999999995,
+      "phase0": 0.006,
+      "unthinned": 0.742
+     }
+    }
+   },
+   "days": 165,
+   "family": {
+    "thinned_2_to_5": 0.024,
+    "thinned_all": 0.022,
+    "unthinned_2_to_5": 0.982,
+    "unthinned_all": 0.982
+   },
+   "family_by_lead": {
+    "thinned": {
+     "1": 0.004,
+     "2": 0.0,
+     "3": 0.006,
+     "4": 0.004,
+     "5": 0.008
+    },
+    "unthinned": {
+     "1": 0.014,
+     "2": 0.316,
+     "3": 0.736,
+     "4": 0.922,
+     "5": 0.964
+    }
+   },
+   "paths": 500,
+   "permutations": 1999
+  },
+  "1855": {
+   "by_lead_event": {
+    "1": {
+     "band50": {
+      "any_phase": 0.038,
+      "mean_phase": 0.038,
+      "phase0": 0.038,
+      "unthinned": 0.036
+     },
+     "band90": {
+      "any_phase": 0.046,
+      "mean_phase": 0.046,
+      "phase0": 0.046,
+      "unthinned": 0.044
+     },
+     "lower": {
+      "any_phase": 0.048,
+      "mean_phase": 0.048,
+      "phase0": 0.048,
+      "unthinned": 0.028
+     },
+     "upper": {
+      "any_phase": 0.038,
+      "mean_phase": 0.038,
+      "phase0": 0.038,
+      "unthinned": 0.022
+     }
+    },
+    "2": {
+     "band50": {
+      "any_phase": 0.112,
+      "mean_phase": 0.058,
+      "phase0": 0.042,
+      "unthinned": 0.994
+     },
+     "band90": {
+      "any_phase": 0.114,
+      "mean_phase": 0.059,
+      "phase0": 0.06,
+      "unthinned": 1.0
+     },
+     "lower": {
+      "any_phase": 0.148,
+      "mean_phase": 0.076,
+      "phase0": 0.062,
+      "unthinned": 1.0
+     },
+     "upper": {
+      "any_phase": 0.148,
+      "mean_phase": 0.075,
+      "phase0": 0.078,
+      "unthinned": 1.0
+     }
+    },
+    "3": {
+     "band50": {
+      "any_phase": 0.144,
+      "mean_phase": 0.05133333333333329,
+      "phase0": 0.052,
+      "unthinned": 1.0
+     },
+     "band90": {
+      "any_phase": 0.16,
+      "mean_phase": 0.0566666666666666,
+      "phase0": 0.06,
+      "unthinned": 1.0
+     },
+     "lower": {
+      "any_phase": 0.14,
+      "mean_phase": 0.04933333333333328,
+      "phase0": 0.052,
+      "unthinned": 1.0
+     },
+     "upper": {
+      "any_phase": 0.12,
+      "mean_phase": 0.04266666666666664,
+      "phase0": 0.05,
+      "unthinned": 1.0
+     }
+    },
+    "4": {
+     "band50": {
+      "any_phase": 0.158,
+      "mean_phase": 0.0425,
+      "phase0": 0.044,
+      "unthinned": 1.0
+     },
+     "band90": {
+      "any_phase": 0.204,
+      "mean_phase": 0.057,
+      "phase0": 0.064,
+      "unthinned": 1.0
+     },
+     "lower": {
+      "any_phase": 0.138,
+      "mean_phase": 0.0375,
+      "phase0": 0.046,
+      "unthinned": 1.0
+     },
+     "upper": {
+      "any_phase": 0.126,
+      "mean_phase": 0.035,
+      "phase0": 0.036,
+      "unthinned": 1.0
+     }
+    },
+    "5": {
+     "band50": {
+      "any_phase": 0.204,
+      "mean_phase": 0.043999999999999914,
+      "phase0": 0.038,
+      "unthinned": 1.0
+     },
+     "band90": {
+      "any_phase": 0.26,
+      "mean_phase": 0.05999999999999988,
+      "phase0": 0.072,
+      "unthinned": 1.0
+     },
+     "lower": {
+      "any_phase": 0.106,
+      "mean_phase": 0.023599999999999986,
+      "phase0": 0.024,
+      "unthinned": 1.0
+     },
+     "upper": {
+      "any_phase": 0.096,
+      "mean_phase": 0.022799999999999994,
+      "phase0": 0.018,
+      "unthinned": 1.0
+     }
+    }
+   },
+   "days": 1855,
+   "family": {
+    "thinned_2_to_5": 0.024,
+    "thinned_all": 0.026,
+    "unthinned_2_to_5": 1.0,
+    "unthinned_all": 1.0
+   },
+   "family_by_lead": {
+    "thinned": {
+     "1": 0.002,
+     "2": 0.002,
+     "3": 0.004,
+     "4": 0.004,
+     "5": 0.014
+    },
+    "unthinned": {
+     "1": 0.028,
+     "2": 1.0,
+     "3": 1.0,
+     "4": 1.0,
+     "5": 1.0
+    }
+   },
+   "paths": 500,
+   "permutations": 1999
+  }
+ },
+ "world": "the two-regime AR(1) world of #961/#998 (scripts/coverage_gate_961.py: simulate, sigma_schedule, ideal, quantiles; phi 0.9, innovation sd 1.0 in calm and 2.5 in stress blocks of 250 days), forecaster 'ideal' (calibrated by construction at every lead). It has a continuous outcome, so strict and weak rules coincide and only the strict rule is simulated; the real target is in whole basis points, which the simulation does not copy"
+}
