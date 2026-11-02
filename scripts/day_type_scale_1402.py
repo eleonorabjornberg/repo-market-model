@@ -560,6 +560,50 @@ def type_summary(r: Mapping[str, object]) -> List[str]:
     return out
 
 
+def _reading(row: Optional[dict]) -> str:
+    return "n/a" if row is None else m1288.words(row).replace("*", "")
+
+
+def answer(r: Mapping[str, object]) -> List[str]:
+    """The reading by type in a few lines, every figure and word taken from the record, in the order the declaration reads it."""
+
+    out = ["## The answer", "",
+           "Read as declared: by type of target day, on the mean-d bound of the grid CRPS, against (s3c-ann-net). A pooled figure over all days is not read alone."]
+    for window, title in (("development", "Development window"), ("2026", "2026 development days (shown apart, decide nothing)")):
+        w = r["windows"].get(window)
+        if w is None:
+            continue
+        groups = w["groups"]["pressure_day_type"]
+
+        def line(arm: str, labels: Sequence[str]) -> str:
+            parts = []
+            for label in labels:
+                g = groups.get(label)
+                if g is None:
+                    continue
+                if f"pressure_day_type/{label}" in w["skipped_groups"]:
+                    parts.append(f"{label} not tested ({g['days']} days)")
+                else:
+                    parts.append(f"{label} {_reading(_vs(g, 'grid_crps', arm, ANNNET))} ({g['days']} days)")
+            return "; ".join(parts)
+
+        out += ["", f"**{title}.**", "",
+                f"- {LABELS[TYPED]}, grid CRPS: " + line(TYPED, list(dts.NON_ORDINARY) + [NON_ORDINARY, dts.ORDINARY]),
+                f"- {LABELS[POOLED]}, grid CRPS: " + line(POOLED, list(dts.NON_ORDINARY) + [NON_ORDINARY, dts.ORDINARY])]
+        union = groups[NON_ORDINARY]
+        for arm in ARMS:
+            out.append(f"- {LABELS[arm]} on the {NON_ORDINARY.split(' (')[0]} days: upper-tail twCRPS {_reading(_vs(union, 'upper_tail_twcrps', arm, ANNNET))}, "
+                       f"Brier P(> +5 bp) {_reading(_vs(union, 'brier_gt5', arm, ANNNET))}.")
+        cover = []
+        for label in list(dts.NON_ORDINARY) + [NON_ORDINARY, dts.ORDINARY]:
+            g = groups.get(label)
+            if g is not None:
+                cover.append(f"{label} ({g['days']} days) " + " / ".join(f"{g['b90_closed']['means'][m]:.3f}" for m in (ANNNET, TYPED, POOLED)))
+        out.append("- 90% band coverage, candidate / typed / pooled-scale (nominal 0.900): " + "; ".join(cover) + ".")
+    out.append("")
+    return out
+
+
 def render(r: dict) -> str:
     out = [
         "# Day-type residual scale beside the frozen candidate (s3c-ann-net), at the 18:00 decision (#1402)", "",
@@ -586,6 +630,7 @@ def render(r: dict) -> str:
         out += ["**Reproduction.** The candidate's pooled mean grid CRPS equals #1314's 18:00 record to 1e-9 (development "
                 f"{r['reproduction']['development']['here']:.6f}, 2026 {r['reproduction']['2026']['here']:.6f}), or the script refused to write this record. "
                 "The pooled-scale arm equals the candidate on every cell whose target is an ordinary day, or the script refused too.", ""]
+    out += answer(r)
     out += type_summary(r)
     for window in WINDOWS:
         w = r["windows"].get(window)

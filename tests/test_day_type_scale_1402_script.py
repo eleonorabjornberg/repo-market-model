@@ -216,6 +216,7 @@ class EndToEndTests(unittest.TestCase):
     def test_the_page_carries_the_declared_reading_the_type_summary_and_ends_with_the_marked_question(self):
         text = self.page.read_text(encoding="utf-8")
         self.assertIn("**Which reading, declared in advance.** BY TYPE", text)
+        self.assertIn("## The answer", text)
         self.assertIn("## Summary: by pressure-day type of the target day", text)
         self.assertIn("### The multipliers", text)
         self.assertIn("### Clustering of the band misses", text)
