@@ -147,10 +147,10 @@ def candidate_walk(window: str, frame, panel, splits, registry, results, auction
     return walk, name
 
 
-def b4_walk(window: str, frame, panel, registry, announcements, first: Optional[date]) -> b4.Walk:
-    """B4 over the decision days the candidate is walked over, refitting on the candidate's cadence (`b4_quantile_regression.walk`)."""
+def b4_walk(frame, panel, registry, announcements, days: Sequence[date]) -> b4.Walk:
+    """B4 over `days`, the decision days the candidate forecast (its first forecast day is later than the panel's first row, so the two cadences start
+    together), refitting on the candidate's cadence (`b4_quantile_regression.walk`)."""
 
-    days = m1288.candidate_days(frame, window, first)
     table = cal.TermTable(panel, announcements, decision_time=k.DECISION_TIME)
     reserves = b4.ReserveTable(panel, registry=registry, decision_time=k.DECISION_TIME)
     walked = b4.walk(panel, days, table, reserves, registry=registry, decision_time=k.DECISION_TIME)
@@ -164,7 +164,7 @@ def build(window: str, panel, splits, registry, table, register, results, auctio
     frame, notes, _mine, _cells, groups_fn = m1255.build(window, panel, splits, registry, table, register, first)
     walk, name = candidate_walk(window, frame, panel, splits, registry, results, auctions, first)
     announcements = announced_iorb.load_announcements(c.IORB_TABLE)
-    walked = b4_walk(window, frame, panel, registry, announcements, first)
+    walked = b4_walk(frame, panel, registry, announcements, sorted(walk.forecasts[name]))
     forecasts = {m: frame.forecasts[m] for m in BENCHMARKS}
     forecasts[ANNNET] = m1255.s3c_forecasts(frame, register, {d: walk.forecasts[name][d] for d in frame.days})
     forecasts[B4] = {d: walked.forecasts[d] for d in frame.days}
