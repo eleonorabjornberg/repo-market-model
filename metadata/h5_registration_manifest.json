@@ -432,11 +432,11 @@
   },
   {
    "id": "net_maturing_rule",
-   "what": "The maturing amount of a class is the largest figure any announced auction of the class carries (one total repeated on each record), 0.0 when none carries one",
+   "what": "The maturing amount of a class is the largest figure any announced auction of the class carries (one total repeated on each record), 0.0 when none carries one (net_for_day and net_state read it alike; #1390 added the explicit missing state `missing_maturing` and changed no figure)",
    "value": "max of the announced figures",
    "text": {
     "file": "src/repo_model/net_settlement.py",
-    "contains": "maturing = max(figures) if figures else 0.0"
+    "contains": "max(figures) if figures else 0.0"
    }
   },
   {
@@ -445,7 +445,7 @@
    "value": "left out",
    "text": {
     "file": "src/repo_model/net_settlement.py",
-    "contains": "if partly_announced:"
+    "contains": "elif len(members) < len(scheduled):"
    }
   },
   {
@@ -454,7 +454,7 @@
    "value": "from its own announcement",
    "text": {
     "file": "src/repo_model/net_settlement.py",
-    "contains": "one announced after `instant` neither makes a class partly announced nor is counted"
+    "contains": "def _visible_to_schedule("
    }
   },
   {
@@ -1144,9 +1144,52 @@
    "declaration": "metadata/b1_anchor_horizon_1388.json",
    "page": "docs/research/b1-anchor-horizon-1388-result.md",
    "log": "docs/research/log/2026-11-02-model-01388-H5-step3.md"
+  },
+  {
+   "id": "flagnet_diagnosis",
+   "label": "Diagnosis of (s3c-ann-flagnet) beside (s3c-ann-net)",
+   "issue": 1344,
+   "pr": 1358,
+   "merged": "2026-11-02",
+   "role": "side_check",
+   "parent": "flagnet_gross",
+   "change": "No new arm and no tuned setting: #1321's walks rebuilt at the 18:00 decision instant and split by lead, settlement-day type, leg, regime, month, scarcity state and realised event; a drafted prospective test of the arm, not registered",
+   "outcome": "The flagnet's Brier gain is on settlement days and other days alike; its grid CRPS difference sits on days when no leg settles; the 2020 loss is not an over-shift of the declared rule; from 2020-04-03 a prospective comparison with the candidate has almost no power at the observed effect. Whether to register the arm is her question on the page (default no)",
+   "declaration": "metadata/s3c_flagnet_diagnosis_1344.json",
+   "page": "docs/research/s3c-flagnet-diagnosis-1344-result.md",
+   "log": "docs/research/log/2026-11-02-model-01344-H5-step3.md"
+  },
+  {
+   "id": "bill_iorb",
+   "label": "(s3c-ann-net-bill): the 4-week bill rate less IORB as one more term",
+   "issue": 1346,
+   "pr": 1357,
+   "merged": "2026-11-02",
+   "role": "tried_not_adopted",
+   "parent": "ann_net_1800",
+   "change": "One declared arm: the 4-week bill rate less IORB of the previous business day as one more term, read at the 18:00 decision instant",
+   "outcome": "Against (s3c-ann-net): development window -1.0% [-1.8%, -0.3%], a loss at every lead; 2026 days +0.6% [-2.6%, +3.8%], undecided. Not adopted; whether it replaces the candidate is her question on the page (default no)",
+   "declaration": "metadata/s3c_bill_iorb_1346.json",
+   "page": "docs/research/s3c-bill-iorb-1346-result.md",
+   "log": "docs/research/log/2026-11-02-model-01346-H5-step3.md"
+  },
+  {
+   "id": "net_missing",
+   "label": "(s3c-ann-net) with a class resting on a missing figure read as 0.0 beside a 0/1 missingness flag",
+   "issue": 1390,
+   "pr": 1398,
+   "merged": "2026-11-02",
+   "role": "tried_not_adopted",
+   "parent": "ann_net_1800",
+   "change": "One declared alternative reading of a missing maturing amount (the class contributes 0.0 and a flag marks it), and the reader's explicit missing state (`net_state`); `net_for_day` returns the same numbers",
+   "outcome": "Against (s3c-ann-net): development window +0.1% [+0.0%, +0.2%]; 2026 days +0.1% [-0.3%, +0.4%], undecided; a tenth of a percent on days already seen. What a missing maturing amount should mean in the registered recipe is her question on the page (default keep the current reading and log the state)",
+   "declaration": "metadata/s3c_net_missing_1390.json",
+   "page": "docs/research/s3c-net-missing-1390-result.md",
+   "log": "docs/research/log/2026-11-02-model-01390-H5-step3.md"
   }
  ],
  "not_arms": {
-  "metadata/aligned_pairs_931.json": "#931's scratch measurement of the gbm_funding line's pair construction, declared before any score with nothing published; a precursor of #1027, not an arm on the way to the candidate"
+  "metadata/aligned_pairs_931.json": "#931's scratch measurement of the gbm_funding line's pair construction, declared before any score with nothing published; a precursor of #1027, not an arm on the way to the candidate",
+  "metadata/s3c_flagnet_prospective_draft_1344.json": "#1344's draft prospective test of (s3c-ann-flagnet), not registered; a draft for her review, not an arm on the way to the candidate"
  }
 }
