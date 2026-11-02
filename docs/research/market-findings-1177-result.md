@@ -39,7 +39,7 @@ Mean spread in bp (SOFR - IORB), with the number of days; median and the share o
 
 The directive's first-day figure for 2018-19 is the first business day of every month, quarter-ends and the year-end included. Read that way it is +8.1 bp over 21 days, with a median of +6.0 bp; read on the definition above (months that do not end a quarter) it is +4.0 bp over 14 days, median +4.0 bp. The wider mean carries the year-end first day, which printed far above the rest. **Question for Eleonora (not settled here):** which reading do the pages quote? They quote the definition in force.
 
-## 2. The calendar sets the date; reserve scarcity sets the size
+## 2. Calendar effects are larger in some low-reserve periods
 
 Per-term effects of arm (s1) of #1145 (`sc_s1_standardised`), in bp, with the 90% interval over the refits.
 

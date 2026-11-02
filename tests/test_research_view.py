@@ -72,10 +72,8 @@ class PageOrder(unittest.TestCase):
         for hid in PLAN_IDS:
             block = PAGE[at(f'id="{hid.lower()}"'):]
             block = block[:block.find("</article>")]
-            for label in ("Question", "Kill criterion", "Owner", "Milestones", "Progress markers",
-                          "Development variants"):
+            for label in ("Question", "How it is tested", "What would end it", "Where it stands"):
                 self.assertIn(f"<dt>{label}</dt>", block, f"{hid} lacks {label}")
-            self.assertRegex(block, r'<li class="(done|open)"><b>M1</b>')
 
     def test_each_hypothesis_is_one_tagline_line_over_a_fold(self):
         """#893: the visible line is the id and its tagline; everything else sits inside the native <details>."""
@@ -88,17 +86,15 @@ class PageOrder(unittest.TestCase):
             self.assertIsNotNone(opened, f"{hid} is not one <details> fold")
             line, fold = opened.groups()
             text = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", line)).strip()
-            self.assertEqual(text, f"{hid} {research_view.inline(taglines[hid])}", hid)
+            self.assertEqual(text, research_view.inline(taglines[hid]) + (" main aim" if hid == "H5" else " second aim" if hid == "H9" else ""), hid)
             self.assertNotRegex(line, r"<(?:br|p|div|ul|ol|dl|table)\b", hid)
-            for label in ("Step", "Kill criterion", "Milestones", "Test"):
-                if label == "Test" and "<dt>Test</dt>" not in fold:
-                    continue
+            for label in ("Question", "How it is tested", "What would end it", "Where it stands"):
                 self.assertIn(f"<dt>{label}</dt>", fold, hid)
 
     def test_owner_repository_of_h7_and_h10(self):
         for hid in ("H7", "H10"):
             block = PAGE[at(f'id="{hid.lower()}"'):]
-            self.assertIn("repo-market-liquidity", block[:block.find("</article>")])
+            self.assertIn("companion project", block[:block.find("</article>")])
 
 
 class Labels(unittest.TestCase):
@@ -168,11 +164,104 @@ class Labels(unittest.TestCase):
             self.assertIn(research_view.DEV_LABEL, callout)
 
     def test_unmeasured_figures_say_so(self):
-        self.assertIn("not measured", PAGE[at('id="h5"'):at('id="h6"')])
+        self.assertIn(research_view.NOT_MEASURED, research_view.standings_html(None))  # #1355: the folds hold no figures now
         self.assertIn("No conclusions yet", PAGE[at('id="research-summary"'):at('id="best-performer"')])
 
     def test_question_for_eleonora_is_marked(self):
         self.assertIn("Question for Eleonora", PAGE[at('id="best-performer"'):at('id="hypotheses"')])
+
+
+def shown(start, end=None):
+    """The text a reader sees between two markers of the built page: scripts, styles and tags gone, entities decoded."""
+    block = PAGE[at(start):at(end)] if end else PAGE[at(start):]
+    block = re.sub(r"<(script|style)\b[^>]*>.*?</\1>", "", block, flags=re.S)
+    return re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", " ", block)))
+
+
+class PlainLanguageSections(unittest.TestCase):
+    """#1355 (Eleonora, 2 November 2026, after #1352): the sections below the summary are for a reader, not the project.
+
+    The masthead, section 1, section 2, the final-test, forecast and why-it-happens sections, view N6 and the
+    source lines of view N4's cards show no hypothesis, link, milestone or issue id, no repository file, no code name
+    of a model or arm, no benchmark label (B1, B2, B3), no `<code>`, and no ledger or "tracked directive" wording
+    (`research_view.INTERNAL_PAGE`). A link may still lead to a file; its visible words are plain.
+
+    Recorded mutation: in `scripts/research_view.py`, `hypothesis_html`, put `{h["id"]} ` back in front of the
+    tagline inside `<summary>` (the old `rs-id` span) and run
+    `PYTHONPATH=src:tests python3 -m unittest test_research_view.PlainLanguageSections`:
+    `test_no_fold_line_starts_with_an_id` failed with AssertionError.
+    """
+
+    SECTIONS = {
+        "masthead": ('<header class="masthead">', '<div class="prose intro">'),
+        "section 1": ('id="best-performer"', 'id="hypotheses"'),
+        "section 2": ('id="hypotheses"', 'id="background"'),
+        "view N6": ('id="n6"', 'id="final-test"'),
+        "section 4": ('id="final-test"', 'id="forecast-actual"'),
+        "section 5": ('id="forecast-actual"', 'id="plumbing"'),
+        "section 8": ('id="why"', 'id="clock"'),
+    }
+
+    def test_no_changed_section_shows_an_internal_reference(self):
+        for name, (start, end) in self.SECTIONS.items():
+            with self.subTest(section=name):
+                text = shown(start, end)
+                hit = research_view.INTERNAL_PAGE.search(text)
+                self.assertIsNone(hit, f"{name}: {text[max(0, hit.start() - 60):hit.end() + 60] if hit else ''!r}")
+                block = PAGE[at(start):at(end)]
+                self.assertNotIn("<code>", re.sub(r"<script\b.*?</script>", "", block, flags=re.S), name)
+
+    def test_the_view_n4_source_lines_name_no_file(self):
+        """The status line and the stored-copy row of each card say it in words."""
+        cards = re.findall(r'<p class="st">.*?</p>', PAGE, re.S)
+        self.assertTrue(cards)
+        for card in cards:
+            self.assertNotRegex(re.sub(r"<[^>]+>", " ", card), research_view.INTERNAL_PAGE)
+            self.assertNotIn("<code>", card)
+        self.assertNotIn("Data in this repository", PAGE)
+
+    def test_no_fold_line_starts_with_an_id(self):
+        """Section 2 keeps no id in front of the line (her point 4 on #1355): a reader meets the plain line first."""
+        for hid in PLAN_IDS:
+            block = PAGE[at(f'<article class="rs-h" id="{hid.lower()}"'):]
+            summary = re.search(r"<summary>(.*?)</summary>", block, re.S).group(1)
+            text = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", summary)).strip()
+            self.assertNotRegex(text, r"\bH\d+\b", hid)
+            self.assertNotIn("rs-id", summary)
+
+    def test_a_question_without_a_plain_fold_is_refused(self):
+        for hid in ("H1", "H10"):
+            with self.subTest(hid=hid), tempfile.TemporaryDirectory() as tmp:
+                out = Sources.copy_tree(self, tmp)
+                path = out / research_view.SUMMARY
+                data = json.loads(path.read_text(encoding="utf-8"))
+                del data["questions"][hid]
+                path.write_text(json.dumps(data), encoding="utf-8")
+                with self.assertRaisesRegex(research_view.ResearchError, "no plain"):
+                    research_view.hypotheses_html(research_view.load(out), research_view.load_plain(out))
+
+    def test_a_plain_text_naming_something_internal_is_refused(self):
+        for section, edit in (("questions", lambda d: d["questions"]["H2"].update(test="the tests of H2 (see #629)")),
+                              ("models", lambda d: d["models"]["B1"].update(name="B1, persistence")),
+                              ("candidate", lambda d: d["candidate"].update(description="sc_s3c_ann_net, a model"))):
+            with self.subTest(section=section), tempfile.TemporaryDirectory() as tmp:
+                out = Sources.copy_tree(self, tmp)
+                path = out / research_view.SUMMARY
+                data = json.loads(path.read_text(encoding="utf-8"))
+                edit(data)
+                path.write_text(json.dumps(data), encoding="utf-8")
+                with self.assertRaisesRegex(research_view.ResearchError, "internal"):
+                    research_view.load_plain(out)
+
+    def test_the_guard_catches_what_it_is_for(self):
+        for bad in ("H5", "CP2", "M3", "#1352", "docs/runs/x.json", "sc_s3c_ann_net", "(s3c-ann-net)", "B1", "B1\u2032",
+                    "MME", "twCRPS", "Lens C", "a tracked directive", "ledger item 77", "phase 2 models", "spread_mr_ctx"):
+            with self.subTest(bad=bad):
+                self.assertRegex(f"as in {bad} here", research_view.INTERNAL_PAGE)
+        for fine in ("The scorer ranks forecasts correctly.", "SOFR minus IORB, in basis points", "the H.8 release",
+                     "a model that learns from many inputs at once"):
+            with self.subTest(fine=fine):
+                self.assertNotRegex(fine, research_view.INTERNAL_PAGE)
 
 
 class Standings(unittest.TestCase):
@@ -318,7 +407,7 @@ class CandidateStandings(unittest.TestCase):
 
     def copy_tree(self, tmp, skip=()):
         for rel in (self.CANDIDATE, self.STEP4, "docs/pivot/evidence/b1-calendar-960/score.json",
-                    "metadata/b1_calendar_960.json", self.record()["scores"]["record"]):
+                    "metadata/b1_calendar_960.json", self.record()["scores"]["record"], research_view.SUMMARY):
             if rel in skip:
                 continue
             (Path(tmp) / rel).parent.mkdir(parents=True, exist_ok=True)
@@ -345,23 +434,24 @@ class CandidateStandings(unittest.TestCase):
         step4 = json.loads((ROOT / self.STEP4).read_text(encoding="utf-8"))["best_candidate"]
         self.assertEqual(step4, "gbm_funding")
         block = self.block()
-        self.assertIn(self.record()["candidate"], block)
+        plain = json.loads((ROOT / research_view.SUMMARY).read_text(encoding="utf-8"))["candidate"]
+        self.assertIn(html.escape(plain["description"]), block)  # #1355: described in words, never by its code name
+        self.assertNotIn(self.record()["candidate"], block)
         self.assertNotIn("names <b>gbm_funding</b> as its best candidate", block)
         for e in self.record()["evidence"]:
             self.assertIn(e["page"], block)
             if e.get("mean_d_page"):  # #1194: each evidence page is linked beside its reading on the mean-d bound (#1255's page is its own)
                 self.assertIn(e["mean_d_page"], block)
         self.assertNotRegex(block, r"(?<![&\w])#\d+")
-        self.assertIn(self.record()["ruling"], block)
         self.assertIn("2026-10-29", block)
-        self.assertIn("(s3), the base of (s3c), which is the base of (s3c-ann-net)", block)  # #1259, #1310: the tables are the base's, and the page says so
+        self.assertIn(html.escape(plain["base"]), block)  # #1259, #1310: the tables are the base's, and the page says so
 
     def test_it_is_scored_beside_all_five_and_labelled(self):
         block = self.block()
-        for model in ("B1", "B1&prime;", "B2", "spread_mr_fhs_mad20_f0.5", "spread_mr_ctx"):
-            self.assertIn(f'<th scope="row">{model}</th>', block)
-        self.assertNotIn('<th scope="row">gbm_funding</th>', block)
-        self.assertIn("gbm_funding", block)  # said once: its walks were not supplied
+        models = json.loads((ROOT / research_view.SUMMARY).read_text(encoding="utf-8"))["models"]
+        for key in ("B1", "B1_prime", "B2", "mr_cal_a_base", "spread_mr_ctx"):
+            self.assertIn(f'<th scope="row">{html.escape(models[key]["name"])}</th>', block)
+        self.assertNotIn(f'<th scope="row">{models["gbm_funding"]["name"]}</th>', block)
         self.assertIn(research_view.DEV_LABEL, block)
         self.assertNotIn(research_view.PROVISIONAL_LABEL, block)  # it reads the calendar at the target day
         self.assertNotRegex(block, r"(?i)\bleads\b|\bbeats B1\b|\bregistered candidate\b")
@@ -404,14 +494,15 @@ class CandidateStandings(unittest.TestCase):
 
     def test_it_carries_lens_cs_caveat(self):
         block = self.block()
-        self.assertIn("Lens C", block)
-        self.assertIn("B1 stays the protocol", block)
+        self.assertIn("A caution on the baselines", block)  # #1355: was "Lens C's caveat"
+        self.assertIn("Plain persistence stays the scoring rules", block)
         self.assertRegex(block, r"(?i)by regime")
         self.assertRegex(block, r"(?i)by (target-day|day) type")
+        days = json.loads((ROOT / research_view.SUMMARY).read_text(encoding="utf-8"))["day_types"]
         for regime in self.scores()["groups"]["regime"]:
             self.assertIn(f"<th scope=\"row\">{regime}</th>", block)
         for kind in self.scores()["groups"]["target_day_type"]:
-            self.assertIn(f"<th scope=\"row\">{kind}</th>", block)
+            self.assertIn(f"<th scope=\"row\">{html.escape(days[kind])}</th>", block)
 
     def test_every_number_is_in_the_record(self):
         scores = self.scores()

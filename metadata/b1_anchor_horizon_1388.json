@@ -1,0 +1,64 @@
+{
+ "status": "declared by the pull request that closes #1388 before any score was computed; a development study, never a verdict. Nothing is registered or published: no record in docs/runs/ is edited, the live record and its pin do not change, docs/decisions/scoring-protocol.md and B1 and B1' as declared (metadata/b1_calendar_960.json) do not change, docs/research/h5-candidate.json and the candidate are not changed, no day after 2026-09-03 is scored and no lockbox day is scored. B1* and B1'* are new reference forecasts added to repo_model.protocol_benchmarks and repo_model.b1_calendar beside B1 and B1'; whether they replace B1 and B1' in the registered comparison is a marked question for Eleonora on the result page, settled in no code. Amendments made after a number was computed are listed in `amendments`; there are none.",
+ "issue": 1388,
+ "hypothesis": "H5 (primary goal), registration design (the benchmarks). Development tier. Part of the H5 registration priority on #46",
+ "ruling": "Eleonora, 2 November 2026 (chat, relayed on #1388): queue the new items from the second outside review, a pre-registration design review of sc_s3c_ann_net at 95d21b1f",
+ "target": "spread_bps at the scored day, as the 23-quantile distribution at each lead h = 1..5 (scoring_protocol.GRID)",
+ "why": "protocol_benchmarks.b1_forecast adds the trailing two years' h-row changes to the last public spread. The last public row (the anchor) is older than the decision day: for the decision on row t the anchor is row t - L, where L is the lag in business rows (1 on an ordinary day). The elapsed horizon from the anchor to the target row t + h is therefore h + L, which a mean-reverting candidate uses and B1 does not. The outside review calls this a design mismatch to test, not proof that a corrected B1 scores better. This study measures it.",
+ "decision_instant": "18:00 America/New_York (docs/decisions/information-set.md as amended by #1312; every command sets RMM_DECISION_TIME=18:00). The anchor is the one the 18:00 InformationRule gives",
+ "lag": "L = decision_index - anchor, in rows of the published panel (business days), the same for every lead of one decision day (protocol_benchmarks._anchor requires the leads to agree). The horizon of the change is H = h + L. The study reports the distribution of L over the scored decision days",
+ "arms": {
+  "B1": "protocol_benchmarks.b1_forecast, unchanged: the anchor's spread plus the empirical quantiles of spread[s] - spread[s - h] for s in range(max(first, h), anchor + 1)",
+  "B1_star": {
+   "label": "B1*",
+   "module": "repo_model.protocol_benchmarks.b1_anchor_forecast",
+   "definition": "identical to B1 except that the change window is anchor-to-target: the changes are spread[s] - spread[s - H], H = h + L, for s in range(max(first, H), anchor + 1), where first is B1's window start (the first row after the decision day less two years). The centre is the anchor's spread, as in B1"
+  },
+  "B1_prime": "repo_model.b1_calendar.b1_calendar_forecast (#960, metadata/b1_calendar_960.json), unchanged: the anchor is the last ordinary spread at or before the anchor; the changes spread[e] - last_ordinary[e - h] for e in range(max(first, h), anchor + 1) with an ordinary row at or before e - h; pooled by the reporting day type of the target day, a pool of fewer than 30 changes falling back to every type",
+  "B1_prime_star": {
+   "label": "B1'*",
+   "module": "repo_model.b1_calendar.b1_calendar_anchor_forecast (also reachable as repo_model.protocol_benchmarks.b1_calendar_anchor_forecast)",
+   "definition": "identical to B1' except that the change window is anchor-to-target: the changes are spread[e] - last_ordinary[e - H], H = h + L, for e in range(max(first, H), anchor + 1) with an ordinary row at or before e - H. The centre (the last ordinary spread at or before the anchor), the pool by the target day's reporting day type and the floor of 30 are B1''s"
+  },
+  "candidate": "sc_s3c_ann_net, (s3c-ann-net) of docs/research/h5-candidate.json, walked with the code of scripts/s3c_announced_settlement_1288.py unchanged (its build) at the 18:00 instant. No candidate change"
+ },
+ "reads": "every row B1* and B1'* read is at or before the anchor; protocol_benchmarks._require_public restates it for the rows read, on the starting rows as well as the ending rows (LookAheadError otherwise). No parameter is fitted",
+ "windows": {
+  "development": "decision days whose five targets fall on or before 2025-12-31 (the frame of #1255, as scripts/s3c_announced_settlement_1288.py builds it)",
+  "2026": "decision days whose five targets fall from 2026-01-02 to 2026-09-03 (the 2026 development days of #1229, the near-blind tier open since GO #151). Development data on seen days; it decides nothing"
+ },
+ "metrics": {
+  "grid_crps": "grid CRPS (23 levels) averaged over leads h = 1..5, the primary score",
+  "upper_tail_twcrps": "upper-tail twCRPS (weight 1{z > 0 bp}), the key secondary",
+  "brier_gt5": "the Brier score of P(spread > +5 bp), the probability read off the 23 quantiles as in docs/decisions/pressure-probability.md, the event strict and on whole basis points"
+ },
+ "pairs": {
+  "candidate_against": ["B1", "B1_star", "B1_prime", "B1_prime_star"],
+  "correction_against_original": [["B1_star", "B1"], ["B1_prime_star", "B1_prime"]],
+  "reading": "for a pair (a, b), a is the arm and b the reference; skill above zero favours a. The correction pairs say whether the anchor-to-target window scores better than the original on its own"
+ },
+ "splits": ["pooled", "lead", "regime", "pressure_day_type", "target_day_type"],
+ "split_note": "pooled, by lead h = 1..5, by regime (the development window; the 2026 days are one regime), by pressure-day type (turn_days labels of the target day) and by the calendar day type of the target. A group of fewer than 20 days is listed, not tested (MIN_GROUP_DAYS). The month split of the family is not run: it answers a different question",
+ "absolute_losses": "for every model and every group the study reports the mean of each metric next to the skill ratios, so a ratio is never the only figure; and the mean-d bound (the studentized stationary bootstrap interval on the mean paired loss difference d = S(reference) - S(arm), her ruling on #1009) for every tested pair",
+ "scoring": {
+  "scorer": "repo_model.scoring_protocol (#655), the development tier: no verdict, no registration",
+  "test": "scoring_protocol.paired_tests, the studentized stationary bootstrap, mean block 10 business days, 10,000 draws, seed 1388, two-sided 90% interval (the lower end is the one-sided 95% bound); the skill interval and the interval on mean d are reported for every tested row",
+  "reading": "a gain is read when the lower end of the 90% interval of mean d is above zero, a loss when its upper end is below zero, otherwise undecided (her ruling on #1009). A point estimate alone is not read"
+ },
+ "reading_rules": [
+  "A figure is a check on days that were already seen. Nothing here is a verdict, nothing is registered and no choice is made on it.",
+  "A pooled figure is never read without the lead, regime and day-type splits beside it.",
+  "The review's claim is a design mismatch to test: a corrected B1 that scores no better than B1 is a result, not a failure of the study.",
+  "A benchmark that scores worse in absolute loss is a weaker reference, so the candidate's skill against it is larger; the page says so wherever a skill ratio against a corrected benchmark falls or rises.",
+  "The page ends with a marked question for Eleonora with numbered options and a default: whether B1* and B1'* replace B1 and B1' in the registered comparison. Recommendation and default: B1'* is the mandatory persistence benchmark, legacy B1 reported for continuity."
+ ],
+ "limits": {
+  "last_day": "2026-09-03",
+  "scoring_protocol": "docs/decisions/scoring-protocol.md is not changed; B1 stays the protocol's benchmark until she rules",
+  "candidate": "docs/research/h5-candidate.json, scripts/final_test_preregistration.py and the candidate's declarations are not touched",
+  "allow_list": "repo_model.one_step_guard.ONE_STEP_ALLOW_LIST is not changed; the study fits nothing of its own (the candidate's walk is #1288's, direct pairs)",
+  "records": "docs/runs/ is not touched; no existing page or result.json is edited"
+ },
+ "long_run": "cloud first: one walk of the candidate per window (minutes) and the paired tests of the six pairs on the declared groups and three metrics (the longer part). If the measured time on a subset says the full run exceeds about two hours, the run goes to the Mac as a `needs-mac:` comment",
+ "amendments": []
+}

@@ -1,5 +1,5 @@
 {
-  "about": "The plain-language wording of the results page's executive summary (#1352): the two aims, keyed by the plan's goal hypotheses, and one line per critical-path link, keyed by its milestone, completing 'the next step is to'. Each restates the plan and the manuals and adds nothing to them; the plan decides. The page is for a reader who may not know the repo market, so no line names a hypothesis, a link, a milestone, an issue or a file. Draft by the orchestrating session for Eleonora's review. scripts/research_view.py refuses a goal or a link without a line here.",
+  "about": "The plain-language wording of the results page, for a reader who may not know the repo market (#1352, #1355). 'aims' and 'next' are the executive summary: the two aims, keyed by the plan's goal hypotheses, and one line per critical-path link, keyed by its milestone, completing 'the next step is to'. 'questions' is the plain fold of each research question in section 2, keyed by hypothesis. 'models' names each comparison model by what it does, 'day_types' names each kind of day in the split tables, and 'candidate' describes the current best candidate and the one it replaced. Each restates the plan, the manuals and the committed records and adds nothing to them; they decide. No line names a hypothesis, a link, a milestone, an issue, a file or a code name of a model. Draft by the orchestrating session for Eleonora's review. scripts/research_view.py refuses a goal, a link, a question or a model without a line here.",
   "aims": {
     "H5": "a forecast of the full range of next-day outcomes for the spread, in basis points, that is more accurate than the simpler models built earlier in the project and than forecasts that only say whether the spread will rise above a threshold",
     "H9": "to find out whether related measures, such as the rates paid at the high end of the trades SOFR is set from, other repo rates and the amounts placed at the Fed's own facilities, carry more information a model can learn from"
@@ -17,5 +17,103 @@
     "H9.M3": "build forecasts for the most promising of them",
     "H9.M4": "test on past data whether they add to the main forecast",
     "H9.M5": "fix that test in writing before any new day is scored"
+  },
+  "questions": {
+    "H1": {
+      "question": "Does the method that scores forecasts put forecasts of known quality in the right order, and is each comparison model computed as specified?",
+      "test": "A set of artificial forecasts whose best-to-worst order is known in advance, which the scoring method must put in that order, and a check of each comparison model against its written definition.",
+      "stop": "Any one required check fails. No forecast is put forward for a final test until the scoring method passes."
+    },
+    "H2": {
+      "question": "How much of the spread's next-day outcome, and how much of which ordinary days see pressure, can be predicted from all the data the project already holds? Two figures answer it: the most that could be found with hindsight (a generous ceiling), and what a forecast made day by day could actually reach.",
+      "test": "List every input and when it became public, fit models on that data, and score them on past days against the simple baselines.",
+      "stop": "The ceiling is barely above the simple baseline: the ranking of ordinary days from pressure days is little better than chance, or the gain in forecast accuracy over repeating the last known spread cannot be told from zero."
+    },
+    "H3": {
+      "question": "Does adding a newly available public data series make the main forecast more accurate?",
+      "test": "For each candidate series, establish when it becomes public, then add it to the chosen forecast on past days and score the change.",
+      "stop": "No new series does better than the data already held on ordinary days. Then the held data is the data."
+    },
+    "H4": {
+      "question": "Would data from 2014 to 2018 make the forecast better in 2018 and 2019, the years it handled worst, and then on days still to come?",
+      "test": "Check that each older series has a well-established publication time, then extend the training history and score 2018 to 2019 again.",
+      "stop": "No older series has an established publication time, or extending the history moves the 2018 to 2019 results by less than their margin of error. Then those years stay a known weakness and are reported as one."
+    },
+    "H5": {
+      "question": "Does a forecast of the full range of next-day outcomes for the spread, one to five business days ahead, set down in advance, beat repeating the last known spread and a calendar-based average on forecast accuracy by a margin worth having, on days that arrive after it was set down?",
+      "test": "Develop candidate forecasts on past days, score them against the baselines with the project's scoring rules, then set one candidate down in writing and score it only on later days.",
+      "stop": "No gain in forecast accuracy over the earlier models, and no better ranking of ordinary days. Then those models stand and effort moves to the second aim."
+    },
+    "H6": {
+      "question": "On days known well in advance to be risky (Treasury settlements, tax dates, quarter-ends and month-ends), can a forecast set down in advance beat the baselines on later days?",
+      "test": "Fix a written rule for which days count as risky, forecast the spread on those days, and compare with repeating the last known spread and with a calendar average.",
+      "stop": "No gain in forecast accuracy over repeating the last known spread and over a calendar of the risk dates on those days."
+    },
+    "H7": {
+      "question": "Can a direct, slow-moving estimate of how close the market is to reserves becoming scarce improve the main forecast when used as an input, on days still to come?",
+      "test": "Define the estimate using only what was public at the time, then add it to the main forecast and score the change.",
+      "stop": "The estimate does not predict later spread behaviour beyond the scarcity state already measured.",
+      "where": "This work is done in the companion project on reserve scarcity."
+    },
+    "H8": {
+      "question": "Is ranking the next 20 business days by risk, so a desk knows which days to watch, better than the calendar of known risk dates?",
+      "test": "Rank the next 20 business days by risk, check how many of the five days with the highest spread the ranking catches, and compare with the calendar ranking.",
+      "stop": "The ranking adds no skill beyond the calendar of known risk dates."
+    },
+    "H9": {
+      "question": "Do forecasts of richer measures beat repeating their own last value and their calendar averages? And does any of them improve the main forecast when used as an input? The measures are the rates at the high end of the trades SOFR is set from, other repo rates, the federal funds rate and the amounts placed at the Fed's facilities.",
+      "test": "Screen the measures for the ones most worth modeling, build forecasts for the most promising and test on past days whether they add to the main forecast.",
+      "stop": "No forecast skill over repeating the last value, or no earlier warning of days when the spread rises more than 5 basis points."
+    },
+    "H10": {
+      "question": "For each episode of pressure, how much of the rise in the spread is explained by each of Treasury settlements, the Treasury's cash account, the level of reserves, quarter-end, and what is left over?",
+      "test": "Choose a way of splitting each episode into those parts, declare it before looking, and apply it after the fact.",
+      "stop": "What is left over dominates most episodes.",
+      "where": "This work is done in the companion project on reserve scarcity."
+    }
+  },
+  "models": {
+    "B1": {
+      "name": "Persistence",
+      "what": "the last public spread plus the usual size of its past changes over the same number of days"
+    },
+    "B1_prime": {
+      "name": "Persistence by day type",
+      "what": "the same, with the past changes taken from days of the same type as the target day"
+    },
+    "B2": {
+      "name": "Calendar average",
+      "what": "the spread over the past year on days of the same type as the target day"
+    },
+    "mr_cal_a_base": {
+      "name": "Volatility-scaled mean reversion",
+      "what": "a model in which the spread drifts back to its usual level, with the size of its surprises scaled to recent volatility"
+    },
+    "spread_mr_ctx": {
+      "name": "Mean reversion by day context",
+      "what": "the same drift back to the usual level, with the surprises taken from days in a similar position around risk dates"
+    },
+    "gbm_funding": {
+      "name": "The published model",
+      "what": "the project's published forecast, which learns from many inputs at once"
+    }
+  },
+  "day_types": {
+    "calendar_days": "All calendar days (any kind below)",
+    "dom_19_23": "19th to 23rd of the month",
+    "fomc_day": "Fed policy-meeting days",
+    "iorb_window": "Days around a scheduled change in the rate paid on reserves",
+    "month_end": "Month-end",
+    "ordinary": "Ordinary days",
+    "post_month_end_window": "First days after month-end",
+    "quarter_end": "Quarter-end",
+    "settlement": "Treasury settlement days",
+    "tax_date": "Tax dates"
+  },
+  "candidate": {
+    "name": "the current best candidate",
+    "description": "a model in which the spread drifts back to its usual level, with calendar effects read on the day being forecast (quarter-ends, tax dates and Treasury settlements), fitted so that single extreme days count for less, and with its forecasts capped at the rate at which the Fed lends cash against Treasuries on demand (its standing repo facility). Its two settlement terms use the size of the day's Treasury settlement as announced the business day before",
+    "replaces": "the same model without the announced settlement size",
+    "base": "The tables are not the candidate's own: they are for its base, the same model without the announced settlement size or the cap, scored on the record below; the candidate's own scores are on the last study page."
   }
 }

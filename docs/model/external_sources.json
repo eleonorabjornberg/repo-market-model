@@ -2,13 +2,13 @@
   "about": "The external sources the validation report (docs/model/validation.md, #119) cites, and whether this environment fetched each one. Eleonora's ruling of 2 October 2026 (the claim wording, the fork, futures) and her scope of the same date (the Treasury clearing mandate). A source is marked fetched only if a session read the page itself; the rest are marked not fetched and are cited as she gave them. The page is rendered from this file by scripts/validation_report.py and is never edited by hand.",
   "fetched_on": "2026-10-06",
   "claim": {
-    "sentence": "To our knowledge, no public work forecasts the daily SOFR − IORB spread with strictly point-in-time public data and scores its exceedance probabilities with proper scoring rules against persistence baselines. Related efforts include Fed staff probability assessments for the fed funds − IOER spread (FOMC memo, 13 Sep 2019), a daily SOFR LSTM thesis scored by RMSE (Cornelissen, 2021), and futures-implied month-end premia, which tend to over-anticipate spikes (Gellert & Schlögl, 2021).",
-    "ruling": "Eleonora's ruling of 2 October 2026 on #119 and #120: this sentence, and no stronger form"
+    "sentence": "To our knowledge, no public work forecasts the daily SOFR − IORB spread with strictly point-in-time public data and scores its exceedance probabilities with proper scoring rules against persistence baselines. Related efforts include Fed staff probability assessments for the fed funds − IOER spread and, in section III, an analysis of how Treasury issuance and dealer inventories move repo–IOER spreads (FOMC memo, 13 Sep 2019), a daily SOFR LSTM thesis scored by RMSE (Cornelissen, 2021), and futures-implied month-end premia, which tend to over-anticipate spikes (Gellert & Schlögl, 2021).",
+    "ruling": "Eleonora's ruling of 2 October 2026 on #119 and #120: this sentence, and no stronger form. Amended only to name the memo's SOFR content (section III), by her ruling of 2 November 2026 on #1367"
   },
   "sources": [
     {
       "key": "fomc_memo",
-      "label": "FOMC memo, 13 September 2019 (Fed staff, the fed funds − IOER spread)",
+      "label": "FOMC memo, 13 September 2019 (Fed staff: the fed funds − IOER spread, and in section III Treasury issuance and dealer inventories in repo–IOER spreads)",
       "url": "https://www.federalreserve.gov/monetarypolicy/files/FOMC20190913memo02.pdf",
       "fetched": true
     },
@@ -27,7 +27,7 @@
   ],
   "fork": {
     "repository": "nicholasberoud/repo-market-model",
-    "text": "`nicholasberoud/repo-market-model` is a fork by Eleonora's collaborator, Nicholas Beroud. A reader who finds that repository with the same figures has found a copy of this project, not an independent replication."
+    "text": "`nicholasberoud/repo-market-model` is a fork by Nicholas Beroud, who advised on a few issues. A reader who finds that repository with the same figures has found a copy of this project, not an independent replication."
   },
   "futures": {
     "text": "Futures are left out, both as a benchmark and as an input. CME futures data needs a licence and cannot be redistributed with this repository, and futures-implied month-end premia are documented to over-anticipate spikes (Gellert and Schlögl, 2021; CME's March 2019 example).",

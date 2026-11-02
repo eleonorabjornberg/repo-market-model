@@ -6,7 +6,7 @@ market, not about the models, every figure read from a committed record or compu
 
 1. **Stress lives on the turn.** The last business day of a month and the first business day of the next carry the
    pressure; the second-last day is ordinary. Computed here from the panel, by regime.
-2. **The calendar sets the date; reserve scarcity sets the size.** The per-term effects of #1145, arm (s1), read from
+2. **Calendar effects are larger in some low-reserve periods.** The per-term effects of #1145, arm (s1), read from
    `docs/research/state-calendar-1145/result.json`.
 3. **Every stress episode since April 2020 began on or within a business day of a known calendar date.** The episode list
    is recomputed here from the panel.
@@ -324,7 +324,7 @@ def plain_lines(data: dict, link: Callable[..., str]) -> List[str]:
               "quarter are left out)",
               ["Market period"] + [ROLE_WORDS[r] for r in ROLES],
               [[regime] + [_turn_cell(turn[regime].get(r)) for r in ROLES] for regime in data["regimes"] if regime in turn]),
-        "<h3>2. The calendar sets the date; reserve scarcity sets the size</h3>",
+        "<h3>2. Calendar effects are larger in some low-reserve periods</h3>",
         "<p>The same month-end added about %s basis points to the gap in %s, %s in %s and %s in %s. A <strong>coupon "
         "settlement</strong>, the day the Treasury is paid for newly auctioned notes and bonds, which draws cash out of "
         "the market, added %s, %s and %s in the same three periods. The calendar tells you <em>which</em> days to "
@@ -352,7 +352,8 @@ def plain_lines(data: dict, link: Callable[..., str]) -> List[str]:
               [[x["start"], bp(x["spread_bp"]), e(", ".join(x["dates"]) or "none")] for x in listed]),
     ]
     out.append('<p class="src">Where this comes from: %s, %s and %s.</p>' % (
-        link("docs/research/market-findings-1177/result.json"), link("docs/research/state-calendar-1145/result.json"),
+        link("docs/research/market-findings-1177/result.json", "the findings record"),
+        link("docs/research/state-calendar-1145/result.json", "the calendar-effects record"),
         link("docs/research/market-findings-1177-result.md", "the study page")))
     return out
 
@@ -369,7 +370,7 @@ def explorer_html(data: dict, link: Callable[..., str]) -> str:
         "definition in force). The second-last day is the month's second-last business day. The ordinary day "
         "is any day from the %dth to the %dth that is no turn day and no tax date. Every figure is a mean of the "
         "spread, SOFR minus IORB in basis points, over the days counted.</li>"
-        "<li>Finding 2 is read from %s, arm (s1): a model fitted by regime with one standardised effect for each kind of "
+        "<li>Finding 2 is read from %s: a model fitted by regime with one standardised effect for each kind of "
         "calendar day. The interval is the 90%% interval of the effect over the refits.</li>"
         "<li>Finding 3: an episode starts on a day the gap is strictly above %g basis points after more than %d "
         "business days with none, as counted on the panel's own calendar. “Near” is one business day either "
@@ -378,10 +379,11 @@ def explorer_html(data: dict, link: Callable[..., str]) -> str:
         "from analysis is read (%s).</li>"
         "</ul>%s</details>" % (
             e(data["panel_sha256"][:8]), e(data["first_day"]), e(data["last_day"]), MID_MONTH[0], MID_MONTH[1],
-            link("docs/research/state-calendar-1145/result.json"), found["threshold_bp"], found["gap_business_days"],
+            link("docs/research/state-calendar-1145/result.json", "the calendar-effects record"), found["threshold_bp"], found["gap_business_days"],
             MID_MONTH_SETTLEMENT[0], MID_MONTH_SETTLEMENT[1], link("docs/decisions/lockbox.md", "the rule"),
             '<p class="src">Where this comes from: %s, %s and %s.</p>' % (
-                link("docs/research/market-findings-1177/result.json"), link("docs/research/state-calendar-1145/result.json"),
+                link("docs/research/market-findings-1177/result.json", "the findings record"),
+                link("docs/research/state-calendar-1145/result.json", "the calendar-effects record"),
                 link("docs/research/market-findings-1177-result.md", "the study page"))))
     return body + "\n" + method
 
@@ -391,7 +393,7 @@ def explorer_lede(data: dict) -> str:
     missed = len(listed) - sum(x["near"] for x in listed)
     every = "every stress episode" if not missed else "all but %d of the stress episodes" % missed
     return ("Three things the data show about the repo market, in a fixed order: stress sits on the turn of the month, "
-            "the calendar sets the date and reserve scarcity sets the size, and %s since %s began next to a known "
+            "calendar effects are larger in some low-reserve periods, and %s since %s began next to a known "
             "calendar date. A description of what happened, not a forecast." % (every, data["episodes"]["since"]))
 
 
@@ -440,7 +442,7 @@ def render_page(record: dict, state: dict) -> str:
                   early, bp(wide[early]["first_any"]["mean"]), wide[early]["first_any"]["n"],
                   bp(wide[early]["first_any"]["median"]), bp(turn[early]["first"]["mean"]), turn[early]["first"]["n"],
                   bp(turn[early]["first"]["median"])),
-              "", "## 2. The calendar sets the date; reserve scarcity sets the size", "",
+              "", "## 2. Calendar effects are larger in some low-reserve periods", "",
               "Per-term effects of arm (s1) of #1145 (`%s`), in bp, with the 90%% interval over the refits." % ARM, "",
               "| Regime | Month-end | Coupon settlement |", "|---|---|---|"]
     for regime in data["regimes"]:
