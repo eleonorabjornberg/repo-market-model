@@ -155,7 +155,7 @@ def question_block(emit):
         "This is the repo market. The rate on that lending is called SOFR. The Federal Reserve also pays banks a "
         "rate on the money they keep with it, called IORB. Most days SOFR sits at or just below IORB. On some days "
         "spare cash runs short and SOFR jumps above it.</p>",
-        "<p>This project forecasts the gap between the two, SOFR minus IORB, for the next business day. Its main aim "
+        "<p>This project forecasts the gap between the two, SOFR minus the administered reserve rate, for the next business day. That rate is IOER before 29 July 2021 and IORB after; the pages write the gap as SOFR minus IORB. Its main aim "
         "is a forecast of the <strong>full range of likely outcomes for the gap</strong>, in basis points, not only a "
         "yes-or-no answer. A basis point is a hundredth of one percentage point. The published forecast on this page "
         "is narrower: the <strong>chance that the gap is more than %s basis points</strong>. Both use public data only, "

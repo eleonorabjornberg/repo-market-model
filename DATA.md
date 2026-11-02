@@ -64,6 +64,27 @@ target and policy anchor are required.
 | `tax_date` | no | zero/one |
 | `days_to_month_end` | no | calendar days, 0 on the last day of the month |
 
+## The two missing percentile rows
+
+In the published panel `sofr_p25` and `sofr_p75` are empty on two days, 2019-05-31 and 2021-08-05. On both the New York Fed
+publishes SOFR with its percentiles marked `NA` (footnote 2), so the holes are the source's, counted and left empty, never
+filled (METHODOLOGY.md, "Absence is typed").
+
+Which scored forecasts touched them:
+
+- The gradient-boosted records (`gbm_funding` and its calibrated variants, features including `sofr_p25` and `sofr_p75`) are the
+  scored forecasts that read either column. For the published model (nested conformal PID), the forecast of 2019-06-04 reads the 2019-05-31 row, and its forecast of 2021-08-09 reads the
+  2021-08-05 row, as the served feature (two panel rows before the scored day, the as-of rule's distance for these fields). Each is
+  one scored forecast, at the 16:00 decision instant the published records were made at.
+- Every scored forecast after a hole also holds that row in its training frame.
+- Handling is the model's, in `src/repo_model/ml.py` and `baseline._raw_regressor`: a regressor carried as `None` takes its fitted
+  imputation (the training mean), in the fit and in the served row. It is never `0.0` and never carried forward from the day before.
+- No other scored forecast touches them. Persistence, climatology and the candidate (s3c-ann-net) read neither column
+  (`scripts/vintage_timing_audit_1365.py`, `UNREAD_COLUMNS`).
+
+The days were found by reading the as-of rule's reads over every day of `docs/runs/published_distribution_daily_h1.json`; no
+published figure changes.
+
 ## Point-in-time rule
 
 For any field `x`, the feature used to forecast date `t` must satisfy:
