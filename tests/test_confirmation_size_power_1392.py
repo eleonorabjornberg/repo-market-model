@@ -125,7 +125,7 @@ class DeclarationTests(unittest.TestCase):
         self.assertEqual(self.declaration["grid"]["hac_lag"], script.HAC_LAG)
         self.assertEqual(self.declaration["seed"], script.SEED)
         self.assertEqual(script.THRESHOLD, 0.03)
-        self.assertEqual(self.declaration["amendments"], [])
+        self.assertEqual([a["date"] for a in self.declaration["amendments"]], ["2026-11-02"])
 
     def test_every_mode_names_only_declared_groups_and_the_full_mode_adds_the_sensitivities(self):
         groups = {c["group"] for c in script.cells_of(self.declaration)}
@@ -137,7 +137,36 @@ class DeclarationTests(unittest.TestCase):
     def test_cell_keys_are_unique_and_the_lengths_are_the_declared_ones(self):
         cells = script.cells_of(self.declaration)
         self.assertEqual(len({c["key"] for c in cells}), len(cells))
-        self.assertEqual({c["n"] for c in cells if c["group"] != "extension"}, {250, 500, 750})
+        self.assertEqual({c["n"] for c in cells if not c["group"].startswith("extension")}, {250, 500, 750})
+
+
+class PageTests(unittest.TestCase):
+    def _result(self, groups):
+        declaration = json.loads((REPO / "metadata" / "confirmation_size_power_1392.json").read_text(encoding="utf-8"))
+        cells = []
+        for cell in script.cells_of(declaration):
+            if cell["group"] not in groups:
+                continue
+            count = 100
+            one = dict(cell, count=count, main={"pass": 80 if cell["effects"] == [0.1, 0.1] else 5, "fail": 1, "inconclusive": count - 81})
+            if cell["flag_effect"] is not None:
+                one["gated"] = {"reject": 7}
+                one["joint"] = {"pass_and_reject": 6}
+            cells.append(one)
+        return {"declaration": "metadata/confirmation_size_power_1392.json", "mode": "reduced", "M": 100, "reps": 99, "seed": 1392, "pool_origins": 10,
+                "first_origin": "2018-07-19", "last_origin": "2026-08-27", "pool_means": {"candidate": 1.6}, "cells": cells}
+
+    def test_the_page_reads_every_rate_from_the_record(self):
+        text = script.render(self._result(("main", "observed", "binding", "gated", "extension")))
+        self.assertIn("80.0 (4.0)", text)
+        self.assertIn("5.0 (2.2)", text)
+        self.assertIn("Does 500 origins reach 80% power at 10% skill?", text)
+        self.assertIn("the shortest tested length at or above 80% is 250.", text)
+        self.assertIn("Question 1", text)
+
+    def test_the_sensitivity_table_appears_only_with_its_cells(self):
+        self.assertNotIn("Sensitivity to the test block (pass rate", script.render(self._result(("main", "observed", "binding", "gated", "extension"))))
+        self.assertIn("Sensitivity to the test block (pass rate", script.render(self._result(("main", "observed", "binding", "gated", "extension", "sensitivity"))))
 
 
 class GuardTests(unittest.TestCase):

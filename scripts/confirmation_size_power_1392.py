@@ -288,12 +288,16 @@ def cells_of(decl: Mapping[str, object]) -> List[dict]:
                     for e in g["effects_main"][1:]:
                         add("sensitivity", scheme, n, ell, [e, e])
             add("observed", scheme, n, g["primary_block"], [None, None])
+            for e in g["binding_observed"]["effects"]:
+                add("binding_observed", scheme, n, g["primary_block"], [e, None])
             for first, other in ((g["binding"]["effect"], g["binding"]["other"]), (g["binding"]["other"], g["binding"]["effect"])):
                 add("binding", scheme, n, g["primary_block"], [first, other])
             for b in g["gated"]["b_effects"]:
                 add("gated", scheme, n, g["primary_block"], [g["gated"]["a_effect"]] * 2, b)
         for n in g["length_extension"]["lengths"]:
             add("extension", scheme, n, g["primary_block"], [g["length_extension"]["effect"]] * 2)
+        for n in g["extension_observed"]["lengths"]:
+            add("extension_observed", scheme, n, g["primary_block"], [g["extension_observed"]["effect"], None])
     return cells
 
 
@@ -335,10 +339,207 @@ def run(args) -> int:
               "baselines": list(BASELINES), "pool_means": {"candidate": sum(pool["cand"]) / len(pool["cand"]), "flag": sum(pool["flag"]) / len(pool["flag"]),
                                                           **{b: sum(s) / len(s) for b, s in zip(BASELINES, pool["bases"])}, "B1": sum(pool["legacy_b1"]) / len(pool["legacy_b1"])},
               "chain": regime_chain(pool["regime"]), "cells": []}
-    for cell in cells:
-        result["cells"].append(dict(cell, **totals[cell["key"]]))
+    fresh = [dict(cell, **totals[cell["key"]]) for cell in cells]
+    out_path = Path(args.out)
+    if args.only and out_path.exists():
+        before = json.loads(out_path.read_text(encoding="utf-8"))
+        if (before["M"], before["reps"], before["seed"]) != (result["M"], result["reps"], result["seed"]):
+            raise SystemExit("--only adds cells to an existing result of the same M, reps and seed")
+        kept = [c for c in before["cells"] if c["key"] not in {f["key"] for f in fresh}]
+        result["cells"] = kept + fresh
+    else:
+        result["cells"] = fresh
     Path(args.out).parent.mkdir(parents=True, exist_ok=True)
     Path(args.out).write_text(json.dumps(result, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    return 0
+
+
+# -- the page ---------------------------------------------------------------------------------------------------------
+
+
+def _rate(cell: Mapping[str, object], what: str) -> tuple:
+    """(rate, Monte Carlo standard error) of "pass", "fail", "inconclusive", "reject" (B), or "joint" (A passes and B rejects)."""
+
+    if what in ("pass", "fail", "inconclusive"):
+        k = cell["main"][what]
+    elif what == "reject":
+        k = cell["gated"]["reject"]
+    else:
+        k = cell["joint"]["pass_and_reject"]
+    p = k / cell["count"]
+    return p, math.sqrt(p * (1.0 - p) / cell["count"])
+
+
+def _fmt(cell: Optional[Mapping[str, object]], what: str) -> str:
+    if cell is None:
+        return "n/a"
+    p, se = _rate(cell, what)
+    return f"{100 * p:.1f} ({100 * se:.1f})"
+
+
+def _index(result: Mapping[str, object]) -> Dict[tuple, dict]:
+    return {(c["group"], c["scheme"], c["n"], c["ell"], tuple(c["effects"]), c["flag_effect"]): c for c in result["cells"]}
+
+
+def _pct(effect) -> str:
+    return "observed" if effect is None else f"{100 * effect:g}%"
+
+
+def length_answer(result: Mapping[str, object], scheme: str, observed: bool = False) -> dict:
+    """Power at 10% skill by length for one scheme (test block 50), and the shortest tested length at or above 80%.
+
+    `observed` False: both baselines at 10%. True: B1'* at 10% and B2 as developed."""
+
+    index = _index(result)
+    by_n = {}
+    for n in (250, 500, 750, 1000, 1500, 2500):
+        if observed:
+            cell = index.get(("binding_observed" if n <= 750 else "extension_observed", scheme, n, 50, (0.10, None), None))
+        else:
+            cell = index.get(("main" if n <= 750 else "extension", scheme, n, 50, (0.10, 0.10), None))
+        if cell is not None:
+            by_n[n] = _rate(cell, "pass")
+    reached = [n for n, (p, _se) in sorted(by_n.items()) if p >= 0.80]
+    return {"power": by_n, "shortest_at_80": reached[0] if reached else None}
+
+
+def render(r: dict) -> str:
+    index = _index(r)
+    g = index.get
+    schemes = ("block", "regime")
+    out = [
+        "# The proposed confirmation test: size and power on (s3c-ann-net)'s own loss differences (#1392)", "",
+        "**Does the proposed confirmation test hold its size, and have useful power, on this candidate's rounded, dependent origin-level losses?** "
+        + headline(r), "",
+        "**Hypothesis and step:** H5 (primary goal), H1, registration design (inference); her ruling of 2 November 2026 (chat, relayed on #1392) after the second "
+        "outside review of (s3c-ann-net). **Development data, not a verdict** (scoring protocol v1). Nothing is registered, adopted or published; the draft design "
+        "(#1393) is a draft decision record that is in force only if she merges it. Generated by `scripts/confirmation_size_power_1392.py page` from "
+        f"`docs/research/confirmation-size-power-1392/result.json`, not edited by hand; declared in `{r['declaration']}` before any figure was computed.", "",
+        f"**What was run.** {r['pool_origins']:,} development origins ({r['first_origin']} to {r['last_origin']}), each carrying the candidate's, the "
+        "announced-flag arm's, B1'*'s and B2's score (grid CRPS averaged over h = 1..5). Two data-generating schemes (block resampling of whole origin vectors; "
+        "a regime-switching chain on the development regime labels), a skill imposed on the baselines by one constant each so that the population skill is exactly "
+        f"the stated one, {r['M']} simulated data sets per cell, {r['reps']} bootstrap resamples per data set, mode `{r['mode']}`, seed {r['seed']}. "
+        "Cells in brackets are one Monte Carlo standard error, in percentage points. The draft's own 50,000 resamples per test are not run inside a size study "
+        "(see the declaration); the critical value here rests on far fewer draws, which adds error to every rate below.", "",
+        "Pooled means of the development origins: " + ", ".join(f"{k} {v:.3f}" for k, v in r["pool_means"].items()) + ".", ""]
+    out += ["## Claim A: pass rates (percent, Monte Carlo SE in brackets), test block 50, both baselines at the stated skill", "",
+            "| scheme | origins | 0% (below the threshold) | 3% (the null: size) | 5% | 10% | development skill, unscaled |", "|---|---|---|---|---|---|---|"]
+    for scheme in schemes:
+        for n in (250, 500, 750):
+            row = [g(("main", scheme, n, 50, (e, e), None)) for e in (0.0, 0.03, 0.05, 0.10)]
+            out.append(f"| {scheme} | {n} | " + " | ".join(_fmt(c, "pass") for c in row) + f" | {_fmt(g(('observed', scheme, n, 50, (None, None), None)), 'pass')} |")
+    out += ["", "**The same cells: rate of a fail at the threshold (upper bound below zero for at least one baseline)**", "",
+            "| scheme | origins | 0% | 3% | 5% | 10% | development skill, unscaled |", "|---|---|---|---|---|---|---|"]
+    for scheme in schemes:
+        for n in (250, 500, 750):
+            row = [g(("main", scheme, n, 50, (e, e), None)) for e in (0.0, 0.03, 0.05, 0.10)]
+            out.append(f"| {scheme} | {n} | " + " | ".join(_fmt(c, "fail") for c in row) + f" | {_fmt(g(('observed', scheme, n, 50, (None, None), None)), 'fail')} |")
+    out += ["", "## Claim A: size when only one baseline is at the boundary (pass rate)", "",
+            "| scheme | origins | B1'* at 3%, B2 at 10% | B1'* at 10%, B2 at 3% |", "|---|---|---|---|"]
+    for scheme in schemes:
+        for n in (250, 500, 750):
+            out.append(f"| {scheme} | {n} | " + " | ".join(_fmt(g(("binding", scheme, n, 50, e, None)), "pass") for e in ((0.03, 0.10), (0.10, 0.03))) + " |")
+    if any(c["group"] == "binding_observed" for c in r["cells"]):
+        out += ["", "## Claim A: B1'* as the binding baseline, B2 as developed (pass rate)", "",
+                "Added after the first run was seen (declaration, `amendments`): B1'* is held at the stated skill and B2 is left as developed (the candidate beats it by "
+                "about 36% on the development window).", "",
+                "| scheme | origins | B1'* at 3% (the null) | B1'* at 5% | B1'* at 10% |", "|---|---|---|---|---|"]
+        for scheme in schemes:
+            for n in (250, 500, 750):
+                out.append(f"| {scheme} | {n} | " + " | ".join(_fmt(g(("binding_observed", scheme, n, 50, (e, None), None)), "pass") for e in (0.03, 0.05, 0.10)) + " |")
+    out += ["", "## Claim B (gated, net over the announced-flag arm), A at 10% for both baselines", "",
+            "B's rejection rate in every data set (unconditional), the share of data sets in which A passes and B rejects (the joint power), and B's rate among the "
+            "data sets in which A passed.", "",
+            "| scheme | origins | B's skill | B rejects | A passes and B rejects | B rejects given A passed |", "|---|---|---|---|---|---|"]
+    for scheme in schemes:
+        for n in (250, 500, 750):
+            for b in r_gated_effects(r):
+                c = g(("gated", scheme, n, 50, (0.10, 0.10), b))
+                given = "n/a"
+                if c is not None and c["main"]["pass"]:
+                    p = c["joint"]["pass_and_reject"] / c["main"]["pass"]
+                    given = f"{100 * p:.1f} ({100 * math.sqrt(p * (1 - p) / c['main']['pass']):.1f})"
+                out.append(f"| {scheme} | {n} | {_pct(b)} | {_fmt(c, 'reject')} | {_fmt(c, 'joint')} | {given} |")
+    out += ["", "## Does 500 origins reach 80% power at 10% skill?", ""]
+    for observed, title in ((False, "both baselines at 10%"), (True, "B1'* at 10%, B2 as developed")):
+        out.append(f"**{title}**")
+        out.append("")
+        for scheme in schemes:
+            la = length_answer(r, scheme, observed)
+            if la["power"]:
+                out.append(f"- **{scheme}:** " + ", ".join(f"{n} origins {100 * p:.1f}% ({100 * se:.1f})" for n, (p, se) in la["power"].items())
+                           + (f"; the shortest tested length at or above 80% is {la['shortest_at_80']}." if la["shortest_at_80"] else "; none of the tested lengths reaches 80%."))
+        out.append("")
+    sens = [c for c in r["cells"] if c["group"] == "sensitivity"]
+    if sens:
+        out += ["", "## Sensitivity to the test block (pass rate, percent)", "", "| scheme | origins | test block | 3% | 5% | 10% |", "|---|---|---|---|---|---|"]
+        for scheme in schemes:
+            for n in (250, 500, 750):
+                for ell in (20, 50, 100):
+                    group = "main" if ell == 50 else "sensitivity"
+                    out.append(f"| {scheme} | {n} | {ell} | " + " | ".join(_fmt(g((group, scheme, n, ell, (e, e), None)), "pass") for e in (0.03, 0.05, 0.10)) + " |")
+    else:
+        out += ["", "## Sensitivity to the test block", "", "The test blocks 20 and 100 are in the declared full mode, which runs on the Mac (`needs-mac` on the pull request); "
+                "this page is the reduced mode and shows block 50 only."]
+    out += ["", "## What this does not show", "",
+            "- It is development data. The imposed skills are simulated; the candidate's real skill is read only in the 'development skill, unscaled' column, "
+            "and that column is a rate on a pool the simulation also resamples, not a forecast of the confirmation.",
+            "- The data-generating schemes resample 2018-2026 origins; a confirmation period unlike them (a regime the pool does not contain) is outside what "
+            "any rate here says. The regime scheme moves between the five development regimes; nothing in it is a stress regime that was never seen.",
+            "- B2 stands in for the calendar climatology B2*, which is not built, and B4 is not built; adding a baseline lowers the pass rate.",
+            "- Rates carry the Monte Carlo error shown; the critical value comes from the bootstrap draws per data set stated above, not 50,000.",
+            "- Calendar first: the loss vectors are those of a candidate that reads calendar days at the target day on direct pairs; the baselines B1'* and B2 are "
+            "the declared references. The study fits nothing through `repo_model.ml`, so no producer is registered.", ""]
+    out += question(r)
+    return "\n".join(out)
+
+
+def r_gated_effects(r: Mapping[str, object]) -> List[Optional[float]]:
+    return sorted({c["flag_effect"] for c in r["cells"] if c["group"] == "gated"})
+
+
+def headline(r: Mapping[str, object]) -> str:
+    index = _index(r)
+    parts = []
+    nulls = [(_rate(index[("main", s, n, 50, (0.03, 0.03), None)], "pass"), s, n) for s in ("block", "regime") for n in (250, 500, 750) if ("main", s, n, 50, (0.03, 0.03), None) in index]
+    binds = [(_rate(c, "pass"), c["scheme"], c["n"]) for c in r["cells"] if c["group"] == "binding"]
+    if nulls:
+        worst = max(nulls)
+        parts.append(f"at 3% skill against both baselines the pass rate is at most {100 * worst[0][0]:.1f}% ({worst[1]}, {worst[2]} origins; Monte Carlo SE {100 * worst[0][1]:.1f})")
+    if binds:
+        worst = max(binds)
+        parts.append(f"with one baseline at 3% and the other at 10% it is at most {100 * worst[0][0]:.1f}% ({worst[1]}, {worst[2]} origins)")
+    for scheme in ("block", "regime"):
+        la = length_answer(r, scheme)
+        if 500 in la["power"]:
+            p, se = la["power"][500]
+            parts.append(f"power at 10% skill with 500 origins is {100 * p:.1f}% under the {scheme} scheme (SE {100 * se:.1f})"
+                         + ("" if p >= 0.8 else f", and the shortest tested length at or above 80% is {la['shortest_at_80']}" if la["shortest_at_80"] else ", and no tested length reaches 80%"))
+    for scheme in ("block", "regime"):
+        la = length_answer(r, scheme, True)
+        if 500 in la["power"]:
+            p, se = la["power"][500]
+            parts.append(f"with B2 as developed, power at 10% skill against B1'* with 500 origins is {100 * p:.1f}% under the {scheme} scheme (SE {100 * se:.1f})"
+                         + ("" if p >= 0.8 else f", and the shortest tested length at or above 80% is {la['shortest_at_80']}" if la["shortest_at_80"] else ", and no tested length reaches 80%"))
+    return "; ".join(parts) + ". **Development data, not a verdict.**"
+
+
+def question(r: Mapping[str, object]) -> List[str]:
+    return [
+        "## Questions for Eleonora (marked; the defaults change no claim)", "",
+        "**Question 1. Is the fail-at-threshold bound simultaneous?** The draft reads 'an upper bound below zero for at least one baseline'. This study uses the "
+        "per-baseline one-sided 95% upper bound, with no multiplicity adjustment, so a fail is called more easily than a pass. Options: 1. per baseline, as here "
+        "(default; the fail is only a label of what the data say, it ends nothing); 2. simultaneous across the baselines, as the pass is; 3. drop the fail verdict "
+        "and report pass or not.", "",
+        "**Question 2. If the table above shows 500 origins short of 80% power at 10% skill, which length does she choose?** Options: 1. keep 500 and state the "
+        "power as it is (default; the result page of the final record states it); 2. the shortest tested length at or above 80% shown in the section above; "
+        "3. keep the 250-origin pilot named in #1393 as a first look. This study does not choose.", ""]
+
+
+def page(args) -> int:
+    r = json.loads(Path(args.result).read_text(encoding="utf-8"))
+    Path(args.output).parent.mkdir(parents=True, exist_ok=True)
+    Path(args.output).write_text(render(r), encoding="utf-8")
     return 0
 
 
@@ -352,6 +553,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     r.add_argument("--workers", type=int, default=4)
     r.add_argument("--only", default="", help="comma list of cell groups (main, observed, binding, gated, extension, sensitivity); default: the mode's own")
     r.set_defaults(func=run)
+    g = sub.add_parser("page")
+    g.add_argument("--result", required=True)
+    g.add_argument("--output", required=True)
+    g.set_defaults(func=page)
     args = parser.parse_args(argv)
     return args.func(args)
 

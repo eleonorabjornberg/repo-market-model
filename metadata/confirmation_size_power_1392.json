@@ -1,5 +1,5 @@
 {
- "status": "declared by the pull request that closes #1392 before any size or power figure was computed; a development study, never a verdict. Nothing is registered or adopted: no record in docs/runs/ is edited, the candidate (docs/research/h5-candidate.json), docs/decisions/scoring-protocol.md and the lockbox are unchanged, no day after 2026-09-03 and no locked day is read. The draft design under test is the one proposed for #1393 (a draft decision record, in force only if she merges it). Amendments made after a number was computed are listed in `amendments`; there are none. The origin-level losses (docs/research/confirmation-size-power-1392/losses.json) were extracted before this file was committed, and the candidate's development skill against each baseline was read from them to place the alternatives; no test of the procedure had been run.",
+ "status": "declared by the pull request that closes #1392 before any size or power figure was computed; a development study, never a verdict. Nothing is registered or adopted: no record in docs/runs/ is edited, the candidate (docs/research/h5-candidate.json), docs/decisions/scoring-protocol.md and the lockbox are unchanged, no day after 2026-09-03 and no locked day is read. The draft design under test is the one proposed for #1393 (a draft decision record, in force only if she merges it). Amendments made after a number was computed are listed in `amendments`. The origin-level losses (docs/research/confirmation-size-power-1392/losses.json) were extracted before this file was committed, and the candidate's development skill against each baseline was read from them to place the alternatives; no test of the procedure had been run.",
  "issue": 1392,
  "hypothesis": "H5 (primary goal), H1 (the scorer ranks forecasts correctly), registration design (inference). Development tier. Part of the H5 registration priority on #46",
  "ruling": "Eleonora, 2 November 2026 (chat, relayed on #1392): queue the new items from the second outside review, a pre-registration design review of sc_s3c_ann_net at 95d21b1f",
@@ -22,16 +22,64 @@
  },
  "imposed_skill": "each baseline's losses are multiplied by one constant c_b so that 1 - mean(S_C) / mean(c_b S_b) equals the stated skill under the scheme's own population law; the candidate's losses, the rounding, the dependence and the regime structure are the real ones. The announced-flag arm is rescaled the same way for B. Cell group 'observed' leaves the baselines unscaled (the development skill: about +13% against B1'* and +36% against B2 on the development window)",
  "grid": {
-  "schemes": ["block", "regime"],
-  "lengths": [250, 500, 750],
+  "schemes": [
+   "block",
+   "regime"
+  ],
+  "lengths": [
+   250,
+   500,
+   750
+  ],
   "primary_block": 50,
-  "test_blocks": [20, 50, 100],
+  "test_blocks": [
+   20,
+   50,
+   100
+  ],
   "hac_lag": 50,
-  "effects_main": [0.0, 0.03, 0.05, 0.10],
-  "binding": {"effect": 0.03, "other": 0.10},
-  "gated": {"a_effect": 0.10, "b_effects": [0.0, 0.01, 0.02, 0.03]},
-  "length_extension": {"lengths": [1000, 1500], "effect": 0.10},
-  "generation_block": 30
+  "effects_main": [
+   0.0,
+   0.03,
+   0.05,
+   0.1
+  ],
+  "binding": {
+   "effect": 0.03,
+   "other": 0.1
+  },
+  "gated": {
+   "a_effect": 0.1,
+   "b_effects": [
+    0.0,
+    0.01,
+    0.02,
+    0.03
+   ]
+  },
+  "length_extension": {
+   "lengths": [
+    1000,
+    1500
+   ],
+   "effect": 0.1
+  },
+  "generation_block": 30,
+  "binding_observed": {
+   "effects": [
+    0.03,
+    0.05,
+    0.1
+   ]
+  },
+  "extension_observed": {
+   "lengths": [
+    1000,
+    1500,
+    2500
+   ],
+   "effect": 0.1
+  }
  },
  "cell_groups": {
   "main": "both baselines at the same skill 0% (below the threshold: the chance to fail), 3% (the null: size), 5% and 10% (power); test block 50",
@@ -39,11 +87,40 @@
   "binding": "one baseline at 3% (binding) and the other at 10%, in both orders: size when only one baseline is at the boundary",
   "gated": "A at 10% for both baselines and B's skill (net over flag) at 0% (B's null), 1%, 2% and 3%: B's size (unconditional and given that A passed), B's power and the joint probability that A passes and B rejects. The development skill of the net over the flag arm is +0.1% on the development window and +2.4% on the 2026 days",
   "extension": "lengths 1000 and 1500 at 10%, to answer 'what length reaches 80% power' if 500 and 750 do not",
-  "sensitivity": "test blocks 20 and 100 at the three non-null-or-below effects 3%, 5%, 10% (main grid otherwise); the full mode only"
+  "sensitivity": "test blocks 20 and 100 at the three non-null-or-below effects 3%, 5%, 10% (main grid otherwise); the full mode only",
+  "binding_observed": "B1'* at 3%, 5% or 10% skill and B2 as developed (unscaled; about +36% on the development window), test block 50: what the candidate's real position against B2 does to the pass rate when B1'* is the binding baseline",
+  "extension_observed": "the same at 10% against B1'* with B2 as developed, at lengths 250..750 (in binding_observed) and 1000, 1500, 2500 (here), to answer the length question for the baseline that binds"
  },
  "modes": {
-  "reduced": {"M": 200, "reps": 199, "groups": ["main", "observed", "binding", "gated", "extension"], "why": "what a session can run; M data sets per cell and `reps` bootstrap resamples per data set. A rate p is read with Monte Carlo standard error sqrt(p(1-p)/M), at most 3.5 points; a 5% quantile of 199 draws is the 10th largest, so the critical value itself carries error"},
-  "full": {"M": 500, "reps": 499, "groups": ["main", "observed", "binding", "gated", "extension", "sensitivity"], "why": "the Mac run (needs-mac): standard error at most 2.2 points; the declared 50,000 resamples of the frozen test are not run inside a size study (50,000 per data set times 500 data sets per cell is beyond any machine here); this run says whether the procedure holds, and its own 50,000-resample use is the same code with a larger `reps`"}
+  "reduced": {
+   "M": 200,
+   "reps": 199,
+   "groups": [
+    "main",
+    "observed",
+    "binding",
+    "gated",
+    "extension",
+    "binding_observed",
+    "extension_observed"
+   ],
+   "why": "what a session can run; M data sets per cell and `reps` bootstrap resamples per data set. A rate p is read with Monte Carlo standard error sqrt(p(1-p)/M), at most 3.5 points; a 5% quantile of 199 draws is the 10th largest, so the critical value itself carries error"
+  },
+  "full": {
+   "M": 500,
+   "reps": 499,
+   "groups": [
+    "main",
+    "observed",
+    "binding",
+    "gated",
+    "extension",
+    "sensitivity",
+    "binding_observed",
+    "extension_observed"
+   ],
+   "why": "the Mac run (needs-mac): standard error at most 2.2 points; the declared 50,000 resamples of the frozen test are not run inside a size study (50,000 per data set times 500 data sets per cell is beyond any machine here); this run says whether the procedure holds, and its own 50,000-resample use is the same code with a larger `reps`"
+  }
  },
  "seed": 1392,
  "reading_rules": [
@@ -51,5 +128,12 @@
   "Power is the rate of passing at 5% and 10%; 80% is the usual target and is the line this study reports against. It decides nothing.",
   "Nothing here is a verdict, nothing is adopted, and the registered design stays Eleonora's decision."
  ],
- "amendments": []
+ "amendments": [
+  {
+   "date": "2026-11-02",
+   "what": "cell groups binding_observed and extension_observed added, and the lengths 1000, 1500 and 2500 for the latter",
+   "why": "the first reduced run (groups main, observed, binding, gated, extension; committed result before this amendment) put the power at 10% skill against both baselines at 23% or less at every length: the long-run variance of W against B2, which the candidate beats by about 36% in development, is several times that against B1'*, so imposing 10% on B2 (a 28% deflation of its losses) makes B2 the binding baseline at every length. That cell group is kept as declared; the added groups hold B2 as developed and impose skill on B1'* alone. Added after the figures of the first run were seen",
+   "computed_before": "groups main, observed, binding, gated, extension at M=200, reps=199"
+  }
+ ]
 }
