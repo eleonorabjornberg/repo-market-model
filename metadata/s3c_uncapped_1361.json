@@ -1,0 +1,61 @@
+{
+ "status": "declared by the pull request that closes #1361 before any score was computed; a development study, never a verdict. (s3c-ann-net) stays the H5 candidate and does not change. Nothing is registered or published: no record in docs/runs/ is edited, the live record and its pin do not change, docs/research/h5-candidate.json, `scripts/final_test_preregistration.py`, metadata/sources.json and docs/decisions/information-set.md do not change, no day after 2026-09-03 is scored and no lockbox day is scored. Amendments made after a number was computed are listed in `amendments`; there are none.",
+ "issue": 1361,
+ "ruling": "Eleonora, 2 November 2026 (chat, relayed on #1361), after an outside publication-readiness review: report an uncapped version of the candidate as a secondary result, so that the Standing Repo Facility cap is not what rules out large upward moves.",
+ "hypothesis": "H5 (primary goal): the SOFR - IORB spread distribution in bp. Registration design. Development tier",
+ "target": "spread_bps at the scored day, in basis points, as a 23-quantile distribution at each lead h = 1..5 (scoring_protocol.GRID)",
+ "why": "(s3c-ann-net) clips every quantile at the SRF line (IORB + 10 bp, margin 0) on target days at full allotment (docs/research/h5-candidate.json, `cap`). A policy rate is not a frictionless ceiling for every participant, and the full-allotment period holds little tail experience (SOFR's 99th percentile closed above the line on 25 of 169 days of 2026, #1252). The uncapped version shows what the cap does to the scores and how often and by how much it binds.",
+ "candidates": [
+  {
+   "name": "sc_s3c_ann_net_uncapped",
+   "label": "(s3c-ann-net-uncapped)",
+   "definition": "(s3c-ann-net) with the cap off and nothing else changed: the walk of repo_model.s3c_announced.ANN_NET_ARM (the settlement terms read from the auction announcement and sized by net settlement, the Huber fit, the ridge of 5, the pool of standardised residuals, direct pairs) is taken as the walk returns it, and repo_model.s3c_candidate.capped_quantiles is not applied. On a target day that is not at full allotment the two are cell for cell the same",
+   "module": "scripts/s3c_announced_settlement_1288.py extra_walks (the walk) and scripts/s3c_candidate_1255.py s3c_forecasts (the cap), both loaded as they are; no module in src/ is edited"
+  }
+ ],
+ "reference": {
+  "name": "sc_s3c_ann_net",
+  "label": "(s3c-ann-net), the candidate",
+  "role": "the capped version; the same walk with repo_model.s3c_candidate.capped_quantiles (margin 0 bp, the line of repo_model.srf_line) applied as docs/research/h5-candidate.json states it. Its pooled means must reproduce #1288's record, and the study refuses to write a record otherwise"
+ },
+ "pairs": "direct: the walk is spread_mr_state_calendar.walk with training_pairs = 'direct', as #1288's; the provisional-register row is metadata/provisional/cleared/s3c_uncapped_1361.json",
+ "frame": {
+  "windows": "the two windows of #1255 and #1288, loaded as #1288 loads them: the development window (decision days whose five targets fall on or before 2025-12-31) and the 2026 development days (decision days whose five targets fall from 2026-01-02 to 2026-09-03, the near-blind tier open since GO #151). Kept apart, never pooled",
+  "decision_time": "16:00 America/New_York, the decision time of the records of this family (spread_mean_reversion_686.DECISION_TIME), so that the candidate reproduces #1288. A re-run at the 18:00 instant in force since #1312 is a separate step of the move to 18:00 and is not made here",
+  "guards": "a scored decision day or target day passes lockbox.require_unlocked through spread_mean_reversion_686.require_scored_days with the last day of the window; the blind tier (from 2026-09-04) and every lockbox day are refused"
+ },
+ "models": ["B1", "B1_prime", "B2", "sc_s3c_ann_net", "sc_s3c_ann_net_uncapped"],
+ "primary": {
+  "metric": "grid CRPS (23 levels) averaged over leads h = 1..5",
+  "key_secondary": "upper-tail twCRPS (weight 1{z > 0 bp})",
+  "pressure_probability": "the Brier score of P(spread > +5 bp), the probability read off the 23 quantiles as 1 - F(floor(tau) + 0.5), F linear between them (spread_mean_reversion.exceedance), the event strict and on whole basis points (data.exceeds_bp)",
+  "calibration": "the coverage of the central 90% band (q5 to q95, closed) and of the central 50% band (q25 to q75, closed), and the exceedance rate of q95 (the share of cells whose outcome is strictly above the 0.95 quantile; nominal 5%), each of both versions; rates, reported as means and not tested",
+  "comparisons": "the uncapped version paired with the candidate, and against B1, B1' and B2"
+ },
+ "scoring": {
+  "scorer": "repo_model.scoring_protocol (#655), the development tier: no verdict, no registration",
+  "test": "scoring_protocol.paired_tests, the studentized stationary bootstrap (ruling 1), mean block 10 business days, 10,000 draws, seed 1361, two-sided 90% interval (the lower end is the one-sided 95% bound); the skill interval and the studentized interval on mean d are reported for every tested row; where the studentized bound cannot be computed the unstudentized percentile interval of mean d is given beside it, with no reading taken from it",
+  "reading": "a reading is taken from the mean-d bound (her ruling on #1009): the uncapped version is read better than the candidate when the lower end of the 90% interval of mean d is above zero, worse when the upper end is below zero, otherwise undecided",
+  "splits": "pooled; by lead; by regime (the declared regimes); by pressure-day type of the target day (turn_days.reporting_day_type, the record in force); by target month (2026 window); and the split this directive adds: target days at full allotment against the other target days, read from the policy register as public at the decision instant of the day before the target (repo_model.s3c_candidate.full_allotment). The two windows are kept apart. The full-allotment group of the development window holds only the days of December 2025 after the facility went to full allotment",
+  "identical_groups": "a group in which the two versions score alike on every day is listed as identical and not tested; a group of fewer than 20 days is listed and its means are given, and it is not tested",
+  "seed": 1361
+ },
+ "binding": "per window and lead, over the scored cells at full allotment (a cell whose target the cap applies to as known at its decision): the number of cells; the cells in which the uncapped version has a quantile above the line (the cap binds) and their share; the mean and largest move of the 0.95 quantile, of the 0.99 quantile and of the largest quantile, in bp, over the cells in which they are moved; and the share of the cells at full allotment whose outcome is above the line",
+ "reading_rules": [
+  "A figure is a check on days that were already seen. Nothing here is a verdict, nothing is registered and no choice is made on it; (s3c-ann-net) stays the candidate.",
+  "A gain or loss is read from the 90% interval of mean d excluding zero; otherwise undecided. A point estimate alone is not read.",
+  "A pooled figure is never read without the lead, regime and pressure-day-type splits beside it.",
+  "The full-allotment period is short: its group is read as a count of days beside its mean, and no tail rate is read from fewer days than the interval can support.",
+  "The page ends with marked questions for Eleonora with numbered options and defaults that change no claim."
+ ],
+ "limits": {
+  "last_day": "2026-09-03",
+  "named_candidate": "unchanged; docs/research/h5-candidate.json is not changed",
+  "preregistration": "scripts/final_test_preregistration.py is not touched; test_final_test_freeze and test_live_score_freeze are run before the push",
+  "allow_list": "repo_model.one_step_guard.ONE_STEP_ALLOW_LIST is not changed",
+  "sources": "metadata/sources.json, metadata/settlement_announcement_dating.json, metadata/net_settlement.json and docs/decisions/information-set.md are not changed; docs/runs/ is not touched; nothing in src/ is edited",
+  "registration": "the registration's secondary-results section is drafted in docs/decisions/drafts/h5-uncapped-secondary.md for her review; registering is her own GO action"
+ },
+ "long_run": "cloud first: two walks of (s3) (the frame) and one of the candidate's arm per window, then the paired tests of one candidate on about thirty groups and three metrics per window. If the measured time on a subset says the full run exceeds about two hours, the run goes to the Mac as a `needs-mac:` comment",
+ "amendments": []
+}
