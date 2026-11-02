@@ -9,7 +9,7 @@ and `check` and `page` end to end on the last months of the fixture panel.
 
 Recorded mutation (the trap this script adds, `TrappedValues.__getitem__`; the mutated line and the exception the failing test raised):
 
-* In `TrappedValues.__getitem__`, deleting the line `self._trap.lookups += 1` (the count of a read of the guarded column) makes
+* In `TrappedValues.__getitem__`, replacing the line `self._trap.lookups += 1` (the count of a read of the guarded column) with `pass` makes
   `TrapTests.test_a_read_of_the_column_is_counted_only_while_armed` fail with `AssertionError: 0 != 1` (the read was made while armed and
   nothing counted it), and `ReadsTests.test_a_model_that_reads_the_column_is_seen_to_read_it` fail with `AssertionError: False is not true`;
   restored, both pass.
@@ -68,11 +68,29 @@ class TrapTests(unittest.TestCase):
         panel, trap = script.trapped_panel(original)
         with trap.armed():
             list(panel[0].values.items())
-            list(panel[0].values)
+            list(panel[0].values.values())
         self.assertEqual(trap.lookups, 0)
         self.assertGreaterEqual(trap.bulk, 2)
         self.assertEqual([dict(r.values) for r in panel], [dict(r.values) for r in original])
         self.assertEqual([r.date for r in panel], [r.date for r in original])
+
+
+class PoisonTests(unittest.TestCase):
+
+    def test_only_the_reserve_column_is_replaced(self):
+        original = rows()
+        for kind, check in (("wild", lambda v: v >= 1.0e9), ("hole", lambda v: v is None)):
+            poisoned = script.poison(original, kind)
+            self.assertTrue(all(check(r.values["reserve_balances"]) for r in poisoned))
+            self.assertEqual([r.date for r in poisoned], [r.date for r in original])
+            self.assertEqual([(r.values["sofr"], r.values["tga"]) for r in poisoned], [(r.values["sofr"], r.values["tga"]) for r in original])
+        self.assertEqual(original[0].values["reserve_balances"], 3000.0)
+
+    def test_the_wild_values_differ_from_row_to_row_and_an_unknown_kind_is_refused(self):
+        wild = [r.values["reserve_balances"] for r in script.poison(rows(), "wild")]
+        self.assertEqual(len(set(wild)), len(wild))
+        with self.assertRaises(ValueError):
+            script.poison(rows(), "negative")
 
 
 class ReadsTests(unittest.TestCase):
@@ -90,6 +108,17 @@ class ReadsTests(unittest.TestCase):
             total = sum(r.values["sofr"] - r.values["iorb"] for r in panel)
         self.assertLess(total, 0)
         self.assertEqual(trap.lookups, 0)
+
+
+class InstantTests(unittest.TestCase):
+
+    def test_a_check_at_another_instant_than_18_is_refused_unless_the_test_allows_it(self):
+        from datetime import time
+
+        with self.assertRaises(ValueError):
+            script.require_instant(time(16, 0))
+        script.require_instant(time(18, 0))
+        script.require_instant(time(16, 0), allow_other=True)
 
 
 class DecideTests(unittest.TestCase):
@@ -136,7 +165,7 @@ class EndToEndTests(unittest.TestCase):
         cls.tmp = tempfile.TemporaryDirectory()
         base = Path(cls.tmp.name)
         cls.output, cls.page = base / "result.json", base / "page.md"
-        script.main(["check", "--panel", str(cls.panel_path), "--first", cls.FIRST, "--output", str(cls.output)])
+        script.main(["check", "--panel", str(cls.panel_path), "--first", cls.FIRST, "--any-instant", "--output", str(cls.output)])
         script.main(["page", "--check", str(cls.output), "--output", str(cls.page)])
         cls.result = json.loads(cls.output.read_text(encoding="utf-8"))
         cls.text = cls.page.read_text(encoding="utf-8")
@@ -156,6 +185,13 @@ class EndToEndTests(unittest.TestCase):
         self.assertEqual(same["max_abs_difference"], 0.0)
         self.assertEqual(self.result["candidate"]["state_values_read"], [1.0])
         self.assertEqual(self.result["answer"], "cannot_see")
+
+    def test_the_poisoned_walks_are_identical_to_the_week_average_walk(self):
+        for kind in ("wild", "hole"):
+            p = self.result["candidate"]["poisoned"][kind]
+            self.assertNotIn("error", p)
+            self.assertGreater(p["cells"], 0)
+            self.assertEqual(p["identical"], p["cells"])
 
     def test_the_control_that_does_read_the_state_moves_where_the_states_differ(self):
         control = self.result["control"]
