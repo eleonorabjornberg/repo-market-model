@@ -73,7 +73,8 @@ load_daily_panel = m1288.load_daily_panel
 decision_instant_pinned = m1356.decision_instant_pinned
 
 DECLARATION = REPO / "metadata" / "b4_quantile_regression_1360.json"
-RECORD_1321 = m1356.RECORD_1321
+#: The record of #1356, made at 18:00 with these frames and walks: its (s3c-ann-net), B1, B1' and B2 are the references' means this run must reproduce.
+RECORD_1356 = REPO / "docs" / "research" / "s3c-ann-net-cmb-1356" / "result.json"
 SEED = 1360
 LAST_DAY = EXPLORATORY_END
 WINDOW_LAST = m1288.WINDOW_LAST
@@ -82,7 +83,7 @@ WINDOW_TITLES = m1288.WINDOW_TITLES
 B4 = "B4"
 ANNNET, B1P = m1288.ANNNET, m1288.B1P
 BENCHMARKS = m1288.BENCHMARKS
-#: Every model of the run, in the order of the declaration; the references are the models that exist in #1321's record too.
+#: Every model of the run, in the order of the declaration; the references are the models that exist in #1356's record too.
 MODELS = BENCHMARKS + (B4, ANNNET)
 REFERENCES = (ANNNET,) + BENCHMARKS
 LABELS = {"B1": "B1", B1P: "B1' (#960)", "B2": "B2", B4: "B4, the plain quantile regression", ANNNET: "(s3c-ann-net), the candidate"}
@@ -159,20 +160,43 @@ def b4_walk(frame, panel, registry, announcements, days: Sequence[date]) -> b4.W
 
 
 def build(window: str, panel, splits, registry, table, register, results, auctions, first: Optional[date]):
-    """#1255's frame of `window` with (s3c-ann-net) and B4 added: `(frame, notes, candidate_walk, b4_walk, groups_fn)`."""
+    """#1255's frame of `window` with (s3c-ann-net) added: `(frame, notes, candidate_walk, name, groups_fn)`. B4 is added by `add_b4`."""
 
     frame, notes, _mine, _cells, groups_fn = m1255.build(window, panel, splits, registry, table, register, first)
     walk, name = candidate_walk(window, frame, panel, splits, registry, results, auctions, first)
-    announcements = announced_iorb.load_announcements(c.IORB_TABLE)
-    walked = b4_walk(frame, panel, registry, announcements, sorted(walk.forecasts[name]))
     forecasts = {m: frame.forecasts[m] for m in BENCHMARKS}
     forecasts[ANNNET] = m1255.s3c_forecasts(frame, register, {d: walk.forecasts[name][d] for d in frame.days})
-    forecasts[B4] = {d: walked.forecasts[d] for d in frame.days}
-    frame.forecasts = {m: {d: forecasts[m][d] for d in frame.days} for m in MODELS}
+    frame.forecasts = {m: {d: forecasts[m][d] for d in frame.days} for m in REFERENCES}
+    return frame, dict(notes, refits_candidate=len(walk.fits)), walk, name, groups_fn
+
+
+def add_b4(frame, notes, walk, name, panel, registry):
+    """B4 walked over the candidate's forecast days and added to the frame: `(notes, b4_walk)`."""
+
+    announcements = announced_iorb.load_announcements(c.IORB_TABLE)
+    walked = b4_walk(frame, panel, registry, announcements, sorted(walk.forecasts[name]))
+    frame.forecasts = {**frame.forecasts, B4: {d: walked.forecasts[d] for d in frame.days}}
     crossed = sum(1 for d in frame.days for h in LEADS if walked.crossed[d][h])
-    notes = dict(notes, refits_candidate=len(walk.fits), refits_b4=len(walked.estimates), b4_forecasts_the_sort_changed=crossed,
-                 b4_forecasts=len(frame.days) * len(LEADS))
-    return frame, notes, walk, walked, groups_fn
+    return dict(notes, refits_b4=len(walked.estimates), b4_forecasts_the_sort_changed=crossed, b4_forecasts=len(frame.days) * len(LEADS)), walked
+
+
+def reference_check(window: str, frame, cells, args) -> dict:
+    """The references' pooled means beside #1356's record, before B4 is walked (a full run only): they must agree to 1e-9, or the run stops here.
+
+    Raises:
+        ValueError: they do not (`compare_references`).
+    """
+
+    if args.first is not None or getattr(args, "windows", None) or not RECORD_1356.exists():
+        return {}
+    theirs = json.loads(RECORD_1356.read_text(encoding="utf-8"))["windows"]
+    pooled = {metric: {"means": {m: _mean(c.series_of(frame, cells[m][metric], "decision").values()) for m in REFERENCES}} for metric in TESTED}
+    return compare_references({window: {"groups": {"pooled": {"all decision days": pooled}}}}, theirs)[window]
+
+
+def _mean(values) -> float:
+    values = list(values)
+    return sum(values) / len(values)
 
 
 def fit_summary(estimates: Mapping[date, Mapping[int, "b4.Estimate"]], levels: Sequence[float] = FIT_LEVELS, leads: Sequence[int] = LEADS) -> dict:
@@ -211,7 +235,7 @@ def fit_summary(estimates: Mapping[date, Mapping[int, "b4.Estimate"]], levels: S
 
 
 def compare_references(ours: Mapping[str, dict], theirs: Mapping[str, dict]) -> dict:
-    """The pooled means of the references here beside #1321's record (made at 18:00 with the same frames and walks): they must agree to 1e-9.
+    """The pooled means of the references here beside #1356's record (made at 18:00 with the same frames and walks): they must agree to 1e-9.
 
     Raises:
         ValueError: they do not.
@@ -222,7 +246,7 @@ def compare_references(ours: Mapping[str, dict], theirs: Mapping[str, dict]) -> 
         a, b = theirs[window]["groups"]["pooled"]["all decision days"], result["groups"]["pooled"]["all decision days"]
         worst = max(abs(b[m]["means"][x] - a[m]["means"][x]) for m in TESTED for x in REFERENCES)
         if worst > 1e-9:
-            raise ValueError(f"the references of the {window} window differ from #1321's record by {worst:.2e}: the frames and walks are not the same")
+            raise ValueError(f"the references of the {window} window differ from #1356's record by {worst:.2e}: the frames and walks are not the same")
         out[window] = {"difference": worst, "models": list(REFERENCES), "metrics": list(TESTED)}
     return out
 
@@ -255,11 +279,14 @@ def run_jobs(jobs, workers: int):
 
 
 def run_window(window: str, panel, splits, registry, table, register, results, auctions, args) -> dict:
-    frame, notes, _walk, walked, groups_fn = build(window, panel, splits, registry, table, register, results, auctions, args.first)
+    frame, notes, walk, name, groups_fn = build(window, panel, splits, registry, table, register, results, auctions, args.first)
     last = WINDOW_LAST[window]
     labels = c.day_labels(frame, table)
     pressure = k.pressure_labels(frame, sorted(labels))
-    cells = {m: m1288.cell_table(frame, frame.forecasts[m], last) for m in MODELS}
+    cells = {m: m1288.cell_table(frame, frame.forecasts[m], last) for m in REFERENCES}
+    check = reference_check(window, frame, cells, args)
+    notes, walked = add_b4(frame, notes, walk, name, panel, registry)
+    cells[B4] = m1288.cell_table(frame, frame.forecasts[B4], last)
     for m in MODELS:
         official = sp.day_scores(frame.forecasts[m], frame.outcome, frame.dates, score=sp.grid_crps)
         mean = s686.by_decision(cells[m]["grid_crps"])
@@ -281,7 +308,7 @@ def run_window(window: str, panel, splits, registry, table, register, results, a
             for candidate in (B4, ANNNET):
                 jobs.append((split, label, grain, metric, candidate, tuple(members)))
     done = run_jobs(jobs, args.workers)
-    result: dict = {"notes": notes, "groups": {}, "skipped_groups": skipped, "fit": fit_summary(walked.estimates)}
+    result: dict = {"notes": notes, "groups": {}, "skipped_groups": skipped, "fit": fit_summary(walked.estimates), "against_1356": check}
     for split, label, grain, members in groups:
         entry = result["groups"].setdefault(split, {}).setdefault(label, {"days": len(members)})
         for metric in METRIC_NAMES:
@@ -321,12 +348,8 @@ def _score(args) -> int:
     }
     for window in (getattr(args, "windows", None) or WINDOWS):
         result["windows"][window] = run_window(window, panel, splits, registry, table, register, results, auctions, args)
-    if args.first is None and not getattr(args, "windows", None) and RECORD_1321.exists():
-        result["against_1321"] = compare_references(result["windows"], json.loads(RECORD_1321.read_text(encoding="utf-8"))["windows"])
-    else:
-        result["against_1321"] = {}
-    Path(args.output).parent.mkdir(parents=True, exist_ok=True)
-    Path(args.output).write_text(json.dumps(result, indent=1, sort_keys=True) + "\n", encoding="utf-8")
+        Path(args.output).parent.mkdir(parents=True, exist_ok=True)  # a window is kept as soon as it is scored
+        Path(args.output).write_text(json.dumps(result, indent=1, sort_keys=True) + "\n", encoding="utf-8")
     return 0
 
 
@@ -481,11 +504,12 @@ def render(r: dict) -> str:
         out += fit_table(w["fit"], "0.5") + ["", "At the 95th percentile:", ""] + fit_table(w["fit"], "0.95") + [""]
         if w["skipped_groups"]:
             out += ["Groups of fewer than 20 days, listed and not tested: " + ", ".join(f"{x} ({n_})" for x, n_ in sorted(w["skipped_groups"].items())) + ".", ""]
-    if r.get("against_1321"):
-        worst = max(v["difference"] for v in r["against_1321"].values())
-        out += ["## The references against #1321's record (made at 18:00)", "",
-                "(s3c-ann-net), B1, B1' and B2 are re-run here with the same frames and walks; the pooled means equal #1321's to 1e-9 (the run refuses to write "
-                f"otherwise). Largest absolute difference: {worst:.1e}.", ""]
+    checks = {w: x["windows"][w].get("against_1356") for w in WINDOWS for x in [r] if w in x["windows"] and x["windows"][w].get("against_1356")}
+    if checks:
+        worst = max(v["difference"] for v in checks.values())
+        out += ["## The references against #1356's record (made at 18:00)", "",
+                "(s3c-ann-net), B1, B1' and B2 are re-run here with the same frames and walks before B4 is walked; the pooled means equal #1356's to 1e-9 (the "
+                f"run stops otherwise). Largest absolute difference: {worst:.1e}.", ""]
     out += question()
     return "\n".join(out).rstrip() + "\n"
 

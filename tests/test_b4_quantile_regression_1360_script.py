@@ -92,6 +92,42 @@ class ReferenceTests(unittest.TestCase):
             script.compare_references({"development": self.window(1.0)}, {"development": self.window(1.0 + 1e-6)})
 
 
+class RecordOf1356Tests(unittest.TestCase):
+    """The tracked record the references are checked against (a full run stops at the first window if they differ), read as the script reads it."""
+
+    record = json.loads(script.RECORD_1356.read_text(encoding="utf-8"))["windows"]
+
+    def test_the_record_holds_every_reference_on_every_tested_metric(self):
+        for window in script.WINDOWS:
+            pooled = self.record[window]["groups"]["pooled"]["all decision days"]
+            for metric in script.TESTED:
+                for model in script.REFERENCES:
+                    self.assertIn(model, pooled[metric]["means"], f"{window}/{metric}")
+
+    def test_references_scored_alike_are_accepted_against_the_record(self):
+        for window in script.WINDOWS:
+            self.assertEqual(script.compare_references({window: self.record[window]}, self.record)[window]["difference"], 0.0)
+
+    def test_the_reference_check_reads_the_pooled_means_of_the_frames_cells(self):
+        from datetime import timedelta
+
+        days = [date(2022, 1, 3) + timedelta(days=i) for i in range(3)]
+        frame = SimpleNamespace(days=days)
+        window = "development"
+        pooled = self.record[window]["groups"]["pooled"]["all decision days"]
+        cells = {m: {metric: {(d, h): pooled[metric]["means"][m] for d in days for h in sp.HORIZONS} for metric in script.TESTED}
+                 for m in script.REFERENCES}
+        args = SimpleNamespace(first=None, windows=None)
+        out = script.reference_check(window, frame, cells, args)
+        self.assertLess(out["difference"], 1e-9)
+        cells["B1"]["grid_crps"] = {key: value + 1e-6 for key, value in cells["B1"]["grid_crps"].items()}
+        with self.assertRaises(ValueError):
+            script.reference_check(window, frame, cells, args)
+
+    def test_a_subset_run_is_not_checked(self):
+        self.assertEqual(script.reference_check("development", SimpleNamespace(days=[]), {}, SimpleNamespace(first=date(2026, 7, 20), windows=None)), {})
+
+
 class SummaryTests(unittest.TestCase):
 
     def estimate(self, level, slope):
