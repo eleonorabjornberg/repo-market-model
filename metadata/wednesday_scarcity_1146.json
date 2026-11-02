@@ -61,5 +61,40 @@
    "week_average_reserves",
    "wednesday_level_reserves"
   ]
- }
+ },
+ "amendments": [
+  {
+   "date": "2026-11-02",
+   "ruling": "Eleonora, 2 November 2026 (chat, relayed by the orchestrating session; comment 6566354415 on pull request 1147): test it on the current candidate",
+   "why": "The first run walked #941's scaled mean reversion, which reads only the spread series, so both readings gave identical forecasts on all 9,275 cells. The H5 candidate is now (s3c-ann-net) (docs/research/h5-candidate.json), whose calendar terms are scaled by the as-of scarcity state; #1145's arms are merged. The first run's declaration, record and page are kept as the record of what was run on #941 and are not edited.",
+   "candidate": "sc_s3c_ann_net",
+   "instant": "18:00",
+   "scored_before_this_amendment": false,
+   "check_first": {
+    "question": "Does (s3c-ann-net)'s forecast read reserve_balances, directly or through the scarcity state, at each lead 1 to 5, and on how many decision days does the Wednesday level change what it reads?",
+    "script": "scripts/wednesday_candidate_check_1146.py",
+    "method": "walk the candidate (the walk of scripts/s3c_announced_settlement_1288.py, unchanged, with the cap of repo_model.s3c_candidate) on the published panel and on the same panel with reserve_balances replaced by the Wednesday level (the substitution of scripts/wednesday_scarcity_1146.py), on rows that count every lookup of reserve_balances while the forecast code runs; compare every quantile of every cell; list the state value the candidate's fit and forecast read on each decision day; count the decision days on which the own-leg state (scarcity.own_leg_states) differs between the two readings at each lead; run (s2) of #1145, which does read the state, as a control that the comparison can see a difference",
+    "development_window": "decision days whose five targets are on or before 2025-12-31; the Wednesday-level snapshot ends there and the 2026 days are not substituted"
+   },
+   "arm_added_only_if": "the check finds that the candidate's forecast moves with the reading (a lookup of reserve_balances, a differing cell, or a state value the fit or forecast reads that varies). If it does not, the pull request says so on a new page with the evidence and stops: no arm is declared or scored, and the first run's record stands as it was",
+   "arm_if_it_can": {
+    "name": "(s3c-ann-net) with the Wednesday reading",
+    "scored_against": [
+     "(s3c-ann-net) on the week average",
+     "B1",
+     "B1'",
+     "B2"
+    ],
+    "protocol": "scoring protocol v1: development window deciding, the 2026 days shown apart; grid CRPS, upper-tail twCRPS, Brier P(> +5 bp); by lead, regime, scarcity state and on the days the two readings differ; read on the studentized bound on mean d (#1009) with the skill interval beside",
+    "instant": "18:00, the decision instant in force (repo_model.decision_instant)"
+   },
+   "new_files": [
+    "scripts/wednesday_candidate_check_1146.py",
+    "tests/test_wednesday_candidate_check_1146.py",
+    "docs/research/wednesday-candidate-check-1146/result.json",
+    "docs/research/wednesday-candidate-check-1146-result.md"
+   ],
+   "unchanged": "the candidate, the published declaration, metadata/sources.json, the first run's declaration fields above, its record docs/research/wednesday-scarcity-1146/result.json and its page; no record in docs/runs/; no day after 2025-12-31 is read; no locked day is scored"
+  }
+ ]
 }
