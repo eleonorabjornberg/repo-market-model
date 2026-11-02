@@ -90,7 +90,7 @@ def use_block(emit):
     declaration = _declaration(candidate)
     horizons = declaration["horizons"]
     lines = [
-        "**What it forecasts.** The candidate is `%s`. It forecasts the distribution of the SOFR − IORB spread in "
+        "**What it forecasts.** The candidate is `%s`. It forecasts the distribution of the spread of SOFR minus the administered reserve rate (IOER before 29 July 2021, IORB after; written SOFR − IORB) in "
         "basis points, as %d quantiles of the spread on each of the next %d to %d business days after the decision "
         "day. The primary score is %s (scoring protocol v1, `docs/decisions/scoring-protocol.md`)."
         % (candidate["candidate"], len(declaration["protocol"]["grid"]), horizons[0], horizons[-1],

@@ -3322,8 +3322,8 @@ def forecast_daily(records, locked, series=FORECAST_DAILY_SERIES):
         "fd_misses": miss_table,
         "fd_links": (f"Every figure here is read from <a href='{BLOB}{FORECAST_DAILY}'>the published daily forecast record"
                      f"</a>: each scored day from {day(first)} to {day(last)}, the published "
-                     f"distribution's five quantiles one day ahead and the actual spread. Its daily CRPS "
-                     f"reproduces the published CRPS records exactly."),
+                     f"distribution's five quantiles one day ahead and the actual spread. Its daily five-quantile score "
+                     f"(mean pinball loss; the records call it CRPS) reproduces the published records exactly."),
     }
     return data, fills
 
