@@ -37,6 +37,16 @@ USD 100 bn, each counting an auction only when it was announced by the decision 
 (s3c-ann) with the two net terms beside its two flags (two terms per leg); `GROSS_ARM` replaces the coupon flag by the gross coupon offering and
 keeps the bill flag. Both are (s3) with that change only, on direct pairs.
 
+**Cash management bill term (#1356; H5 step 3, avenue #1306; her ruling of 2 November 2026).** `AnnouncedNetExCmbSizeTable` is the announced net with the
+offerings of the cash management bills counted in the bill class taken out of the net bill (net bill ex-CMB; the class's maturing amount stays with the
+regular bills), so that net bill ex-CMB plus the announced CMB offering is (s3c-ann-net)'s net bill wherever the class is counted. `AnnouncedCmbTerms`
+serves the CMB term as an extra term of the fit (`spread_mr_state_calendar.CMB_EXTRAS`, read through `walk`'s `iorb` argument): `cmb_flag` (1 when
+the CMBs settling on the target day announced by the decision instant offer more than zero) or `cmb_size` (their offering over USD 100 bn). A CMB
+announced after the decision instant is not counted (#1301: one announced and settled inside the lead window is not readable at that lead) and, as
+in `net_settlement.net_for_day`, does not make the bill class partly announced (#738); a CMB announced by the instant is counted whether or not
+the regular bills of the day are (the declared gate, `metadata/s3c_ann_net_cmb_1356.json`). `CMB_FLAG_ARM` and `CMB_SIZE_ARM` are (s3c-ann-net) with
+that one extra term, on direct pairs.
+
 Stdlib only.
 """
 
@@ -51,6 +61,7 @@ from . import announced_iorb, fomc_calendar
 from . import settlement_dating as sd
 from . import spread_mr_calendar as cal
 from . import spread_mr_state_calendar as sc
+from . import net_settlement as ns
 from . import s3c_net
 from .asof import StaleReadError
 from .data import DailyObservation
@@ -58,7 +69,8 @@ from .splits import LookAheadError
 
 __all__ = [
     "ANN_ARM", "ANN_NET_ARM", "BILL_ARM", "COLUMN", "COUPON_ARM", "LEGS", "TRAINING_PAIRS",
-    "AnnouncedNetSizeTable", "AnnouncedSizeTerms", "AnnouncedTermTable", "FLAGNET_ARM", "GROSS_ARM",
+    "AnnouncedCmbTerms", "AnnouncedNetExCmbSizeTable", "AnnouncedNetSizeTable", "AnnouncedSizeTerms", "AnnouncedTermTable",
+    "CMB_FLAG_ARM", "CMB_SIZE_ARM", "FLAGNET_ARM", "GROSS_ARM", "cmb_offering", "net_by_term_ex_cmb",
 ]
 
 #: The fit trains on direct pairs only: the settlement terms are read at the target day (`one_step_guard` holds, no allow-list entry).
@@ -306,4 +318,162 @@ class AnnouncedSizeTerms:
                 )
         if sc.NET_COUPON in self.names or sc.NET_BILL in self.names:
             self.net.read(lead, decision_index)
+        return out
+
+
+# -- the cash management bill term (#1356) --------------------------------------------------------------------------------------------------
+
+#: (s3c-ann-net-cmb), flag form (#1356): (s3c-ann-net) with the CMB flag beside its two sized settlement terms (the bill term then without the CMBs).
+CMB_FLAG_ARM = dataclasses.replace(
+    ANN_NET_ARM, name="sc_s3_ann_net_cmbf",
+    role="(s3-ann-net-cmb) flag form: (s3-ann-net) with the cash management bill split out of the bill leg as an announced 0/1 flag",
+    extra=(sc.CMB_FLAG,),
+)
+#: (s3c-ann-net-cmb), size form (#1356): the same with the announced CMB offering in USD 100 bn in place of the flag.
+CMB_SIZE_ARM = dataclasses.replace(
+    ANN_NET_ARM, name="sc_s3_ann_net_cmbs",
+    role="(s3-ann-net-cmb) size form: (s3-ann-net) with the cash management bill split out of the bill leg as its announced offering",
+    extra=(sc.CMB_SIZE,),
+)
+
+
+def _announced_cmb(auctions: Sequence[ns.Auction], instant: datetime) -> List[ns.Auction]:
+    """The cash management bills of `auctions` announced at or before `instant`."""
+
+    return [a for a in auctions if a.is_bill and a.cmb and a.announced_at <= instant]
+
+
+def cmb_offering(auctions: Sequence[ns.Auction], instant: datetime) -> float:
+    """The summed offering of one settlement day's cash management bills announced by `instant`, in USD billions (0.0 when none)."""
+
+    return sum(a.offering for a in _announced_cmb(auctions, instant))
+
+
+def net_by_term_ex_cmb(auctions: Sequence[ns.Auction], instant: datetime) -> Dict[str, float]:
+    """`s3c_net.net_by_term` with the offerings of the announced cash management bills taken out of the bill term, in USD billions.
+
+    The bill class is counted exactly as `net_settlement.net_for_day` counts it (left out while partly announced, #679; a CMB not yet announced is
+    not on the schedule, #738). Where it is counted the bill term is the class's net less the CMB offerings in it, so that this term plus
+    `cmb_offering` is `net_by_term`'s bill term; where it is left out the term is 0.0, as there.
+    """
+
+    whole = s3c_net.net_by_term(auctions, instant)
+    known = [a for a in auctions if a.is_bill and a.announced_at <= instant]
+    visible = [a for a in auctions if a.is_bill and (not a.cmb or a.announced_at <= instant)]
+    counted = bool(known) and len(known) == len(visible)
+    bill = whole["settlement_bill"] - cmb_offering(auctions, instant) if counted else 0.0
+    return {"settlement_bill": bill, "settlement_coupon": whole["settlement_coupon"]}
+
+
+class AnnouncedNetExCmbSizeTable(AnnouncedNetSizeTable):
+    """`AnnouncedNetSizeTable` with the cash management bills taken out of the net bill (`net_by_term_ex_cmb`); same interface (`sizes_at`, `read`)."""
+
+    def _value(self, decision_row: int, target_row: int) -> Dict[str, float]:
+        """The net by term, ex-CMB, of the target row as announced at the decision instant of `decision_row`.
+
+        Mutation record: see `tests/test_s3c_announced_cmb_1356.py` (`CmbReadTests`).
+        """
+
+        if decision_row < 0 or target_row >= len(self.dates):
+            raise ValueError(f"row {target_row} read at the decision of row {decision_row} is outside the panel")
+        key = (decision_row, target_row)
+        if key not in self._cache:
+            instant = datetime.combine(self.dates[decision_row], self._time)
+            self._cache[key] = net_by_term_ex_cmb(self._by_day.get(self.dates[target_row], ()), instant)
+        return self._cache[key]
+
+    def read(self, lead: int, decision_index: int) -> Dict[str, float]:
+        """The sizes a forecast of the decision on row `decision_index` at `lead` reads, from its target row.
+
+        Raises:
+            LookAheadError: the figure is not the ex-CMB net announced at the decision instant.
+        """
+
+        row = cal.target_row(decision_index, lead)
+        out = self.sizes_at(lead, row)
+        instant = datetime.combine(self.dates[decision_index], self._time)
+        announced = net_by_term_ex_cmb(self._by_day.get(self.dates[row], ()), instant)
+        for name in sc.SIZED_TERMS:
+            if abs(out[name] - announced[name]) > 1e-9:
+                raise LookAheadError(
+                    f"net {name!r} ex-CMB for {self.dates[row]} is {out[name]}, but {announced[name]} was announced by the decision instant "
+                    f"{instant} of the forecast made {lead} panel day(s) ahead"
+                )
+        return out
+
+
+class AnnouncedCmbTerms:
+    """The cash management bill term of `sc.CMB_EXTRAS` at every lead, as the decision `lead` rows before could read it; the `iorb` table of `sc.walk`.
+
+    `cmb_size` is the summed offering of the cash management bills settling on the target row that were announced by the decision instant of row
+    `row - lead`, over `sc.SIZE_UNIT` (USD 100 bn); `cmb_flag` is 1.0 when it is above zero. A row with no decision row `lead` rows before reads 0.
+    `names` picks which are served.
+    """
+
+    def __init__(self, panel: Sequence[DailyObservation], auctions: Sequence[ns.Auction], names: Sequence[str] = sc.CMB_EXTRAS,
+                 *, decision_time: time = DECISION_TIME):
+        unknown = [name for name in names if name not in sc.CMB_EXTRAS]
+        if unknown:
+            raise ValueError(f"names must be among {list(sc.CMB_EXTRAS)}, got {unknown}")
+        self.names = tuple(name for name in sc.CMB_EXTRAS if name in names)
+        self.dates = [row.date for row in panel]
+        self._time = decision_time
+        self._by_day: Dict[date, List[ns.Auction]] = {}
+        for item in auctions:
+            if item.is_bill and item.cmb:
+                self._by_day.setdefault(item.settles, []).append(item)
+        self._counted_cache: Dict[Tuple[int, int], Tuple[ns.Auction, ...]] = {}
+
+    def _counted(self, lead: int, row: int) -> Tuple[ns.Auction, ...]:
+        """The cash management bills settling on `dates[row]` announced by the decision instant `lead` rows before it."""
+
+        key = (lead, row)
+        if key not in self._counted_cache:
+            if row - lead < 0:
+                self._counted_cache[key] = ()
+            else:
+                instant = datetime.combine(self.dates[row - lead], self._time)
+                self._counted_cache[key] = tuple(_announced_cmb(self._by_day.get(self.dates[row], ()), instant))
+        return self._counted_cache[key]
+
+    def _figure(self, counted: Sequence[ns.Auction]) -> Dict[str, float]:
+        size = sum(a.offering for a in counted) / sc.SIZE_UNIT
+        out: Dict[str, float] = {}
+        if sc.CMB_FLAG in self.names:
+            out[sc.CMB_FLAG] = 1.0 if size > 0.0 else 0.0
+        if sc.CMB_SIZE in self.names:
+            out[sc.CMB_SIZE] = size
+        return out
+
+    def at(self, lead: int, row: int) -> Dict[str, float]:
+        """The CMB term of target row `row` as the decision `lead` rows earlier read it (a training row: public by construction).
+
+        Mutation record: see `tests/test_s3c_announced_cmb_1356.py` (`AnnouncedCmbTerms.at`).
+        """
+
+        return self._figure(self._counted(lead, row))
+
+    def read(self, lead: int, decision_index: int) -> Dict[str, float]:
+        """The term a forecast of the decision on row `decision_index` at `lead` reads, from its target row.
+
+        Raises:
+            LookAheadError: a figure that counts a cash management bill announced after the decision instant.
+            StaleReadError: a figure that leaves out a cash management bill announced by the decision instant.
+        """
+
+        row = cal.target_row(decision_index, lead)
+        instant = datetime.combine(self.dates[decision_index], self._time)
+        out = self.at(lead, row)
+        announced = self._figure(_announced_cmb(self._by_day.get(self.dates[row], ()), instant))
+        for name in self.names:
+            if out[name] > announced[name] + 1e-9:
+                raise LookAheadError(
+                    f"term {name!r} for {self.dates[row]} is {out[name]}, but {announced[name]} was announced by the decision instant {instant} "
+                    f"of the forecast made {lead} panel day(s) ahead: it counts a cash management bill announced later"
+                )
+            if out[name] < announced[name] - 1e-9:
+                raise StaleReadError(
+                    f"term {name!r} for {self.dates[row]} is {out[name]}, but {announced[name]} was announced by the decision instant {instant}: "
+                    f"it leaves out an announced cash management bill"
+                )
         return out

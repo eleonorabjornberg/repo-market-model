@@ -136,8 +136,12 @@ IORB_EXTRAS: Tuple[str, ...] = (IORB_SIGNED, IORB_TECHNICAL)
 #: announced net coupon and net bill settlement, and the announced gross coupon offering, each in units of `SIZE_UNIT` (USD 100 bn).
 NET_COUPON, NET_BILL, GROSS_COUPON = "net_coupon", "net_bill", "gross_coupon"
 SIZE_EXTRAS: Tuple[str, ...] = (NET_COUPON, NET_BILL, GROSS_COUPON)
+#: The cash management bill term of (s3c-ann-net-cmb) (#1356, `s3c_announced.AnnouncedCmbTerms`): a 0/1 flag that a cash management bill announced by the
+#: decision instant settles on the target day, or the announced offering of those bills in units of `SIZE_UNIT` (USD 100 bn).
+CMB_FLAG, CMB_SIZE = "cmb_flag", "cmb_size"
+CMB_EXTRAS: Tuple[str, ...] = (CMB_FLAG, CMB_SIZE)
 #: Every `extra` term: it is read from `pair.extras` and not from the flags.
-EXTRA_TERMS: Tuple[str, ...] = IORB_EXTRAS + SIZE_EXTRAS
+EXTRA_TERMS: Tuple[str, ...] = IORB_EXTRAS + SIZE_EXTRAS + CMB_EXTRAS
 #: An IORB change that is not a multiple of 25 bp is a technical adjustment: the rule of `setup_diagnostic`.
 technical = setup_diagnostic.is_technical
 #: (s3+IORBs): (s3), with `iorb_window` and the two terms beside it. The FOMC-day term is not added.
