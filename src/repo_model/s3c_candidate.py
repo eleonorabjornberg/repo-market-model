@@ -12,7 +12,7 @@ instant, states no aggregate operation limit (`details["aggregate_operation_limi
 it again restarts it. An entry without the field is refused, never read as full allotment.
 
 **Information set.** The entry used is the one `repo_model.srf_line` would use for the line: announced at or before the decision instant
-(16:00 America/New_York on the decision day, the published records' decision time) and effective on or before the target day, passed
+(`repo_model.decision_instant`: 18:00 America/New_York on the decision day since #1312; the dated declarations of #1241 and #1252 keep the earlier instant they were made at) and effective on or before the target day, passed
 through `policy_events.require_announced`, which raises `LookAheadError` for an entry announced later. The line itself is
 `repo_model.srf_line.srf_line_bps`, unchanged, under the availability declaration of `metadata/srf_cap_1241.json`.
 

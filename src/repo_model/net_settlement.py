@@ -14,8 +14,8 @@ it is built from Fiscal Data auction records, each figure read at its announceme
   SOMA leg cancels and is not in the net. It is carried and reconciled, not read.
 
 Three columns, in USD billions, on the row of day `t`, each public at the declared
-announcement instant on `t` (12:00 New York) and so read by the 16:00 decision of
-`t`:
+announcement instant on `t` (12:00 New York) and so read by the decision of `t` (`repo_model.decision_instant`: 18:00 since #1312; the
+declaration was made at the earlier instant):
 
 * `net_settlement`: the net of the settlements dated `t`;
 * `net_settlement_bills`: the same for the bill types;
