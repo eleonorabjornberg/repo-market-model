@@ -96,6 +96,7 @@ EFFECT_SKILLS = (0.005, 0.01, 0.03)
 FAMILY_SIZES = (1, 2, 3)
 LOOKS = (125, 250)
 POWER_METRICS = ("grid_crps", "upper_tail_twcrps")
+EFFECT_ORDER = ("observed", "skill 0.5%", "skill 1.0%", "skill 3.0%", "zero")
 POWER_WINDOWS = 40_000
 TARGET_POWER = 0.8
 
@@ -788,17 +789,18 @@ def power_tables(power: Mapping[str, object]) -> List[str]:
         out += [f"**{METRIC_TITLES[metric]}.** {entry['days']:,} decision days from {entry['first']} to {entry['last']}; mean d {entry['mean_d']:+.4f} "
                 f"(skill {_pct(entry['observed_skill'], 2)} of the candidate's mean score {entry['mean_score_reference']:.3f}); long-run standard deviation of a daily difference "
                 f"{entry['long_run_sd']:.3f}.", ""]
-        names = list(entry["effects"])
+        names = [n for n in EFFECT_ORDER if n in entry["effects"]]
         out += ["| look (days) | family size | nominal level | critical value | " + " | ".join(f"power at {n}" for n in names) + " |",
                 "|---|---|---|---|" + "---|" * len(names)]
         for look, per in entry["looks"].items():
             for m, v in per.items():
                 out.append(f"| {look} | {m} | {v['level']:.4f} | {v['critical_value']:.2f} | " + " | ".join(f"{100 * v['power'][n]:.1f}%" for n in names) + " |")
+        positive = [n for n in names if n != "zero"]
         out += ["", "Days a one-sided test at the final look's level needs for 80% power (analytic, long-run variance), by effect:", "",
-                "| family size | " + " | ".join(names[1:]) + " |", "|---|" + "---|" * (len(names) - 1)]
+                "| family size | " + " | ".join(positive) + " |", "|---|" + "---|" * len(positive)]
         for m, v in entry["looks"][str(LOOKS[-1])].items():
             cells = []
-            for n in names[1:]:
+            for n in positive:
                 days = v["days_needed"][n]
                 cells.append("never (effect not positive)" if days is None else f"{days:,.0f}")
             out.append(f"| {m} | " + " | ".join(cells) + " |")
@@ -813,6 +815,7 @@ def answers(r: Mapping[str, object]) -> List[str]:
     ev = t1["event_probabilities"]
     reg = t1["regime"]
     cmb = dev["table_2_annnet"].get("immediate_cmb", {})
+    s20 = dev["table_3"]["later"]["by_regime"].get("2020", {})
     out = [
         "## Answers (development window; diagnostic intervals; readings from the interval on mean d)", "",
         f"1. **Where the Brier gain sits (H-f: {h['H-f']}).** Against (s3c-ann-net), over the settlement-day target cells the Brier difference is "
@@ -820,8 +823,10 @@ def answers(r: Mapping[str, object]) -> List[str]:
         f"Summed over the cells where the spread went above +5 bp it is {ev['event']['brier_d_sum']:+.2f} (mean P(> +5 bp) {ev['event']['prob_arm']:.3f} against "
         f"the candidate's {ev['event']['prob_ref']:.3f}), over the others {ev['other']['brier_d_sum']:+.2f}. By regime: 2018-19 {_cell(reg.get('2018-19'), 'brier_gt5')}; "
         f"2020 {_cell(reg.get('2020'), 'brier_gt5')}.",
-        f"2. **The 2020 loss (H-g, an over-shift: {h['H-g']}).** See the shift table: the realised settlement-day premium in 2020 against the fitted shifts, and the "
-        f"flagnet's settlement-day bias.",
+        f"2. **The 2020 loss (H-g, an over-shift: {h['H-g']}).** At leads 2 to 5 in 2020 the realised settlement-day premium is {_value(s20.get('premium'))} bp; the fitted "
+        f"settlement shift is {_value((s20.get(ANNNET) or {}).get('shift'))} for (s3c-ann-net) and {_value((s20.get(FLAGNET) or {}).get('shift'))} for (s3c-ann-flagnet); the "
+        f"flagnet's settlement-day bias (error on settlement days less the others; negative: forecast too high) is {_value((s20.get(FLAGNET) or {}).get('bias'))}. "
+        f"The 2020 grid CRPS difference on settlement-day targets at leads 2 to 5: {_cell(dev['table_2_annnet'].get('settlement_leads_2_5'), 'grid_crps')}.",
         f"3. **The immediate-release cash management bill days (H-h against (s3c-ann-net): {h['H-h against annnet']}; against (s3c-ann): {h['H-h against ann']}).** The 2020 "
         f"grid CRPS difference with those days in: {_cell((dev['table_2_annnet'].get('all_2020')), 'grid_crps')}; with them left out: "
         f"{_cell((cmb.get('left_out')), 'grid_crps')}. They are {cmb.get('target_days', 0)} of the 2020 target days.", ""]
@@ -877,6 +882,9 @@ def render(r: dict) -> str:
     for key, title in (("table_2_annnet", "(s3c-ann-flagnet) against (s3c-ann-net)"), ("table_2_ann", "(s3c-ann-flagnet) against (s3c-ann)"),
                        ("table_2_annnet_vs_ann", "(s3c-ann-net) against (s3c-ann), as #1320 read it"), ("table_2_vs_s3c", "(s3c-ann-flagnet) against (s3c)")):
         t = dev[key]
+        if not t:
+            lines += [f"### {title}", "", "No cell of this regime in the days run (a subset run only).", ""]
+            continue
         lines += [f"### {title}", "", "**All of 2020, and March to June against the rest**", ""] + diff_table(
             {"2020": t["all_2020"], **t["march_to_june"]}, "group") + ["", "**By month of the target day**", ""] + diff_table(t["month"], "month") + [
             "", "**By settlement-day type, by leg, and by the scarcity state of the decision day**", ""] + diff_table(
