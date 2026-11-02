@@ -116,6 +116,17 @@ class SeriesTests(unittest.TestCase):
         self.assertEqual(sum(counts), 6)
 
 
+class TailExtentTests(unittest.TestCase):
+    def test_the_open_tail_runs_one_bp_above_the_line_where_four_levels_bind(self):
+        # the last open segment is 5 bp over 0.05 of probability (100 bp per unit); the last 1% runs 1 bp
+        self.assertAlmostEqual(script.tail_extent(many_knots(), 10.0, "open_tail"), 1.0, places=9)
+
+    def test_a_bounded_law_has_none(self):
+        self.assertEqual(script.tail_extent(many_knots(), 10.0, "atom_at_line"), 0.0)
+        self.assertLess(script.tail_extent(many_knots(), 10.0, "status_quo"), 1e-4)
+        self.assertEqual(script.tail_extent(many_knots(), None, "open_tail"), 0.0)
+
+
 class RuleAgreementTests(unittest.TestCase):
     def test_where_the_cap_does_not_bind_the_open_tail_and_the_status_quo_agree(self):
         rng = random.Random(1389)

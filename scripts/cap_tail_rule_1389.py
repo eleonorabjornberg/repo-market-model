@@ -130,6 +130,14 @@ def check_quantiles(raw: Sequence[float], line: Optional[float], margin: float =
                 raise ValueError(f"{rule}: the law's {level} quantile is {got}, the capped vector's is {want}")
 
 
+def tail_extent(raw: Sequence[float], line: Optional[float], rule: str, margin: float = MARGIN_BP) -> float:
+    """How far above the line (bp) the law of `rule` runs on: its upper end less the ceiling, never below 0. Zero for a bounded law."""
+
+    if line is None:
+        return 0.0
+    return max(0.0, cl.emitted_law(raw, line, rule, margin).quantile(1.0) - (line + margin))
+
+
 def day_series(cells: Sequence[Mapping[str, object]], values: Sequence[Optional[float]], member: Callable[[Mapping[str, object]], bool]) -> Dict[date, float]:
     """The mean of `values` over the cells of each decision day that `member` admits (a value of `None` is no cell)."""
 
@@ -313,7 +321,8 @@ def window_result(doc: Mapping[str, object], record: Mapping[str, object], draws
         classes[cls] = {"cells": len(rows), "observed_above_10": sum(s["status_quo"]["event10"] for s, _ in rows) / len(rows),
                         "mean_p10": {r: sum(s[r]["p10"] for s, _ in rows) / len(rows) for r in RULES},
                         "mean_p_line": {r: sum(s[r]["p_line"] for s, _ in rows) / len(rows) for r in RULES},
-                        "status_quo_p10_under_1e-6": sum(1 for s, _ in rows if s["status_quo"]["p10"] < 1e-6)}
+                        "status_quo_p10_under_1e-6": sum(1 for s, _ in rows if s["status_quo"]["p10"] < 1e-6),
+                        "mean_tail_extent_bp": {r: sum(tail_extent(raw[c["key"]], c["line"], r) for _, c in rows) / len(rows) for r in RULES}}
     result["binding_classes"] = classes
     full = [s for s, c in zip(scored, cells) if c["line"] is not None]
     result["pit_deciles_at_full_allotment"] = {r: decile_counts([s[r]["pit_value"] for s in full]) for r in RULES}
