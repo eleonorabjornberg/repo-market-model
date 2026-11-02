@@ -565,7 +565,7 @@ def render(r: dict) -> str:
         "(s3c) and (s3c-ann-net) are re-run in the same run, at the 18:00 decision instant "
         f"(`repo_model.decision_instant`, pinned for the run: {r['decision_time']}).", "",
         "## Availability: are the decision day's results public before 18:00?", "",
-        f"**{a['reading'].capitalize()}.** {a['rule']}. {a['caveat']}.", ""] + availability_table(a) + [
+        f"**{a['reading'].capitalize()}.** {a['rule'][0].upper() + a['rule'][1:]}. {a['caveat'][0].upper() + a['caveat'][1:]}.", ""] + availability_table(a) + [
         "", "A date written after 18:00, or rewritten later (the Desk rewrote six ON RRP dates of 2018 to 2021 on 2023-09-27, for example), has no first publication "
         "time we can see; the arm reads it as no take-up, as `fed_liquidity` reads a withheld date. The terms are read per decision, from the records the "
         "Desk had written by that decision's 18:00 (`repo_model.same_day_operations`, leakage-tested in `tests/test_same_day_operations_1349.py`).", "",
