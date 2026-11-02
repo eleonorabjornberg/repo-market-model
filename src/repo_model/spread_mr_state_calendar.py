@@ -136,8 +136,12 @@ IORB_EXTRAS: Tuple[str, ...] = (IORB_SIGNED, IORB_TECHNICAL)
 #: announced net coupon and net bill settlement, and the announced gross coupon offering, each in units of `SIZE_UNIT` (USD 100 bn).
 NET_COUPON, NET_BILL, GROSS_COUPON = "net_coupon", "net_bill", "gross_coupon"
 SIZE_EXTRAS: Tuple[str, ...] = (NET_COUPON, NET_BILL, GROSS_COUPON)
+#: The 4-week bill rate less IORB of the previous business day, in units of 10 bp (#1346, `s3c_bill_iorb.BillLessIorbTable`): a price, not a
+#: flag or a size.
+BILL_LESS_IORB = "bill_less_iorb"
+PRICE_EXTRAS: Tuple[str, ...] = (BILL_LESS_IORB,)
 #: Every `extra` term: it is read from `pair.extras` and not from the flags.
-EXTRA_TERMS: Tuple[str, ...] = IORB_EXTRAS + SIZE_EXTRAS
+EXTRA_TERMS: Tuple[str, ...] = IORB_EXTRAS + SIZE_EXTRAS + PRICE_EXTRAS
 #: An IORB change that is not a multiple of 25 bp is a technical adjustment: the rule of `setup_diagnostic`.
 technical = setup_diagnostic.is_technical
 #: (s3+IORBs): (s3), with `iorb_window` and the two terms beside it. The FOMC-day term is not added.
