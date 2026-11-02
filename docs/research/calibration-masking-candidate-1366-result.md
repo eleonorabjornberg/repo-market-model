@@ -72,7 +72,7 @@ Both versions are one computation here, so each paired difference is exactly 0 a
 
 ## What this does not show
 
-- The note describes conformal and cross-conformal calibration of the gradient-boosted records (`ml.fit_gradient_boosted_quantiles`, `calibration_masking`). Those are not the candidate. `scripts/calibration_masking_effect.py` (#78) is the tool that measures them and is not run here.
+- The note describes conformal and cross-conformal calibration of the gradient-boosted records (the gradient-boosted quantile fitter in `ml`, `calibration_masking`). Those are not the candidate. `scripts/calibration_masking_effect.py` (#78) is the tool that measures them and is not run here.
 - The candidate's bands are not corrected in any other way here. Whether they cover (the 90% band under-covers on the development window) is the question of #1363, not this one.
 - Refitting every day, instead of every 21 decision days, is a different sensitivity (a fresher fit), not the masking bias, and is not run.
 
@@ -81,7 +81,7 @@ Both versions are one computation here, so each paired difference is exactly 0 a
 **Q1. The candidate has no calibration subfit, so the masking bias on its bands is zero by construction and by measurement. Should the registration say so in one sentence, and should the sensitivity also be measured on the gradient-boosted records the note is about?**
 
 1. Say so in one sentence in the registration's known-limits section; do not measure the gradient-boosted records (they are not the registered candidate). **Default.**
-2. As 1, and also run `scripts/calibration_masking_effect.py` on the gbm_funding cross-conformal records (a long run, on her Mac), so the size of the note's bias is on file.
+2. As 1, and also run `scripts/calibration_masking_effect.py` on the gradient-boosted cross-conformal records (a long run, on her Mac), so the size of the note's bias is on file.
 3. Do not mention it.
 
 The default changes no claim.
