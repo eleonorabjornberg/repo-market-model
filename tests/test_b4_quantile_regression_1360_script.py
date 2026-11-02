@@ -191,5 +191,29 @@ class EndToEndTests(unittest.TestCase):
             self.assertIn("development data, not a verdict", text.lower().replace("**", ""))
 
 
+class TrackedPageTests(unittest.TestCase):
+    """The tracked result page is what the script renders from the tracked record, and the record is a full run of the declared study."""
+
+    record_path = ROOT / "docs" / "research" / "b4-quantile-regression-1360" / "result.json"
+    page_path = ROOT / "docs" / "research" / "b4-quantile-regression-1360-result.md"
+
+    def test_the_page_is_what_the_script_renders_from_the_record(self):
+        record = json.loads(self.record_path.read_text(encoding="utf-8"))
+        self.assertEqual(self.page_path.read_text(encoding="utf-8"), script.render(record))
+
+    def test_the_record_is_a_full_run_of_the_declared_study(self):
+        record = json.loads(self.record_path.read_text(encoding="utf-8"))
+        self.assertEqual(record["models"], DECLARATION["models"])
+        self.assertEqual(record["seed"], DECLARATION["seed"])
+        self.assertEqual(record["draws"], sp.DRAWS)
+        self.assertIsNone(record["subset_from"])
+        self.assertEqual(sorted(record["windows"]), sorted(script.WINDOWS))
+        self.assertEqual(record["label"], "development, not a verdict")
+        self.assertEqual(record["ridge"], DECLARATION["b4"]["estimator"]["ridge"])
+        for window, result in record["windows"].items():
+            self.assertEqual(result["against_1356"]["difference"], 0.0, window)
+            self.assertEqual(result["notes"]["refits_b4"], result["notes"]["refits_candidate"], window)
+
+
 if __name__ == "__main__":
     unittest.main()
