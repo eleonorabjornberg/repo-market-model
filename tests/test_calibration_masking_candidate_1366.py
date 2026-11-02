@@ -8,12 +8,12 @@ the honest mode it filters), the paired difference of two sets of cells, and the
 Recorded mutations (the guards this script adds):
 
 * `observable_pairs`, the test `if target <= honest_anchor` replaced by `if target <= honest_anchor + 1`:
-  `HonestFilterTests.test_a_pair_past_the_honest_anchor_is_dropped` fails with `AssertionError` (`[(1, 5), (2, 6)] != [(1, 5)]`);
+  `HonestFilterTests.test_a_pair_past_the_honest_anchor_is_dropped` fails with `AssertionError` (`Lists differ: [(0, 4), (1, 5), (2, 6)] != [(0, 4), (1, 5)]`; two `WrapperTests` fail with it too);
   restored, it passes.
 * `refuse_beyond`, the test `if day > last:` replaced by `if False:`: `WindowGuardTests.test_a_day_after_the_window_end_is_refused`
   fails with `AssertionError` (`LookAheadError not raised`); restored, it passes.
 * `forbidden_hits`, the token loop replaced by `for token in ():`: `ClosureTests.test_a_forbidden_token_is_found` fails with
-  `AssertionError` (`[] != ['calibration_masking']`); restored, it passes.
+  `AssertionError` (`Lists differ: [] != ['calibration_masking']`; `test_a_keyword_argument_is_code` fails too); restored, it passes.
 """
 
 from __future__ import annotations

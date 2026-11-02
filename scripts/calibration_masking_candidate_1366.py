@@ -406,7 +406,7 @@ def refit_summary(refits: Sequence[dict]) -> dict:
     would = sum(sum(r["would_drop"].values()) for r in refits)
     dropped = sum(sum(r["dropped"].values()) for r in refits)
     return {
-        "refits": len(refits), "training_pairs": pairs, "pairs_the_filter_would_drop": would, "pairs_dropped": dropped,
+        "fit_attempts": len(refits), "training_pairs": pairs, "pairs_the_filter_would_drop": would, "pairs_dropped": dropped,
         "refits_with_a_drop": [r["decision_day"] for r in refits if sum(r["would_drop"].values()) > 0],
         "latest_target_is_the_anchor_at_every_refit": all(
             all(t <= r["anchor"] for t in r["latest_target"].values()) for r in refits
@@ -443,6 +443,7 @@ def score_command(args) -> int:
         result["reproduction"][name] = reproduction_check(name, cells, as_run["quantiles"], record)
         result["windows"][name] = {
             "decision_days": doc["decision_days"], "cells": len(cells),
+            "walk_refits": as_run["walk_refits"],
             "as_run": refit_summary(as_run["refits"]), "honest": refit_summary(honest["refits"]),
             "fits_after_their_day": {"as_run": as_run["fits_after_their_day"], "honest": honest["fits_after_their_day"]},
             "scores": window_summary(cells, as_run["quantiles"], honest["quantiles"]),
@@ -499,7 +500,7 @@ def render(r: dict) -> str:
         lines += [
             f"**The bias is {'exactly zero' if pooled['cells_differing'] == 0 else 'not zero'} for the candidate.** On the development window "
             f"({dev['decision_days']} decision days, {dev['cells']} cells) the honest filter would drop {dev['as_run']['pairs_the_filter_would_drop']} of "
-            f"{dev['as_run']['training_pairs']} training pairs over {dev['as_run']['refits']} refits, and {pooled['cells_differing']} cells differ "
+            f"{dev['as_run']['training_pairs']} training pairs over {dev['walk_refits']} refits ({dev['as_run']['fit_attempts']} fit attempts), and {pooled['cells_differing']} cells differ "
             f"between the two versions (largest quantile difference {pooled['max_abs_quantile_difference']:.1e} bp). The paired difference in grid "
             f"CRPS (honest minus as run) is {pooled['grid_crps']['difference']:+.4f}, in upper-tail twCRPS {pooled['twcrps']['difference']:+.4f}, in "
             f"the coverage of the 90% band {100 * pooled['coverage']['band90']['difference']:+.2f} pp.",
@@ -534,7 +535,8 @@ def render(r: dict) -> str:
             f"{w['decision_days']} decision days, {w['cells']} cells. The AS RUN mean grid CRPS equals the 1314 record "
             f"({_n(r['reproduction'][name]['mean_grid_crps'], 6)}) to 1e-9.",
             "",
-            f"Pair audit: {w['as_run']['refits']} refits, {w['as_run']['training_pairs']} training pairs; pairs the honest filter would drop: "
+            f"Pair audit: {w['as_run']['fit_attempts']} fit attempts ({w['walk_refits']} of them the walk's refits; the others are early days that were "
+            f"skipped for lack of history after their pairs were drawn), {w['as_run']['training_pairs']} training pairs; pairs the honest filter would drop: "
             f"{w['as_run']['pairs_the_filter_would_drop']}; pairs it dropped in the honest walk: {w['honest']['pairs_dropped']}; the latest target of "
             f"every refit is at or before its anchor: {w['as_run']['latest_target_is_the_anchor_at_every_refit']}; scored days whose fit was made after "
             f"them: {len(w['fits_after_their_day']['as_run']) + len(w['fits_after_their_day']['honest'])}.",
