@@ -404,7 +404,7 @@ def reproduce(frame, cell_scores, record: Mapping[str, dict]) -> dict:
             check_means({m: _mean(list(s686.by_lead(per[m], h).values())) for m in MODELS}, groups["lead"][f"h={h}"][metric]["means"],
                         f"lead {h} {metric}")
         for regime in REGIMES:
-            if regime not in groups["regime"]:
+            if regime not in groups.get("regime", {}):
                 continue
             means = {}
             for m in MODELS:
