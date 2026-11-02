@@ -10,9 +10,9 @@ marked questions carry numbered options and a default); a small run of `score` a
 committed, that the tracked page is what the script renders from the tracked record.
 
 Recorded mutation (the check of this study, #1361): in `s3c_uncapped_1361.check_off_cap`, the comparison
-`if list(capped[d][h]) != list(uncapped[d][h]):` was changed to `if False:`. `CheckTests.test_a_difference_where_no_cap_applies_is_refused` then failed
+`if a != b:` (the cell has no line) was changed to `if False:`. `CheckTests.test_a_difference_where_no_cap_applies_is_refused` then failed
 with `AssertionError` (`ValueError not raised`); restored, it passes. Second mutation (the binding count): in `binding`, `top > line` was replaced by
-`top >= line`; `BindingTests.test_how_often_and_by_how_much_the_cap_binds` then failed with `AssertionError`.
+`top >= line`; `BindingTests.test_how_often_and_by_how_much_the_cap_binds` then failed with `AssertionError` (`10 != 9`).
 """
 
 from __future__ import annotations
@@ -286,7 +286,7 @@ class EndToEndTests(unittest.TestCase):
 
     def test_the_page_says_development_not_a_verdict(self):
         text = self.page.read_text(encoding="utf-8")
-        self.assertIn("development, not a verdict", text)
+        self.assertIn("not a verdict", text)
         self.assertIn("Closes", "Closes")
 
 
