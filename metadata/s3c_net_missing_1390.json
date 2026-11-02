@@ -1,0 +1,113 @@
+{
+ "status": "declared by the pull request that closes #1390 before any score was computed; a development study, never a verdict. (s3c-ann-net) stays the candidate of avenue #1318 and (s3c) stays the H5 candidate: nothing here changes either. The published declaration (metadata/net_settlement.json) and every existing figure are unchanged: the explicit missing state is read by new tables and a log, never by a published path. Nothing is registered or published: no record in docs/runs/ is edited, the live record and its pin do not change, no day after 2026-09-03 is scored and no lockbox day is scored. Amendments made after a number was computed are listed in `amendments`: none.",
+ "issue": 1390,
+ "ruling": "Eleonora, 2 November 2026, chat, relayed: queue the new items from the second outside review (a pre-registration design review of sc_s3c_ann_net at 95d21b1f).",
+ "hypothesis": "H5 (primary goal): the SOFR - IORB spread distribution in bp. Registration design (data meaning); step 3, an arm on the candidate (s3c-ann-net). Development tier",
+ "target": "spread_bps at the scored day, in basis points, as a 23-quantile distribution at each lead h = 1..5 (scoring_protocol.GRID)",
+ "why": "The net reader substitutes 0.0 where no announced maturing figure exists and returns 0.0 for a class that is not fully announced, so a missing value looks the same as a genuine zero drain. The review asked how many settlement days rest on such a value, and whether the candidate's score moves when they are read another way.",
+ "decision_instant": "18:00 America/New_York on the decision day (repo_model.decision_instant.DECISION_TIME). Every walk of this study, the reference included, is made at that instant.",
+ "states": {
+  "source": "repo_model.net_settlement.net_state, per class (bill types, coupon types) of one settlement day at an instant; net_for_day is unchanged and returns the same numbers.",
+  "absent": "no auction of the class is on the published schedule at the instant: a genuine zero (nothing settles)",
+  "complete": "the class is fully announced and an announced record carries a maturing estimate: a reading; a net of exactly 0.0 here is a genuine zero",
+  "missing_maturing": "fully announced, no announced record carries a maturing estimate (est_pub_held_mat_by_type_amt null): net_for_day reads the maturing amount as 0.0 and the class drains its whole offering",
+  "incomplete": "some auctions of the class settling that day are announced and others on the published schedule are not (#679): the class is left out and reads 0.0",
+  "unannounced": "auctions of the class are on the published schedule and none is announced: the class reads 0.0. Counted with 'incomplete' in the tables of classes not fully announced",
+  "cmb_pending": "a cash management bill settling that day that was announced after the instant. It is on no published schedule (#738), so nothing at the instant can say it is coming: it is counted in step 1 in hindsight and is NOT part of the state, the flag or the per-forecast log",
+  "day_level": "a settlement day rests on a missing figure when either class is in missing_maturing, incomplete or unannounced"
+ },
+ "step1_count": {
+  "what": "By calendar year of the settlement day and by class, the panel days on which an auction of the class settles, split by state, read at the decision instant of lead h = 1..5 (18:00 on the panel day h rows before) and at lead 0 (18:00 on the settlement day itself, when every scheduled auction is announced); and the settlement days on which the net rests on a missing figure against those with a genuine zero (every class that settles is complete and the net is exactly 0.0) and those with a complete non-zero net; and, in hindsight, the days on which a cash management bill announced after the instant settles.",
+  "window": "panel days from 2018-04-03 to 2026-09-03 (the panel's own end)"
+ },
+ "readings": [
+  {
+   "name": "as_now",
+   "model": "sc_s3c_ann_net",
+   "label": "(s3c-ann-net), as now",
+   "definition": "The candidate exactly as #1318 named it and #1356 re-ran it at 18:00: the announced net settlement by term (s3c_announced.AnnouncedNetSizeTable, s3c_announced.ANN_NET_ARM), a missing maturing amount read as 0.0, a class not fully announced left out. The missing state is logged, not read. Scored again in this run; the pooled means must equal #1356's record to 1e-9."
+  },
+  {
+   "name": "drop",
+   "model": "sc_s3c_ann_net_drop",
+   "label": "(s3c-ann-net-drop)",
+   "definition": "(s3c-ann-net) with a class whose state is missing_maturing, incomplete or unannounced contributing 0.0 to the net term (s3c_net_missing.DroppedNetSizeTable), and the 0/1 flag net_missing as an extra term after the two net terms (spread_mr_state_calendar.MISSING_FLAG): 1 when either class of the target day's settlement rests on a missing figure at the decision instant of D = T - h, else 0. Only missing_maturing differs in the net between the two readings (an incomplete or unannounced class is 0.0 in both); the flag is what is new. Everything else is (s3)'s and the SRF cap is (s3c)'s. The flag enters a lead's fit when at least three training pairs carry it (the rule of every flag of the fit)."
+  }
+ ],
+ "references": [
+  {
+   "name": "sc_s3c_ann_net",
+   "label": "(s3c-ann-net)",
+   "role": "the candidate, as now; the reference the drop reading is measured against"
+  },
+  {
+   "name": "sc_s3c",
+   "label": "(s3c)",
+   "role": "the H5 candidate, re-run at 18:00 in the same run"
+  },
+  {
+   "name": "B1",
+   "label": "B1",
+   "role": "protocol benchmark"
+  },
+  {
+   "name": "B1_prime",
+   "label": "B1'",
+   "role": "calendar-aware persistence (#960)"
+  },
+  {
+   "name": "B2",
+   "label": "B2",
+   "role": "protocol benchmark"
+  }
+ ],
+ "models": [
+  "B1",
+  "B1_prime",
+  "B2",
+  "sc_s3c",
+  "sc_s3c_ann_net",
+  "sc_s3c_ann_net_drop"
+ ],
+ "pairs": "direct: the missing flag and the dropped net are scheduled fields of the target row read at the decision instant, with training_pairs = 'direct' (one_step_guard holds with no allow-list entry; repo_model.one_step_guard.ONE_STEP_ALLOW_LIST is not changed).",
+ "frame": {
+  "windows": "the two windows of #1255, loaded as #1255 loads them: the development window (decision days whose five targets fall on or before 2025-12-31; scripts/srf_cap_1241.py build_frame) and the 2026 development days (decision days whose five targets fall from 2026-01-02 to 2026-09-03, the near-blind tier open since GO #151; scripts/s3_2026_check_1222.py build_frame). The 2026 days are reported on their own, as a window, and decide nothing",
+  "walk": "(s3) is #1145's walk (refit every 21 decision days, direct pairs); every walk of this study starts on the same first decision day and runs over the same decision days as #1255's, so the arms are compared on the same days. The study checks that every scored decision day has a forecast of every model, that (s3c-ann-net) re-run here equals #1321's re-run of it at 18:00 to the last digit, and refuses to write a record otherwise",
+  "guards": "a scored decision day or target day passes lockbox.require_unlocked through spread_mean_reversion_686.require_scored_days with the last day of the window; the blind tier (from 2026-09-04) and every lockbox day are refused; the tables read only rows of the panel, which ends at the last unlocked day"
+ },
+ "primary": {
+  "metric": "grid CRPS (23 levels) averaged over leads h = 1..5",
+  "key_secondary": "upper-tail twCRPS (weight 1{z > 0 bp})",
+  "pressure_probability": "the Brier score of P(spread > +5 bp), the probability read off the 23 quantiles as 1 - F(floor(tau) + 0.5), F linear between them (spread_mean_reversion.exceedance), the event strict and on whole basis points (data.exceeds_bp)",
+  "calibration": "the coverage of the central 90% band (q5 to q95, closed) of every model, pooled and by regime; a rate, reported as a mean and not tested",
+  "comparisons": "each form against (s3c-ann-net), (s3c), B1, B1' and B2, paired. On the settlement-day-type splits each form is tested against (s3c-ann-net) and (s3c) only, for length"
+ },
+ "scoring": {
+  "scorer": "repo_model.scoring_protocol (#655), the development tier: no verdict, no registration",
+  "test": "scoring_protocol.paired_tests, the studentized stationary bootstrap (ruling 1), mean block 10 business days, 10,000 draws, seed 1390, two-sided 90% interval (the lower end is the one-sided 95% bound); the skill interval and the studentized interval on mean d are reported for every tested row; where the studentized bound cannot be computed the unstudentized percentile interval of mean d is given beside it, with no reading taken from it",
+  "reading": "a reading is taken from the mean-d bound (her ruling on #1009): a form is read better than a reference when the lower end of the 90% interval of mean d is above zero, worse when the upper end is below zero, otherwise undecided. Lens C's caveat (the lag-10 HAC standard error is understated about 2x after 2020) is stated on the page",
+  "splits": "pooled; by lead; by regime (the declared regimes, 2018-19 and 2020 on their own among them); 2020 split into March to June (target months 3 to 6) and the rest of 2020, as #1320 did; by pressure-day type of the target day (turn_days.reporting_day_type, the record in force); by the settlement-day type of the target at each lead h = 1..5 (a coupon settlement day, a bill settlement day, a bill settlement day with a cash management bill, a bill settlement day without one, a day with neither: the panel's gross settlement above zero on the target day, and net_settlement.Auction.cmb for the CMB). 'Cash management bill settlement days against other bill days' is the pair (a bill settlement day with a cash management bill) against (a bill settlement day without one). The 2026 development days are the second window and carry the same splits. The intervals of a group of target days keep the current method (the group's days, scattered, resampled in date order as if consecutive), which #1221 questions and #1228 will decide",
+  "immediate_release": "the scored target days on which a CMB with no stated release time (metadata/announcement_release_times_1301.json, 'immediate') settles, scored against the other CMB settlement days at each lead where the group has 20 days or more, and 2020 with those days left out, as #1320's table 4d did",
+  "identical_groups": "a group in which an arm's score equals the reference's on every day is listed as identical and not tested against it; a group of fewer than 20 days is listed and not tested",
+  "seed": 1356
+ },
+ "per_forecast_log": "docs/research/s3c-net-missing-1390/missing_log.csv: one row per scored (decision day, lead) of the development window and of the 2026 days: decision_day, lead, target_day, bill state, coupon state, missing (0/1). It is a function of the announcements at the decision instant only.",
+ "question_for_eleonora": "What a missing maturing amount should mean in the registered recipe is data meaning (#1390 item 4). Options on the page; the default keeps the current reading and logs the state.",
+ "reading_rules": [
+  "A figure is a check on days that were already seen. Nothing here is a verdict, nothing is registered and no choice is made on it; (s3c-ann-net) stays the candidate of avenue #1318 and (s3c) the H5 candidate until she rules.",
+  "A gain or loss is read from the 90% interval of mean d excluding zero; otherwise undecided. A point estimate alone is not read.",
+  "A pooled figure is never read without the lead, regime and settlement-day-type splits beside it.",
+  "If a form should replace (s3c-ann-net), that goes to her as a marked question with numbered options and a default that changes no claim; the candidate does not change in this directive. Adopting the arm is her decision.",
+  "The CMB term is read with Lens E's caveat on the announcement time of a cash management bill."
+ ],
+ "limits": {
+  "last_day": "2026-09-03",
+  "named_candidate": "unchanged; docs/research/h5-candidate.json is not changed",
+  "preregistration": "scripts/final_test_preregistration.py is not touched; test_final_test_freeze and test_live_score_freeze are run before the push",
+  "allow_list": "repo_model.one_step_guard.ONE_STEP_ALLOW_LIST is not changed",
+  "sources": "metadata/sources.json, metadata/settlement_announcement_dating.json, metadata/net_settlement.json and docs/decisions/information-set.md are not changed; no declaration already merged and no page already merged is changed; docs/runs/ is not touched; spread_mr_calendar and s3c_net are not edited; net_settlement gains net_state, cmb_pending and the state names and net_for_day returns the same numbers (pinned by tests/test_net_missing_1390.py); spread_mr_state_calendar gains the name of the missingness flag and changes no existing arm's figures",
+  "not_in_this_directive": "the SRF cap, the persistence benchmarks' horizon and the coherent cap rule (#1388, #1389); the net x scarcity interaction of #1318; the gross-size and flag-plus-net arms of #1321"
+ },
+ "long_run": "cloud first: two walks per window (minutes each) and the paired tests of the drop reading against five references on about forty groups and three metrics per window. If the measured time on the runner exceeds two hours the run goes to her Mac (`needs-mac:`).",
+ "amendments": []
+}

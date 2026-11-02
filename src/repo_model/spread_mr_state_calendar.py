@@ -140,12 +140,16 @@ SIZE_EXTRAS: Tuple[str, ...] = (NET_COUPON, NET_BILL, GROSS_COUPON)
 #: decision instant settles on the target day, or the announced offering of those bills in units of `SIZE_UNIT` (USD 100 bn).
 CMB_FLAG, CMB_SIZE = "cmb_flag", "cmb_size"
 CMB_EXTRAS: Tuple[str, ...] = (CMB_FLAG, CMB_SIZE)
+#: The missingness flag of the net settlement reader (#1390, `s3c_net_missing.NetMissingTerms`): 1 when a class of the target day's settlement rests on a
+#: missing figure at the decision instant (a maturing estimate not announced, or a class not fully announced), else 0.
+MISSING_FLAG = "net_missing"
+MISSING_EXTRAS: Tuple[str, ...] = (MISSING_FLAG,)
 #: The decision day's own Fed operation take-up (#1349, `same_day_operations.SameDayOperationTerms`): the overnight Standing Repo Facility take-up as a 0/1 flag
 #: and in units of `SIZE_UNIT`, and the change in the ON RRP amount accepted from the previous panel day in units of `SIZE_UNIT`.
 SRF_FLAG, SRF_SIZE, RRP_CHANGE = "srf_flag", "srf_size", "on_rrp_change"
 OPS_EXTRAS: Tuple[str, ...] = (SRF_FLAG, SRF_SIZE, RRP_CHANGE)
 #: Every `extra` term: it is read from `pair.extras` and not from the flags.
-EXTRA_TERMS: Tuple[str, ...] = IORB_EXTRAS + SIZE_EXTRAS + CMB_EXTRAS + OPS_EXTRAS
+EXTRA_TERMS: Tuple[str, ...] = IORB_EXTRAS + SIZE_EXTRAS + CMB_EXTRAS + OPS_EXTRAS + MISSING_EXTRAS
 #: An IORB change that is not a multiple of 25 bp is a technical adjustment: the rule of `setup_diagnostic`.
 technical = setup_diagnostic.is_technical
 #: (s3+IORBs): (s3), with `iorb_window` and the two terms beside it. The FOMC-day term is not added.
