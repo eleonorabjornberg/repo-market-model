@@ -463,6 +463,29 @@ def _flag_lines(window: Mapping[str, object]) -> List[str]:
     return lines
 
 
+def answer(r: dict) -> List[str]:
+    """The answer to the question asked, from the development window (the 2026 days are mentioned apart): per arm, the pooled reading against the
+    candidate as run and the number of cells in which its reading against B1, B1' or B2 differs from the candidate's."""
+
+    out: List[str] = []
+    for window, name in (("development", "development window (decides)"), ("2026", "2026 days (decide nothing)")):
+        w = r["windows"].get(window)
+        if w is None:
+            continue
+        pooled = w["groups"]["pooled"]["all decision days"]
+        rows = ["| arm | pooled grid CRPS against the candidate as run | pooled twCRPS against the candidate as run | cells where the reading against B1, B1' or B2 differs | of which pooled |",
+                "|---|---|---|---:|---:|"]
+        for arm in [a for a in r["arms"] if a != REFERENCE]:
+            bench = [x for x in w["flags"]["changed"] if x["arm"] == arm and x["against"] in REFERENCES]
+            rows.append(f"| {LABELS[arm]} | {_vs_cell(pooled['grid_crps']['vs'][arm].get(REFERENCE))} | "
+                        f"{_vs_cell(pooled['upper_tail_twcrps']['vs'][arm].get(REFERENCE))} | {len(bench)} | {sum(1 for x in bench if x['split'] == 'pooled')} |")
+        same = all(reading(pooled[m]["vs"][a].get(b)) == reading(pooled[m]["vs"][REFERENCE].get(b))
+                   for m in METRICS for a in r["arms"] for b in REFERENCES)
+        out += [f"**{name}.** " + ("The pooled reading of every arm against B1, B1' and B2, on both metrics, is the candidate's own reading."
+                                   if same else "A pooled reading against B1, B1' or B2 differs from the candidate's in the cells listed below."), ""] + rows + [""]
+    return out
+
+
 def render(r: dict) -> str:
     arms = [a for a in r["arms"] if a != REFERENCE]
     allarms = [REFERENCE] + arms
@@ -484,6 +507,10 @@ def render(r: dict) -> str:
             "Each arm is compared with the candidate as run, and every arm (the candidate included) with B1, B1' and B2, on grid CRPS averaged over "
             "h = 1..5 and on upper-tail twCRPS, by scoring protocol v1's studentized stationary bootstrap (seed 1364). Positive favours the arm. "
             f"{r['reading_rule']}.", ""]
+    out += ["## Answer", "", "Does any choice of history or cadence change a reading of the candidate? The pooled lines first; the groups follow in the "
+            "tables below, and the cells that change a reading are listed under each window. The skill and interval printed are those of relative skill; "
+            "the reading itself uses the 90% interval of mean d (a group can read 'undecided' on mean d while the skill interval excludes zero).", ""]
+    out += answer(r)
     for window, title in (("development", "Development window (targets to 2025-12-31): decides"),
                           ("2026", "2026 days (targets 2026-01-02 to 2026-09-03): shown apart, decides nothing")):
         if window not in r["windows"]:
