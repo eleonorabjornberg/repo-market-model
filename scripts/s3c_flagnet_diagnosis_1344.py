@@ -829,8 +829,31 @@ def answers(r: Mapping[str, object]) -> List[str]:
         f"The 2020 grid CRPS difference on settlement-day targets at leads 2 to 5: {_cell(dev['table_2_annnet'].get('settlement_leads_2_5'), 'grid_crps')}.",
         f"3. **The immediate-release cash management bill days (H-h against (s3c-ann-net): {h['H-h against annnet']}; against (s3c-ann): {h['H-h against ann']}).** The 2020 "
         f"grid CRPS difference with those days in: {_cell((dev['table_2_annnet'].get('all_2020')), 'grid_crps')}; with them left out: "
-        f"{_cell((cmb.get('left_out')), 'grid_crps')}. They are {cmb.get('target_days', 0)} of the 2020 target days.", ""]
+        f"{_cell((cmb.get('left_out')), 'grid_crps')}. They are {cmb.get('target_days', 0)} of the 2020 target days.",
+        f"4. **In plain words.** {_plain(r)}", ""]
     return out
+
+
+def _share(row: Optional[Mapping[str, object]]) -> str:
+    value = None if not row else row.get("share_of_difference")
+    return "n/a" if value is None else f"{100.0 * value:.0f}%"
+
+
+def _plain(r: Mapping[str, object]) -> str:
+    """The shares the answers rest on, from the record: where the difference sits, and what is left of the gain after 2020-04-03."""
+
+    dev = r["windows"]["development"]
+    t1, t2 = dev["table_1"], dev["table_2_annnet"]
+    post = r["power"]["metrics"]["grid_crps"]
+    return (
+        f"Over the development window the grid CRPS difference is small ({_cell(t1['pooled'], 'grid_crps')}). The Brier gain is not confined to settlement days (it is a gain on both sets of days, above), and the "
+        f"grid CRPS difference does not sit there either: {_share(t1['settlement'].get('neither settles'))} of the grid CRPS difference sits on days when no leg settles, {_share(t1['regime'].get('2018-19'))} in 2018-19, "
+        f"{_share(t1['state'].get('3 (scarce)'))} where the scarcity state of the decision day is 3 and {_share(t1['event_rows'].get('event: spread above +5 bp'))} on the cells where the spread "
+        f"went above +5 bp. On bill-only settlement days the arm is worse than the candidate: {_cell(t1['leg'].get('bill only'), 'grid_crps')}. In 2020 the loss sits on settlement-day "
+        f"targets ({_share(t2['settlement'].get('any settlement'))} of it), on coupon settlement days ({_share(t2['type'].get(TYPE_LABELS[0]))}) and in March to June "
+        f"({_share(t2['march_to_june'].get('March to June'))}); leaving out the immediate-release days does not remove it. From {r['power']['from']}, where the confirmation days fall, "
+        f"the mean grid CRPS difference is {post['mean_d']:+.4f} (skill {_pct(post['observed_skill'], 2)}): the development gain on grid CRPS is a 2018-19 gain. "
+        "The shares rest on few days in places (the coupon-settlement days of 2020 are a few dozen) and the mechanisms are readings of the tables, not tested.")
 
 
 def question(r: Optional[dict] = None) -> List[str]:
@@ -859,7 +882,8 @@ def render(r: dict) -> str:
         f"its record: every pooled, lead and regime mean of the four models equals it to 1e-9 and the fitted-shift table equals it "
         f"({dev.get('reproduction', {}).get('equal', 'not checked on a subset')}). Diagnostic intervals: 90% stationary bootstrap, block 10, {r['reps']} replications, "
         f"seed {r['seed']}, over the units of each group; they are not the protocol's studentized test, whose figures are #1321's. d is the arm less the reference, so "
-        "below zero is a gain for the arm. The days of a group are resampled in date order as if consecutive (#1221).", ""]
+        "below zero is a gain for the arm. The days of a group are resampled in date order as if consecutive (#1221). A share of the grid CRPS difference can exceed 100% when other groups have the "
+        "opposite sign.", ""]
     lines += answers(r)
     lines += ["## Readings of the declared hypotheses", "", "| hypothesis | reading |", "|---|---|"]
     for key, value in r["hypotheses"].items():
