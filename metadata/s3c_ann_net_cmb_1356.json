@@ -1,5 +1,5 @@
 {
- "status": "declared by the pull request that closes #1356 before any score was computed; a development study, never a verdict. (s3c-ann-net) stays the candidate of avenue #1318 and (s3c) stays the H5 candidate: nothing here changes either. Nothing is registered or published: no record in docs/runs/ is edited, the live record and its pin do not change, no declaration already merged changes (metadata/s3c_announced_settlement_1288.json, metadata/s3c_flagnet_gross_1321.json, metadata/s3c_ann_net_diagnosis_1319.json, metadata/settlement_announcement_dating.json, metadata/net_settlement.json, metadata/sources.json and docs/decisions/information-set.md included), docs/research/h5-candidate.json and scripts/final_test_preregistration.py do not change, no day after 2026-09-03 is scored and no lockbox day is scored. Amendments made after a number was computed are listed in `amendments`; there are none.",
+ "status": "declared by the pull request that closes #1356 before any score was computed; a development study, never a verdict. (s3c-ann-net) stays the candidate of avenue #1318 and (s3c) stays the H5 candidate: nothing here changes either. Nothing is registered or published: no record in docs/runs/ is edited, the live record and its pin do not change, no declaration already merged changes (metadata/s3c_announced_settlement_1288.json, metadata/s3c_flagnet_gross_1321.json, metadata/s3c_ann_net_diagnosis_1319.json, metadata/settlement_announcement_dating.json, metadata/net_settlement.json, metadata/sources.json and docs/decisions/information-set.md included), docs/research/h5-candidate.json and scripts/final_test_preregistration.py do not change, no day after 2026-09-03 is scored and no lockbox day is scored. Amendments made after a number was computed are listed in `amendments`: one, a model key spelled in the declaration, which changes no figure.",
  "issue": 1356,
  "avenue": "#1306",
  "diagnosis": "#1320 (merged 29732943), #1319",
@@ -38,7 +38,7 @@
   {"name": "sc_s3c_ann_net", "label": "(s3c-ann-net)", "role": "the candidate of avenue #1318, re-run at 18:00 in the same run; the reference the arm is first measured against"},
   {"name": "sc_s3c", "label": "(s3c)", "role": "the H5 candidate, re-run at 18:00 in the same run"},
   {"name": "B1", "label": "B1", "role": "protocol benchmark B1"},
-  {"name": "B1p", "label": "B1'", "role": "protocol benchmark B1' (#960)"},
+  {"name": "B1_prime", "label": "B1'", "role": "protocol benchmark B1' (#960)"},
   {"name": "B2", "label": "B2", "role": "protocol benchmark B2"}
  ],
  "pairs": "direct: the settlement terms are read at the target day with training_pairs = 'direct' (spread_mr_state_calendar.fit_state_terms is guarded by one_step_guard with no allow-list entry; repo_model.one_step_guard.ONE_STEP_ALLOW_LIST is not changed); the provisional-register row is metadata/provisional/cleared/s3c_ann_net_cmb_1356.json",
@@ -53,7 +53,7 @@
   {"name": "sc_s3c_ann_net_cmbf", "role": "(s3c-ann-net-cmb), flag form", "margin_bp": 0.0},
   {"name": "sc_s3c_ann_net_cmbs", "role": "(s3c-ann-net-cmb), size form", "margin_bp": 0.0}
  ],
- "models": ["B1", "B1p", "B2", "sc_s3c", "sc_s3c_ann_net", "sc_s3c_ann_net_cmbf", "sc_s3c_ann_net_cmbs"],
+ "models": ["B1", "B1_prime", "B2", "sc_s3c", "sc_s3c_ann_net", "sc_s3c_ann_net_cmbf", "sc_s3c_ann_net_cmbs"],
  "primary": {
   "metric": "grid CRPS (23 levels) averaged over leads h = 1..5",
   "key_secondary": "upper-tail twCRPS (weight 1{z > 0 bp})",
@@ -91,5 +91,9 @@
   "not_in_this_directive": "the net x scarcity interaction of #1318; the gross-size and flag-plus-net arms of #1321"
  },
  "long_run": "cloud first: two walks per window (minutes each) and the paired tests of the two forms against five references on about forty groups and three metrics per window (the longer part; the benchmarks are tested on the pooled, lead, regime, pressure-day-type and 2020 splits only). If the measured time on a subset says the full run exceeds about two hours, the run goes to the Mac as a `needs-mac:` comment",
- "amendments": []
+ "amendments": [
+  {"what": "the model key of B1' written 'B1p' in `references` and `models` is the frame's key 'B1_prime' (a naming correction; the model is protocol benchmark B1', #960, as the entry says)",
+   "when": "after a smoke run of the script on a subset (decision days from 2025-03-03, 300 draws) that only checked that it ran; no figure of it was read for any choice, and the full run had started but had not finished",
+   "changes_a_figure": false}
+ ]
 }
