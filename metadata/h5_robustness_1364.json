@@ -1,0 +1,88 @@
+{
+ "status": "declared by the pull request that closes #1364 before any arm was walked or scored; a development study, never a verdict. Nothing is registered or published, no record in docs/runs/ is edited, no declaration already merged changes, docs/research/h5-candidate.json and scripts/final_test_preregistration.py do not change, no day after 2026-09-03 is read and no lockbox day is scored. The set below is closed: no arm is added, dropped or retuned after a figure is seen, and nothing is searched. Amendments made after a figure was computed are listed in `amendments` (none at the time of writing).",
+ "issue": 1364,
+ "hypothesis": "H5 (primary goal), registration design, step 3: does a fixed set of robustness checks on the candidate (s3c-ann-net) (the length of the history it is fitted on, how often it is refitted) change any reading of it? Her ruling of 2 November 2026 (chat, relayed on #1364), after the outside publication-readiness review of 95d21b1f; part of the H5 registration priority on #46",
+ "decision_instant": "18:00 America/New_York on the decision day (repo_model.decision_instant.DECISION_TIME, amended on 29 October 2026, #1312). The walks are made at that instant (RMM_DECISION_TIME=18:00, the panel built with --decision-time 18:00:00)",
+ "candidate": {
+  "name": "sc_s3c_ann_net",
+  "label": "(s3c-ann-net)",
+  "definition": "h5-candidate.json, walked by the code of scripts/s3c_announced_settlement_1288.py unchanged (spread_mr_state_calendar.walk, direct pairs, the SRF cap from full allotment by s3c_forecasts). It is the reference arm 'as_run'. Its mean grid CRPS must equal docs/research/s3c-ann-net-1800-1314/announced-settlement-1800.json to 1e-9 on both windows or `score` refuses to write a record"
+ },
+ "premise_correction": "The directive says the candidate uses expanding history 'as now'. It does not: every fit of the candidate (the base mean reversion, the scaled pool, the Huber calendar and settlement terms) takes its training pairs from spread_mean_reversion.training_rows, whose targets lie in the trailing window of spread_mean_reversion.TRAIN_YEARS = protocol_benchmarks.B1_YEARS = 2 years before the decision day (and at or before the anchor). Before 2 years of history exist (the first two years of the panel, which starts 2018-04-03) the window is the whole history. So the candidate as run is a rolling two-year window. The set below therefore reads the directive's two contrasts both ways: the as-run two-year window is the reference, 'expanding' is the all-history alternative the directive calls 'as now', and the two rolling lengths are one year and three years. Whether this reading is the one she meant is put to her as a marked question in the pull request",
+ "arms": {
+  "as_run": {
+   "kind": "reference",
+   "history": "trailing 2 years (TRAIN_YEARS = 2)",
+   "refit_every": 21,
+   "note": "the candidate as run; refit every 21 decision days is spread_mean_reversion.REFIT_EVERY (metadata/dist_roll_606.json)"
+  },
+  "expanding": {
+   "kind": "history",
+   "history": "every panel row from the start of the panel (2018-04-03) up to the anchor, no trailing limit",
+   "train_years": 100,
+   "refit_every": 21
+  },
+  "rolling_1y": {
+   "kind": "history",
+   "history": "trailing 1 year",
+   "train_years": 1,
+   "refit_every": 21
+  },
+  "rolling_3y": {
+   "kind": "history",
+   "history": "trailing 3 years",
+   "train_years": 3,
+   "refit_every": 21
+  },
+  "refit_5": {
+   "kind": "cadence",
+   "history": "trailing 2 years (as run)",
+   "refit_every": 5,
+   "note": "faster: about weekly"
+  },
+  "refit_63": {
+   "kind": "cadence",
+   "history": "trailing 2 years (as run)",
+   "refit_every": 63,
+   "note": "slower: about quarterly"
+  }
+ },
+ "arm_count": "six walks per window: the reference and five alternatives. The lengths 1 and 3 years and the cadences 5 and 63 days are fixed here by the declaration and were not searched. Nothing else is varied: no combination of a window with a cadence, no other term, input, cap or scale window",
+ "what_a_window_changes": "only the training pairs' target window of every fit the walk makes (spread_mean_reversion.training_rows through its TRAIN_YEARS). The level (median of 10 ordinary days), the scale window (20 rows), the calendar and settlement terms, the cap and the benchmarks are untouched. The benchmarks keep their own windows (B1 2 years, B2 1 year, B1' as defined)",
+ "references": [
+  "B1",
+  "B1_prime",
+  "B2"
+ ],
+ "b4": "B4 (#1360) is not on main at the base of this pull request and is not compared; the page says so",
+ "windows": {
+  "development": "decision days whose five targets fall on or before 2025-12-31 (the frame of scripts/s3c_announced_settlement_1288.py, window 'development'); decides",
+  "2026": "decision days whose five targets fall from 2026-01-02 to 2026-09-03 (window '2026', near-blind tier open since GO #151); shown apart, already seen by earlier studies, decides nothing"
+ },
+ "metrics": {
+  "primary": "grid CRPS averaged over h = 1..5 (scoring_protocol.grid_crps; lower is better)",
+  "key_secondary": "upper-tail twCRPS (scoring_protocol.upper_tail_twcrps)"
+ },
+ "tests": {
+  "pairs": "each arm against the reference 'as_run' and each of the six arms (the reference included) against B1, B1' and B2, on both metrics, by scoring protocol v1's studentized stationary bootstrap (spread_mr_variants_761.run_pairs, seed 1364, scoring_protocol.DRAWS draws, mean-d fallback of #1215/#1239 on), the difference d = comparator minus arm so that positive favours the arm",
+  "series": "the pooled group on the decision-day series (mean over the five leads of the day's cells); the regime and pressure-day-type groups on the target-day series (the mean over the cells that target the day), the grains the earlier candidate pages use. A group of fewer than 20 days is listed with its means and not tested",
+  "groups": "pooled; by lead h = 1..5 (decision-day series of that lead); by regime of the target day (the splits declaration's regimes); by pressure-day type of the target day (the turn record in force, turn_days.reporting_day_type). Each with its number of days. The pressure-day types and regimes are those of the candidate's earlier pages"
+ },
+ "reading": {
+  "rule": "a gain or loss is read from the 90% studentized interval of mean d excluding zero (the one-sided 95% bound), otherwise undecided; a point estimate alone is not read (the rule of the pages since #1009)",
+  "reading_of_the_candidate": "for each group of 20 or more days, each metric and each of B1, B1' and B2: gain, loss or undecided, for the reference and for each alternative arm",
+  "changes_a_reading": "an alternative arm changes a reading when, in a group of 20 or more days, its reading against B1, B1' or B2 on a metric differs from the reference's in category (gain, undecided, loss), or when its own paired difference against the reference is read as a gain or a loss. The page lists every such cell by arm, window, group, comparator and metric, with the count of cells examined, so that some chance flags are expected and are said to be. It lists the cells in which no reading changes as a count. A pooled change alone is never read without the regime and pressure-day-type groups beside it",
+  "none_replaces_the_candidate": "no arm replaces the candidate, whatever it shows; a result is one line for the validation report (does a choice of window or cadence change a reading: yes in these cells, or no)"
+ },
+ "calendar": "every arm is a walk of spread_mr_state_calendar.walk with training_pairs = direct, so the calendar and scheduled columns are read at the target day and the one-step guard is not on the path; no gradient-boosted fitter is called and no allow-list entry is added or used",
+ "information_set": "a window or cadence changes which rows already public at the decision instant enter a fit and when, never a row after the anchor: the walk's own guards (pb._require_public, LookAheadError) are on every arm and are not relaxed. The outcome never enters a forecast",
+ "answer_asked": "whether any of the five changes any reading of the candidate, pooled and by regime and pressure-day type, development window deciding and the 2026 days apart; the page does not choose among the arms",
+ "limits": [
+  "development data on seen days, never a verdict; the 2026 days are shown apart and decide nothing",
+  "five alternatives against one reference over many groups: some flags are expected by chance and are counted; a flag in a group of few days is not a finding",
+  "the refit cadence and the window are varied one at a time; their interaction is not examined",
+  "the intervals of a day-type group use the current method (#1221 questions it, #1228 will decide)",
+  "B4 (#1360) is not compared"
+ ],
+ "amendments": []
+}
