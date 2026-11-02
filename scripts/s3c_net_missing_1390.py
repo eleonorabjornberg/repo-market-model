@@ -531,7 +531,23 @@ def split_table(window: Mapping[str, object], split: str, reference: str) -> Lis
 
 
 def effect_table(by_lead: Mapping[str, Mapping[str, dict]], terms: Sequence[str]) -> List[str]:
-    return m1356.effect_table(by_lead, terms)
+    cols = [f"{TERM_TITLES[t]} ({TERM_UNITS[t]}) [90%]" for t in terms]
+    out = ["| lead | regime | days | " + " | ".join(cols) + " | share of days in the fit | mean abs shift on active days (bp) |",
+           "|---|---|---|" + "---|" * (len(terms) + 2)]
+    for lead in sorted(by_lead, key=int):
+        eff = by_lead[lead]
+        for name in sorted(eff, key=lambda x: (x != "all", x)):
+            if name != "all" and lead != REGIME_LEAD:
+                continue
+            e = eff[name]
+            parts = []
+            for t in terms:
+                m = e[t]
+                parts.append(f"{m['mean']:+.3f}" + (f" [{m['interval'][0]:+.3f}, {m['interval'][1]:+.3f}]" if "interval" in m else " (too few days)"))
+            shift = "n/a" if e["mean_abs_shift_bp_on_active_days"] is None else f"{e['mean_abs_shift_bp_on_active_days']:.3f}"
+            share = " / ".join(f"{e[t]['share_in_fit']:.2f}" for t in terms)
+            out.append(f"| h={lead} | {name} | {e['days']} | " + " | ".join(parts) + f" | {share} | {shift} |")
+    return out
 
 
 def headline(r: Mapping[str, object]) -> str:
