@@ -1,0 +1,94 @@
+{
+ "status": "declared by the pull request that closes #1360 before any score was computed; a development study, never a verdict. B4 is a benchmark of the registered test that Eleonora asked for (2 November 2026, chat, relayed on #1360), added beside B1, B1' and B2. Nothing is registered or published: no record in docs/runs/ is edited, the live record and its pin do not change, the candidate (s3c-ann-net) does not change, docs/research/h5-candidate.json is not changed, and no declaration already merged is changed. Whether B4 joins the protocol's decision rule or is reported beside it is a marked question for Eleonora in the pull request (default: reported beside, B1 stays the deciding benchmark); this declaration settles nothing on it",
+ "issue": 1360,
+ "hypothesis": "H5 (primary goal): the SOFR - IORB spread distribution in bp. Registration design, step 4 to 5. Development tier",
+ "ruling": "Eleonora, 2 November 2026, chat, relayed on #1360, after an outside publication-readiness review: add a plain quantile regression on reserves and calendar days as a benchmark in the registered test, beside B1, B1' and B2",
+ "target": "spread_bps at the scored day, in basis points, as a 23-quantile distribution at each lead h = 1..5 (scoring_protocol.GRID)",
+ "why": "A referee will ask whether the candidate beats a parsimonious model that reads the same public reserve and calendar information. B1 (persistence), B1' (calendar-aware persistence) and B2 (climatology) each read one of those and not the others. Linear quantile models exist in earlier studies (docs/pivot/conditional-vs-climatology-holdout.md, settlement-timing-result.md) but not on the protocol's common grid against the current candidate",
+ "decision_instant": "18:00 America/New_York on the decision day (repo_model.decision_instant.DECISION_TIME, amended on 29 October 2026, #1312). Every walk of this study, the references included, is made at that instant",
+ "b4": {
+  "name": "B4",
+  "key": "B4",
+  "module": "repo_model.b4_quantile_regression, reached from repo_model.protocol_benchmarks.b4_forecast",
+  "model": "for each lead h = 1..5 and each level tau of the protocol's grid (scoring_protocol.GRID, 23 levels) one linear quantile regression of spread_bps on the target day, in bp, on: an intercept; the last observed spread (the spread of the as-of anchor, bp); the as-of reserve measure (reserve_balances, USD trillion); and the calendar terms below, read at the target day",
+  "last_observed_spread": "spread_bps of the as-of anchor, the last row public at the decision instant (protocol_benchmarks._anchor), the same row B1 reads",
+  "reserve_measure": {
+   "column": "reserve_balances, the panel column that the reserves leg of the scarcity state (repo_model.scarcity) and gbm_funding read, in USD trillion (the panel's USD billion over 1000)",
+   "read": "as of the decision instant, per field, by repo_model.asof.InformationRule (metadata/sources.json availability), horizon 1: the value of the latest row on which reserve_balances was public at the decision. A training pair is trained on the value read at its own decision day (the row h before its target); a forecast reads the value of its own decision day. A row after the decision is refused with LookAheadError (b4_quantile_regression.read_reserves)",
+   "why_not_the_scarcity_state": "the scarcity state of #115 (0 abundant to 3 scarce, repo_model.scarcity.own_leg_states) is unknown on every 2026 development day (169 days from 2025-12-31 to 2026-09-02 in the measurement panel built from the tracked fixtures, found in the preparation of this declaration), so a benchmark on it could not be scored on the 2026 days. The reserves column is public throughout. Whether to read the state or a ratio in place of the level is a marked question in the pull request",
+   "unknown": "a pair whose reserve value is unknown is dropped from the fit; a decision whose reserve value is unknown has no B4 forecast and the study refuses it (the walk raises). The count of dropped pairs is kept in each estimate"
+  },
+  "calendar_terms": {
+   "terms": "month_end, quarter_end, tax_date, settlement_coupon, settlement_bill, dom_19_23 and post_month_end_window: spread_mr_calendar.NO_FOMC_IORB, the terms of the candidate's base (s3), as 0/1 flags of the TARGET row read by spread_mr_calendar.TermTable",
+   "read_at_the_target_day": "a flag is read from the target row (the calendar columns, known in advance) on direct pairs; a scheduled field (settlement_coupon, settlement_bill: treasury_settlement_*) is read only where asof rule 2 admits it, which is lead 1 (spread_mr_calendar.readable_offsets, TermTable.read); at leads 2 to 5 those two terms are not in the fit. B4 does not read the auction-announcement dating of the candidate (s3c_announced, #1288): that is the candidate's addition, not a plain calendar column, and it is a stated difference between B4 and the candidate",
+   "not_included": "fomc_day and iorb_window (the candidate's base leaves them out, #1196, #1145)",
+   "enters": "a term enters a lead's fit only if at least spread_mr_calendar.MIN_FLAGGED (3) training pairs carry its flag, as in the candidate's fits"
+  },
+  "training_pairs": "direct. For the decision on row D with anchor A and lag L = D - A, and lead h, a training pair has target row T in [h + L, A] and decision row T - h; the pair is spread_mean_reversion.training_rows' pair (origin = T - (h + L), the anchor row of the pair's decision row T - h). Its regressors are the last spread (spread_bps of the origin), the reserve value read at the pair's decision row, and the flags of T at lead h; its response is spread_bps of T. Every row read is at or before the anchor (protocol_benchmarks._require_public, LookAheadError). The fitter b4_quantile_regression.fit_quantile_regression carries @guard_one_step_fit, takes training_pairs = 'direct' only and needs no entry in repo_model.one_step_guard.ONE_STEP_ALLOW_LIST (which is not changed)",
+  "window": "expanding: every direct pair from the first panel row to the anchor (the candidate's own fits use the trailing two years; the directive asks for an expanding window for B4). A fit needs at least spread_mean_reversion.MIN_PAIRS (60) pairs at every lead; otherwise the decision has no forecast",
+  "refit": "every spread_mean_reversion.REFIT_EVERY (21) decision days from the first scored decision day of the window, the candidate's cadence (spread_mr_state_calendar.walk); between refits the coefficients are kept and the last observed spread, the reserve value and the flags of the target are read afresh",
+  "estimator": {
+   "loss": "the check loss of tau, summed over the training pairs, plus RIDGE times the sum of squared non-intercept coefficients; the intercept is not penalised",
+   "ridge": 0.01,
+   "ridge_units": "the coefficients are in bp per bp (last spread), bp per USD trillion (reserves) and bp per flagged day. The check loss is linear in the residual, so the penalty is a numerical stabiliser: it equals the loss of a flagged pair only for an effect of (flagged pairs) / (4 * ridge) bp, 75 bp for a term that has just entered with three flagged pairs. It is the one fixed small ridge of the directive and nothing is tuned (see the amendment)",
+   "solver": "iteratively reweighted least squares on the check loss (a quadratic majorizer of |r| at the previous residual, weight 1 / (2 max(|r|, EPSILON))), solved by ridge-penalised normal equations, started from the ridge least-squares fit at the first level and from the previous level's coefficients after that; EPSILON = 0.001 bp; at most 100 iterations; stops when no coefficient moves by more than 0.001. The levels are fitted in increasing order. Stdlib only, so the benchmark reproduces with no install",
+   "non_crossing": "the 23 fitted quantiles at each lead are sorted (the rearrangement of Chernozhukov, Fernandez-Val and Galichon), so the scorer, which refuses a crossing, accepts them; the number of forecasts the sort changed is counted",
+   "no_tuning": "ridge, EPSILON, the iteration cap, MIN_FLAGGED and MIN_PAIRS are fixed here. No variant of B4 is scored; B4 is scored once"
+  },
+  "protocol_benchmarks": "repo_model.protocol_benchmarks.b4_forecast(panel, decision_index, *, registry, decision_time, splits, ...) is B4's forecast of one decision, refitted at that decision (the live record and the registration can score it by day); the walk of this study, b4_quantile_regression.walk, refits every 21 decision days as the candidate does. The B4 of the two functions is the same fit on the same decision day, which a test pins"
+ },
+ "references": [
+  {"name": "sc_s3c_ann_net", "label": "(s3c-ann-net)", "role": "the H5 candidate; re-walked at 18:00 in the same run with #1288's and #1356's machinery, unchanged"},
+  {"name": "B1", "label": "B1", "role": "protocol benchmark B1, the deciding benchmark"},
+  {"name": "B1_prime", "label": "B1'", "role": "reported beside B1 (Eleonora, 22 October 2026, #960)"},
+  {"name": "B2", "label": "B2", "role": "protocol benchmark B2"}
+ ],
+ "models": ["B1", "B1_prime", "B2", "B4", "sc_s3c_ann_net"],
+ "frame": {
+  "windows": "the two windows of #1255, loaded as #1255 loads them: the development window (decision days whose five targets fall on or before 2025-12-31) and the 2026 development days (targets 2026-01-02 to 2026-09-03, the near-blind tier open since GO #151). The 2026 days are shown apart, as a window, and decide nothing. No locked day and no day after 2026-09-03 is scored; the frames' own guards refuse them",
+  "days": "B4 is walked over exactly the decision days of the frame; a scored decision day without a B4 forecast is refused, so every model is compared on the same days",
+  "reproduction": "(s3c-ann-net) is walked as scripts/s3c_ann_net_cmb_1356.py walks its reference at 18:00; its pooled means in this run must agree with docs/research/s3c-ann-net-cmb-1356/result.json to 1e-9 or the study stops"
+ },
+ "primary": {
+  "metric": "grid CRPS (23 levels) averaged over leads h = 1..5",
+  "key_secondary": "upper-tail twCRPS (weight 1{z > 0 bp})",
+  "pressure_probability": "the Brier score of P(spread > +5 bp), the probability read off the 23 quantiles as in docs/decisions/pressure-probability.md, reported beside",
+  "calibration": "the coverage of the central 90% band (q5 to q95, closed) of every model, pooled and by lead; a rate, reported as a mean and not tested"
+ },
+ "scoring": {
+  "scorer": "repo_model.scoring_protocol (#655), the development tier: no verdict, no registration",
+  "test": "scoring_protocol.paired_tests, the studentized stationary bootstrap (ruling 1), mean block 10 business days, 10,000 draws, seed 1360, two-sided 90% interval (the lower end is the one-sided 95% bound); the skill interval and the studentized interval on mean d are reported for every tested row; where the studentized bound cannot be computed the unstudentized percentile interval of mean d is given beside it, with no reading taken from it",
+  "comparisons": "B4 against B1, B1' and B2 (does the plain model beat the benchmarks it joins), and the candidate against B4, B1, B1' and B2 (does the candidate beat each). d = score of the reference less score of the candidate, so positive favours the candidate of the row",
+  "splits": "pooled; by lead; by regime; by pressure-day type; by calendar day type of the target (scripts/srf_cap_1241.py and #1115's groups, as #1255 loads them); a group with fewer than the frame's minimum days is listed and not tested",
+  "reading": "a reading is taken from the mean-d bound (her ruling on #1009): the row is read better when the lower end of the 90% interval of mean d is above zero, worse when the upper end is below zero, and undecided otherwise. A point estimate alone is not read"
+ },
+ "reading_rules": [
+  "A figure is a check on days that were already seen. Nothing here is a verdict, nothing is registered and no choice is made on it; the candidate stays (s3c-ann-net).",
+  "A pooled figure is never read without the lead, regime and day-type splits beside it.",
+  "Where B4 beats the candidate in a split, the page says so plainly; it is what the benchmark is for.",
+  "Whether B4 joins the decision rule is Eleonora's, as a marked question with numbered options and a default that changes no claim (reported beside; B1 stays the deciding benchmark)."
+ ],
+ "variants": {
+  "sc_s3c_ann_net": "the H5 candidate (s3c-ann-net), re-walked at 18:00, unchanged",
+  "B1": "protocol benchmark B1, persistence, the deciding benchmark",
+  "B1_prime": "B1', calendar-aware persistence",
+  "B2": "protocol benchmark B2, climatology",
+  "B4": "the new benchmark: linear quantile regression of the spread on reserves and the seven calendar terms at the target day, direct pairs"
+ },
+ "seed": 1360,
+ "limits": {
+  "last_day": "2026-09-03",
+  "candidate": "unchanged; no candidate arm, term or walk is edited",
+  "allow_list": "repo_model.one_step_guard.ONE_STEP_ALLOW_LIST is not changed",
+  "sources": "metadata/sources.json, docs/decisions/information-set.md and docs/decisions/scoring-protocol.md are not changed; the decision rule of the protocol is not changed; docs/runs/ is not touched",
+  "register": "no gradient-boosted fitter is called, so the provisional register's producer table is unaffected; the declaration reads calendar columns on direct pairs and has a cleared row (metadata/provisional/cleared/b4_quantile_regression_1360.json)"
+ },
+ "long_run": "cloud first. Measured on a subset before the full run; if the full run is expected to exceed about two hours it goes to the Mac as a `needs-mac:` comment with the exact commands",
+ "amendments": [
+  {"what": "the ridge is 0.01, not 1.0 (the first text of this declaration said 1.0, 'about one pseudo-day on a flag')", "why": "a unit test on a synthetic panel (a 15 bp quarter-end spike, nine flagged training pairs) showed that 1.0 in bp squared against a loss that is linear in the residual shrinks that effect from 15 bp to about 2 bp, which is not a 'small' ridge. The directive asks for a small fixed ridge; 0.01 keeps the normal equations stable and moves no effect below 75 bp by more than the sampling noise", "when": "before any score: only unit tests on synthetic panels and the published panel's reserve reads had been run; no forecast of B4 had been compared with an outcome or with any other model", "changes_a_figure": false},
+  {"what": "the iteration stop is a coefficient move of 0.001, not 1e-6 (the first text said 1e-6)", "why": "timing on the published panel showed that the reweighting converges slowly in the coefficients (about 90 of 100 iterations used at 1e-6) while the objective is flat: the loss at 100 iterations differed from the loss at 2,000 iterations by less than 0.01 on a total of 560 to 1,900, at three levels. A move of 0.001 bp stops the iteration where the loss no longer changes by 0.01 and saves a quarter of the time. The run reports how many fits stopped at the cap", "when": "before any score: timing and objective checks of single fits only, on the published panel's pairs as of 2023-11-08; no forecast of B4 had been compared with an outcome or with any other model", "changes_a_figure": false},
+  {"what": "B4 is walked over the decision days the candidate's walk forecast, not over the panel from its first row", "why": "the first full run stopped at once: the panel's first decision days have no row whose target is observable (asof SplitError) and the candidate's walk skips them. The refit cadence ('the candidate's cadence') is counted from the first day each model forecasts, so B4 starts on the candidate's first forecast day and both refit on the same days. A scored decision day without a B4 forecast is still refused", "when": "before any score: the first run raised before any forecast was made", "changes_a_figure": false},
+  {"what": "a correction of the 'when' of the second amendment, recorded after the full run", "why": "the second amendment says that no forecast of B4 had been compared with an outcome. The script's end-to-end test (decision days from 2025-12-01, 40 draws, and later from 2026-07-20) had scored B4 and the candidate on a few dozen days before the full run, and the figures of the later subset run (29 days of 2026, not a verdict) were printed in a test failure. The three amendments were made for reasons that read no score (a synthetic-panel unit test, the objective of single fits at three iteration settings, and a stop before any forecast); no setting of B4 was chosen on those figures; and B4 was scored once, in the full run", "when": "after the full run, before the pull request was opened", "changes_a_figure": false},
+  {"what": "a `variants` block naming the five models of `models` is added (the candidate, B1, B1', B2 and B4)", "why": "the check of #803 (tests/test_model_declarations.py) reads a `variants` block on a declaration that carries a `scoring` block; the first text had none, and CI was red on it (review of 6da66f36). The block restates `models`, which is unchanged; no arm, figure, rule, seed or score is touched. changes_a_figure: false", "before_any_score": false, "changes_a_figure": false}
+ ]
+}
