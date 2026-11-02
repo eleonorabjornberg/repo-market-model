@@ -1,0 +1,21 @@
+{
+  "about": "The plain-language wording of the results page's executive summary (#1352): the two aims, keyed by the plan's goal hypotheses, and one line per critical-path link, keyed by its milestone, completing 'the next step is to'. Each restates the plan and the manuals and adds nothing to them; the plan decides. The page is for a reader who may not know the repo market, so no line names a hypothesis, a link, a milestone, an issue or a file. Draft by the orchestrating session for Eleonora's review. scripts/research_view.py refuses a goal or a link without a line here.",
+  "aims": {
+    "H5": "a forecast of the full range of next-day outcomes for the spread, in basis points, that is more accurate than the simpler models built earlier in the project and than forecasts that only say whether the spread will rise above a threshold",
+    "H9": "to find out whether related measures, such as the rates paid at the high end of the trades SOFR is set from, other repo rates and the amounts placed at the Fed's own facilities, carry more information a model can learn from"
+  },
+  "next": {
+    "H1.M3": "check that the forecast's stated ranges contain what actually happened as often as they claim to",
+    "H1.M4": "have the scoring method confirmed by an independent audit",
+    "H5.M1": "put the scoring rules in place, start the daily record of forecasts made in advance, and work out how many days a fair test needs",
+    "H5.M2": "re-score the simpler benchmark models on past data under the new scoring rules",
+    "H5.M3": "measure which of the newer public data sources improve the forecast",
+    "H5.M4": "explain the forecast's misses in 2021 to 2023 and on the days the spread rose furthest",
+    "H5.M5": "fix the chosen forecast and how it will be judged in writing before any new day is scored",
+    "H9.M1": "assemble the related measures, each with the time it becomes public, and the benchmarks to judge them against",
+    "H9.M2": "screen those measures for the ones most worth modeling",
+    "H9.M3": "build forecasts for the most promising of them",
+    "H9.M4": "test on past data whether they add to the main forecast",
+    "H9.M5": "fix that test in writing before any new day is scored"
+  }
+}

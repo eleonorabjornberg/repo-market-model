@@ -13,6 +13,7 @@ Recorded mutation (the order test): in `site/template.html` move the `id="best-p
 AssertionError (the executive summary is not first).
 """
 
+import html
 import importlib.util
 import json
 import re
@@ -110,15 +111,54 @@ class Labels(unittest.TestCase):
                 self.assertIn(label, item)
 
     def test_the_executive_summary_is_prose_without_a_table(self):
-        """#893: the summary names the goals and every hypothesis in running text, and holds no table."""
+        """#893, #1352: the summary states both aims in plain words, in running text, and holds no table."""
         summary = PAGE[at('id="research-summary"'):at('<nav aria-label="Contents"')]
         self.assertNotIn("<table", summary)
         self.assertNotRegex(summary, r"<(?:ul|ol|dl)\b")
-        for hid in PLAN_IDS:
-            self.assertRegex(summary, rf'href="#{hid.lower()}">{hid}</a>', hid)
-        self.assertIn("development data never gives one", summary)
-        self.assertIn("Primary goal", summary)
-        self.assertIn("Secondary goal", summary)
+        aims = json.loads((ROOT / research_view.SUMMARY).read_text(encoding="utf-8"))["aims"]
+        for hid, aim in aims.items():
+            self.assertIn(html.escape(aim.rstrip(".")), summary, hid)
+        self.assertIn("tests on past data help build and choose a model but never settle the question", summary)
+        self.assertIn("The main aim is", summary)
+        self.assertIn("The second is", summary)
+
+    def test_the_executive_summary_names_nothing_internal(self):
+        """#1352 (Eleonora, 2 November 2026): the summary and its limits line are for a reader, not the project.
+
+        No hypothesis, critical-path link or milestone id, no issue number, no repository file, no code, and no
+        link into the repository. Mutation: `summary_html` given back its old `ref(h)` links fails here with
+        AssertionError.
+        """
+        summary = PAGE[at('id="research-summary"'):at('<nav aria-label="Contents"')]
+        text = re.sub(r"<[^>]+>", " ", summary)
+        self.assertNotRegex(text, research_view.INTERNAL)
+        self.assertNotIn("<code>", summary)
+        self.assertNotIn("github.com", summary)
+        self.assertNotRegex(summary, r'href="#h\d+"')
+
+    def test_a_goal_or_link_without_a_plain_line_is_refused(self):
+        """#1352: the summary never falls back to the plan's internal wording."""
+        for key, part in (("H5", "aims"), ("H1.M3", "next")):
+            with self.subTest(key=key), tempfile.TemporaryDirectory() as tmp:
+                out = Sources.copy_tree(self, tmp)
+                path = out / research_view.SUMMARY
+                data = json.loads(path.read_text(encoding="utf-8"))
+                del data[part][key]
+                path.write_text(json.dumps(data), encoding="utf-8")
+                hypotheses = research_view.load(out)
+                with self.assertRaisesRegex(research_view.ResearchError, "no plain"):
+                    research_view.load_summary(out, hypotheses, research_view.load_critical_path(out, hypotheses))
+
+    def test_a_plain_line_naming_something_internal_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Sources.copy_tree(self, tmp)
+            path = out / research_view.SUMMARY
+            data = json.loads(path.read_text(encoding="utf-8"))
+            data["next"]["H1.M3"] = "finish H1 (see #768)"
+            path.write_text(json.dumps(data), encoding="utf-8")
+            hypotheses = research_view.load(out)
+            with self.assertRaisesRegex(research_view.ResearchError, "internal"):
+                research_view.load_summary(out, hypotheses, research_view.load_critical_path(out, hypotheses))
 
     def test_every_key_figure_carries_the_label(self):
         """#893: a pulled-out key number keeps the development marking."""
@@ -129,8 +169,7 @@ class Labels(unittest.TestCase):
 
     def test_unmeasured_figures_say_so(self):
         self.assertIn("not measured", PAGE[at('id="h5"'):at('id="h6"')])
-        self.assertIn("Verdicts reached", PAGE)
-        self.assertIn("none yet", PAGE[at('id="research-summary"'):at('id="best-performer"')])
+        self.assertIn("No conclusions yet", PAGE[at('id="research-summary"'):at('id="best-performer"')])
 
     def test_question_for_eleonora_is_marked(self):
         self.assertIn("Question for Eleonora", PAGE[at('id="best-performer"'):at('id="hypotheses"')])
@@ -618,11 +657,12 @@ class CriticalPath(unittest.TestCase):
         hypotheses = research_view.load(ROOT)
         links = research_view.load_critical_path(ROOT, hypotheses)
         done = {h["id"] + "." + m for h in hypotheses for m in h["done"]}
-        block = PAGE[at("Next on the critical path"):]
+        nexts = json.loads((ROOT / research_view.SUMMARY).read_text(encoding="utf-8"))["next"]
+        block = PAGE[at("What comes next"):]
         block = block[:block.find("</div>")]
         for goal in ("H5", "H9"):
             first = next(l for l in links if goal in l["gates"] and l["milestone"] not in done)
-            self.assertIn(first["milestone"], block, goal)
+            self.assertIn(html.escape(nexts[first["milestone"]].rstrip(".")), block, goal)
         self.assertNotIn("stand-in", block)
         self.assertNotIn("first milestone not yet marked done", block)
 
