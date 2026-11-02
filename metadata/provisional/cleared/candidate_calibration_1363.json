@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/candidate_calibration_1363.json",
+  "script": "scripts/candidate_calibration_1363.py",
+  "pairing": "direct",
+  "why": "Calibration and clustering of (s3c-ann-net)'s misses. The forecasts are the candidate's own walk, run unchanged by the code of scripts/s3c_announced_settlement_1288.py: spread_mr_state_calendar.walk with training_pairs = direct (guarded by one_step_guard with no allow-list entry), so the calendar and scheduled columns are read at the target day, the settlement terms from the announced auctions at the decision instant; no gradient-boosted fit is called, and the study measures the forecasts' hits and PIT against the outcomes without feeding any outcome back, so it is not provisional"
+}
