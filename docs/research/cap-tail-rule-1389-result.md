@@ -15,7 +15,7 @@ The grid CRPS (primary) and the upper-tail twCRPS (key secondary) read the quant
 
 ## 2026 days (targets 2026-01-02 to 2026-09-03), shown apart
 
-Brier scores (lower is better) are means of decision-day means over the group's cells. The difference is the status quo's score less the rule's, so a positive difference favours the rule; its interval is scoring protocol v1's studentized stationary bootstrap on mean d (seed 1389, 10000 draws), read as `gain`, `loss` or `undecided` from whether it excludes zero. A group of fewer than 20 decision days is not tested. † marks a bound taken from the resamples that have a long-run variance (#1239); the others are on all of them. Differences are shown in scientific notation because they are tiny.
+Brier scores (lower is better) are means of decision-day means over the group's cells. The difference is the status quo's score less the rule's, so a positive difference favours the rule; its interval is scoring protocol v1's studentized stationary bootstrap on mean d (seed 1389, 10000 draws), read as `gain`, `loss` or `undecided` from whether it excludes zero. A group of fewer than 20 decision days is not tested. † marks a bound taken from the resamples that have a long-run variance (#1239); the others are on all of them. Differences are shown in scientific notation because they are tiny. Brier P(> line) is over the cells that have a line, whatever the group.
 
 **Brier P(> +5 bp)**
 
@@ -93,7 +93,7 @@ Brier scores (lower is better) are means of decision-day means over the group's 
 
 ## Development window (targets up to 2025-12-31; the near-blind tier is not in it)
 
-Brier scores (lower is better) are means of decision-day means over the group's cells. The difference is the status quo's score less the rule's, so a positive difference favours the rule; its interval is scoring protocol v1's studentized stationary bootstrap on mean d (seed 1389, 10000 draws), read as `gain`, `loss` or `undecided` from whether it excludes zero. A group of fewer than 20 decision days is not tested. † marks a bound taken from the resamples that have a long-run variance (#1239); the others are on all of them. Differences are shown in scientific notation because they are tiny.
+Brier scores (lower is better) are means of decision-day means over the group's cells. The difference is the status quo's score less the rule's, so a positive difference favours the rule; its interval is scoring protocol v1's studentized stationary bootstrap on mean d (seed 1389, 10000 draws), read as `gain`, `loss` or `undecided` from whether it excludes zero. A group of fewer than 20 decision days is not tested. † marks a bound taken from the resamples that have a long-run variance (#1239); the others are on all of them. Differences are shown in scientific notation because they are tiny. Brier P(> line) is over the cells that have a line, whatever the group.
 
 **Brier P(> +5 bp)**
 

@@ -460,7 +460,7 @@ def render(r: dict) -> str:
             "a positive difference favours the rule; its interval is scoring protocol v1's studentized stationary bootstrap on mean d (seed "
             f"{r['seed']}, {r['draws']} draws), read as `gain`, `loss` or `undecided` from whether it excludes zero. A group of fewer than {MIN_GROUP_DAYS} "
             "decision days is not tested. † marks a bound taken from the resamples that have a long-run variance (#1239); the others are on all of them. "
-            "Differences are shown in scientific notation because they are tiny.")
+            "Differences are shown in scientific notation because they are tiny. Brier P(> line) is over the cells that have a line, whatever the group.")
         add("")
         for metric in METRICS:
             add(f"**{METRIC_TITLES[metric]}**")
