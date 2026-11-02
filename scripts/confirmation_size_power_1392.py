@@ -421,7 +421,7 @@ def render(r: dict) -> str:
         "announced-flag arm's, B1'*'s and B2's score (grid CRPS averaged over h = 1..5). Two data-generating schemes (block resampling of whole origin vectors; "
         "a regime-switching chain on the development regime labels), a skill imposed on the baselines by one constant each so that the population skill is exactly "
         f"the stated one, {r['M']} simulated data sets per cell, {r['reps']} bootstrap resamples per data set, mode `{r['mode']}`, seed {r['seed']}. "
-        "Cells in brackets are one Monte Carlo standard error, in percentage points. The draft's own 50,000 resamples per test are not run inside a size study "
+        "Cells in brackets are one Monte Carlo standard error, in percentage points. The draft's own, much larger, bootstrap is not run inside a size study "
         "(see the declaration); the critical value here rests on far fewer draws, which adds error to every rate below.", "",
         "Pooled means of the development origins: " + ", ".join(f"{k} {v:.3f}" for k, v in r["pool_means"].items()) + ".", ""]
     out += ["## Claim A: pass rates (percent, Monte Carlo SE in brackets), test block 50, both baselines at the stated skill", "",

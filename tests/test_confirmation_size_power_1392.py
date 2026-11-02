@@ -176,6 +176,20 @@ class PageTests(unittest.TestCase):
         self.assertIn("Sensitivity to the test block (pass rate", script.render(self._result(("main", "observed", "binding", "gated", "extension", "sensitivity"))))
 
 
+class CommittedPageTests(unittest.TestCase):
+    def test_the_committed_page_is_the_one_render_makes_of_the_committed_record(self):
+        record = json.loads((REPO / "docs" / "research" / "confirmation-size-power-1392" / "result.json").read_text(encoding="utf-8"))
+        page = (REPO / "docs" / "research" / "confirmation-size-power-1392-result.md").read_text(encoding="utf-8")
+        self.assertEqual(script.render(record), page)
+
+    def test_every_declared_reduced_cell_is_in_the_committed_record(self):
+        record = json.loads((REPO / "docs" / "research" / "confirmation-size-power-1392" / "result.json").read_text(encoding="utf-8"))
+        declaration = json.loads((REPO / "metadata" / "confirmation_size_power_1392.json").read_text(encoding="utf-8"))
+        wanted = {c["key"] for c in script.cells_of(declaration) if c["group"] in declaration["modes"][record["mode"]]["groups"]}
+        self.assertEqual({c["key"] for c in record["cells"]}, wanted)
+        self.assertTrue(all(c["count"] == record["M"] for c in record["cells"]))
+
+
 class GuardTests(unittest.TestCase):
     def test_an_origin_after_the_development_end_is_refused(self):
         bad = {"windows": {"development": {"origins": ["2026-09-04"], "regime": ["x"], "scores": {"candidate": [1.0], "flag": [1.0], "B1p*": [1.0], "B2": [1.0], "B1": [1.0]}}}}
