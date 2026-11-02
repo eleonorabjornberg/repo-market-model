@@ -1,0 +1,17 @@
+{
+ "description": "Business days whose SOFR first print was not kept by its revision instant (14:30 ET on the publication day) and is lost: the capture never back-fills a day (#940, #1404). The confirmation's missing-outcome rule (#1393, rule 8) counts these days. One entry per effective date, with the reason. Added by a pull request after the run history shows the loss; `python3 scripts/sofr_first_print.py missing` fails on a day that is lost and not listed, and on a listed day that has a file.",
+ "days": [
+  {
+   "effective_date": "2026-10-23",
+   "reason": "No scheduled run started before the 14:30 ET revision instant on 2026-10-26: the first started at 18:42:48 UTC (14:42 ET) and was refused."
+  },
+  {
+   "effective_date": "2026-10-28",
+   "reason": "No scheduled run started before the 14:30 ET revision instant on 2026-10-29: the first started at 18:30:52 UTC (14:30:52 ET), 52 seconds after it, and was refused."
+  },
+  {
+   "effective_date": "2026-10-30",
+   "reason": "No scheduled run started on 2026-11-02 before 21:44:13 UTC (16:44 ET), after the 14:30 ET revision instant; it was refused."
+  }
+ ]
+}
