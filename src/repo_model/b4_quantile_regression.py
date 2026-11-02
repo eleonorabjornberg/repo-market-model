@@ -63,10 +63,10 @@ InsufficientHistory = smr.InsufficientHistory
 
 # Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
 LOCKBOX_READS = {
-    "refit": (
+    "__init__": (
         "not_entry",
-        "fits B4 on the pairs whose targets are public at the decision instant (protocol_benchmarks._require_public); makes a forecast, "
-        "scores nothing: the forecast is scored only through scoring_protocol.day_scores, which calls require_unlocked on every scored day",
+        "ReserveTable reads the as-of reserve balances of each decision through InformationRule (both guards); it makes an input of a benchmark forecast, "
+        "scores nothing: a forecast is scored only through scoring_protocol.day_scores, which calls require_unlocked on every scored day",
     ),
 }
 
