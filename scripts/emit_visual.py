@@ -1546,7 +1546,7 @@ def tag_statuses(tag_map, registry, manifest, records, snapshot, tracked):
         pairs = {(p["source"], p["field"]) for p in tag["fields"]}
         names = ", ".join(f"<code>{s}.{f}</code>" for s, f in sorted(pairs))
         registered = all(f in registry.get(s, {}).get("fields", ()) for s, f in pairs)
-        status = reason = sub = None
+        status = reason = sub = record = None
         user = next((rel for rel, used in uses if pairs <= used), None)
         hurt = next(((rel, loss) for rel, added, loss in verdicts if pairs <= added), None)
         working = [(n, index[n]) for n in tag["issues"] if index[n]["state"] == "open"
@@ -1555,10 +1555,11 @@ def tag_statuses(tag_map, registry, manifest, records, snapshot, tracked):
         queued = [n for n in tag["issues"] if index[n]["state"] == "open" and "directive" in index[n]["labels"]
                   and (n, index[n]) not in working]
         if registered and user:
-            status, reason = "used", f"in the published declaration <code>{user}</code>"
+            status, reason, record = "used", "in the published forecast model", user
         elif registered and hurt:
+            record = hurt[0]
             status, reason = "tried_and_hurt", (f"adding it made the paired {hurt[1].replace('_', ' ')} worse in "
-                                                f"<code>{hurt[0]}</code>")
+                                                "a published test")
         elif working:
             n, e = working[0]
             status = "in_progress"
@@ -1570,7 +1571,7 @@ def tag_statuses(tag_map, registry, manifest, records, snapshot, tracked):
             status, reason = "registered_unused", "registered, and no published declaration reads it"
             sub = "queued" if queued else None
         else:
-            status, reason = "not_registered", f"no source in <code>{SOURCES}</code> carries it"
+            status, reason = "not_registered", "no data source the project has registered carries it"
         columns = sorted({c for c, fields in FEATURE_FIELDS.items() if pairs & set(fields)})
         panel = ([f"<code>{c}</code>" + ("" if c in built else ", refused by the panel" if c in refused
                                          else ", not built") for c in columns] or ["not in the panel"])
@@ -1579,7 +1580,7 @@ def tag_statuses(tag_map, registry, manifest, records, snapshot, tracked):
             f.startswith(where.rstrip("/") + "/") and f.endswith(".manifest.json") for f in tracked)
         rows.append({"key": tag["key"], "label": re.sub(r"\s*\(#\d+\)", "", tag["label"]), "flow": tag.get("flow"), "board": tag.get("board"),
                      "status": status,
-                     "reason": reason, "sub": sub, "fields": names, "panel": "; ".join(panel),
+                     "reason": reason, "record": record, "sub": sub, "fields": names, "panel": "; ".join(panel),
                      "data_in_repo": data_in_repo, "issues": list(tag["issues"])})
     return rows
 
@@ -1605,10 +1606,10 @@ def status_table(rows, tag_map, parties):
             f'<td data-h="Status"><span class="status s-{r["status"]}"><span aria-hidden="true">{icon}</span> '
             f'{word_}</span><small>{r["reason"]}</small>{sub}</td>'
             f'<td data-h="Registry">{r["fields"]}</td><td data-h="Panel">{r["panel"]}</td>'
-            f'<td data-h="Data in this repository">{"yes" if r["data_in_repo"] else "no"}</td></tr>')
+            f'<td data-h="Copy of the data kept by the project">{"yes" if r["data_in_repo"] else "no"}</td></tr>')
     return ('<table class="tags"><thead><tr><th scope="col">Tag</th><th scope="col">Flow</th>'
             '<th scope="col">Status</th><th scope="col">Registry</th><th scope="col">Panel</th>'
-            '<th scope="col">Data in this repository</th></tr></thead><tbody>' + "".join(body) + "</tbody></table>")
+            '<th scope="col">Copy of the data kept by the project</th></tr></thead><tbody>' + "".join(body) + "</tbody></table>")
 
 
 def check_map_text(tag_map, notes, glossary):
@@ -1841,7 +1842,7 @@ def tag_details(tag_map, rows, registry, notes, glossary, parties):
             f'<dt>Where</dt><dd>{where}</dd>'
             f'<dt>Registry</dt><dd>{r["fields"]}<br>{"<br>".join(sources)}</dd>'
             f'<dt>Panel</dt><dd>{r["panel"]}</dd>'
-            f'<dt>Data in this repository</dt><dd>{"yes" if r["data_in_repo"] else "no"}</dd>'
+            f'<dt>Copy of the data kept by the project</dt><dd>{"yes" if r["data_in_repo"] else "no"}</dd>'
             + '</dl><button type="button" class="n4close">Close</button></div>')
     return "".join(out)
 
@@ -3130,9 +3131,9 @@ def final_test(records, locked):
                          f"{signed(leap['lower'], 4)} to {signed(leap['upper'], 4)}, label {html.escape(leap['label'])} "
                          f"(reported only)." if leap else
                          "The record does not carry the plain-leap cell against climatology, so no figure is given.")),
-        "ft_links": (f"The record: <a href='{BLOB}{rel}'><code>{rel}</code></a>. The write-up: "
-                     f"<a href='{BLOB}docs/final-test.md'><code>docs/final-test.md</code></a>. The design: "
-                     f"<a href='{BLOB}{prereg}'><code>{prereg}</code></a>."),
+        "ft_links": (f"The record: <a href='{BLOB}{rel}'>the published final-test record</a>. The write-up: "
+                     f"<a href='{BLOB}docs/final-test.md'>the final-test write-up</a>. The design: "
+                     f"<a href='{BLOB}{prereg}'>the design registered before the test</a>."),
     }
     return data, fills
 
@@ -3319,8 +3320,8 @@ def forecast_daily(records, locked, series=FORECAST_DAILY_SERIES):
         "fd_recalibration": recalibration_note(drawn),
         "fd_table": table,
         "fd_misses": miss_table,
-        "fd_links": (f"Every figure here is read from <a href='{BLOB}{FORECAST_DAILY}'><code>{FORECAST_DAILY}"
-                     f"</code></a>: each scored day from {day(first)} to {day(last)}, the published "
+        "fd_links": (f"Every figure here is read from <a href='{BLOB}{FORECAST_DAILY}'>the published daily forecast record"
+                     f"</a>: each scored day from {day(first)} to {day(last)}, the published "
                      f"distribution's five quantiles one day ahead and the actual spread. Its daily CRPS "
                      f"reproduces the published CRPS records exactly."),
     }
