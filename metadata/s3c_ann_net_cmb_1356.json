@@ -1,0 +1,162 @@
+{
+ "status": "declared by the pull request that closes #1356 before any score was computed; a development study, never a verdict. (s3c-ann-net) stays the candidate of avenue #1318 and (s3c) stays the H5 candidate: nothing here changes either. Nothing is registered or published: no record in docs/runs/ is edited, the live record and its pin do not change, no declaration already merged changes (metadata/s3c_announced_settlement_1288.json, metadata/s3c_flagnet_gross_1321.json, metadata/s3c_ann_net_1800_1314.json, metadata/settlement_announcement_dating.json, metadata/net_settlement.json, metadata/sources.json and docs/decisions/information-set.md included), docs/research/h5-candidate.json and scripts/final_test_preregistration.py do not change, no day after 2026-09-03 is scored and no lockbox day is scored. Amendments made after a number was computed are listed in `amendments`; there are none.",
+ "issue": 1356,
+ "avenue": "#1306",
+ "diagnosis": "#1320 (merged 29732943), on #1316: immediate-release cash management bill days carry 67% of (s3c-ann-net)'s 2020 loss against (s3c)",
+ "ruling": "Eleonora, 2 November 2026, chat, relayed on #1356: avenue #1306 unparked, 'try it'. It was parked until #1314 (the 18:00 re-run) reported; #1314 found no scored cell changes at 18:00.",
+ "hypothesis": "H5 (primary goal): the SOFR - IORB spread distribution in bp. Step 3, an arm on the candidate (s3c-ann-net), in two forms (a flag and a net size) declared before any score. Development tier",
+ "target": "spread_bps at the scored day, in basis points, as a 23-quantile distribution at each lead h = 1..5 (scoring_protocol.GRID)",
+ "why": "(s3c-ann-net) treats a cash management bill as one more bill in the bill net. On bill settlement days with a cash management bill (352 development days), (s3c-ann) loses to (s3c) at h = 2 (grid CRPS -3.0%) and on upper-tail twCRPS at h = 2 to 4, and #1320 found that immediate-release cash management bill days carry 67% of (s3c-ann-net)'s 2020 loss. A cash management bill is Treasury's ad hoc cash raising, outside the regular weekly cycle; the arm lets the fit give it its own effect. The avenue's own caution stands: many of the 352 days are 2020's flood of cash management bills, a regime where (s3c-ann) already loses, so the split may only re-label a regime effect. The page says plainly whether the 2020 loss goes, and what the arm costs elsewhere.",
+ "decision_instant": "18:00 America/New_York on the decision day (repo_model.decision_instant.DECISION_TIME, amended on 29 October 2026, #1312). Every walk of this study, the references included, is made at that instant. An announcement stamped 12:00 on its announcemt_date is public from 12:00, so any decision instant from 12:00 to 23:59 counts the same auctions",
+ "candidates": [
+  {
+   "name": "sc_s3c_ann_net_cmb_flag",
+   "label": "(s3c-ann-net-cmb), flag form",
+   "definition": "(s3c-ann-net) with the cash management bills split out of the bill leg and a 0/1 flag of their own. At leads 2 to 5 the bill term is the signed announced net of the regular bills (the bill net of net_settlement.net_for_day with the cash management bills left out, in USD 100 bn); the coupon term is (s3c-ann-net)'s; and the extra term cmb_flag is 1 when the offering amounts of the cash management bills (cash_management_bill_cmb = Yes) settling on the target day T that had been announced by the decision instant of D = T - h sum to more than zero, and 0 otherwise. The extra term enters the fit at a lead when at least three training pairs carry it, after the sized terms. Everything else is (s3)'s and (s3c-ann-net)'s: the other terms, the Huber fit (k = 1.345), the ridge of 5, the sized terms with the scarcity state held at its maximum, the pool of standardised residuals, the direct pairs and the SRF cap at the line from full allotment, margin 0 bp (repo_model.s3c_candidate, unchanged). At lead 1 the arm is (s3c-ann-net) exactly: the cash management bill term is read at leads 2 to 5 and the bill term at lead 1 is the full bill net; the study checks it cell for cell",
+   "module": "repo_model.s3c_cmb (FLAG_ARM = s3c_announced.ANN_NET_ARM renamed with extra = (cmb_flag,); CmbSizeTable for the sized terms, CmbTerms for the extra term)",
+   "units": "cmb_flag: 0/1; effect reported in bp per flagged day; the regular bill net and the coupon net in USD 100 bn (bp per USD 100 bn)"
+  },
+  {
+   "name": "sc_s3c_ann_net_cmb_size",
+   "label": "(s3c-ann-net-cmb), net-size form",
+   "definition": "As the flag form, with the extra term cmb_net in place of cmb_flag: what the announced cash management bills add to the bill net, in USD 100 bn (the bill net of net_settlement.net_for_day less the bill net of the regular bills at the same instant). The regular bill net and cmb_net add up to the bill net of (s3c-ann-net) at every instant; when regular bills settle with a cash management bill the term is the cash management bill's offering (the class's maturing amount is one total, netted once, against the regular bills), and on a day only cash management bills settle it carries the class's whole net, the maturing amount included. A class announced in part reads 0 in both legs (#679), and an unannounced cash management bill is not in the schedule, so it does not make the class partly announced (#738). The term enters at leads 2 to 5 when at least three training pairs carry it (non-zero); at lead 1 the arm is (s3c-ann-net) exactly",
+   "module": "repo_model.s3c_cmb (SIZE_ARM = s3c_announced.ANN_NET_ARM renamed with extra = (cmb_net,); CmbSizeTable, CmbTerms)",
+   "units": "cmb_net: USD 100 bn (a USD 30 bn cash management bill reads 0.30); effect reported in bp per USD 100 bn"
+  },
+  {
+   "name": "sc_s3c_ann_net_cmb_flag_prior",
+   "label": "(s3c-ann-net-cmb), flag form, prior-day reading",
+   "definition": "The sensitivity arm for finding #1301. As the flag form, with a cash management bill counted only when it was announced before the decision day (and otherwise left out of the bill net and of the term, as if unannounced). Treasury's announcement files state no release time for 163 announcements ('for immediate release'), 153 of them cash management bills, so the 12:00 stamp of a cash management bill announced on the decision day itself is unverified; this arm does not rely on it. A bill announced after the decision day, whether or not it settles inside the lead window, is not read at any reading (the as-of rule). The regular bills and the coupons are read as in (s3c-ann-net)",
+   "module": "repo_model.s3c_cmb (FLAG_PRIOR_ARM; CmbSizeTable and CmbTerms with prior_day_only = True)",
+   "units": "as the flag form"
+  },
+  {
+   "name": "sc_s3c_ann_net_cmb_size_prior",
+   "label": "(s3c-ann-net-cmb), net-size form, prior-day reading",
+   "definition": "The sensitivity arm for finding #1301, as the net-size form with the prior-day reading of the arm above",
+   "module": "repo_model.s3c_cmb (SIZE_PRIOR_ARM; CmbSizeTable and CmbTerms with prior_day_only = True)",
+   "units": "as the net-size form"
+  }
+ ],
+ "forms": "Both forms are declared and both are scored, because the directive leaves open whether the cash management bill matters as an event (the flag) or through its size (the net); neither is chosen before a score. The two prior-day arms are a sensitivity of the reading to the unverified release time, not further forms: they are tested against (s3c-ann-net) only and answer one question, whether a form's figures change when the announcements of the decision day are not counted.",
+ "new_read": {
+  "what": "the announced cash management bill term (`cmb_flag`, `cmb_net`) and the bill net of the regular bills, at leads 2 to 5",
+  "availability": "an auction's offering amount, maturing estimate, settlement date and cash_management_bill_cmb flag are public from 12:00 America/New_York on its announcemt_date (metadata/net_settlement.json; the same records as repo_model.net_settlement reads; nothing new is fetched). The figure for target day T at lead h counts an auction only when its announcement is at or before the decision instant of the panel day h rows before T, so a bill announced after that instant is not read at that lead, whether or not it settles before T (finding #1301). A training pair reads the figure of its own decision (T - h), so a training figure and a forecast figure are the same function of the same announcements",
+  "leakage_boundary": "repo_model.s3c_cmb.CmbTerms.read and CmbSizeTable.read re-derive the figure from the announced auctions at the decision instant and compare it with the figure the table serves: a figure that counts an auction announced after that instant raises LookAheadError, a flag that leaves out an announced cash management bill raises StaleReadError. tests/test_s3c_cmb_1356.py holds the leakage test with one recorded mutation (the instant of the figure taken from the target day instead of the decision day; LookAheadError)",
+  "caveat": "Finding #1301 and Lens E's caveat (item G): Treasury publishes no clock time for 163 announcements ('for immediate release'), 153 of them cash management bills, so the 12:00 instant of a cash management bill announced on the decision day is unverified. The prior-day arms measure how much that matters; the caveat is said on the page and not removed",
+  "not_read_elsewhere": "no published declaration, record or live path reads it; (s3c)'s own table still serves a settlement at lead 1 only"
+ },
+ "references": [
+  {
+   "name": "sc_s3c_ann_net",
+   "label": "(s3c-ann-net)",
+   "role": "the candidate of avenue #1318, re-run at 18:00 in the same run; the reference every arm is first measured against"
+  },
+  {
+   "name": "sc_s3c",
+   "label": "(s3c)",
+   "role": "the H5 candidate, re-run at 18:00 in the same run (the frame of #1255); the reference of the 2020 question, since the loss is (s3c-ann-net)'s against it"
+  },
+  {
+   "name": "B1",
+   "label": "B1",
+   "role": "scoring protocol v1's benchmark, from #1255's frame"
+  },
+  {
+   "name": "B1_prime",
+   "label": "B1'",
+   "role": "the B1' of #960, from #1255's frame"
+  },
+  {
+   "name": "B2",
+   "label": "B2",
+   "role": "scoring protocol v1's benchmark, from #1255's frame"
+  }
+ ],
+ "pairs": "direct: the settlement terms are read at the target day with training_pairs = 'direct' (spread_mr_state_calendar.fit_state_terms is guarded by one_step_guard with no allow-list entry; repo_model.one_step_guard.ONE_STEP_ALLOW_LIST is not changed); the provisional-register row is metadata/provisional/cleared/s3c_ann_net_cmb_1356.json. No gradient-boosted fitter is called",
+ "frame": {
+  "windows": "the two windows of #1255, loaded as #1255 loads them: the development window (decision days whose five targets fall on or before 2025-12-31) and the 2026 development days (decision days whose five targets fall from 2026-01-02 to 2026-09-03, the near-blind tier open since GO #151). The 2026 days are reported on their own, as a window, and decide nothing",
+  "walk": "(s3) is #1145's walk (refit every 21 decision days, direct pairs); every walk of this study starts on the same first decision day and runs over the same decision days as #1255's. The study checks that every scored decision day has a forecast of every model, that each arm equals (s3c-ann-net) cell for cell at lead 1, and refuses to write a record otherwise",
+  "guards": "a scored decision day or target day passes lockbox.require_unlocked through spread_mean_reversion_686.require_scored_days with the last day of the window; the blind tier (from 2026-09-04) and every lockbox day are refused"
+ },
+ "arms": [
+  {
+   "name": "sc_s3c",
+   "role": "(s3c), the H5 candidate; reference",
+   "margin_bp": 0.0
+  },
+  {
+   "name": "sc_s3c_ann_net",
+   "role": "(s3c-ann-net), the candidate of avenue #1318; reference",
+   "margin_bp": 0.0
+  },
+  {
+   "name": "sc_s3c_ann_net_cmb_flag",
+   "role": "(s3c-ann-net-cmb), flag form",
+   "margin_bp": 0.0
+  },
+  {
+   "name": "sc_s3c_ann_net_cmb_size",
+   "role": "(s3c-ann-net-cmb), net-size form",
+   "margin_bp": 0.0
+  },
+  {
+   "name": "sc_s3c_ann_net_cmb_flag_prior",
+   "role": "(s3c-ann-net-cmb), flag form, prior-day reading; sensitivity",
+   "margin_bp": 0.0
+  },
+  {
+   "name": "sc_s3c_ann_net_cmb_size_prior",
+   "role": "(s3c-ann-net-cmb), net-size form, prior-day reading; sensitivity",
+   "margin_bp": 0.0
+  }
+ ],
+ "models": [
+  "B1",
+  "B1_prime",
+  "B2",
+  "sc_s3c",
+  "sc_s3c_ann_net",
+  "sc_s3c_ann_net_cmb_flag",
+  "sc_s3c_ann_net_cmb_size",
+  "sc_s3c_ann_net_cmb_flag_prior",
+  "sc_s3c_ann_net_cmb_size_prior"
+ ],
+ "primary": {
+  "metric": "grid CRPS (23 levels) averaged over leads h = 1..5",
+  "key_secondary": "upper-tail twCRPS (weight 1{z > 0 bp})",
+  "pressure_probability": "the Brier score of P(spread > +5 bp), the probability read off the 23 quantiles as 1 - F(floor(tau) + 0.5), F linear between them (spread_mean_reversion.exceedance), the event strict and on whole basis points (data.exceeds_bp)",
+  "calibration": "the coverage of the central 90% band (q5 to q95, closed) of every model, pooled and by regime; a rate, reported as a mean and not tested",
+  "comparisons": "each of the two forms against (s3c-ann-net), (s3c), B1, B1' and B2; each prior-day arm against (s3c-ann-net) only; (s3c-ann-net) against (s3c) in every group, for the 2020 question (it is the loss the arm is aimed at); paired, on the same days"
+ },
+ "scoring": {
+  "scorer": "repo_model.scoring_protocol (#655), the development tier: no verdict, no registration",
+  "test": "scoring_protocol.paired_tests, the studentized stationary bootstrap (ruling 1), mean block 10 business days, 10,000 draws, seed 1356, two-sided 90% interval (the lower end is the one-sided 95% bound); the skill interval and the studentized interval on mean d are reported for every tested row; where the studentized bound cannot be computed the unstudentized percentile interval of mean d is given beside it, with no reading taken from it",
+  "reading": "a reading is taken from the mean-d bound (her ruling on #1009): an arm is read better than a reference when the lower end of the 90% interval of mean d is above zero, worse when the upper end is below zero, otherwise undecided. Lens C's caveat (the lag-10 HAC standard error is understated about 2x after 2020) is stated on the page",
+  "splits": "pooled; by lead; by regime (the declared regimes, 2020 among them), with two target-day groups inside 2020 added: 'March to June 2020' (target days 2020-03-01 to 2020-06-30) and 'rest of 2020' (the other 2020 target days); by pressure-day type of the target day (turn_days.reporting_day_type, the record in force); and by the settlement-day type of the target at each lead h = 1..5 (a coupon settlement day, a bill settlement day, a bill settlement day with a cash management bill, a bill settlement day without one, a day with neither: the panel's gross settlement above zero on the target day and net_settlement.Auction.cmb), which is the comparison of cash management bill settlement days with other bill days. The 2026 development days are the second window and carry the same splits where they have the days. The intervals of a group of target days keep the current method (the group's days, scattered, resampled in date order as if consecutive), which #1221 questions and #1228 will decide",
+  "identical_groups": "a group in which an arm's score equals the reference's on every day is listed as identical and not tested against it; a group of fewer than 20 days is listed and not tested",
+  "seed": 1356
+ },
+ "answer": {
+  "question": "Does the arm remove the 2020 loss, and at what cost elsewhere?",
+  "rule": "The page states, from the tables and without a threshold of its own, for each form: its reading against (s3c-ann-net) and against (s3c) in 2020 and in March to June 2020, on grid CRPS and on upper-tail twCRPS, next to (s3c-ann-net)'s own reading against (s3c) there; and its readings elsewhere (the other regimes, the leads, the 2026 days, the bill settlement days without a cash management bill). 'Removes the loss' is read only as: the arm's reading against (s3c) in 2020 is not worse while (s3c-ann-net)'s is worse. Nothing else is claimed"
+ },
+ "fitted_effect": "the fitted effect of the cash management bill term in bp (per flagged day, or per USD 100 bn), by lead and regime of the target day: the mean over the scored decision days of the refit the forecast used times the anchor's scale, with the share of days on which the term was in the fit, and its 90% stationary-bootstrap interval over decision days (block 10, 2000 replications, seed 1356; an interval over days that share refits, not a sampling interval for a coefficient)",
+ "reading_rules": [
+  "A figure is a check on days that were already seen. Nothing here is a verdict, nothing is registered and no choice is made on it; (s3c-ann-net) stays the candidate of avenue #1318 and (s3c) the H5 candidate until she rules. Adopting the arm is her decision.",
+  "A gain or loss is read from the 90% interval of mean d excluding zero; otherwise undecided. A point estimate alone is not read.",
+  "A pooled figure is never read without the lead, regime and settlement-day-type splits beside it.",
+  "The avenue's risk stands: if the arm helps only in 2020 it may only re-label a regime effect; the page says so if that is what the tables show.",
+  "The cash management bill term is read with finding #1301 and Lens E's caveat on the announcement time of an immediate-release bill; the prior-day arms are the sensitivity."
+ ],
+ "limits": {
+  "last_day": "2026-09-03",
+  "named_candidate": "unchanged; docs/research/h5-candidate.json is not changed",
+  "preregistration": "scripts/final_test_preregistration.py is not touched; test_final_test_freeze and test_live_score_freeze are run before the push",
+  "allow_list": "repo_model.one_step_guard.ONE_STEP_ALLOW_LIST is not changed",
+  "sources": "metadata/sources.json, metadata/settlement_announcement_dating.json, metadata/net_settlement.json and docs/decisions/information-set.md are not changed; no declaration already merged and no page already merged is changed; docs/runs/ is not touched; spread_mr_calendar, s3c_net and s3c_announced are not edited; spread_mr_state_calendar gains the names of the cash management bill extras (CMB_FLAG, CMB_NET) and changes no existing arm's figures",
+  "not_in_this_directive": "any change of the candidate, of a record or of a declaration; a prospective test"
+ },
+ "long_run": "cloud first: two walks per window (the declared reading and the prior-day reading), minutes each, and the paired tests (the longer part). If the measured time on a subset says the full run exceeds about two hours, the run goes to the Mac as a `needs-mac:` comment",
+ "amendments": []
+}
