@@ -74,7 +74,7 @@ def measure(panel: Path, day: date) -> dict:
     registry = json.loads((REPO / "metadata" / "sources.json").read_text())
     sides, args = live._compare_sides(1)
     _name, fit, features, _online = sides["published"]
-    rule = InformationRule(registry, tuple(features), decision_time=live.DECISION, horizon=1)
+    rule = InformationRule(registry, tuple(features), decision_time=live.LEGACY_DECISION, horizon=1)
     dates = [row.date for row in rows]
     index = len(rows) - 1
     info = rule.information_set(dates, index)

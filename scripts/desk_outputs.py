@@ -150,7 +150,8 @@ from repo_model.lockbox import require_unlocked  # noqa: E402
 from repo_model.metrics import MetricError, crps_from_quantiles, stationary_bootstrap_interval  # noqa: E402
 from repo_model.onset import MINIMUM_EVENTS  # noqa: E402
 
-DECISION = live.DECISION
+#: The desk reads at 16:00 still: it is not the live record, and moving it is its own directive (#1368 moved the live code only).
+DECISION = live.LEGACY_DECISION
 HORIZONS = live.HORIZONS
 REGISTRY = REPO / "metadata" / "sources.json"
 SPLITS = REPO / "metadata" / "evaluation_splits.json"

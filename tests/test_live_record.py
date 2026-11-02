@@ -1,7 +1,7 @@
 """The live record (#215): the daily script, the scoring script and the workflow.
 
 Eleonora's decision of 3 October 2026 (#215): every business day after the
-16:00 ET decision instant, a scheduled GitHub Actions workflow logs the
+18:00 ET decision instant (16:00 until #1368), a scheduled GitHub Actions workflow logs the
 published pressure model v1's forecast, and its baselines', as one frozen JSON
 record on the append-only `live-log` branch. The record is scored only on the
 pre-registered dates, and only on days `metadata/lockbox.json` has opened (#277).
@@ -853,7 +853,7 @@ def _fixture_panel(tmp):
     with contextlib.redirect_stdout(io.StringIO()):
         code = cli_main(
             ["build", "--raw-root", str(FIXTURES), "--output", str(panel),
-             "--build-cutoff", CUTOFF, "--decision-time", "16:00:00"]
+             "--build-cutoff", CUTOFF, "--decision-time", live.DECISION.isoformat(timespec="seconds")]
         )
     if code != 0:
         raise RuntimeError("the fixture panel did not build")
@@ -883,7 +883,9 @@ class PlaceholderGuardTests(unittest.TestCase):
 
     def _rule(self, h):
         features = live.V1_FEATURES[h]
-        return InformationRule(self.registry, features, decision_time=time(16), horizon=h)
+        # At 16:00: the reads of v1's features sit on real rows. At 18:00 they do not (the same-day bill rates are
+        # public at 16:30 and the decision row is a placeholder); that refusal is pinned in `test_live_instant_1368.py`.
+        return InformationRule(self.registry, features, decision_time=live.LEGACY_DECISION, horizon=h)
 
     def test_reads_on_real_rows_pass(self):
         index = len(self.rows) - 1
@@ -967,7 +969,7 @@ class CashManagementBillTests(unittest.TestCase):
 
 
 class DecisionInstantGuardTests(unittest.TestCase):
-    """`run_command` refuses a record made before the day's 16:00 ET decision instant (#268, finding 21).
+    """`run_command` refuses a record made before the day's 18:00 ET decision instant (#268, finding 21; 16:00 until #1368).
 
     A record is made on its own day after the decision instant; a missed day is
     never backfilled. The clock is patched: `live.datetime` is a subclass whose
@@ -1010,7 +1012,7 @@ class DecisionInstantGuardTests(unittest.TestCase):
 
     def test_before_the_instant_is_refused(self):
         with tempfile.TemporaryDirectory() as tmp:
-            at = datetime(2026, 10, 7, 15, 59, tzinfo=live.EASTERN)
+            at = datetime(2026, 10, 7, 17, 59, tzinfo=live.EASTERN)
             with self.assertRaisesRegex(ValueError, "never backfilled"):
                 self._run(at, tmp)
 
@@ -1026,7 +1028,7 @@ class DecisionInstantGuardTests(unittest.TestCase):
 
     def test_the_instant_and_after_pass_the_guard(self):
         with tempfile.TemporaryDirectory() as tmp:
-            for at in (datetime(2026, 10, 7, 16, 0, tzinfo=live.EASTERN),
+            for at in (datetime(2026, 10, 7, 18, 0, tzinfo=live.EASTERN),
                        datetime(2026, 10, 7, 23, 58, 59, tzinfo=live.EASTERN)):
                 with self.subTest(at=at), self.assertRaises(self.Past):
                     self._run(at, tmp)
@@ -1178,7 +1180,7 @@ class BaselineAgreementTests(unittest.TestCase):
             ):
                 report = rolling_exceedance_backtest(
                     self.rows, predictor=predictor, model_name=name, features=features,
-                    registry=self.registry, decision_time=time(16), taus=self.taus,
+                    registry=self.registry, decision_time=live.DECISION, taus=self.taus,
                     minimum_history=live.MINIMUM_HISTORY, refit_every=live.REFIT_EVERY,
                     end=target, horizon=h,
                 )
@@ -1194,7 +1196,7 @@ class BaselineAgreementTests(unittest.TestCase):
             train_end = got["train_end"]
             report_train_end = report.folds[-1].train_end
             self.assertEqual(train_end, report_train_end)
-            rule = InformationRule(self.registry, ("spread_bps",), decision_time=time(16), horizon=h)
+            rule = InformationRule(self.registry, ("spread_bps",), decision_time=live.DECISION, horizon=h)
             targets_full = onset.LeapTargets(self.rows, rule, onset.LEAP_JUMP_BP[h])
             for kind in live.LEAP_TARGETS:
                 expected = {
@@ -1257,8 +1259,8 @@ class DistributionAgreementTests(unittest.TestCase):
         final = _script("final_test_preregistration")
         argv = [str(cls.short) if part == "PUB.csv" else part for part in final.CRPS_COMMAND]
         argv[argv.index("--end") + 1] = cls.targets[0].isoformat()
-        # The final test is made at 18:00 since #1312, and the live record still at the instant it pins (16:00) until
-        # step 2 of that directive moves it: the agreement is the live script's own decision time against `compare`'s.
+        # The final test and the live record are both made at 18:00 (#1312, #1368): the agreement is the live script's own
+        # decision time against `compare`'s.
         argv[argv.index("--decision-time") + 1] = live.DECISION.isoformat(timespec="minutes")
         argv[argv.index("--report") + 1] = str(Path(cls.tmp) / "compare.json")
         with contextlib.redirect_stdout(io.StringIO()):

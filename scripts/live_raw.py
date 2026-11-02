@@ -48,14 +48,16 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
+from repo_model import decision_instant  # noqa: E402
 from repo_model.data import verify_daily_panel  # noqa: E402
 
 RAW_DIR = "raw"
 INDEX = "index.json"
 MANIFEST_SUFFIX = ".manifest.json"
 PROVENANCE_SUFFIX = ".provenance.json"
-#: The outcome panel is built with the columns and decision time `live_record.build` builds with.
-DECISION_TIME = "16:00:00"
+#: The outcome panel is built with the columns and decision time `live_record.build` builds with: the instant in force
+#: (`repo_model.decision_instant`, 18:00 since #1312), unless the day's record declares another (`decision_time_for_day`).
+DECISION_TIME = decision_instant.DECISION_TIME_SECONDS_TEXT
 RAW_DAY = re.compile(r"^\d{4}-\d{2}-\d{2}(-[a-z]+)?$")
 
 
@@ -263,18 +265,37 @@ def verify_records(archive_dir: Path, live_dir: Path) -> dict:
     return {"archived": archived, "unarchived": unarchived}
 
 
-def build_argv(raw_root: Path, panel: Path, cutoff: str) -> list:
-    """`repo_model.cli build`'s arguments: the live record's columns and decision time."""
+def decision_time_for_day(live_dir, day: date):
+    """The decision time the live record of `day` declares, or `None` if the log holds no record of that day.
 
+    A day logged at 16:00 is a record of that instant (the amendment of 29 October 2026): its outcome panel is built at
+    16:00, not at the instant in force. `live_dir` is the `live-log` checkout (records in `live/YYYY-MM-DD.json`).
+    """
+
+    if live_dir is None:
+        return None
+    path = Path(live_dir) / "live" / f"{day.isoformat()}.json"
+    if not path.is_file():
+        return None
+    return _script("live_record").declared_decision_time(json.loads(path.read_text(encoding="utf-8")))
+
+
+def build_argv(raw_root: Path, panel: Path, cutoff: str, decision_time=None) -> list:
+    """`repo_model.cli build`'s arguments: the live record's columns and decision time.
+
+    `decision_time` (a `datetime.time`) is the instant the day's record declares; left out, it is the instant in force.
+    """
+
+    text = DECISION_TIME if decision_time is None else decision_time.isoformat(timespec="seconds")
     live = _script("live_record")
     argv = ["build", "--raw-root", str(raw_root), "--output", str(panel),
-            "--build-cutoff", cutoff, "--decision-time", DECISION_TIME]
+            "--build-cutoff", cutoff, "--decision-time", text]
     for column in live.BUILD_COLUMNS:
         argv += ["--column", column]
     return argv
 
 
-def build_panel(archive_dir: Path, day: date, panel: Path, label=None) -> dict:
+def build_panel(archive_dir: Path, day: date, panel: Path, label=None, decision_time=None) -> dict:
     """Build the outcome panel from one archived day, and write its provenance sidecar.
 
     The build cutoff is the latest retrieval time in the day: the build sees exactly what
@@ -290,13 +311,13 @@ def build_panel(archive_dir: Path, day: date, panel: Path, label=None) -> dict:
     with tempfile.TemporaryDirectory() as scratch:
         entries = restore_day(archive_dir, day, Path(scratch) / "raw", label)
         cutoff = max(datetime.fromisoformat(entry["retrieved_at"]) for entry in entries).isoformat()
-        argv = build_argv(Path(scratch) / "raw", panel, cutoff)
+        argv = build_argv(Path(scratch) / "raw", panel, cutoff, decision_time)
         out = io.StringIO()
         with contextlib.redirect_stdout(out):
             code = cli_main(argv)
         if code != 0:
             raise ValueError(f"repo_model.cli {' '.join(argv)} exited {code}")
-    shown = build_argv(Path("RAW_ROOT"), Path("PANEL"), cutoff)
+    shown = build_argv(Path("RAW_ROOT"), Path("PANEL"), cutoff, decision_time)
     sidecar = {
         "raw_day": _name(day, label),
         "build_command": "PYTHONPATH=src python3 -m repo_model.cli " + shlex.join(shown),
@@ -367,6 +388,8 @@ def main(argv=None) -> int:
     panel.add_argument("--day", required=True)
     panel.add_argument("--panel", required=True, type=Path)
     panel.add_argument("--label", default=None)
+    panel.add_argument("--live-dir", type=Path, default=None,
+                       help="the live-log checkout: build at the instant the day's record declares, if it has one")
     args = parser.parse_args(argv)
     if args.command == "archive":
         path = archive_day(args.raw_root, args.out_dir, date.fromisoformat(args.day), args.label)
@@ -380,7 +403,9 @@ def main(argv=None) -> int:
             out["records"] = verify_records(args.archive_dir, args.live_dir)
         print(json.dumps(out))
     else:
-        sidecar = build_panel(args.archive_dir, date.fromisoformat(args.day), args.panel, args.label)
+        day = date.fromisoformat(args.day)
+        sidecar = build_panel(args.archive_dir, day, args.panel, args.label,
+                              decision_time_for_day(args.live_dir, day))
         print(json.dumps({"panel": str(args.panel), "panel_sha256": sidecar["panel_sha256"]}))
     return 0
 
