@@ -35,6 +35,7 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import Dict, List, Mapping, NamedTuple, Optional, Sequence, Tuple
 
+from .decision_instant import DECISION_TIME
 from . import contract
 from .asof import InformationRule
 from .contract import (
@@ -252,7 +253,7 @@ def as_of_rows(
     *,
     leads: Sequence[int],
     scored: Sequence[int],
-    decision_time: time = time(16, 0),
+    decision_time: time = DECISION_TIME,
 ) -> Dict[int, Dict[str, List[int]]]:
     """For each lead and column, the latest row public at the decision instant of each scored row.
 

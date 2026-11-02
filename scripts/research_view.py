@@ -10,6 +10,9 @@ Read by `scripts/emit_visual.py`. Everything shown is parsed from tracked source
   tracked file that shows it and the merged pull request) and each hypothesis's phase on the plan's six-step scale.
   A log entry's step is the step of the hypothesis's own manual, so it never sets the phase.
 - `docs/research/taglines.json`: each hypothesis's one plain-language line, the only part of it shown unfolded (#893).
+- `docs/research/summary.json`: the executive summary's plain wording, the two aims and one line per critical-path link
+  (#1352). The summary is for a reader who may not know the repo market: it names no hypothesis, link, milestone,
+  issue or file (`INTERNAL`).
 
 Nothing is typed into the page. A figure with no source reads "not measured"; a figure from development days
 carries the label `DEV_LABEL`. Standard library only.
@@ -35,6 +38,7 @@ LOG = "docs/research/log"
 PROGRESS = "docs/research/milestones.json"
 HYPOTHESES = "docs/research/hypotheses"
 TAGLINES = "docs/research/taglines.json"
+SUMMARY = "docs/research/summary.json"
 REGISTER = provisional_register.REGISTER
 #: The committed records the development standings are read from (#1020): the step 4 record names the candidate; the
 #: #960 score holds the paired grid-CRPS figures, and its declaration says how the intervals were drawn.
@@ -47,7 +51,7 @@ CANDIDATE = "docs/research/h5-candidate.json"
 CANDIDATE_SCORES = "docs/research/state-calendar-1145/result.json"
 #: Every source the page is built from: the one list a new input is added to (#1059). `LOG` and `HYPOTHESES` are
 #: directories; `input_files` expands them, and `emit_visual.py` stamps the page with the digest of each.
-INPUTS = (PLAN, LOG, PROGRESS, HYPOTHESES, TAGLINES, REGISTER, STEP4, STANDINGS, STANDINGS_DECLARATION,
+INPUTS = (PLAN, LOG, PROGRESS, HYPOTHESES, TAGLINES, SUMMARY, REGISTER, STEP4, STANDINGS, STANDINGS_DECLARATION,
           CANDIDATE, CANDIDATE_SCORES)
 
 DEV_LABEL = "development, not a verdict"
@@ -318,40 +322,71 @@ def lowered(tagline):
     return text if (first.isupper() and len(first) > 1) or any(c.isdigit() for c in first) else text[:1].lower() + text[1:]
 
 
-def summary_html(hypotheses, links):
-    """The executive summary as an abstract (#893): prose, the goals and every hypothesis named in running text.
+#: What the executive summary never shows (#1352): a hypothesis, critical-path link or milestone id, an issue number, a
+#: file in the repository, or code. The page is for a reader, not for the project.
+INTERNAL = re.compile(r"\bH\d+\b|\bCP\d+\b|\bM\d+[a-z]?\b|#\d+|<code>|\b(?:docs|metadata|scripts)/|\.(?:json|md|py)\b")
 
-    No table and no list: where each hypothesis stands is in its own fold in section 2.
+
+def load_summary(repo, hypotheses, links):
+    """The plain wording of `SUMMARY`: an aim for each goal of the plan and a line for each critical-path link.
+
+    Refused when a goal or a link has no line, or a line names something internal (`INTERNAL`).
+    """
+    data = json.loads(read(repo, SUMMARY))
+    aims, nexts = data.get("aims", {}), data.get("next", {})
+    for h in hypotheses:
+        if h["role"] and not str(aims.get(h["id"], "")).strip():
+            raise ResearchError(f"{SUMMARY}: the {h['role']} goal {h['id']} has no plain aim")
+    for link in links:
+        if not str(nexts.get(link["milestone"], "")).strip():
+            raise ResearchError(f"{SUMMARY}: the critical-path link {link['id']} ({link['milestone']}) has no plain line")
+    for key, text in list(aims.items()) + list(nexts.items()):
+        if INTERNAL.search(text):
+            raise ResearchError(f"{SUMMARY}: the line for {key} names something internal: {text!r}")
+    return aims, nexts
+
+
+def summary_html(hypotheses, links, aims, nexts):
+    """The executive summary (#893, #1352): plain prose for a reader who may not know the repo market.
+
+    It says what the project forecasts, its two aims, whether any conclusion has been reached and what comes next, in
+    the words of `SUMMARY`. No table, no list, and nothing internal (`INTERNAL`): where each hypothesis stands is in
+    its own fold in section 2.
     """
     goals = sorted((h for h in hypotheses if h["role"]), key=lambda h: h["role"] != "primary")
-    others = [h for h in hypotheses if not h["role"]]
-    goal_text = " ".join(
-        f'<b>{esc(h["role"].capitalize())} goal</b> ({ref(h)}): {inline(lowered(h["tagline"]))}.' for h in goals)
+    named = {"primary": "The main aim is", "secondary": "The second is"}
+    aim_text = " ".join(f'{named[h["role"]]} {esc(aims[h["id"]].rstrip("."))}.' for h in goals)
     reached = verdicts(hypotheses)
-    verdict_text = ("none yet" if not reached else "; ".join(f'{ref(h)}, {esc(h["status"])}' for h in reached))
-    nexts = {}
+    if reached:
+        verdict_text = ("<b>Conclusions so far.</b> " + " ".join(
+            f'{esc(h["status"].capitalize())}: {esc(lowered(h["tagline"]))}.' for h in reached)
+            + " Every other question is still open.")
+    else:
+        verdict_text = "<b>No conclusions yet.</b>"
+    nexts_by_link = {}
     for h in goals:
         opened = next((l for l in links if h["id"] in l["gates"] and not l["done"]), None)
         if opened:
-            nexts.setdefault(opened["id"], (opened, []))[1].append(h["id"])
-    next_text = " ".join(
-        f'For {"both goals" if len(gated) == len(goals) > 1 else joined(gated)} it is {link["id"]} '
-        f'({link["milestone"]}), {inline(lowered(link["text"]))}, which waits on {inline(link["waits"].rstrip("."))}.'
-        for link, gated in nexts.values())
+            nexts_by_link.setdefault(opened["id"], (opened, []))[1].append(h)
+    aim_name = {"primary": "the main aim", "secondary": "the second"}
+    clauses = [
+        (f'For {"both aims" if len(gated) == len(goals) > 1 else joined(aim_name[h["role"]] for h in gated)}, '
+         f'the next step is to {esc(nexts[link["milestone"]].rstrip("."))}')
+        for link, gated in nexts_by_link.values()]
+    next_text = ("<b>What comes next.</b> " + "; ".join(clauses) + ".") if clauses else ""
     return (
         '<div class="abstract">'
-        '<p>This study forecasts the overnight cost of borrowing cash against U.S. Treasuries, measured as SOFR '
-        f'minus the Fed&rsquo;s rate on reserves, and asks what drives it. It has two goals. {goal_text} '
-        f'{joined([ref(h) for h in others])} support those goals or follow from them; section 2 gives each one '
-        'line, with its step, tests and milestones folded beneath it.</p>'
-        f'<p><b>Verdicts reached:</b> {verdict_text}. A verdict needs prospective confirmation days; development '
-        'data never gives one '
-        '(<a href="https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/scoring-protocol.md">'
-        'scoring protocol v1</a>). Every figure from development days below is marked '
-        f'&ldquo;{esc(DEV_LABEL)}&rdquo;, and one from a model that did not read calendar days at the target day is '
-        f'also marked &ldquo;{esc(PROVISIONAL_LABEL)}&rdquo; until it is re-run. <b>Next on the critical path.</b> {next_text}</p>'
-        '<p class="rs-note">The next link is the first in the plan&rsquo;s &ldquo;Critical path&rdquo; section that '
-        'gates the goal and whose milestone is not marked done in <code>docs/research/milestones.json</code>.</p>'
+        '<p>This project forecasts the overnight cost of borrowing cash against U.S. Treasury securities, measured '
+        'as the spread between SOFR, the benchmark rate for those loans, and IORB, the rate the Federal Reserve pays '
+        'banks on the reserves they hold with it, and asks what drives that spread. It has two aims. '
+        f'{aim_text} The other research questions in section 2 support those aims or follow from them; each has one '
+        'line there, with its details folded beneath it.</p>'
+        f'<p>{verdict_text} A conclusion can come only from forecasts made in advance and then checked against what '
+        'happened; tests on past data help build and choose a model but never settle the question. Figures '
+        f'from those tests are marked &ldquo;{esc(DEV_LABEL)}&rdquo;. A figure from a model that did not yet read the '
+        'calendar on the day it forecasts (quarter-ends, tax dates, Treasury settlements) is also marked '
+        f'&ldquo;{esc(PROVISIONAL_LABEL)}&rdquo; until it is re-run.</p>'
+        + (f'<p>{next_text}</p>' if next_text else '') +
         '</div>')
 
 
@@ -376,7 +411,7 @@ CANDIDATE_GROUPS = (("pooled", "all decision days", "all decision days"), ("targ
 CANDIDATE_SPLITS = (("regime", "by regime"), ("target_day_type", "by target-day type"))
 #: What the page calls each evidence page of the candidate record: the page is for a lay reader, so no issue number.
 EVIDENCE_NAMES = {1145: "state-scaled calendar study", 1115: "calendar-terms study",
-                  1141: "walk-forward calibration study", 1255: "SRF-capped candidate study"}
+                  1141: "walk-forward calibration study", 1255: "SRF-capped candidate study", 1288: "announced-settlement study"}
 SPLIT_BENCHMARKS = (("B1", "B1"), ("B1_prime", "B1&prime;"))
 
 
@@ -740,7 +775,8 @@ def payload(hypotheses):
 def fills(repo, final):
     hypotheses = load(repo)
     links = load_critical_path(repo, hypotheses)
+    aims, nexts = load_summary(repo, hypotheses, links)
     incumbent = provisional_register.marks_incumbent(provisional_register.load(repo))
-    return {"research_summary": summary_html(hypotheses, links), "research_best": best_html(final, incumbent, standings(repo)),
+    return {"research_summary": summary_html(hypotheses, links, aims, nexts), "research_best": best_html(final, incumbent, standings(repo)),
             "research_steps": steps_html(),
             "research_hypotheses": hypotheses_html(hypotheses)}, payload(hypotheses)

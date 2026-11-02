@@ -1,0 +1,62 @@
+{
+ "status": "declared by the pull request that closes #1265 before any score was computed; a development study, never a verdict. (s3c) stays the H5 candidate until Eleonora rules on the result. Nothing is registered or published: no record in docs/runs/ is edited, the live record and its pin do not change, no declaration already merged changes, docs/research/h5-candidate.json, `gbm_funding`'s declaration, `scripts/final_test_preregistration.py` and metadata/sources.json do not change, no day after 2026-09-03 is read and no lockbox day is scored. Amendments made after a number was computed are listed in `amendments`; there are none.",
+ "issue": 1265,
+ "findings": [1261, 1264],
+ "ledger": "item 62 on #1116",
+ "ruling": "Eleonora, 27 October 2026, about 1:15 pm ET, chat, relayed on #1265: option 1 on finding #1261, which takes in avenue #1264.",
+ "hypothesis": "H5 (primary goal): the SOFR - IORB spread distribution in bp. Step 3, the candidate (s3c). Development tier",
+ "target": "spread_bps at the scored day, in basis points, as a 23-quantile distribution at each lead h = 1..5 (scoring_protocol.GRID)",
+ "why": "at full allotment (s3c) caps every quantile at the SRF line (IORB + 10 bp, margin 0), and the event is read as 1 - F(10.5), so P(SOFR - IORB > +10 bp) is at most about 1% and exactly 0 when q97.5 and q99 sit on the line. SOFR closed above the line on 26, 29 and 31 December 2025 (+11, +12 and +22 bp; #1252). Decision days 24 to 30 December 2025 fall in neither of #1255's scored windows.",
+ "candidate": {
+  "name": "sc_s3c_turn",
+  "label": "(s3c-t)",
+  "definition": "(s3c) with the cap off on turn days: on a target day whose reporting type is `year_end`, `quarter_end_turn` or `turn` the quantiles are (s3)'s, unclipped; on every other day (s3c) exactly (cap at the line at full allotment, margin 0 bp, (s3) itself before full allotment). A transform of (s3)'s forecast quantiles after the walk; it fits nothing",
+  "module": "repo_model.s3c_turn_cap (is_turn, capped_quantiles); the cap, the line and the full-allotment flag are repo_model.s3c_candidate's and repo_model.srf_line's, unchanged",
+  "turn_day": "the reporting type of the target day under the day types in force: turn_days.reporting_day_type, read at the target day from the date and the market holiday table, as the calendar columns are (asof rule 2). A label that is not one of turn_days.LABELS raises ValueError, never read as 'not a turn'; the legacy reading (--legacy-day-types) is not offered",
+  "pairs": "direct: (s3) reads the calendar columns at the target day with training_pairs = 'direct' (as in #1255); the provisional-register row is metadata/provisional/cleared/s3c_turn_cap_1265.json",
+  "margin_bp": 0.0
+ },
+ "frame": {
+  "decision_days": "every decision day from 2025-12-10 whose five targets all fall on or before 2026-09-03 (the near-blind tier open since GO #151, metadata/lockbox.json), in one contiguous frame, so that 24 to 30 December 2025 are scored. The walk of (s3) is the one of #1229 and #1255 (all decision days from the start of the panel, refit every 21 decision days, direct pairs), so (s3) is the same forecast on a day both studies score; only the days scored differ",
+  "guards": "a scored decision day or target day passes lockbox.require_unlocked through spread_mean_reversion_686.require_scored_days with the last day 2026-09-03; the blind tier (from 2026-09-04) and every lockbox day are refused",
+  "reproduction": "(s3), (s3c), B1, B1' and B2 on the decision days from 2025-12-31 are #1255's 2026 window exactly; the pooled means on those days are compared with docs/research/s3c-candidate-1255/result.json and the difference stated on the page"
+ },
+ "arms": [
+  {"name": "sc_s3_robust", "role": "(s3) of #1145; reference", "margin_bp": null},
+  {"name": "sc_s3c", "role": "(s3c), the H5 candidate; reference", "margin_bp": 0.0},
+  {"name": "sc_s3c_turn", "role": "(s3c-t), (s3c) with the cap off on turn days", "margin_bp": 0.0}
+ ],
+ "models": ["B1", "B1_prime", "B2", "sc_s3_robust", "sc_s3c", "sc_s3c_turn"],
+ "primary": {
+  "metric": "grid CRPS (23 levels) averaged over leads h = 1..5",
+  "key_secondary": "upper-tail twCRPS (weight 1{z > 0 bp})",
+  "pressure_probability": "the Brier score of P(spread > +5 bp) and of P(spread > +10 bp) (docs/decisions/pressure-probability.md), each probability read off the 23 quantiles as 1 - F(floor(tau) + 0.5), F linear between them (spread_mean_reversion.exceedance), the event strict and on whole basis points (data.exceeds_bp)",
+  "comparisons": "(s3), (s3c) and (s3c-t) paired with each other and against B1, B1' and B2"
+ },
+ "scoring": {
+  "scorer": "repo_model.scoring_protocol (#655), the development tier: no verdict, no registration",
+  "test": "scoring_protocol.paired_tests, the studentized stationary bootstrap (ruling 1), mean block 10 business days, 10,000 draws, seed 1265, two-sided 90% interval (the lower end is the one-sided 95% bound); the skill interval and the studentized interval on mean d are reported for every tested row; where the studentized bound cannot be computed the unstudentized percentile interval of mean d is given beside it, with no reading taken from it",
+  "reading": "a reading is taken from the mean-d bound (her ruling on #1009): the later arm is read better than a reference when the lower end of the 90% interval of mean d is above zero, worse when the upper end is below zero, otherwise undecided. Lens C's caveat (the lag-10 HAC standard error is understated about 2x after 2020) is stated on the page",
+  "splits": "pooled; by lead; by turn day and other days (the target day's reporting type is a turn or not); by pressure-day type of the target day; by target month; the decision days of 24 to 30 December 2025 (means only: a group of fewer than 20 days is listed and not tested). The intervals of a group of target days keep the current method (the group's days, scattered, resampled in date order as if consecutive), which #1221 questions and #1228 will decide",
+  "identical_groups": "a group in which an arm's score equals the reference's on every day is listed as identical and not tested against it",
+  "seed": 1265
+ },
+ "event_list": "every target day in the scored frame on which SOFR - IORB closed above +5 bp or above +10 bp (strict, whole basis points), with the realised spread, the day's reporting type, and each model's P(> +5) and P(> +10) at each lead h = 1..5 whose decision day is scored, as docs/decisions/pressure-probability.md lists events. The counts of positive days and cells are in result.json",
+ "bounds_check": "the highest P(> +10 bp) of (s3c) over the cells at full allotment, and the number of cells where it is exactly 0, reported with the same figures for (s3) and (s3c-t), so that the page states (s3c)'s bound from the figures",
+ "reading_rules": [
+  "A figure is a check on days that were already seen. Nothing here is a verdict, nothing is registered and no choice is made on it; (s3c) stays the candidate until she rules on the result.",
+  "A gain or loss is read from the 90% interval of mean d excluding zero; otherwise undecided. A point estimate alone is not read.",
+  "A pooled figure is never read without the turn-day, other-day and month splits beside it. The pressure figures rest on few days; the page states the counts.",
+  "The page says plainly: at full allotment (s3c) gives P(> +10 bp) of at most about 1% by construction, and 0 when the upper quantiles sit on the line.",
+  "The page ends with marked questions for Eleonora with numbered options and defaults that change no claim."
+ ],
+ "limits": {
+  "last_day": "2026-09-03",
+  "named_candidate": "unchanged; docs/research/h5-candidate.json is not changed",
+  "preregistration": "scripts/final_test_preregistration.py is not touched; test_final_test_freeze and test_live_score_freeze are run before the push",
+  "allow_list": "repo_model.one_step_guard.ONE_STEP_ALLOW_LIST is not changed",
+  "sources": "metadata/sources.json is not changed; no declaration already merged is changed; docs/runs/ is not touched"
+ },
+ "long_run": "cloud; one walk of (s3) over the whole panel (minutes) and the paired tests of three arms against five references on about a dozen groups and four metrics (the longer part; #1255's, with one candidate on two windows, was well under two hours on 4 cores). If the measured time says otherwise, the run goes to the Mac as a `needs-mac:` comment",
+ "amendments": []
+}

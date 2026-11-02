@@ -159,7 +159,7 @@ def question_block(emit):
         "headline forecast is the <strong>chance that the gap is more than %s basis points</strong>. A basis point "
         "is a hundredth of one percentage point. It uses public data only, and only what was public at %s on the "
         "day before the forecast. The public data runs from %s to %s.</p>"
-        % (" and more than ".join("%d" % tau for tau in taus), _e(_clock(manifest["decision_time"])),
+        % (" and more than ".join("%d" % tau for tau in taus), _e(_clock(emit.require(emit.load(emit.PERSISTENCE), "declaration", "decision_time"))),
            _e(manifest["start_date"]), _e(manifest["end_date"])),
         '<p class="src">Where this comes from: %s, %s, and %s.</p>' % (
             _link("metadata/stress_thresholds.json"), _link("metadata/funding_panel_manifest.json"),

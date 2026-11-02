@@ -67,21 +67,21 @@ PYTHONPATH=src python3 -m repo_model.cli audit data/sample/daily_market.csv
 PYTHONPATH=src python3 -m repo_model.cli backtest data/sample/daily_market.csv \
   --registry metadata/sources.json \
   --feature spread_bps \
-  --decision-time 16:00 \
+  --decision-time 18:00 \
   --model persistence \
   --report /tmp/persistence_sample.json
 PYTHONPATH=src python3 -m repo_model.cli compare data/sample/daily_market.csv \
   --registry metadata/sources.json \
   --model-a persistence --feature-a spread_bps \
   --model-b arx --feature-b spread_bps --feature-b sofr_volume \
-  --decision-time 16:00 \
+  --decision-time 18:00 \
   --report /tmp/compare_sample.json
 PYTHONPATH=src python3 -m repo_model.cli exceedance-backtest \
   --panel data/sample/daily_market.csv \
   --thresholds metadata/stress_thresholds.json \
   --registry metadata/sources.json \
   --feature spread_bps \
-  --decision-time 16:00 \
+  --decision-time 18:00 \
   --model climatology \
   --report /tmp/climatology_sample.json
 ```
@@ -240,7 +240,7 @@ PYTHONPATH=src python3 -m repo_model.cli build \
   --raw-root tests/fixtures/snapshots/funding_inputs \
   --output /tmp/funding_panel.csv \
   --build-cutoff 2026-09-08T21:31:42+00:00 \
-  --decision-time 16:00:00
+  --decision-time 18:00:00
 PYTHONPATH=src python3 -m repo_model.cli verify-panel /tmp/funding_panel.csv \
   --manifest metadata/funding_panel_manifest.json
 PYTHONPATH=src python3 -m repo_model.cli backtest /tmp/funding_panel.csv \
@@ -254,6 +254,11 @@ PYTHONPATH=src python3 -m repo_model.cli backtest /tmp/funding_panel.csv \
   --end 2025-12-31 \
   --report /tmp/persistence_funding.json
 ```
+
+The build's decision time is 18:00 since the amendment of 29 October 2026 (#1312), and the panel's bytes and digest are the
+same at 18:00 as at 16:00. The third command is the published persistence record's own and keeps its 16:00: that record was
+made at 16:00 and stands as a record of that instant, and `scripts/reproduce_milestone_a.py` rebuilds it at the instant it
+declares.
 
 The third command scores only through `--end`. While the near-blind tier was locked a run
 on this panel needed it: without it the run reached 2026-01-01 and exited 2 naming the

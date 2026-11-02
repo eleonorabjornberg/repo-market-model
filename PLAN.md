@@ -24,8 +24,9 @@ with Eleonora (from 13 October 2026; Nicholas Beroud, the project's advisor, has
 the model, methodology and workflow, engineering and evaluation decisions rest with the author.
 
 Initial forecast horizon: next business day, later extended to five business days
-and intraday nowcasting. "Next business day" means a forecast made at 16:00 on the
-business day before; the as-of information rule (`docs/decisions/information-set.md`),
+and intraday nowcasting. "Next business day" means a forecast made at 18:00 New York time on the
+business day before (16:00 until the amendment of 29 October 2026, #1312, drafted for her review; every record published before it
+was made at 16:00); the as-of information rule (`docs/decisions/information-set.md`),
 which reads each input at its latest value public at that instant, is being implemented.
 Every record published before it read each input about a week earlier
 (`docs/pivot/lag-assessment.md`).

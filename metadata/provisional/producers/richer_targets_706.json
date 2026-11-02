@@ -3,8 +3,8 @@
   "declarations": [
     "metadata/richer_targets_706.json"
   ],
-  "model": "candidate (b) of #634 fitted on each richer target",
-  "calendar_inputs": "tax_date, treasury_settlement and the announced-IORB columns of `new_features(h)`",
-  "pairing": "one_step",
+  "model": "candidate (b) of #634 fitted on each richer target: on one-step pairs in #774 (the result below), on direct pairs since #932",
+  "calendar_inputs": "tax_date, treasury_settlement and the announced-IORB columns of `new_features(h)` (from the target row on the direct walks)",
+  "pairing": "one_step+direct",
   "class": "a+b"
 }

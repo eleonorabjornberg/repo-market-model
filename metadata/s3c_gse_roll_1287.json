@@ -1,0 +1,112 @@
+{
+ "status": "declared by the pull request that closes #1287 before any score was computed; a development study, never a verdict. (s3c) stays the H5 candidate until Eleonora rules on the result. Nothing is registered or published: no record in docs/runs/ is edited, the live record and its pin do not change, no declaration already merged changes (metadata/s3c_gse_1274.json and #1277's page are not edited), docs/research/h5-candidate.json, `gbm_funding`'s declaration, `scripts/final_test_preregistration.py`, metadata/sources.json and repo_model.one_step_guard.ONE_STEP_ALLOW_LIST do not change, no day after 2026-09-03 is read and no lockbox day is scored. Amendments made after a number was computed are listed in `amendments`; there are none.",
+ "issue": 1287,
+ "ledger": "item 70 on #1116",
+ "ruling": "Eleonora, 28 October 2026, about 11:20 am ET, chat, relayed on #1285 and #1287: test finding #1285 (option 2 of the 5 pm brief): a development re-run of the GSE ramp with the payment-day roll, beside (s3c-gse) of #1274 (PR #1277), which is re-run unchanged as the control. The result page, the log entry and the pull request cite no source for the idea beyond her ruling and compare with no outside figure.",
+ "hypothesis": "H5 (primary goal): the SOFR - IORB spread distribution in bp. Step 3, an arm on the candidate (s3c). Development tier",
+ "target": "spread_bps at the scored day, in basis points, as a 23-quantile distribution at each lead h = 1..5 (scoring_protocol.GRID)",
+ "why": "In (s3c-gse) (#1274, PR #1277) the ramp is tied to the calendar 25th. In 37 of 98 months (July 2018 to August 2026) the 25th is not a business day: the agencies pay on the next business day, which reads 0 there, and the ramp peaks on the day before.",
+ "candidate": {
+  "name": "sc_s3c_gse_roll",
+  "label": "(s3c-gse-roll)",
+  "definition": "(s3c-gse) with the payment-day roll: the same ramp, (d - 18) / 7 on day d from the 19th to the 25th, except that when the 25th is not a business day (a weekend, or a day in the market holiday table, `repo_model.data.market_holidays()`) the 25th's value (7/7, i.e. 1) is read on the payment day, the first business day after the 25th, and the days before keep their own date's value. A day after the payment day reads 0. When the 25th is a business day the term is (s3c-gse)'s. Every other term, the Huber fit, the ridge of 5, the direct pairs and the SRF cap at full allotment (margin 0 bp) are (s3c)'s and stay as they are. The rule is declared before any score and is not tuned",
+  "module": "repo_model.s3c_gse_roll (payment_day, roll_ramp, RollTermTable, moved_days): spread_mr_calendar.TermTable with the slot of `dom_19_23` holding the rolled ramp at every lead and every other term the base class's; the arm is repo_model.spread_mr_state_calendar.ARMS[2] (s3) unchanged, walked on that table; the cap is repo_model.s3c_candidate.capped_quantiles, unchanged",
+  "read_at": "the target day, from the target row's own date and the market holiday table alone (public in advance; no outcome and no other input), on direct pairs: TermTable.read serves the row decision_index + lead, as it serves every calendar column (asof rule 2); training pairs are read from their own target rows (training_pairs = 'direct')",
+  "days_the_roll_moves": "the term differs from (s3c-gse)'s on the payment days of the months whose 25th is not a business day, and nowhere else (the 25th itself has no row in such a month): one target day per such month. The study reports how many target days that is in each window, and how many months of the 98 (July 2018 to August 2026); the count of #1285 is 37",
+  "count_of_the_term": "as in #1274: a term enters a lead's fit when MIN_FLAGGED (3) training pairs carry it, counted as a sum of the term's values; the page labels the sums it quotes",
+  "pairs": "direct: (s3) reads the calendar columns at the target day with training_pairs = 'direct' and fit_state_terms is guarded by one_step_guard with no allow-list entry; the provisional-register row is metadata/provisional/cleared/s3c_gse_roll_1287.json",
+  "margin_bp": 0.0
+ },
+ "frame": {
+  "windows": [
+   {
+    "name": "development",
+    "label": "the development window of #1145, #1241 and #1255",
+    "frame": "#1241's frame (scripts/srf_cap_1241.py build_frame): decision days whose five targets fall on or before 2025-12-31 (spread_mean_reversion_686.LAST_DAY), (s3) refit every 21 decision days, with B1, B1' and B2; built by #1255's `build` as it stands"
+   },
+   {
+    "name": "2026",
+    "label": "the 2026 development days of #1229, #1252 and #1255",
+    "frame": "#1229's frame (scripts/s3_2026_check_1222.py build_frame): decision days whose five targets all fall from 2026-01-02 to 2026-09-03 (the near-blind tier open since GO #151, metadata/lockbox.json); built by #1255's `build` as it stands. The blind tier (from 2026-09-04) and every lockbox day are refused: a scored decision day or target day passes lockbox.require_unlocked through spread_mean_reversion_686.require_scored_days with the last day 2026-09-03",
+    "seen_before": "these days were already seen by #845, the #151 final test, #1229, #1252 and #1255. This is a check, not evidence for a verdict or a choice"
+   }
+  ],
+  "ramp_walk": "(s3) is walked three times over every decision day from the start of the panel to the last day with five targets on or before 2026-09-03, refit every 21 decision days, direct pairs: on the base table (the reproduction of the frames), on the (s3c-gse) table (the control) and on the (s3c-gse-roll) table; a window takes the walk's forecasts on its own decision days",
+  "reproduction": "(s3) on the base table must equal the frames' own (s3) on every scored decision day of both windows, cell for cell: the script refuses to write a record otherwise. The control's pooled means, and (s3), (s3c), B1, B1' and B2, are compared with docs/research/s3c-gse-1274/result.json and the difference stated"
+ },
+ "arms": [
+  {
+   "name": "sc_s3_robust",
+   "role": "(s3) of #1145; reference",
+   "margin_bp": null
+  },
+  {
+   "name": "sc_s3c",
+   "role": "(s3c), the H5 candidate; reference",
+   "margin_bp": 0.0
+  },
+  {
+   "name": "sc_s3c_gse",
+   "role": "(s3c-gse) of #1274, re-run unchanged; the control",
+   "margin_bp": 0.0
+  },
+  {
+   "name": "sc_s3c_gse_roll",
+   "role": "(s3c-gse-roll), the GSE ramp with the payment-day roll",
+   "margin_bp": 0.0
+  }
+ ],
+ "models": [
+  "B1",
+  "B1_prime",
+  "B2",
+  "sc_s3_robust",
+  "sc_s3c",
+  "sc_s3c_gse",
+  "sc_s3c_gse_roll"
+ ],
+ "primary": {
+  "metric": "grid CRPS (23 levels) averaged over leads h = 1..5",
+  "key_secondary": "upper-tail twCRPS (weight 1{z > 0 bp})",
+  "pressure_probability": "the Brier score of P(spread > +5 bp), the probability read off the 23 quantiles as 1 - F(floor(tau) + 0.5), F linear between them (spread_mean_reversion.exceedance), the event strict and on whole basis points (data.exceeds_bp)",
+  "comparisons": "(s3c-gse-roll) paired with (s3c-gse), (s3c) and (s3), and against B1, B1' and B2"
+ },
+ "scoring": {
+  "scorer": "repo_model.scoring_protocol (#655), the development tier: no verdict, no registration",
+  "test": "scoring_protocol.paired_tests, the studentized stationary bootstrap (ruling 1), mean block 10 business days, 10,000 draws, seed 1287, two-sided 90% interval (the lower end is the one-sided 95% bound); the skill interval and the studentized interval on mean d are reported for every tested row; where the studentized bound cannot be computed the unstudentized percentile interval of mean d is given beside it, with no reading taken from it",
+  "reading": "a reading is taken from the mean-d bound (her ruling on #1009): the arm is read better than a reference when the lower end of the 90% interval of mean d is above zero, worse when the upper end is below zero, otherwise undecided. Lens C's caveat (the lag-10 HAC standard error is understated about 2x after 2020) is stated on the page",
+  "splits": "per window: pooled; by lead; by regime of the target day (development window) or target month (2026); by pressure-day type of the target day (turn_days.reporting_day_type); the rolled payment days (the target days on which the roll changes the term) against the other days; and the days the changed term is non-zero (target days from the 19th to the payment day) against the others. A group of fewer than 20 days is listed and not tested (the rolled payment days of the 2026 window are fewer than 20; they are listed one by one with their scores). The intervals of a group of target days keep the current method (the group's days, scattered, resampled in date order as if consecutive), which #1221 questions and #1228 will decide; the page labels them so and reads no pressure-day type from them",
+  "identical_groups": "a group in which an arm's score equals the reference's on every day is listed as identical and not tested against it",
+  "seed": 1287
+ },
+ "coverage": {
+  "band": "the 90% band, q05 to q95 closed (state_calendar_1145.BANDS['b90']); the share of cells in which the realised spread lies inside it, for (s3c-gse-roll), (s3c-gse), (s3c) and (s3), pooled and by lead, with the stationary-bootstrap interval of s3_2026_check_1222 (cells in date order, mean block in cells as that script has it for a pooled or a lead group)"
+ },
+ "effect": {
+  "what": "the fitted effect of the changed term in bp, by regime: for (s3c-gse-roll) and for the control (s3c-gse), the ramp term's coefficient (standardised units) of the fit in use at the decision times the scale at the decision's anchor, per unit of the term, i.e. the shift on the payment day (the 25th for the control); for (s3), the same for the flat 19th-23rd flag. Reported as the mean over the scored (decision day, lead) cells of each regime of the target day, by lead and pooled over leads, with the share of cells whose fit holds the term and, for the cells whose target day carries the term, the mean shift actually applied"
+ },
+ "event_list": "none: the Brier score of P(> +5 bp) is reported pooled and split; the counts of positive days and cells are in result.json",
+ "reading_rules": [
+  "A figure is a check on days that were already seen. Nothing here is a verdict, nothing is registered and no choice is made on it; (s3c) stays the candidate until she rules on the result.",
+  "A gain or loss is read from the 90% interval of mean d excluding zero; otherwise undecided. A point estimate alone is not read.",
+  "A pooled figure is never read without the regime, pressure-day-type and rolled-payment-day splits beside it. The pressure figures rest on few days; the page states the counts.",
+  "The page cites no source for the idea beyond her ruling and compares with no outside figure.",
+  "The page ends with marked questions for Eleonora with numbered options and defaults that change no claim."
+ ],
+ "limits": {
+  "last_day": "2026-09-03",
+  "named_candidate": "unchanged; docs/research/h5-candidate.json is not changed, and neither is (s3c-gse)'s declaration (metadata/s3c_gse_1274.json) or #1277's page",
+  "preregistration": "scripts/final_test_preregistration.py is not touched; test_final_test_freeze and test_live_score_freeze are run before the push",
+  "allow_list": "repo_model.one_step_guard.ONE_STEP_ALLOW_LIST is not changed",
+  "sources": "metadata/sources.json is not changed; no declaration already merged is changed; docs/runs/ is not touched",
+  "not_scored": "gbm_funding, the calibration of the q95 and the bands beyond the 90% coverage above, and the Politis-White block are not part of this study"
+ },
+ "long_run": "cloud; three walks of (s3) over the whole panel (minutes each) and the paired tests of one arm against six references on about two dozen groups per window and three metrics (the longer part; #1274's, with five references, ran in well under two hours on 4 cores). If the measured time says otherwise, the run goes to the Mac as a `needs-mac:` comment",
+ "amendments": [],
+ "finding": "#1285",
+ "control": {
+  "name": "sc_s3c_gse",
+  "label": "(s3c-gse)",
+  "definition": "(s3c-gse) of #1274, re-run unchanged on the same frames in the same script run (repo_model.s3c_gse, scripts/s3c_gse_1274.py's walk and cap); its pooled means must equal docs/research/s3c-gse-1274/result.json, and the difference is stated"
+ }
+}

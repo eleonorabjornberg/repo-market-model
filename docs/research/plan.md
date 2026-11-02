@@ -42,7 +42,7 @@ on 17 October 2026 by directive [#891](https://github.com/eleonorabjornberg/repo
 - **Kill or fix:** any pre-registered check fails. Every registration is blocked until it passes.
 - **Next:** on pass, registrations may proceed. On fail, fix the scorer under the protocol's change control.
 - **Freeze (Eleonora, 20 October 2026, in chat, relayed):** H1 freezes on conditions, not on a date, once all of
-  these hold: [#1027](https://github.com/eleonorabjornberg/repo-market-model/issues/1027) has merged (the H5 candidate, (s3c) since 26 October 2026 ([#1259](https://github.com/eleonorabjornberg/repo-market-model/issues/1259))
+  these hold: [#1027](https://github.com/eleonorabjornberg/repo-market-model/issues/1027) has merged (the H5 candidate, (s3c-ann-net) since 29 October 2026 ([#1310](https://github.com/eleonorabjornberg/repo-market-model/issues/1310)), after (s3c) from 26 October ([#1259](https://github.com/eleonorabjornberg/repo-market-model/issues/1259))
   reads calendar days at the target day); [#878](https://github.com/eleonorabjornberg/repo-market-model/issues/878)'s
   calibration of the critical and futility values is re-run on that new candidate;
   [#1022](https://github.com/eleonorabjornberg/repo-market-model/issues/1022) and
@@ -59,7 +59,7 @@ on 17 October 2026 by directive [#891](https://github.com/eleonorabjornberg/repo
 
 ## H3. New public data adds signal
 
-- **Tests:** [#630](https://github.com/eleonorabjornberg/repo-market-model/issues/630), then [#708](https://github.com/eleonorabjornberg/repo-market-model/issues/708) (step 3; the nested development run against H5's candidate, now (s3c); queued).
+- **Tests:** [#630](https://github.com/eleonorabjornberg/repo-market-model/issues/630), then [#708](https://github.com/eleonorabjornberg/repo-market-model/issues/708) (step 3; the nested development run against H5's candidate, now (s3c-ann-net); queued).
 - **Kill:** no new series ranks above the held ones on ordinary days.
 - **Next:** on kill, the held data is the data. Otherwise register the sources that pass as nested tests on H5.
 - **Status:** open. Manual: [`hypotheses/H3.md`](hypotheses/H3.md).

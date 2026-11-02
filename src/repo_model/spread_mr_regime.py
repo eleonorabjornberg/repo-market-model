@@ -1,6 +1,6 @@
 """Calm and stress spells on (s3), the H5 candidate when this study ran (#1182; H5 step 3, fix: clustered misses; development tier).
 
-`metadata/regime_spells_1182.json` is the declaration; this module is its arithmetic. The base is (s3) of #1145 (since #1259 the H5 candidate is (s3c), which caps (s3); this study's base stays (s3))
+`metadata/regime_spells_1182.json` is the declaration; this module is its arithmetic. The base is (s3) of #1145 (since #1259 the H5 candidate was (s3c), which caps (s3), and since #1310 it is (s3c-ann-net), which reads (s3c)'s settlement terms from the auction announcement and sizes them by net settlement; this study's base stays (s3))
 (`repo_model.spread_mr_state_calendar`): `centre + scale(anchor) * (shift + z)`, with `z` the pool of the standardised residuals
 after the calendar terms. The clustering of the misses of its bands (#1153, #1175) is not about how fast the scale reacts, so
 this asks whether the market moves between calm and stress spells that one law cannot represent. Three arm kinds, each changing

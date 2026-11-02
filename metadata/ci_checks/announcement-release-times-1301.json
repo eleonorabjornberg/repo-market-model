@@ -1,0 +1,8 @@
+{
+  "command": [
+    "scripts/announcement_release_times_1301.py",
+    "check"
+  ],
+  "where": "suite",
+  "pre_review": false
+}

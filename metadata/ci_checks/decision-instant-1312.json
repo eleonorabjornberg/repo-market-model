@@ -1,0 +1,8 @@
+{
+  "command": [
+    "scripts/decision_instant_1312.py",
+    "check"
+  ],
+  "where": "suite",
+  "pre_review": false
+}

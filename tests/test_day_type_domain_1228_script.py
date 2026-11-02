@@ -67,7 +67,11 @@ class CommittedRecordTests(unittest.TestCase):
 
     def test_the_tracked_page_is_what_the_script_renders_from_the_tracked_record(self):
         record = json.loads(self.RECORD.read_text(encoding="utf-8"))
-        self.assertEqual(self.PAGE.read_text(encoding="utf-8"), script.render(record))
+        page = self.PAGE.read_text(encoding="utf-8")
+        # #1266: the page carries a dated note at the top saying it is superseded; the rest is what the script renders
+        if page.startswith("> Superseded on main by"):
+            page = page.split("\n", 2)[2]
+        self.assertEqual(page, script.render(record))
 
     def test_the_record_is_the_declared_full_run_and_reproduces_1196(self):
         record = json.loads(self.RECORD.read_text(encoding="utf-8"))

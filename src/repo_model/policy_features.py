@@ -52,6 +52,7 @@ from __future__ import annotations
 from datetime import date, datetime, time
 from typing import Dict, List, Mapping, Optional, Sequence, Tuple
 
+from .decision_instant import DECISION_TIME
 from .data import DailyObservation
 from .policy_events import PolicyEntry, load_register, policy_state, require_announced
 
@@ -148,7 +149,7 @@ def add_columns(
     rows: Sequence[DailyObservation],
     register: Optional[Sequence[PolicyEntry]] = None,
     *,
-    decision_time: time = time(16, 0),
+    decision_time: time = DECISION_TIME,
 ) -> List[DailyObservation]:
     """`rows` with the columns added, each read at its own row's decision instant.
 

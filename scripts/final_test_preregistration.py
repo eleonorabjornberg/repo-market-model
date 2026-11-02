@@ -43,7 +43,7 @@ both declarations):
   #151 opens the lockbox.
 
     PYTHONPATH=src python3 -m repo_model.cli build --raw-root tests/fixtures/snapshots/funding_inputs \\
-        --output PUB.csv --build-cutoff 2026-09-08T21:31:42+00:00 --decision-time 16:00:00
+        --output PUB.csv --build-cutoff 2026-09-08T21:31:42+00:00 --decision-time 18:00:00
     PYTHONPATH=src python3 scripts/pressure_v1_1.py panel --output V11.csv
     PYTHONPATH=src python3 scripts/early_warning_inputs.py panel --panel PUB.csv --output EW.csv
     OMP_NUM_THREADS=1 PYTHONPATH=src /opt/rmm-venv/bin/python scripts/final_test_preregistration.py candidate \\
@@ -79,6 +79,7 @@ sys.path.insert(0, str(REPO / "src"))
 from repo_model import baseline, lockbox, metrics, recalibration  # noqa: E402
 from repo_model import onset, probability_calibration as pc  # noqa: E402
 from repo_model.asof import InformationRule  # noqa: E402
+from repo_model.decision_instant import DECISION_TIME, DECISION_TIME_TEXT  # noqa: E402
 from repo_model.baseline import panel_sha256, rolling_exceedance_backtest  # noqa: E402
 from repo_model.data import audit_panel, exceeds_bp, load_daily_panel  # noqa: E402
 from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
@@ -93,7 +94,9 @@ MANIFEST = REPO / "metadata" / "funding_panel_manifest.json"
 HORIZON = 1
 MINIMUM_HISTORY = 61
 REFIT_EVERY = 21
-DECISION = time(16, 0)
+#: The decision instant, from the one declared constant (`repo_model.decision_instant`): 18:00 since the amendment of
+#: 29 October 2026 (#1312). The opening run (#151) was made at 16:00 and stays a record of that instant.
+DECISION = DECISION_TIME
 #: The last day any run here may score (`docs/decisions/lockbox.md`).
 END = date(2025, 12, 31)
 #: The thresholds every run also carries, for the descriptive onset-day Brier.
@@ -683,6 +686,7 @@ _FROZEN_METADATA = ("metadata/sources.json", "metadata/evaluation_splits.json",
                     "metadata/market_holidays.json")
 _FROZEN_PIPELINE = (
     ("src/repo_model/asof.py", ("*",)),
+    ("src/repo_model/decision_instant.py", ("*",)),
     ("src/repo_model/data.py", ("load_point_in_time_panel", "load_daily_panel",
                                 "market_holidays")),
     ("src/repo_model/splits.py", ("*",)),
@@ -863,7 +867,7 @@ CRPS_CLAIM = ("the published model's one-day-ahead forecast of the full distribu
 #: The command the opening run types, after Eleonora opens the near-blind tier.
 CRPS_COMMAND = (
     "compare", "PUB.csv",
-    "--registry", "metadata/sources.json", "--decision-time", "16:00",
+    "--registry", "metadata/sources.json", "--decision-time", DECISION_TIME_TEXT,
     "--minimum-history", str(MINIMUM_HISTORY), "--refit-every", str(REFIT_EVERY),
     "--splits", "metadata/evaluation_splits.json", "--end", CRPS_LAST.isoformat(),
     "--loss", "crps",
@@ -893,8 +897,12 @@ def _frozen_panel_sha256() -> str:
     return json.loads(MANIFEST.read_text(encoding="utf-8"))["sha256"]
 
 
-def _crps_seed() -> int:
-    """`compare`'s own seed for the frozen run: the published panel and the two sides."""
+def _crps_seed(decision_time=None) -> int:
+    """`compare`'s own seed for the frozen run: the published panel, the two sides and the decision time.
+
+    The decision time is part of the seed's material (`baseline.comparison_seed`), so the seed moved with the instant
+    (#1312): the opening run (16:00) carried 1970125677, and `decision_time=LEGACY_DECISION_TIME` gives that seed back.
+    """
 
     return baseline.comparison_seed(
         _frozen_panel_sha256(),
@@ -902,7 +910,7 @@ def _crps_seed() -> int:
         features_a=["spread_bps"],
         model_b="gbm",
         features_b=list(CRPS_FEATURES),
-        decision_time=DECISION,
+        decision_time=DECISION if decision_time is None else decision_time,
     )
 
 

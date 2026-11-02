@@ -1,6 +1,6 @@
 """State-scaled calendar effects on volatility-scaled mean reversion, read at the target day (#1145; H5 step 3, the fix of #1115).
 
-`metadata/state_calendar_1145.json` is the declaration; this module is its arithmetic. (s3) below is the base of the H5 candidate (s3c), which caps it at the SRF line from full allotment (`repo_model.s3c_candidate`, #1256; named the candidate by #1259). #1115 estimated one effect in basis points
+`metadata/state_calendar_1145.json` is the declaration; this module is its arithmetic. (s3) below is the base of (s3c), which caps it at the SRF line from full allotment (`repo_model.s3c_candidate`, #1256; the H5 candidate from #1259), and so of (s3c-ann-net), which reads (s3c)'s settlement terms from the auction announcement and sizes them by net settlement (`repo_model.s3c_announced`; the H5 candidate since #1310). #1115 estimated one effect in basis points
 per calendar term and applied it everywhere, so it lost where the state was quiet (2020, 2021-23) and won where it was loud. Here
 the effect scales with the state. The base is `repo_model.spread_mr_fhs`'s declared variant `spread_mr_fhs_mad20_f0.5` (#941),
 unchanged: `level + phi^k (last - level) + scale(anchor) * z_h`. Four arms add declared terms to it, in the model's own
@@ -39,6 +39,7 @@ from dataclasses import dataclass
 from datetime import date, time
 from typing import Dict, Iterable, List, Mapping, NamedTuple, Optional, Sequence, Tuple
 
+from .decision_instant import DECISION_TIME
 from . import announced_iorb
 from . import protocol_benchmarks as pb
 from . import setup_diagnostic
@@ -131,6 +132,12 @@ IORB_UNIT_BPS = 25.0
 IORB_SIGNED = "iorb_signed"
 IORB_TECHNICAL = "iorb_technical"
 IORB_EXTRAS: Tuple[str, ...] = (IORB_SIGNED, IORB_TECHNICAL)
+#: The settlement sizes that enter beside a 0/1 flag, or in place of one, as `extra` terms (#1321, `s3c_announced.AnnouncedSizeTerms`): the signed
+#: announced net coupon and net bill settlement, and the announced gross coupon offering, each in units of `SIZE_UNIT` (USD 100 bn).
+NET_COUPON, NET_BILL, GROSS_COUPON = "net_coupon", "net_bill", "gross_coupon"
+SIZE_EXTRAS: Tuple[str, ...] = (NET_COUPON, NET_BILL, GROSS_COUPON)
+#: Every `extra` term: it is read from `pair.extras` and not from the flags.
+EXTRA_TERMS: Tuple[str, ...] = IORB_EXTRAS + SIZE_EXTRAS
 #: An IORB change that is not a multiple of 25 bp is a technical adjustment: the rule of `setup_diagnostic`.
 technical = setup_diagnostic.is_technical
 #: (s3+IORBs): (s3), with `iorb_window` and the two terms beside it. The FOMC-day term is not added.
@@ -277,7 +284,7 @@ class IorbTable:
     """
 
     def __init__(self, panel: Sequence[DailyObservation], announcements: Sequence[announced_iorb.IorbAnnouncement], *,
-                 decision_time: time = time(16, 0)):
+                 decision_time: time = DECISION_TIME):
         self.dates = [row.date for row in panel]
         self.changes = [
             0.0 if values[announced_iorb.ANNOUNCED_CHANGE] is None else float(values[announced_iorb.ANNOUNCED_CHANGE])
@@ -489,8 +496,8 @@ def fit_state_terms(
     for p, y in zip(pairs, target):
         s = 0.0 if p.state is None else p.state
         pool.append(
-            y - sum(effect[n] * regressor(n, p.flags, p.sizes, p.state, sized) for n in effect if n not in IORB_EXTRAS)
-            - sum(effect[n] * p.extras[n] for n in effect if n in IORB_EXTRAS)
+            y - sum(effect[n] * regressor(n, p.flags, p.sizes, p.state, sized) for n in effect if n not in EXTRA_TERMS)
+            - sum(effect[n] * p.extras[n] for n in effect if n in EXTRA_TERMS)
             - sum(slope[n] * p.flags[n] * s for n in slope)
         )
     return StateEstimate(
@@ -513,8 +520,8 @@ def standardised_shift(
     extras = {} if extras is None else extras
     return sum(
         effect * regressor(name, flags, sizes, state, estimate.sized) for name, effect in estimate.effect.items()
-        if name not in IORB_EXTRAS
-    ) + sum(effect * extras.get(name, 0.0) for name, effect in estimate.effect.items() if name in IORB_EXTRAS) + sum(g * flags[name] * s for name, g in estimate.slope.items())
+        if name not in EXTRA_TERMS
+    ) + sum(effect * extras.get(name, 0.0) for name, effect in estimate.effect.items() if name in EXTRA_TERMS) + sum(g * flags[name] * s for name, g in estimate.slope.items())
 
 
 def lead_quantiles(

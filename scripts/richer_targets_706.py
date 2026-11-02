@@ -22,6 +22,10 @@ other command refuses to read unless it is committed and unchanged. Nothing is p
   1 to 5). Only the label changes: `richer_targets.as_target` puts the target in the slot the model reads as SOFR - IORB, and
   `richer_targets.swap_target_fields` puts the target's own sources and release lag there too, so the as-of rule reads the label's
   lag under the sources it comes from.
+* **Pairing** (amended under #932, before any score of the amended walks): the walks fit on direct pairs
+  (`training_pairs="direct"`), as Eleonora ordered on 19 October 2026 (#915) for H9 step 3. `new_features(h)` holds calendar and
+  scheduled columns that a one-step fit would learn one row off (`one_step_guard`, #914), and the guard refuses it. The columns stay;
+  the pairing changes. #774's published walks were one-step and stay as they are, marked provisional by the register.
 * **Benchmarks** are the target's own B1 (last public value plus the lead's empirical changes over two years) and B2 (a year of values
   on days of the target day's type), `richer_targets.b1_quantiles` and `b2_quantiles`, at each lead. A lead the model has no law for is
   filled by B1 (`scoring_protocol.fill_missing`).
@@ -226,6 +230,30 @@ def panel_rows(panel: Path, target: str):
     return rows[drop:]
 
 
+def target_fitter(features: Sequence[str]):
+    """#634's candidate (b) fit over `features`, on direct (aligned) pairs (#932; Eleonora's ruling of 19 October 2026 on #915).
+
+    `new_features(h)` holds columns the as-of rule serves from the scored row (`tax_date`, `treasury_settlement`, and at lead 1 the
+    announced-IORB pair). A one-step fit would learn them one row off, so `one_step_guard` refuses it; on direct pairs each label
+    day t is paired with the row t - h its own forecast reads, and the calendar columns sit on the row they are served from.
+    """
+
+    return functools.partial(
+        ml.fit_gradient_boosted_quantiles,
+        regressors=tuple(f for f in features if f != "spread_bps"),
+        levels=GRID,
+        training_pairs="direct",
+    )
+
+
+def check_pairing(settings: Mapping) -> None:
+    """Refuse a walk whose recorded fit does not name direct pairs: raises `ValueError`."""
+
+    named = settings.get("training_pairs")
+    if named != "direct":
+        raise ValueError(f"a target walk must be fitted on direct pairs, but its fit names training_pairs {named!r}")
+
+
 def walk_command(args) -> int:
     declared = committed_declaration()
     target, h = args.target, args.horizon
@@ -245,15 +273,14 @@ def walk_command(args) -> int:
     panel = panel_rows(args.panel, target)
     timed_rows, timed_registry = sd.ann.arm_inputs("both", panel, registry, h)
     features = m634.new_features(h)
-    fit = functools.partial(
-        ml.fit_gradient_boosted_quantiles, regressors=tuple(f for f in features if f != "spread_bps"), levels=GRID
-    )
+    fit = target_fitter(features)
     with sd.switched_on(), sd.h41_release.release_dating(), scarcity.own_leg_composition(), richer_targets.swap_target_fields(target):
         rows = richer_targets.as_target(timed_rows, target)
         result, levels, settings = m634.walk(
             rows, fit=fit, features=features, online_calibration=None, registry=timed_registry, horizon=h,
             minimum_history=declared["model"]["minimum_history"], refit_every=declared["model"]["refit_every"], expected_levels=GRID,
         )
+    check_pairing(settings)
     document = {
         "target": target,
         "horizon": h,

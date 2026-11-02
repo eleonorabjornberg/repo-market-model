@@ -35,6 +35,7 @@ from datetime import date, datetime, time, timedelta
 from pathlib import Path
 from typing import Dict, List, Mapping, NamedTuple, Optional, Sequence, Tuple
 
+from .decision_instant import DECISION_TIME
 from .data import DailyObservation
 from .splits import LookAheadError
 
@@ -210,7 +211,7 @@ def add_columns(
     calendar: Optional[Sequence[Meeting]] = None,
     *,
     horizon: int = 1,
-    decision_time: time = time(16, 0),
+    decision_time: time = DECISION_TIME,
 ) -> List[DailyObservation]:
     """`rows` with the columns added: each row's day, read at the decision instant `horizon` panel days before it.
 

@@ -1,0 +1,45 @@
+{
+ "files": [
+  {
+   "byte_count": 56024,
+   "keyid": "PDSIRRA-UTSETTOT",
+   "path": "tests/fixtures/snapshots/nyfed-pd-financing/PDSIRRA-UTSETTOT.json",
+   "retrieved_at": "2026-10-28T19:24:07Z",
+   "sha256": "d7714400391e49800c3cf9bcecaffbe767d54e4a686743d5e88fdf5251d16152",
+   "url": "https://markets.newyorkfed.org/api/pd/get/PDSIRRA-UTSETTOT.json"
+  },
+  {
+   "byte_count": 55109,
+   "keyid": "PDSIRRA-UTSTTOT",
+   "path": "tests/fixtures/snapshots/nyfed-pd-financing/PDSIRRA-UTSTTOT.json",
+   "retrieved_at": "2026-10-28T19:24:12Z",
+   "sha256": "fdd54e10040ff78a6f9c16e81255f1584f05ccb4e248a3a89f1eb78022f4f724",
+   "url": "https://markets.newyorkfed.org/api/pd/get/PDSIRRA-UTSTTOT.json"
+  },
+  {
+   "byte_count": 55881,
+   "keyid": "PDSIOSB-UTSETTOT",
+   "path": "tests/fixtures/snapshots/nyfed-pd-financing/PDSIOSB-UTSETTOT.json",
+   "retrieved_at": "2026-10-28T19:24:13Z",
+   "sha256": "2130b17a696562be05558726d56170d77f1cd0b92a53180b3402c241d33c7a92",
+   "url": "https://markets.newyorkfed.org/api/pd/get/PDSIOSB-UTSETTOT.json"
+  },
+  {
+   "byte_count": 54191,
+   "keyid": "PDSIOSB-UTSTTOT",
+   "path": "tests/fixtures/snapshots/nyfed-pd-financing/PDSIOSB-UTSTTOT.json",
+   "retrieved_at": "2026-10-28T19:24:13Z",
+   "sha256": "2de298cdb766353a6bf5d23565a708370ce001014ed88a432d1a1f84c6759860",
+   "url": "https://markets.newyorkfed.org/api/pd/get/PDSIOSB-UTSTTOT.json"
+  },
+  {
+   "byte_count": 103101,
+   "keyid": "release-page",
+   "path": "tests/fixtures/snapshots/nyfed-pd-financing/primary-dealers-statistics.html",
+   "retrieved_at": "2026-10-28T19:24:31Z",
+   "sha256": "0d3df3146425c353fec59d8e573b213386b203f68f5a028781eb51df8d0b698e",
+   "url": "https://www.newyorkfed.org/markets/counterparties/primary-dealers-statistics"
+  }
+ ],
+ "source_id": "nyfed_pd_financing"
+}

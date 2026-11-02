@@ -1,0 +1,18 @@
+{
+  "order": 234,
+  "directive": 935,
+  "pull_request": 989,
+  "hypothesis": "H4",
+  "result": "The ten walks of #895 re-run without the workbook SOFR volumes",
+  "declarations": [
+    "metadata/backfill_h5_935.json"
+  ],
+  "model": "`gbm_funding` with and without the back-filled rows, on main's extended panel",
+  "pairing": "one_step",
+  "class": "a+b",
+  "on_the_page": [
+    "2026-10-22-model-00989-H4-step3",
+    "2026-10-29-model-00989-H4-step3"
+  ],
+  "concluded": "2018-19 is no longer a cost on the ruled interval and only 2018 H2 stays one; the walks are one-step and calendar-blind, so the figures are provisional until re-run. Whether H4's kill is read is not settled here."
+}

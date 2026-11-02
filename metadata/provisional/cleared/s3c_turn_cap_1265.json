@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/s3c_turn_cap_1265.json",
+  "script": "scripts/s3c_turn_cap_1265.py",
+  "pairing": "direct",
+  "why": "(s3c-t): (s3c) with the cap off on turn days. Both are transforms of (s3)'s forecast quantiles after the walk and fit nothing; (s3) itself reads the calendar columns at the target day on direct pairs (training_pairs = direct; the estimation routine is guarded by one_step_guard with no allow-list entry), and no gradient-boosted fit is called, so the study is not provisional; the SRF line, the full-allotment flag and the turn-day type it reads are scheduled_availability or calendar fields read at the target day as public at the decision instant (metadata/srf_cap_1241.json, unchanged; turn_days labels are a function of the date and the market holiday table), served from the target row; no outcome is an input"
+}

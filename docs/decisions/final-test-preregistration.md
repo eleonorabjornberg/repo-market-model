@@ -30,7 +30,7 @@ not, you still have the case study." "The S-curve" means the persistence-logisti
 - **Primary cell:** `crps, h = 1`
 - **Model:** `dynamic_logit`
 - **Calibrator:** `platt_recency`
-- **Declaration checksum:** `c650e442a18caf808f6f5b87b25514010452ebda18a0392deda464e471f7a083`
+- **Declaration checksum:** `75e34e2b56c9c9362b14346a7cc26786b8182dac3043ead2948207aa1ee79d6d`
 - **Declaration checksum at opening:** `28ad819321d50a44b50adf69f78af1fbe28d6c4f6a9a813544e13d06deed4432`
 - **Code:** the model is `ml.dynamic_logit_exceedance` under `ml.DYNAMIC_LOGIT_SETTINGS` (#137), with the inputs of
   `scripts/pressure_dynamic_logit.py`'s `DYNAMIC_FEATURES`: the latest spread, reserves as the scarcity state, the
@@ -55,7 +55,7 @@ not, you still have the case study." "The S-curve" means the persistence-logisti
 
   `tests/test_final_test_freeze.py` fails if any of these changes after this record merges.
 
-- **CRPS declaration checksum:** `2ebb022203cba411d8b3306a5320d3a7a404b3d4c275b0e555cdc660a49a8af9`
+- **CRPS declaration checksum:** `c3eb24d779c33d7a11458254b09cde0a534bb22ee2b2bcfe4c9b85c59c3d1689`
 - **CRPS declaration checksum at opening:** `d0847824027e80e06392b7ba641908cd83a60e38d21ceffff6b9d9d57cf14b59`
 - **CRPS sensitivity seed:** `1970125677`
 - **The CRPS checksum** is `scripts/final_test_preregistration.py crps-declaration`, added by the amendment of
@@ -504,3 +504,96 @@ record is not edited and still names the declaration it ran. The test's design, 
 a frozen definition now fails `tests/test_final_test_freeze.py` until the pins above are re-pinned in a PR she merges.
 This pull request merges last, after #282, #360, #361, #362 and #363, so the pins above are taken once over the final
 metadata and code; a run that finds any of them moved since the pins were taken re-pins on the merged tree before the merge.
+
+## Amendment, 29 October 2026 (#1310): `metadata/sources.json` is re-pinned for the announcement dating
+
+**Drafted by the pull request that closes #1310, for Eleonora to review.** In force only once she has merged it, and the
+pull request is binding only with her own `GO #1310` on that issue (a comment by her, not through an app), cited in
+`metadata/owner_attestations.json`. It rests on her ruling of 29 October 2026 (chat, relayed on #1310; option 1 of decision 1
+in the 28 October message) that settlements are dated from the auction announcement and that (s3c-ann-net) is the H5
+candidate. **It opens nothing, scores no day and reads no outcome.** The cells, their roles, the model, the window and the
+pass rule are as the amendments above left them.
+
+**What moved.** The pull request changes `metadata/sources.json`, one of the three metadata files the amendment of
+7 October 2026 (#324) froze: the `note` and `evidence` of `treasury_auctions`, `scheduled_availability`, which now say that a
+settlement is dated from its auction's announcement (12:00 New York time on `announcemt_date`, as
+`metadata/settlement_announcement_dating.json` declares and `docs/decisions/information-set.md`, rule 2, puts in force). The
+block's `basis`, `unit`, `days`, `available_time`, `timezone` and `fields` are unchanged, so the settlement is still declared
+public at 15:00 on the panel day before it settles: that is the one instant the block can state and the build's check
+(`ingest.check_settlement_schedule`) can judge. The panel's bytes do not move (`release_lag` is unchanged; the rebuilt panel's
+digest is `4ddc3882…` before and after).
+
+**The forecasts do not change.** The final test's declared models were re-run on the rebuilt published panel with the tree
+before this pull request (`d6bb16cb`) and with it. The leap test's model (`dynamic_logit`, `scripts/final_test_preregistration.py
+candidate`, every scored day to 2025-12-31): the raw plain-leap and +5 bp probabilities, the scored dates and the fold ends are
+equal on every day, largest absolute difference 0. The CRPS test's two sides (`compare`, the command in `CRPS_COMMAND`, to the
+last day of the near-blind tier): every number of the report other than the paths and the provenance block is equal, largest
+absolute difference 0, and the only provenance entries that differ are the tree's modified flag and the registry's sha256. The
+pull request body carries the table. Had any forecast moved, the checksums would not have been re-pinned.
+
+**The two checksums move once, and the opening's are kept.** Both declarations carry `inputs.metadata_sha256["metadata/sources.json"]`,
+which is the only entry of either declaration that differs: `175858050961823b563a9fcae2c4e62eed9772c3376eacc14d7fb8937210e7a6`
+before, `4640deb051ddfb833ef09a09621095001402e6112c3f0c55ec1b90f7784eaed9` after. The two pins above are the re-pinned
+declarations'. The checksums the opening run carried are kept as "at opening", and the published run records are not edited.
+`tests/test_final_test_freeze.py` checks the pins as before.
+
+## Amendment, 29 October 2026 (#1312): the decision instant is 18:00, and the final test is re-pinned
+
+**Drafted by the pull request that closes #1312, for Eleonora to review.** In force only once she has merged it, and the pull
+request is binding only with her own `GO #1312` on that issue (a comment by her, not through an app), cited in
+`metadata/owner_attestations.json`. It rests on her ruling of 29 October 2026 (chat, relayed on #1312; ledger item 77) that the
+decision instant moves from 16:00 to 18:00 New York time, recorded in `docs/decisions/information-set.md` ("Amendment: the
+decision instant is 18:00 New York time"). **It opens nothing, scores no day of a tier that is not open, and reads no outcome
+to choose anything.** The cells, their roles, the model, the window, the interval's level, replications and block length, and
+the pass rule are as the amendments above left them.
+
+**What moved.** Unlike the amendment of #1310, the forecasts change. The final test now runs at 18:00:
+
+- the script's `DECISION` is `repo_model.decision_instant.DECISION_TIME`; the fold grid's `decision_time` in the leap
+  declaration and the CRPS declaration's `decision_time` and `--decision-time` read `18:00`;
+- the CRPS interval's primary seed is `compare`'s own, which takes the decision time among its material
+  (`baseline.comparison_seed`): `1970125677` at 16:00, `1604393195` at 18:00. The block-10 sensitivity seed
+  (`CRPS sensitivity seed` above) is a declared constant and does not move;
+- `metadata/sources.json` (one of the three frozen metadata files) changes: `fed_iorb_announcements.scheduled_availability`
+  is declared at the decision instant, 18:00, and four notes say what the move does to them;
+- `src/repo_model/registry.py` gains `ZERO_PURGE_REFUSAL`, the name of the refusal the panel build now accepts as a zero
+  purge; `src/repo_model/decision_instant.py` (new) joins the frozen pipeline code with `asof.py`, `contract.py`,
+  `registry.py`, `splits.py`, `evaluation_splits.py` and the three loaders of `data.py`.
+
+**The published panel is the same bytes.** Rebuilt at 18:00 from the tracked fixtures its digest is
+`4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999`, as at 16:00; only the build's `decision_time` differs, and
+`metadata/funding_panel_manifest.json` now states `18:00:00`. The "at opening" checksums below are kept: they are the
+declarations as they stood on 2026-10-05, at 16:00, and `tests/test_final_test_freeze.py` recomputes them at 16:00.
+
+**Before and after.** The final test's declared models, re-run on the rebuilt panel with the tree at the base (`e019c0ce`, 16:00)
+and with this pull request's tree (18:00), same interpreter and libraries (`/opt/rmm-venv`, numpy 2.4.6, scikit-learn 1.9.1,
+`OMP_NUM_THREADS=1`). The pull request body carries the table; in short:
+
+- the leap test's model (`dynamic_logit`, every scored day 2018-06-29 to 2025-12-31, 1873 days): the raw plain-leap probability
+  moves on 1858 of 1873 days, by at most 0.4577 (on 2020-06-30); the raw +5 bp probability moves on every day, by at most
+  0.1698 (on 2019-09-23). The scored dates, the fold ends and the outcomes are equal.
+- the CRPS test's two sides (`compare`, `CRPS_COMMAND`, to 2026-09-03, 2042 origins): as-of persistence does not move on any
+  origin (largest difference 0); the published distribution's per-origin CRPS moves on 2023 origins, by at most 5.2552 bp
+  (on 2019-03-29), and on all 169 window days, by at most 0.7169 bp (on 2026-04-28). The only entry of the two declarations'
+  `declaration` blocks that differs is `decision_time`.
+
+The 18:00 run of the near-blind window is **not a new result and not a verdict**: those 169 days were opened once, on 2026-10-05
+(#151), the published verdict was made at 16:00, and neither is edited. No locked day (from 2026-09-04) is scored or read.
+
+**The command, at 18:00**, flag for flag, as the freeze test checks it:
+
+```
+compare PUB.csv \
+  --registry metadata/sources.json --decision-time 18:00 --minimum-history 61 --refit-every 21 \
+  --splits metadata/evaluation_splits.json --end 2026-09-03 --loss crps \
+  --model-a persistence --feature-a spread_bps \
+  --model-b gbm --calibration-b conformal_pid_nested \
+  --feature-b reserve_balances --feature-b sofr_p25 --feature-b sofr_p75 --feature-b sofr_volume --feature-b spread_bps \
+  --feature-b tbill_13w --feature-b tbill_4w --feature-b tga --feature-b treasury_settlement \
+  --report OUT/crps.json
+```
+
+**The two checksums move, and the opening's are kept.** The pins above are the re-pinned declarations': declaration
+`8f953923…` to `75e34e2b56c9c9362b14346a7cc26786b8182dac3043ead2948207aa1ee79d6d`, CRPS declaration `2e11c480…` to `c3eb24d779c33d7a11458254b09cde0a534bb22ee2b2bcfe4c9b85c59c3d1689`. The checksums the opening run carried are kept as "at
+opening"; the published run records are not edited and stay records of the 16:00 instant. `tests/test_final_test_freeze.py`
+checks the pins as before.

@@ -34,6 +34,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
 
+from repo_model.decision_instant import LEGACY_DECISION_TIME, LEGACY_DECISION_TIME_TEXT
 from repo_model.splits import LookAheadError
 
 REPO = Path(__file__).resolve().parents[1]
@@ -162,7 +163,10 @@ class RecordTests(unittest.TestCase):
                          _opening_pin("CRPS declaration checksum at opening"))
         self.assertEqual(self.record["declaration_sha256"],
                          _opening_pin("Declaration checksum at opening"))
-        self.assertEqual(self.record["primary"]["command"], list(fp.CRPS_COMMAND))
+        # The opening typed `--decision-time 16:00`; the frozen command now says 18:00 (#1312) and nothing else differs.
+        now = list(fp.CRPS_COMMAND)
+        now[now.index("--decision-time") + 1] = LEGACY_DECISION_TIME_TEXT
+        self.assertEqual(self.record["primary"]["command"], now)
         self.assertEqual(self.record["primary"]["compare_record"]["panel"]["sha256"],
                          fp._frozen_panel_sha256())
         self.assertEqual(self.record["cells"], fp.cells())
@@ -186,7 +190,7 @@ class RecordTests(unittest.TestCase):
         self.assertAlmostEqual(mean, self.cell["mean_difference_bps"], places=12)
         lower, upper = metrics.stationary_bootstrap_interval(
             lambda idx: sum(differences[i] for i in idx) / len(idx), len(differences),
-            block_length=fp.CRPS_BLOCK_LENGTH, seed=fp._crps_seed(),
+            block_length=fp.CRPS_BLOCK_LENGTH, seed=fp._crps_seed(LEGACY_DECISION_TIME),
             replications=baseline.BOOTSTRAP_REPLICATIONS, level=baseline.BOOTSTRAP_LEVEL,
         )
         self.assertAlmostEqual(lower, self.cell["interval"]["lower"], places=12)

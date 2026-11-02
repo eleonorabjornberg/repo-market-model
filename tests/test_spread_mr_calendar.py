@@ -27,6 +27,7 @@ import unittest
 from datetime import date, datetime, time
 from pathlib import Path
 
+from repo_model.decision_instant import DECISION_TIME
 from repo_model import announced_iorb, asof, contract
 from repo_model import one_step_guard as osg
 from repo_model import spread_mean_reversion as smr
@@ -38,7 +39,7 @@ import test_protocol_benchmarks as tpb
 
 ROOT = Path(__file__).resolve().parent.parent
 TABLE = ROOT / "tests" / "fixtures" / "snapshots" / "fed-iorb-announcements" / "iorb_changes.csv"
-DECISION = time(16, 0)
+DECISION = DECISION_TIME  # the scheduled IORB-change features are declared at the decision instant (18:00 since #1312)
 PANEL = tpb.published_panel()["rows"]
 ANNOUNCEMENTS = announced_iorb.load_announcements(TABLE)
 TABLE_ALL = cal.TermTable(PANEL, ANNOUNCEMENTS)

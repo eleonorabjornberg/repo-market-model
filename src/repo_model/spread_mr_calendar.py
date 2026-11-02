@@ -31,6 +31,7 @@ from dataclasses import dataclass
 from datetime import date, time
 from typing import Dict, Iterable, List, Mapping, NamedTuple, Optional, Sequence, Tuple
 
+from .decision_instant import DECISION_TIME
 from . import announced_iorb, derived_features, fomc_calendar
 from . import protocol_benchmarks as pb
 from . import spread_mean_reversion as smr
@@ -106,7 +107,7 @@ def readable_offsets(term: Term, lead: int) -> Tuple[int, ...]:
     """The offsets `j` of `term.span` the decision `lead` rows before the target can read.
 
     A calendar column or a function of the date is known whenever it is read. A scheduled field of row `r` is public at 15:00 or
-    16:00 on the panel day before `r` (`metadata/sources.json`, `scheduled_availability`), so a decision on row `T - lead` reads
+    18:00 (the decision instant, `repo_model.decision_instant`) on the panel day before `r` (`metadata/sources.json`, `scheduled_availability`), so a decision on row `T - lead` reads
     row `r = T - j` only if `r - 1 <= T - lead`, that is `j >= lead - 1`.
 
     Mutation record: see `tests/test_spread_mr_calendar.py` (`readable_offsets`).
@@ -154,7 +155,7 @@ class TermTable:
         announcements: Sequence[announced_iorb.IorbAnnouncement],
         calendar: Optional[Sequence[fomc_calendar.Meeting]] = None,
         *,
-        decision_time: time = time(16, 0),
+        decision_time: time = DECISION_TIME,
     ):
         self.dates = [row.date for row in panel]
         n = len(panel)

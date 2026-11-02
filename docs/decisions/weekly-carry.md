@@ -66,6 +66,18 @@ The columns the registry declares weekly: `dealer_treasury_position`, and `reser
 `SETTLEMENT_ZERO_COLUMNS`, because a rule about which columns may carry is a property of the
 build and not of the registry.
 
+## Weekly state terms
+
+*Drafted for Eleonora's review on the pull request of #1329, from her ruling of 30 October 2026 on finding #1303. It is in force once she
+merges it.*
+
+The bound applies to a weekly series wherever it is read, not only to a panel column. A weekly state term read by any model arm (a level or a
+z-score of one that a forecast reads at its decision instant, as `repo_model.s3c_pd` reads the primary dealers' financing level) carries its last
+print for at most `data.WEEKLY_CARRY_MAX_STALENESS_DAYS`: a print older than that, measured from the latest public week of the same release, is
+no print, and the term reads as an unknown state does. The bound is the panel's constant and is never copied; as above, it holds no release lag.
+A study that reads a weekly state term with a longer or no bound says so in its declaration before it scores, and the choice is hers. The
+published record of #1296, made before this paragraph and with no bound, stands as a record and is not re-scored here.
+
 ## What this record does not settle
 
 Whether a carried value should be a *feature* is a separate question from whether the panel

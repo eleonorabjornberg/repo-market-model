@@ -3080,12 +3080,16 @@ def _priceable_columns(
         UndeclaredFeatureError,
         field_sources_for_features,
     )
-    from .registry import RegistryContractError, max_release_lag_days
+    from .registry import ZERO_PURGE_REFUSAL, RegistryContractError, max_release_lag_days
 
     def refusal(selection) -> Optional[str]:
         try:
             max_release_lag_days(registry, selection, decision_time=decision_time)
         except RegistryContractError as exc:
+            # A column every source of which is public by the decision instant on its own day prices to a zero purge.
+            # That is a same-day print read at the decision (#1312), not a column the build cannot price.
+            if str(exc) == ZERO_PURGE_REFUSAL:
+                return None
             return str(exc)
         return None
 

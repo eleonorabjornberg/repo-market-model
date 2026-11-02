@@ -777,5 +777,40 @@
     "structural_zeros": [],
     "structural_zeros_reviewed": false,
     "url": "https://data.financialresearch.gov/v1/series/timeseries"
+  },
+  "dtcc_gcf_repo_index": {
+    "access": "public",
+    "availability_provenance": {
+      "note": "Recorded 27 October 2026 for #962 (Lens E of #958). DTCC's GCF Repo Index fact sheet states that the day's value is posted \"at approximately 3:30 p.m. EST\"; that sentence is quoted from #962 (fetched verbatim by the coordinator) and has NOT been re-read here: the fact sheet's current link on the index page, https://files.dtcc.com/download/assets/GCF-Repo-Index-Fact-Sheet.pdf/ca09e472cadb11f0b83952ad2202b893, is on files.dtcc.com, which this environment refuses, and the URL the directive gave (www.dtcc.com/-/media/Files/Downloads/Clearing-Services/FICC/GCF-Repo-Index-Fact-Sheet.pdf) returns 404. What was read here, on 27 October 2026: the index page https://www.dtcc.com/market-index-data/charts/dtcc-gcf-repo-index names its data file, https://cms-prod.dtcc.com/data/gcfindex.csv (the page's own request adds a cache-busting ?v=<epoch ms>; without it a CDN served a copy 2.2 days old under cache-control max-age=604800), which holds the last year of daily rows, each with the MBS and the Treasury par-weighted rate (percent) and par volume (USD), and no vintages. The file's Last-Modified header read 15:12:23 ET on Friday 23 October and 15:12:42 ET on Monday 26 October, the instants of the writes that added those days' rows, so on both days the row was in the file before 15:30. On Tuesday 27 October no row for the day was in the file at 16:18 ET. Two observed days are not a distribution, and the file keeps no per-day posting record, so 15:30 is the stated time, not a measured one. The history is NOT read as an input (#962 criterion 3): only the forward capture, which stores each response with the instant it was fetched (repo_model.gcf_index), is a source here.",
+      "publication": "DTCC GCF Repo Index fact sheet (quoted in #962): the index is posted at approximately 3:30 p.m. ET on the day it is for. 15:30 ET on the reference date itself is declared, so a 16:00 ET decision on that day reads it and a 14:00 ET decision does not."
+    },
+    "coverage": [
+      "Forward capture only, from the first business day the capture runs (on Eleonora's Mac, in a private directory outside any checkout, one file per business day, never back-filled; no DTCC data is kept in this repository); a day fetched after 16:00 ET or with no row is a missed record and holds no value. The index page shows about 12 months; whether the earlier history is read is #962's question 2(a), not decided."
+    ],
+    "field_frequencies": {
+      "GCF_TREASURY_PAR_USD": "business_daily",
+      "GCF_TREASURY_RATE_PERCENT": "business_daily"
+    },
+    "fields": [
+      "GCF_TREASURY_PAR_USD",
+      "GCF_TREASURY_RATE_PERCENT"
+    ],
+    "frequency": "business daily",
+    "identities": [],
+    "limitation": "Off in every published declaration (#962), and declared here and not in metadata/sources.json, which the final-test pre-registration freezes by its bytes. No column reads it: no history is read as an input until Eleonora rules on whether the fact sheet's general \"about 3:30 p.m.\" establishes a publication instant for the history (#962 question 2(a)). GCF_TREASURY_RATE_PERCENT is the par-weighted average rate of the day's overnight GCF Repo trades in the Treasury CUSIP (371487AE9), in percent; GCF_TREASURY_PAR_USD is that day's total par value, in USD (the file serves USD). The MBS columns of the same file are kept in each day's stored bytes and declared by no field here. A day with no captured record has no value, never zero. The reading of a captured value is guarded by repo_model.gcf_index (a value fetched after the day's 16:00 ET decision instant, or after the reader's instant, raises LookAheadError). DTCC's terms of use forbid redistributing the index and compiling it into a database, so the store is private to her Mac (her ruling of 27 October 2026 on #1281; #962 question 2(c)).",
+    "provider": "DTCC Solutions LLC (Fixed Income Clearing Corporation data)",
+    "release_lag": {
+      "available_time": "15:30",
+      "basis": "ref_date",
+      "days": 0,
+      "note": "Declared 27 October 2026 (#962) from DTCC's fact sheet as quoted in #962 (availability_provenance): the day's index is posted at about 15:30 ET on the day itself. 15:30 ET on the reference date, so a 16:00 ET decision on that day reads it and a 14:00 ET decision does not. The capture takes a value only if it was fetched between 15:30 and 16:00 ET of that day; a value fetched later is a missed day, never an input.",
+      "timezone": "America/New_York",
+      "unit": "business_days",
+      "worst_case_calendar_days": 0
+    },
+    "reviewed_note": "Structural-zero semantics have not been reviewed; the empty declaration is not a finding. A day with no captured record is missing, not zero.",
+    "structural_zeros": [],
+    "structural_zeros_reviewed": false,
+    "url": "https://cms-prod.dtcc.com/data/gcfindex.csv"
   }
 }

@@ -212,13 +212,18 @@ def reproduce_panel(workdir):
             "published panel's columns" % MANIFEST.relative_to(ROOT)
         )
     panel = Path(workdir) / "funding_panel.csv"
+    # The record was built, and scored, at the decision instant it states (16:00). The manifest above states the instant
+    # a build is made at now (18:00 since #1312); the bytes of the panel are the same, and the record's own build manifest
+    # is compared with the rebuilt one below, so the record is rebuilt at its own instant.
+    record = json.loads(RECORD.read_text(encoding="utf-8"))
+    decision_time = ((record.get("panel") or {}).get("build_manifest") or {}).get("decision_time") or manifest["decision_time"]
     build = [
         "build",
         "--raw-root", str(INPUTS),
         "--registry", str(REGISTRY),
         "--output", str(panel),
         "--build-cutoff", manifest["build_cutoff"],
-        "--decision-time", manifest["decision_time"],
+        "--decision-time", decision_time,
     ]
     for column in columns:
         build += ["--column", column]

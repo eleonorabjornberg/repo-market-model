@@ -159,6 +159,7 @@ SNAPSHOT_INVENTORY: Mapping[str, Tuple[str, str]] = {
     "fr2004": ("read", "dealer_treasury_position (FR 2004 weekly)"),
     "new_sources": ("cannot", "snapshots of the new sources of #630 (primary dealer financing and fails, Treasury debt cash flows); read by scripts/new_sources.py, not by this screen"),
     "treasury_bill_rates_page": ("cannot", "the Treasury text-view page as served: evidence for #445 (its 3:30 pm quote time), not a data input; no series is built from it"),
+    "nyfed-pd-financing": ("cannot", "the New York Fed's FR 2004 Treasury reverse repo and securities borrowed totals, weekly with withheld weeks, tracked for the state input of (s3c-pd) (#1296): read by repo_model.s3c_pd at the release instant, not a panel column and not a daily series, and not registered in metadata/sources.json"),
     "nyfed-primary-dealer": ("cannot", "a hand-downloaded 'latest' CSV with no recorded retrieval time (its manifest says 'None'): the as-of rule cannot say when any row was public; its weekly positions are the FR 2004's, already read"),
     "frb_ddp": ("cannot", "the Board's H.15 and PRATES SDMX files, read only by repo_model.effr_history for the pre-SOFR study; EFFR and IOER are already read from the NY Fed and FRED, and the primary credit rate is a step series set by the policy register"),
     "alfred-dff": ("cannot", "ALFRED vintage pulls at three dates, kept to study revisions: not a daily series with a first print per day"),

@@ -75,6 +75,7 @@ from pathlib import Path
 from typing import Dict, List, Mapping, Optional, Sequence, Tuple
 from zoneinfo import ZoneInfo
 
+from .decision_instant import LEGACY_DECISION_TIME
 from .asof import StaleReadError
 from .contract import FEATURE_FIELDS
 from .data import DailyObservation
@@ -124,7 +125,11 @@ CONSERVATIVE = "conservative"
 SAME_DAY = "same_day"
 SAME_DAY_SOURCE_ID = NYFED_REPO_OPS_SOURCE_ID + "_sameday"
 SAME_DAY_SUFFIX = "_sameday"
-DECISION_TIME = time(16, 0)
+#: The instant #442's same-day sensitivity reads a date at (`sources_measurement.json`, `nyfed_repo_ops_sameday`:
+#: 16:00 on the operation date). It was the decision instant when the sensitivity was declared and it is kept as that
+#: declaration states it (#1312): the sensitivity is off in every published declaration, and whether to re-read the
+#: same-day take-up at the new decision instant is a data-meaning question that is not settled here.
+DECISION_TIME = LEGACY_DECISION_TIME
 
 #: Panel rows after which "days since a non-zero take-up" stops growing; also its value
 #: before the first non-zero row.

@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/s3c_pd_1296.json",
+  "script": "scripts/s3c_pd_1296.py",
+  "pairing": "direct",
+  "why": "(s3c-pd): (s3c) with a primary dealer state term (the z-score of the latest public week's reverse repo plus securities borrowed against the year before it). The fit is (s3)'s estimation routine, spread_mr_state_calendar.walk's pairs with training_pairs = direct (guarded by one_step_guard with no allow-list entry), and no gradient-boosted fit is called, so the study is not provisional; the calendar terms are read at the target day, the state is a slow variable of the decision day read at its release (repo_model.s3c_pd.read_level, leakage-tested, LookAheadError for a week released after the decision instant), and no outcome is an input"
+}
