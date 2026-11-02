@@ -715,20 +715,20 @@ def best_html(final, provisional=False, standing=None):
     """
     mark = f' {provisional_mark()}' if provisional else ""
     figs = (f'On the {final["days"]} days {final["first"]} to {final["last"]} the published forecast scored '
-            f'{final["published"]:.2f} bp mean CRPS one day ahead, as that record scores it (not the grid CRPS of the '
-            f'scoring rules), against {final["persistence"]:.2f} bp for persistence, the last public spread repeated '
+            f'{final["published"]:.2f} bp mean pinball loss over the five published quantiles one day ahead (the legacy five-quantile score; the record\'s field '
+            f'names say CRPS, but it is not the grid CRPS of the scoring rules), against {final["persistence"]:.2f} bp for persistence, the last public spread repeated '
             f'(edge {final["mean"]:+.2f} bp, {final["level"]}% interval {final["lower"]:+.2f} to '
             f'{final["upper"]:+.2f}).')
     callouts = (
         f'<div class="callouts side"><aside class="callout" aria-label="Key figure: the incumbent&rsquo;s edge">'
         f'<span class="big">{final["mean"]:+.2f}<small>bp</small></span>'
-        f'<span class="cap">The published forecast&rsquo;s edge in mean CRPS over persistence one day ahead, on '
+        f'<span class="cap">The published forecast&rsquo;s edge in the five-quantile score (mean pinball loss) over persistence one day ahead, on '
         f'{final["days"]} days; {final["level"]}% interval {final["lower"]:+.2f} to {final["upper"]:+.2f}.</span>'
         f'<span class="rs-tag">{esc(DEV_LABEL)}</span>{mark}</aside>'
         f'<aside class="callout" aria-label="Key figure: the incumbent&rsquo;s score">'
         f'<span class="big">{final["published"]:.2f}<small>bp against {final["persistence"]:.2f}</small></span>'
-        f'<span class="cap">Mean CRPS one day ahead of the published forecast and of persistence, as that record '
-        f'scores it; lower is better.</span><span class="rs-tag">{esc(DEV_LABEL)}</span>{mark}</aside></div>')
+        f'<span class="cap">Five-quantile score (mean pinball loss) one day ahead of the published forecast and of persistence; '
+        f'lower is better.</span><span class="rs-tag">{esc(DEV_LABEL)}</span>{mark}</aside></div>')
     return (
         '<p class="lede">No candidate has been registered yet (set down in writing before any new day is scored), so '
         'the incumbent stands: the project&rsquo;s published forecast, which the scoring rules use as the model a new '
