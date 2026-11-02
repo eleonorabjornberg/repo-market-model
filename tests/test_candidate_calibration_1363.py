@@ -233,6 +233,19 @@ class PipelineTests(unittest.TestCase):
         self.assertIn("Do the misses cluster in time?", text)
         self.assertIn("development, not a verdict".split(",")[0], text)
 
+    def test_the_committed_page_is_the_committed_record_rendered(self):
+        record = REPO / "docs" / "research" / "candidate-calibration-1363" / "result.json"
+        page = REPO / "docs" / "research" / "candidate-calibration-1363-result.md"
+        self.assertEqual(page.read_text(encoding="utf-8"), script.render(json.loads(record.read_text(encoding="utf-8"))))
+
+    def test_the_record_reproduces_the_1314_record_and_labels_itself(self):
+        r = json.loads((REPO / "docs" / "research" / "candidate-calibration-1363" / "result.json").read_text(encoding="utf-8"))
+        self.assertEqual(r["label"], "development, not a verdict")
+        for window, models in r["reproduction"].items():
+            for model, v in models.items():
+                self.assertAlmostEqual(v["mean_grid_crps"], v["record"], places=9)
+        self.assertLessEqual(max(w["last_target"] for w in r["windows"].values()), "2026-09-03")
+
     def test_the_declaration_is_there_and_names_the_issue(self):
         d = json.loads((REPO / "metadata" / "candidate_calibration_1363.json").read_text(encoding="utf-8"))
         self.assertEqual(d["issue"], 1363)

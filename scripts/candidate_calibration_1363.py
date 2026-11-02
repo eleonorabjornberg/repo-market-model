@@ -726,7 +726,7 @@ def clustering_table(rep: dict, models: Sequence[str], events: Sequence[str] = (
             for ev in events:
                 r = block[ev]
                 out.append(f"| {LABELS[model]} | {lead} | {ev} | {r['misses']} ({_p(r['rate'])}) | {_p(r['p_miss_after_miss'])} | {_p(r['p_miss_after_hit'])} | "
-                           f"{r['longest_run']} | {r['p_asymptotic']:.3f} | {r['p_permutation']:.3f} | {'yes' if r['holm_clusters'] else 'no'} |")
+                           f"{r['longest_run']} | {r['p_asymptotic']:.4f} | {r['p_permutation']:.4f} | {'yes' if r['holm_clusters'] else 'no'} |")
     return out
 
 
@@ -737,6 +737,45 @@ def clustering_counts(rep: dict) -> List[str]:
         a = [r for block in c["all"].values() for r in block.values()]
         g = [r for by_lead in c["regime"].values() for block in by_lead.values() for r in block.values()]
         out.append(f"| {LABELS[model]} | {len(a)} | {sum(r['holm_clusters'] for r in a)} | {len(g)} | {sum(r['holm_clusters'] for r in g)} |")
+    return out
+
+
+def answer(r: dict) -> List[str]:
+    """The reading in a few lines, every figure taken from the record: pooled coverage, the groups whose bands are read off, the clustering counts."""
+
+    dev, y26 = r["windows"]["development"], r["windows"].get("2026")
+    cand = lambda rep, split, label: _group(rep, CANDIDATE, split, label)  # noqa: E731
+    pooled, ref = cand(dev, "pooled", "all cells"), _group(dev, "B1_prime", "pooled", "all cells")
+    out = ["## The answer", "",
+           f"**Development window, all cells ({pooled['target_days']} target days).** (s3c-ann-net) covers the 50% band {_p(pooled['band50']['closed'])}{_iv(pooled['band50']['closed_interval'])} "
+           f"({pooled['band50']['reading']}) and the 90% band {_p(pooled['band90']['closed'])}{_iv(pooled['band90']['closed_interval'])} ({pooled['band90']['reading']}); "
+           f"B1' covers the 90% band {_p(ref['band90']['closed'])}{_iv(ref['band90']['closed_interval'])}. "
+           f"Its q05 sits above {_p(pooled['levels']['0.05']['strict'])} of outcomes (nominal 5.0%; {pooled['levels']['0.05']['reading']}) and its q95 above "
+           f"{_p(pooled['levels']['0.95']['at_or_below'])} (nominal 95.0%; {pooled['levels']['0.95']['reading']})."]
+    if y26:
+        g = cand(y26, "pooled", "all cells")
+        out.append(f"On the 2026 days (shown apart, {g['target_days']} target days) the 50% band covers {_p(g['band50']['closed'])}{_iv(g['band50']['closed_interval'])} "
+                   f"({g['band50']['reading']}) and the 90% band {_p(g['band90']['closed'])}{_iv(g['band90']['closed_interval'])} ({g['band90']['reading']}).")
+    out += ["", "**Where the bands are read off on the development window (candidate; size = coverage less nominal; groups of 20 or more target days):**", ""]
+    for split, title in (("regime", "regimes"), ("target_day_type", "day types"), ("pressure_day_type", "pressure-day types")):
+        parts = []
+        for g in dev["models"][CANDIDATE]["groups"]:
+            if g["split"] != split or not g["tested"]:
+                continue
+            for band in ("band90", "band50"):
+                if g[band]["reading"] in ("under-covers", "over-covers"):
+                    parts.append((abs(g[band]["size"]), f"{g['label']} {int(BANDS[band][2] * 100)}% band {_p(g[band]['closed'])} ({_pp(g[band]['size'])}, {g['target_days']} days)"))
+        parts.sort(reverse=True)
+        out.append(f"- {title}: " + ("; ".join(x for _s, x in parts) if parts else "none"))
+    c = dev["models"][CANDIDATE]["clustering"]
+    a = [x for block in c["all"].values() for x in block.values()]
+    g = [x for by_lead in c["regime"].values() for block in by_lead.values() for x in block.values()]
+    out += ["", f"**Clustering.** Of the {len(a)} hit sequences of the candidate (four events, two tie rules, five leads), {sum(x['holm_clusters'] for x in a)} are read as serially dependent "
+            f"(Holm-adjusted permutation p below 0.05); inside regimes {sum(x['holm_clusters'] for x in g)} of {len(g)}. "
+            f"After a miss of the 90% band the next day's miss chance at lead 1 is {_p(c['all']['1']['band90/strict']['p_miss_after_miss'])} against "
+            f"{_p(c['all']['1']['band90/strict']['p_miss_after_hit'])} after a hit; the longest run of band misses at lead 1 is {c['all']['1']['band90/strict']['longest_run']} days. "
+            "Sequences read as dependent among the 40 of each reference: " + ", ".join(
+                f"{LABELS[m]} {sum(x['holm_clusters'] for block in dev['models'][m]['clustering']['all'].values() for x in block.values())}" for m in REFERENCES) + ".", ""]
     return out
 
 
@@ -767,6 +806,7 @@ def render(r: dict) -> str:
         "(`docs/research/s3c-ann-net-1800-1314/announced-settlement-1800.json`) to 1e-9, or the script refused to write this record.",
         "",
     ]
+    lines += answer(r)
     for name, rep in (("The development window", dev), ("The 2026 development days (shown apart; decide nothing)", y26)):
         if rep is None:
             continue
