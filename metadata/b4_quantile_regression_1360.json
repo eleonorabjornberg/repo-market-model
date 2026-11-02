@@ -29,8 +29,8 @@
   "refit": "every spread_mean_reversion.REFIT_EVERY (21) decision days from the first scored decision day of the window, the candidate's cadence (spread_mr_state_calendar.walk); between refits the coefficients are kept and the last observed spread, the reserve value and the flags of the target are read afresh",
   "estimator": {
    "loss": "the check loss of tau, summed over the training pairs, plus RIDGE times the sum of squared non-intercept coefficients; the intercept is not penalised",
-   "ridge": 1.0,
-   "ridge_units": "the coefficients are in bp per bp (last spread), bp per USD trillion (reserves) and bp per flagged day, so the penalty is of the order of one pseudo-day on a flag; it is the one fixed ridge of the directive and nothing is tuned",
+   "ridge": 0.01,
+   "ridge_units": "the coefficients are in bp per bp (last spread), bp per USD trillion (reserves) and bp per flagged day. The check loss is linear in the residual, so the penalty is a numerical stabiliser: it equals the loss of a flagged pair only for an effect of (flagged pairs) / (4 * ridge) bp, 75 bp for a term that has just entered with three flagged pairs. It is the one fixed small ridge of the directive and nothing is tuned (see the amendment)",
    "solver": "iteratively reweighted least squares on the check loss (a quadratic majorizer of |r| at the previous residual, weight 1 / (2 max(|r|, EPSILON))), solved by ridge-penalised normal equations, started from the ridge least-squares fit at the first level and from the previous level's coefficients after that; EPSILON = 0.001 bp; at most 100 iterations; stops when no coefficient moves by more than 1e-6. The levels are fitted in increasing order. Stdlib only, so the benchmark reproduces with no install",
    "non_crossing": "the 23 fitted quantiles at each lead are sorted (the rearrangement of Chernozhukov, Fernandez-Val and Galichon), so the scorer, which refuses a crossing, accepts them; the number of forecasts the sort changed is counted",
    "no_tuning": "ridge, EPSILON, the iteration cap, MIN_FLAGGED and MIN_PAIRS are fixed here. No variant of B4 is scored; B4 is scored once"
@@ -77,5 +77,7 @@
   "register": "no gradient-boosted fitter is called, so the provisional register's producer table is unaffected; the declaration reads calendar columns on direct pairs and has a cleared row (metadata/provisional/cleared/b4_quantile_regression_1360.json)"
  },
  "long_run": "cloud first. Measured on a subset before the full run; if the full run is expected to exceed about two hours it goes to the Mac as a `needs-mac:` comment with the exact commands",
- "amendments": []
+ "amendments": [
+  {"what": "the ridge is 0.01, not 1.0 (the first text of this declaration said 1.0, 'about one pseudo-day on a flag')", "why": "a unit test on a synthetic panel (a 15 bp quarter-end spike, nine flagged training pairs) showed that 1.0 in bp squared against a loss that is linear in the residual shrinks that effect from 15 bp to about 2 bp, which is not a 'small' ridge. The directive asks for a small fixed ridge; 0.01 keeps the normal equations stable and moves no effect below 75 bp by more than the sampling noise", "when": "before any score: only unit tests on synthetic panels and the published panel's reserve reads had been run; no forecast of B4 had been compared with an outcome or with any other model", "changes_a_figure": false}
+ ]
 }
