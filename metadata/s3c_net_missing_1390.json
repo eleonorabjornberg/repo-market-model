@@ -20,7 +20,7 @@
   "what": "By calendar year of the settlement day and by class, the panel days on which an auction of the class settles, split by state, read at the decision instant of lead h = 1..5 (18:00 on the panel day h rows before) and at lead 0 (18:00 on the settlement day itself, when every scheduled auction is announced); and the settlement days on which the net rests on a missing figure against those with a genuine zero (every class that settles is complete and the net is exactly 0.0) and those with a complete non-zero net; and, in hindsight, the days on which a cash management bill announced after the instant settles.",
   "window": "panel days from 2018-04-03 to 2026-09-03 (the panel's own end)"
  },
- "readings": [
+ "arms": [
   {
    "name": "as_now",
    "model": "sc_s3c_ann_net",
@@ -109,5 +109,7 @@
   "not_in_this_directive": "the SRF cap, the persistence benchmarks' horizon and the coherent cap rule (#1388, #1389); the net x scarcity interaction of #1318; the gross-size and flag-plus-net arms of #1321"
  },
  "long_run": "cloud first: two walks per window (minutes each) and the paired tests of the drop reading against five references on about forty groups and three metrics per window. If the measured time on the runner exceeds two hours the run goes to her Mac (`needs-mac:`).",
- "amendments": []
+ "amendments": [
+  "Review of 6e50bfa (CI): the block of two readings was keyed `readings`, which the declaration count (scripts/emit_progress.py, tests/test_model_declarations.py) does not read; it is keyed `arms` as in s3c_ann_net_cmb_1356.json. No definition, number or reading changed; no score was recomputed."
+ ]
 }
