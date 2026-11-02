@@ -1,0 +1,437 @@
+{
+ "directive": 1365,
+ "hypothesis": "H5",
+ "step": "registration design (information set)",
+ "candidate": "sc_s3c_ann_net, (s3c-ann-net)",
+ "decision_instant": "18:00 America/New_York",
+ "tier": "development; an audit of declarations and publication clocks, no score",
+ "reads_no_outcome": true,
+ "last_day_read": "2026-09-03",
+ "rows": [
+  {
+   "id": "I1",
+   "role": "forecast",
+   "input": "SOFR: the observed leg of the spread, so the anchor, the level, the scale and every training pair",
+   "source": "nyfed_sofr, SOFR (the NY Fed API, snapshot 20260906T195746Z)",
+   "clock": "About 08:00 ET on the next business day. A same-day revision at about 14:30 ET, only if the rate moves by more than one basis point, and only on the day of first publication (https://www.newyorkfed.org/markets/reference-rates/additional-information-about-reference-rates, read for this audit on 2 November 2026).",
+   "exceptions": "No publication on days the NY Fed treats as holidays, and, with advance notice, on a day the Treasury repo market broadly treats as one (same page). I6 is that schedule.",
+   "vintage": "Current vintage. A revision can only land at about 14:30 on the day of first publication, so the stored value is the value public at the 18:00 decision of that day.",
+   "revisions": "The API's revisionIndicator is blank on every row, so no revised date can be named; first prints for the past are not recoverable (#940). A revision is at least 2 bp (#1019).",
+   "meaning": "The rate for the previous business day's transactions, dated by its effective date. At every decision the anchor is the previous panel row, at 18:00 and at 16:00 alike (checks.anchor).",
+   "staleness": "none: the next SOFR is public at about 08:00 on the next business day.",
+   "leakage_risk": "none: 15:00 is after the only revision window and before 18:00.",
+   "question": null,
+   "declared": [
+    "nyfed_sofr: 15:00 ET, 1 business_days after ref_date"
+   ]
+  },
+  {
+   "id": "I2",
+   "role": "forecast",
+   "input": "IORB, and IOER before 2021-07-29: the administered leg of the spread (read at the anchor row)",
+   "source": "fred_macro_latest_vintage, IORB and IOER",
+   "clock": "Set by the Board and announced in the FOMC implementation note before its effective date: 14:00 for almost every note of the policy register, 10:00 on 3 March 2020 and 17:00 on Sunday 15 March 2020 (metadata/policy_events.json; https://www.federalreserve.gov/monetarypolicy/reserve-balances.htm, read for this audit on 2 November 2026).",
+   "exceptions": "The two emergency notes of March 2020. The IOER to IORB splice on 2021-07-29 (build_daily_panel rule 7).",
+   "vintage": "FRED latest vintage. The registry's ALFRED comparison finds no restated value (revision_policy never_revised).",
+   "revisions": "None known.",
+   "meaning": "An administered rate, not a market print. The panel's iorb equals the policy register's IORB or IOER in force on every panel day (checks.iorb_concordance).",
+   "staleness": "none that reaches the spread: the declaration puts a value at 16:15 on its own date although it is announced earlier, but the spread reads IORB at the anchor row, a day old.",
+   "leakage_risk": "none.",
+   "question": null,
+   "declared": [
+    "fred_macro_latest_vintage.IORB: 16:15 ET, 0 calendar_days after record_date",
+    "fred_macro_latest_vintage.IOER: 16:15 ET, 0 calendar_days after record_date"
+   ]
+  },
+  {
+   "id": "I3",
+   "role": "forecast",
+   "input": "quarter_end flag (the quarter's last business day)",
+   "source": "panel column quarter_end (data.quarter_end), a calendar column",
+   "clock": "None: a function of the date and the market holiday table.",
+   "exceptions": "The holiday table (I6): statutory days under 5 U.S.C. 6103 and SIFMA full-close days.",
+   "vintage": "Computed, not stored data.",
+   "revisions": "None. A table row is a reviewed code change (data.MARKET_HOLIDAYS_SHA256).",
+   "meaning": "The last weekday of the quarter that the NY Fed publishes SOFR. The candidate reads it at the target day on direct pairs.",
+   "staleness": "none.",
+   "leakage_risk": "none: the schedule is fixed in advance.",
+   "question": null,
+   "declared": [
+    "calendar column (contract.CALENDAR_FEATURES): read from the target row; always known"
+   ]
+  },
+  {
+   "id": "I4",
+   "role": "forecast",
+   "input": "tax_date flag (the corporate estimated-tax date and the two business days after it)",
+   "source": "panel column tax_date (data.tax_date), a calendar column",
+   "clock": "None: a function of the date. Deadlines are the 15th of April, June, September and December, rolled by 26 U.S.C. 7503 (statute text as cited in data.py; not re-read for this audit, the host refused the Cornell page).",
+   "exceptions": "The roll uses District of Columbia holidays (16 April, 19 June from 2021, Labor Day, 25 December), not the market table. IRS notices that postpone a deadline (the 2020 relief) are not modelled (data.py, `_tax_deadline_holidays`).",
+   "vintage": "Computed, not stored data.",
+   "revisions": "None in the column. The rule has a ruling that the published panel does not carry: on 10 October 2026 (#521) she ruled the window counts market days.",
+   "meaning": "The candidate reads the published panel's column, which keeps the District-holiday window; the market-days column differs on the panel days listed in checks.tax_window. A 2020 postponement is not in either.",
+   "staleness": "none.",
+   "leakage_risk": "none: the date is statutory.",
+   "question": "Q1",
+   "declared": [
+    "calendar column (contract.CALENDAR_FEATURES): read from the target row; always known"
+   ]
+  },
+  {
+   "id": "I5",
+   "role": "forecast",
+   "input": "month_end (last two business days), post_month_end_window (first three business days), dom_19_23, and the turn-day labels that pick the ordinary days of the level",
+   "source": "functions of the date and the market holiday table (data.in_last_business_days_of_month, derived_features.bday_of_month, turn_days)",
+   "clock": "None.",
+   "exceptions": "The holiday table (I6).",
+   "vintage": "Computed, not stored data.",
+   "revisions": "None.",
+   "meaning": "Business-day counts on the SOFR publication schedule; turn_days reads no source, publication time or revision (its docstring). The candidate's month_end term is these counts, not the panel's days_to_month_end column.",
+   "staleness": "none.",
+   "leakage_risk": "none.",
+   "question": null,
+   "declared": [
+    "functions of the date: read from the target row; always known"
+   ]
+  },
+  {
+   "id": "I6",
+   "role": "forecast",
+   "input": "The grid of panel days, and so the lead h: the market holiday table",
+   "source": "metadata/market_holidays.json",
+   "clock": "None: a schedule. Statutory rows from 5 U.S.C. 6103, other rows from SIFMA's recommendation, each with its source URL in the file.",
+   "exceptions": "An unscheduled closure is a new reviewed entry. A closure announced after a decision would move the target row of that decision; the table cannot know it.",
+   "vintage": "The table as reviewed. It has no vintage of its own.",
+   "revisions": "Entries are added by reviewed pull requests only.",
+   "meaning": "The table and the SOFR snapshot agree weekday for weekday over the panel's span (checks.holiday_table_vs_sofr): the table is the publication schedule it claims to be.",
+   "staleness": "none.",
+   "leakage_risk": "none inside the panel; open only for a future unscheduled closure.",
+   "question": null,
+   "declared": [
+    "table fixed in advance (5 U.S.C. 6103 and SIFMA); pinned by sha256"
+   ]
+  },
+  {
+   "id": "I7",
+   "role": "forecast",
+   "input": "Settlement dating: the announcement date and offering amount of each Treasury auction (the two settlement terms, as signed net settlement at every lead)",
+   "source": "treasury_auctions (Fiscal Data auctions_query, retrieved 2026-09-14): announcemt_date, issue_date, offering_amt",
+   "clock": "Treasury's announcement files state a release time for most announcements (the maximum is 16:15, one note) and say 'for immediate release' for the rest (metadata/announcement_release_times_1301.json). TreasuryDirect: the list of upcoming auctions is 'Updated every Friday by 10:45 AM, Eastern U.S. time' (https://www.treasurydirect.gov/auctions/how-auctions-work/, read for this audit on 2 November 2026).",
+   "exceptions": "Cash management bills are ad hoc; most are announced five weekdays before settlement but some are 'for immediate release', with no time to read. Amended announcements exist (checks.amended_announcements).",
+   "vintage": "Fiscal Data's final record, not the first announcement. The API keeps no vintage. The candidate counts an auction from 12:00 on announcemt_date (metadata/settlement_announcement_dating.json), which the registry's machine-read block does not state: it reads a settlement at lead 1 only, at 15:00 the panel day before.",
+   "revisions": "An amended announcement carries the original announcemt_date on the stored record; the stored amount may be the amended one (checks.amended_announcements). Whether any amount differs from the first print is not shown by the tracked files.",
+   "meaning": "The offering is the announced public offering, fixed before the auction. At 18:00 every stated release time is earlier than the decision, so the 12:00 setting gives the same sums as the stated times (checks.release_times).",
+   "staleness": "The registry's declaration is later than the candidate's reading at leads 2 to 5 (15:00 the day before against 12:00 on the announcement day): the candidate is ahead of its declaration, which is a registration dependency.",
+   "leakage_risk": "Bounded and not observable: the immediate-release announcements are counted from 12:00 on their date, and the amended announcements may be read at a stored amount that was not public on the earlier days.",
+   "question": "Q2, Q4, Q6",
+   "declared": [
+    "treasury_auctions: scheduled: 15:00 ET, 1 business_days after announced_before_ref_date"
+   ]
+  },
+  {
+   "id": "I8",
+   "role": "forecast",
+   "input": "The maturing estimate and the netting: est_pub_held_mat_by_type_amt, taken as the largest non-null figure among the group's announced auctions; a class announced in part reads 0",
+   "source": "treasury_auctions: est_pub_held_mat_by_type_amt; repo_model.net_settlement (metadata/net_settlement.json)",
+   "clock": "Stated in the announcement as an estimate of the maturing publicly held securities. The files give the time of the announcement, not of any later update.",
+   "exceptions": "A cash management bill announced after the instant neither makes a class partial nor enters a figure (#738). The SOMA add-on is an auction result and is not in the net.",
+   "vintage": "Fiscal Data's stored figure: whether it is the estimate printed at the announcement or a later update is not shown by the tracked files.",
+   "revisions": "Not established. The announcement PDFs are the first print and are already on file for the release-time check (#1301); no one has compared their amounts with the stored ones.",
+   "meaning": "Offering less maturing is new cash drained or added, which is why the signed net is the regressor. An estimate is read as if it were the maturing amount.",
+   "staleness": "none known.",
+   "leakage_risk": "Open: a stored estimate later than its announcement would be read early.",
+   "question": "Q2",
+   "declared": [
+    "read at 12:00 on announcemt_date (metadata/net_settlement.json); no registry block"
+   ]
+  },
+  {
+   "id": "I9",
+   "role": "forecast",
+   "input": "SRF policy events: the standing_repo entry in force on the target day (full allotment, and the line)",
+   "source": "metadata/policy_events.json, kind standing_repo (srf_line, s3c_candidate)",
+   "clock": "The FOMC statement, 14:00 ET on every entry of the register; the Desk's operating policy statement of 10 December 2025 says standing overnight repo operations 'will no longer have an aggregate operational limit' and run in a full allotment format from 11 December 2025 (https://www.newyorkfed.org/markets/opolicy/operating_policy_251210, read for this audit on 2 November 2026).",
+   "exceptions": "An entry without a stated time is public from 23:59:59 on its date; none of the standing_repo entries is of that kind (checks.policy_register).",
+   "vintage": "A point-in-time register: each entry is dated by its announcement and carries its source URL.",
+   "revisions": "None: an entry is superseded by a later one, never edited.",
+   "meaning": "Full allotment is read as an absent aggregate limit; the Desk's statement says the same. The line is the minimum bid rate less IORB in force. The entry of 16 September 2026 is after the last scored day.",
+   "staleness": "The declared instant (16:00) is earlier than the candidate's (18:00), which reads late and safe. No entry is announced between 16:00 and 18:00 on a panel day, so both instants read the same entries (checks.policy_register).",
+   "leakage_risk": "none.",
+   "question": "Q3",
+   "declared": [
+    "metadata/srf_cap_1241.json: announced_before_ref_date, 1 business day, 16:00 (the candidate decides at 18:00)"
+   ]
+  },
+  {
+   "id": "I10",
+   "role": "forecast",
+   "input": "SRF policy events: the iorb_rate entry in force on the target day (the other half of the line)",
+   "source": "metadata/policy_events.json, kind iorb_rate",
+   "clock": "As I2: the implementation note, 14:00 ET, with the two emergency notes of March 2020 before the facility existed.",
+   "exceptions": "As I9.",
+   "vintage": "A point-in-time register.",
+   "revisions": "None.",
+   "meaning": "The same quantity as I2 from a second source; the two agree on every panel day (checks.iorb_concordance).",
+   "staleness": "As I9.",
+   "leakage_risk": "none.",
+   "question": "Q3",
+   "declared": [
+    "metadata/srf_cap_1241.json: announced_before_ref_date, 1 business day, 16:00"
+   ]
+  },
+  {
+   "id": "I11",
+   "role": "built, read by no term",
+   "input": "The IORB announcement table and the FOMC calendar (iorb_window, fomc_day)",
+   "source": "fed_iorb_announcements; fomc_calendar",
+   "clock": "As I2 (the FOMC statement time).",
+   "exceptions": "None for this arm.",
+   "vintage": "Register and table.",
+   "revisions": "None.",
+   "meaning": "TermTable builds both columns for every arm, but (s3c-ann-net) does not list iorb_window or fomc_day among its terms (checks.arm_inventory), so no value of either reaches its fit or its forecast.",
+   "staleness": "none.",
+   "leakage_risk": "none: not read.",
+   "question": null,
+   "declared": [
+    "fed_iorb_announcements: scheduled: 18:00 ET, 1 business_days after announced_before_ref_date"
+   ]
+  },
+  {
+   "id": "I12",
+   "role": "built, read by no term",
+   "input": "The panel's gross settlement columns (treasury_settlement_coupons, treasury_settlement_bills)",
+   "source": "panel columns from treasury_auctions",
+   "clock": "As I7.",
+   "exceptions": "As I7.",
+   "vintage": "As I7.",
+   "revisions": "As I7.",
+   "meaning": "The sized arm replaces both settlement flags by the signed net (checks.arm_inventory: sized true), so the gross columns enter only through the unchanged TermTable construction, never as a regressor.",
+   "staleness": "none.",
+   "leakage_risk": "none: not a regressor.",
+   "question": null,
+   "declared": [
+    "treasury_auctions: scheduled: 15:00 ET, 1 business_days after announced_before_ref_date"
+   ]
+  },
+  {
+   "id": "I13",
+   "role": "split label only",
+   "input": "Reserve balances (the state's reserves leg)",
+   "source": "fred_macro_latest_vintage, WRESBAL (the H.4.1 week average)",
+   "clock": "The H.4.1 is released each Thursday, generally at 4:30 p.m., and may move to the next business day when Thursday is a federal holiday (https://www.federalreserve.gov/releases/h41/, read for this audit on 2 November 2026).",
+   "exceptions": "A holiday shifts the release (the registry measures one shift of five days, December 2020).",
+   "vintage": "FRED latest vintage, never revised; a one-time units rescale of the series is not a revision (registry).",
+   "revisions": "None known.",
+   "meaning": "The series is the average over the week, not a Wednesday level, although the decision record and asof call it a Wednesday level (#970 measured the difference).",
+   "staleness": "Five calendar days declared where an ordinary week is public one day after its Wednesday; the per-release reading is drafted and off (information-set.md).",
+   "leakage_risk": "none.",
+   "question": "Q5",
+   "declared": [
+    "fred_macro_latest_vintage.WRESBAL: 16:30 ET, 5 calendar_days after record_date"
+   ]
+  },
+  {
+   "id": "I14",
+   "role": "split label only",
+   "input": "Total assets of commercial banks (the state's assets leg)",
+   "source": "frb_h8, total_assets (first prints)",
+   "clock": "The H.8 is released each Friday, generally at 4:15 p.m., on Thursday when Friday is a federal holiday (https://www.federalreserve.gov/releases/h8/, read for this audit on 2 November 2026).",
+   "exceptions": "A few weeks of 2020, 2021 and 2025 were released twelve days after their Wednesday (registry).",
+   "vintage": "First prints, which the extract does not revise.",
+   "revisions": "The H.8 revises later; the stored value is the first print, which is what was public.",
+   "meaning": "A weekly level used as a ratio denominator against the reserves average.",
+   "staleness": "Twelve days declared where nine is usual: three days late on an ordinary week, on the safe side (registry).",
+   "leakage_risk": "none: the extract refuses a longer delay.",
+   "question": "Q5",
+   "declared": [
+    "frb_h8: 16:15 ET, 12 calendar_days after record_date"
+   ]
+  },
+  {
+   "id": "I15",
+   "role": "split label only",
+   "input": "Daily ON RRP take-up (the state's buffer leg)",
+   "source": "nyfed_on_rrp, reverse_repo_total_accepted (the Desk's operation results)",
+   "clock": "The operation closes at 13:15 ET and the Desk publishes a summary of results after it; the Desk's page states no clock time (https://www.newyorkfed.org/markets/desk-operations/reverse-repo, read for this audit on 2 November 2026).",
+   "exceptions": "Operation results include small value exercises (the Desk's page).",
+   "vintage": "The Desk's record; no value amended since publication (registry A45).",
+   "revisions": "None known for this source.",
+   "meaning": "Accepted amount of the day's operation, compared with a USD 100 bn break.",
+   "staleness": "Declared at 16:00 the next business day; the results are likely public the same afternoon, but no clock time is stated, so the lag is not measurable.",
+   "leakage_risk": "none.",
+   "question": "Q5",
+   "declared": [
+    "nyfed_on_rrp: 16:00 ET, 1 business_days after ref_date"
+   ]
+  }
+ ],
+ "not_read": "TGCR, BGCR, SOFR percentiles and volume, EFFR and DFF, the Treasury bill rates, the FR 2004 dealer position, the TGA, money-fund assets, the OFR repo series, SEC N-MFP, the DTCC GCF index, the Desk's SRF take-up",
+ "questions": [
+  {
+   "id": "Q1",
+   "title": "Which tax-date window should the candidate read?",
+   "facts": "Her ruling of 10 October 2026 (#521) counts market days in the window. The published panel keeps the District-holiday window until a publish pull request rebuilds it, and the candidate reads the published panel's column. The two differ on the days in checks.tax_window. No IRS postponement is modelled in either (the 2020 relief).",
+   "options": [
+    "Queue a development directive that re-runs (s3c-ann-net) with the market-days column on the same days and reports the paired difference, changing no panel, declaration or candidate.",
+    "Leave it, and record on the registration page that the candidate reads the District-holiday window.",
+    "Ask separately whether a postponement by IRS notice (2020) should enter the column."
+   ],
+   "default": "1 (a measurement; no claim changes)."
+  },
+  {
+   "id": "Q2",
+   "title": "Are the stored offering and maturing figures the announcement's first print?",
+   "facts": "Fiscal Data keeps no vintage, and the tracked announcement files are the first print. A few announcements inside the panel have amended files dated after the stored announcemt_date (checks.amended_announcements). Nobody has compared the files' amounts with the stored ones.",
+   "options": [
+    "Queue a directive that reads offering and maturing estimate from the announcement files already on file (#1301 fetched all of them), compares them with the stored figures for every settlement day, and lists the days that differ, the amended ones first.",
+    "Leave it."
+   ],
+   "default": "1 (extraction and comparison only; no score)."
+  },
+  {
+   "id": "Q3",
+   "title": "Should the SRF cap's availability declaration be re-declared at the decision instant?",
+   "facts": "metadata/srf_cap_1241.json and repo_model.srf_line state 16:00; the candidate decides at 18:00 (#1312 left this to a later directive). No standing_repo or iorb_rate entry is announced between 16:00 and 18:00 on a panel day, so both instants read the same entries today.",
+   "options": [
+    "Queue a directive that re-declares the cap's availability at repo_model.decision_instant.DECISION_TIME with a test that the two are equal (a declaration change; it needs her GO).",
+    "Leave it until a register entry is announced inside the window."
+   ],
+   "default": "2 (no entry in the window)."
+  },
+  {
+   "id": "Q4",
+   "title": "Registration dependency: the registry states the settlement at lead 1 only.",
+   "facts": "metadata/sources.json declares a settlement at 15:00 on the panel day before it settles. The candidate reads the announcement at leads 2 to 5, which only the development modules do. The block is frozen by the final-test pre-registration, so any change needs the re-pin and her GO.",
+   "options": [
+    "Queue a directive that drafts the registry change expressing the announcement dating at leads 2 to 5, with the pre-registration re-pin, for her review.",
+    "Hold until she decides to register the candidate."
+   ],
+   "default": "2 (nothing is registered)."
+  },
+  {
+   "id": "Q5",
+   "title": "Do the three scarcity-state inputs need their declarations reviewed now?",
+   "facts": "The forecast holds the state at its maximum, so the three legs label #1320's state split and nothing else. Their declarations are later than the publications (reserves five days against one, assets twelve against nine, ON RRP the next business day), and the reserves series is a week average used as a Wednesday level.",
+   "options": [
+    "Leave them: the legs are labels only.",
+    "Queue the per-release H.4.1 reading, the Wednesday levels and a review of the H.8 and ON RRP declarations now."
+   ],
+   "default": "1 (the state returns as an input only by a later ruling, and the review would then be part of it)."
+  },
+  {
+   "id": "Q6",
+   "title": "The announcements with no stated release time.",
+   "facts": "They are counted from 12:00 on their date. At 18:00 only one released after 18:00 would be a leak, and the files cannot show that. #1320 (Table 4d) ties 2020's net-arm loss to them and #1356's cash management bill arm splits out the bills among them.",
+   "options": [
+    "Leave the setting as it is and keep reporting them.",
+    "Queue a development arm that counts them from the next panel day, as a bound."
+   ],
+   "default": "1 (a rule change is hers)."
+  }
+ ],
+ "checks": {
+  "anchor": {
+   "offset_in_panel_rows_by_decision_instant": {
+    "18:00": {
+     "1": 2089
+    },
+    "16:00": {
+     "1": 2089
+    }
+   },
+   "decision_days_checked": 2089
+  },
+  "holiday_table_vs_sofr": {
+   "span": [
+    "2018-04-03",
+    "2026-09-03"
+   ],
+   "sofr_rows": 2104,
+   "weekdays_without_sofr_not_in_table": [],
+   "table_days_with_sofr": [],
+   "revision_indicator": {
+    "blank": 2104
+   }
+  },
+  "amended_announcements": {
+   "records_in_the_snapshot": 4,
+   "records": [
+    {
+     "announcemt_date": "2022-05-12",
+     "file_dated": "2022-05-17",
+     "settles": "2022-05-19",
+     "security_type": "Bill"
+    },
+    {
+     "announcemt_date": "2023-03-14",
+     "file_dated": "2023-03-16",
+     "settles": "2023-03-21",
+     "security_type": "Bill"
+    },
+    {
+     "announcemt_date": "2025-04-10",
+     "file_dated": "2025-04-15",
+     "settles": "2025-04-30",
+     "security_type": "Note"
+    }
+   ],
+   "decision_lead_cells_between_the_two_dates": 5
+  },
+  "release_times": {
+   "files": 3828,
+   "with_a_stated_time": 3665,
+   "immediate_release": 163,
+   "latest_stated_time": "16:15",
+   "every_stated_time_before_the_decision": true
+  },
+  "policy_register": {
+   "standing_repo_entries": 19,
+   "standing_repo_without_stated_time": 0,
+   "announced_after_16_00_and_by_18_00": [
+    "iorb-20200315"
+   ],
+   "iorb_panel_days_compared": 2104,
+   "iorb_panel_mismatches": []
+  },
+  "iorb_concordance": {
+   "panel_days_compared": 2104,
+   "mismatches": 0
+  },
+  "tax_window": {
+   "panel_days_where_the_two_rules_differ": [
+    "2019-04-16",
+    "2019-04-18",
+    "2020-04-16",
+    "2020-04-20",
+    "2021-04-16",
+    "2021-04-20",
+    "2024-04-16",
+    "2024-04-18",
+    "2025-04-16",
+    "2026-04-16",
+    "2026-04-20"
+   ]
+  },
+  "arm_inventory": {
+   "arm": "sc_s3_ann_net",
+   "terms": [
+    "month_end",
+    "quarter_end",
+    "tax_date",
+    "settlement_coupon",
+    "settlement_bill",
+    "dom_19_23",
+    "post_month_end_window"
+   ],
+   "sized": true,
+   "extra": [],
+   "robust": true,
+   "interact_with_state": false,
+   "training_pairs": "direct",
+   "terms_not_in_the_arm": [
+    "fomc_day",
+    "iorb_window"
+   ]
+  }
+ }
+}

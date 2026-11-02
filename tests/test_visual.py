@@ -1658,7 +1658,7 @@ class TagStatusTests(unittest.TestCase):
         records["docs/runs/base.json"]["derived"]["fields"] = ["src_a.X"]
         row = self.status(tag_map, registry, records, snapshot)
         self.assertEqual(row["status"], "used")
-        self.assertIn("docs/runs/base.json", row["reason"])
+        self.assertEqual(row["record"], "docs/runs/base.json")  # #1355: the reason is in words, the record is data
 
     def test_used_needs_every_field_in_one_record(self):
         tag_map, registry, records, snapshot = synthetic(fields=("X", "Y"))
@@ -1675,7 +1675,7 @@ class TagStatusTests(unittest.TestCase):
         records["docs/runs/compare.json"] = comparison(["X"], -0.3, -0.1)
         row = self.status(tag_map, registry, records, snapshot)
         self.assertEqual(row["status"], "tried_and_hurt")
-        self.assertIn("docs/runs/compare.json", row["reason"])
+        self.assertEqual(row["record"], "docs/runs/compare.json")
 
     def test_no_verdict_when_the_interval_spans_zero_or_the_field_helped(self):
         for lower, upper in ((-0.3, 0.1), (0.1, 0.3)):

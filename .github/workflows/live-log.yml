@@ -1,7 +1,7 @@
 name: live-log
 
 # The live record (#215, Eleonora's decision of 3 October 2026). Each business
-# day after the 16:00 ET decision instant, log the published pressure model's
+# day after the decision instant (16:00 ET until #1313, 18:00 ET from it), log the published pressure model's
 # forecast, and its baselines', with the published distribution and as-of
 # persistence's (Eleonora's ruling of 4 October 2026), as one frozen JSON
 # record, written before the outcome exists, appended to the `live-log` branch. Never main, never
@@ -40,9 +40,9 @@ name: live-log
 # through a registered transition (`scripts/live_pin.py`), a dated decision
 # record and Eleonora's own approval.
 #
-# Three slots a day (#275): the primary and two fallbacks. A first job reads live-log
+# Two slots a day (#275, #1313): the primary and one fallback. A first job reads live-log
 # and, when the day's record is already there, ends the run green with nothing
-# written. A run that starts before the 16:00 ET decision instant, a fallback GitHub started
+# written. A run that starts before the 18:00 ET decision instant, a fallback GitHub started
 # hours late, ends green the same way (#937). Each record's commit also carries the panel it was made from.
 #
 # Python 3.11 comes from the runner's own tool cache at the pinned patch. If the
@@ -53,13 +53,14 @@ name: live-log
 
 on:
   schedule:
-    # 21:30 UTC is 17:30 EDT and 16:30 EST: after the decision instant either way.
-    - cron: "30 21 * * 1-5"
-    # Two fallback slots (#275), for a delayed or dropped scheduled run. 23:15 UTC is
-    # 19:15 EDT / 18:15 EST, the same ET day as the primary slot. 01:15 UTC on
-    # Tuesday to Saturday is 21:15 EDT / 20:15 EST on the ET day before, Monday to
-    # Friday. A slot that finds the day already on live-log does nothing.
+    # The decision instant is 18:00 ET, 22:00 UTC in EDT and 23:00 UTC in EST (#1313; her ruling of
+    # 29 October 2026, ledger item 77). Every slot starts after it in both offsets. The 21:30 UTC slot
+    # of #275 was 17:30 EDT / 16:30 EST, before it, and is gone.
+    # 23:15 UTC is 19:15 EDT / 18:15 EST: the primary slot.
     - cron: "15 23 * * 1-5"
+    # The fallback (#275), for a delayed or dropped scheduled run: 01:15 UTC on Tuesday to Saturday is
+    # 21:15 EDT / 20:15 EST on the ET day before, Monday to Friday. A slot that finds the day already on
+    # live-log does nothing.
     - cron: "15 1 * * 2-6"
   workflow_dispatch:
 
@@ -105,13 +106,13 @@ jobs:
 
       # GitHub has started the 01:15 UTC fallback slot hours late (#937), after midnight ET, when
       # `date +%F` names the next ET day, which has no record yet. A run that starts before the
-      # 16:00 ET decision instant has nothing to do: the record job is skipped, the run is green
+      # 18:00 ET decision instant has nothing to do: the record job is skipped, the run is green
       # and nothing reaches the failed-runs issue. It never writes the previous ET day's record.
       - name: Skip before the decision instant
         id: instant
         run: |
           hour=$(TZ=America/New_York date +%H)
-          if [ "$((10#$hour))" -lt 16 ]; then
+          if [ "$((10#$hour))" -lt 18 ]; then
             echo "early=true" >> "$GITHUB_OUTPUT"
             echo "It is $hour:xx ET, before the decision instant; nothing to do."
           else

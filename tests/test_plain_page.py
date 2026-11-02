@@ -23,6 +23,7 @@ Recorded mutation for the dead-link guard (`test_every_repository_link_points_at
 """
 
 import importlib.util
+import json
 import re
 import sys
 import unittest
@@ -139,6 +140,29 @@ class RuledContentTests(unittest.TestCase):
         self.assertIn("Days that are locked", block)
         self.assertIn("is weak", block)
         self.assertIn("lockbox.md", block)
+
+    def test_the_page_states_the_current_aim_instant_and_cut_point_honestly(self):
+        """#1355: an outside review found the page out of step. The aim is the spread's whole range; the decision instant
+        is the panel's (18:00, not a retyped 4 pm); the $100 billion line is a chosen classification; the near-blind
+        days were opened. Mutation: restore "The headline forecast is the" in `question_block` and
+        `test_the_page_states_the_current_aim_instant_and_cut_point_honestly` fails with AssertionError.
+        """
+        blocks = _blocks(_text())
+        question = blocks["plain-question"]
+        self.assertNotIn("headline forecast", question)
+        self.assertIn("full range of likely outcomes", question)
+        manifest = json.loads((ROOT / "metadata/funding_panel_manifest.json").read_text(encoding="utf-8"))
+        self.assertEqual(manifest["decision_time"], "18:00:00")
+        self.assertIn("6 pm New York time", question)
+        self.assertNotIn("4 pm", question)
+        scarcity = blocks["plain-scarcity"]
+        self.assertIn("a classification the project chose, not a break measured in the data", scarcity)
+        self.assertNotIn("buffer only while", scarcity)
+        limits = blocks["plain-limits"]
+        self.assertIn("until the final test opened them on 2026-10-05", limits)
+        self.assertNotIn("A comparison scores only days before", limits)
+        self.assertIn("Calendar effects are larger in some low-reserve periods", _text())
+        self.assertNotIn("reserve scarcity sets the size", _text())
 
     def test_the_headline_is_the_pressure_probability_and_the_page_does_not_claim_stress_warning(self):
         text = _text()
