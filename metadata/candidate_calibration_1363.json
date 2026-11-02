@@ -62,5 +62,16 @@
  ],
  "seed": 1363,
  "long_run": "the walk is the only long step (the two windows of scripts/s3c_announced_settlement_1288.py with the ann arms only, about 40 to 60 minutes on four cores by the 1288 script's own account of ninety minutes for its four walks); under two hours, so it runs in the cloud session. If it does not, the walk command writes one file per window and the score command scores the windows that exist (long-run skill, point 5)",
- "amendments": []
+ "amendments": [
+  {
+   "issue": 1363,
+   "what": "added the `variants` block above, after figures were computed, because tests/test_model_declarations.py (#803) requires a declaration to carry one. It restates the candidate and the three references already declared under `candidate` and `references`. No window, level, band, seed, unit, group or other setting changed, and no figure depends on it."
+  }
+ ],
+ "variants": {
+  "sc_s3c_ann_net": "scored arm, the candidate, walked unchanged from #1288/#1314 at the 18:00 decision instant: no new fit, nothing tuned",
+  "B1": "reference, protocol benchmark B1; not a new variant",
+  "B1_prime": "reference, protocol benchmark B1' (#960); not a new variant",
+  "B2": "reference, protocol benchmark B2; not a new variant"
+ }
 }
