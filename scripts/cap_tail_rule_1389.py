@@ -380,8 +380,178 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     return page_command(args)
 
 
-def page_command(args) -> int:  # replaced below
-    raise SystemExit("the page is written after the scores")
+# -- the page ------------------------------------------------------------------------------------------------------------------
+
+WINDOW_TITLES = {
+    "development": "Development window (targets up to 2025-12-31; the near-blind tier is not in it)",
+    "2026": "2026 days (targets 2026-01-02 to 2026-09-03), shown apart",
+}
+#: #1361's result as it stood when this page was written: an open pull request, read from its description, not a record on main.
+PR_1361 = ("https://github.com/eleonorabjornberg/repo-market-model/pull/1376", "the candidate without the cap, scored beside the candidate")
+
+
+def _n(x: Optional[float], digits: int = 6) -> str:
+    return "n/a" if x is None else f"{x:.{digits}f}"
+
+
+def _diff(row: Optional[dict]) -> str:
+    """The difference (status quo less the rule: positive favours the rule) with its interval, and a reading from the interval."""
+
+    if row is None:
+        return "not tested"
+    if row.get("identical"):
+        return "identical"
+    if "undefined" in row:
+        return "undefined"
+    lo, hi = row["difference_interval"]
+    reading = "gain" if lo > 0 else "loss" if hi < 0 else "undecided"
+    mark = " †" if row.get("dropped_resamples") else ""
+    return f"{row['difference']:+.2e} [{lo:+.2e}, {hi:+.2e}]: {reading}{mark}"
+
+
+def brier_table(groups: Mapping[str, Mapping[str, dict]], metric: str, wanted: Sequence[Tuple[str, str]]) -> List[str]:
+    out = [f"| group | cells | decision days | status quo | (a) | (b) | (a): status quo less rule | (b): status quo less rule |", "|---|---|---|---|---|---|---|---|"]
+    for split, label in wanted:
+        entry = groups.get(split, {}).get(label)
+        if entry is None or metric not in entry["metrics"]:
+            continue
+        x = entry["metrics"][metric]
+        means = x["means"]
+        out.append(f"| {label} | {entry['cells']} | {x['days']} | {_n(means['status_quo'])} | {_n(means['atom_at_line'])} | {_n(means['open_tail'])} | "
+                   f"{_diff(x['vs'].get('atom_at_line'))} | {_diff(x['vs'].get('open_tail'))} |")
+    return out
+
+
+def render(r: dict) -> str:
+    L: List[str] = []
+    add = L.append
+    add("# One rule for the cap, the tail and the probabilities: the law the candidate emits (#1389)")
+    add("")
+    add("**Development data, not a verdict.** Hypothesis H5 (primary goal), registration design (forecast object), step 3; part of the H5 registration "
+        "priority on #46. The candidate, (s3c-ann-net), does not change, nothing is registered or published, no record in `docs/runs/` is edited, and the "
+        f"two rules below sit behind a flag that is off by default (`repo_model.capped_law`). Panel digest `{r['panel_sha256']}`. Walked at the 18:00 decision "
+        "instant as #1314 did; the mean grid CRPS of the capped vector equals #1314's record to 1e-9 in both windows.")
+    add("")
+    add("The design note, `docs/research/cap-tail-rule-1389-design.md`, states the distribution the candidate emits today and what the cap does to each part of it. "
+        "This page scores three readings of the same quantiles: the **status quo** (`spread_mean_reversion.exceedance` on the capped vector); **(a)** a bounded "
+        "law with an atom at the line (the uncapped law clipped at the line: calibrate, then cap, then read every probability from the clipped law); **(b)** the "
+        "capped percentiles with an explicitly unbounded completion (calibrate, cap the percentiles, then complete the capped percentiles: an atom at the line, "
+        "the last 1% running on above it).")
+    add("")
+    add("## What the quantile scores show")
+    add("")
+    add("The grid CRPS (primary) and the upper-tail twCRPS (key secondary) read the quantile vector, which is the capped vector under every rule, and the study "
+        "checks that each rule's law has it as its quantiles at all 23 levels. The three rules score alike on both, by construction: the cap changes the "
+        "quantiles, and the rule only decides what is said beyond them.")
+    add("")
+    add("| window | decision days | cells | cells at full allotment | cells where the cap binds | mean grid CRPS | mean upper-tail twCRPS |")
+    add("|---|---|---|---|---|---|---|")
+    for name, w in r["windows"].items():
+        g = w["grid_scores"]
+        add(f"| {name} | {w['decision_days']} | {w['cells']} | {w['cells_at_full_allotment']} | {w['cells_where_the_cap_binds']} | "
+            f"{g['mean_grid_crps']:.4f} | {g['mean_upper_tail_twcrps']:.4f} |")
+    add("")
+    wanted = [("pooled", "all cells"), ("full_allotment", "target days at full allotment"),
+              ("cap_binds", "the cap binds (the uncapped q99 is above the line)")]
+    for name, w in r["windows"].items():
+        add(f"## {WINDOW_TITLES[name]}")
+        add("")
+        add("Brier scores (lower is better) are means of decision-day means over the group's cells. The difference is the status quo's score less the rule's, so "
+            "a positive difference favours the rule; its interval is scoring protocol v1's studentized stationary bootstrap on mean d (seed "
+            f"{r['seed']}, {r['draws']} draws), read as `gain`, `loss` or `undecided` from whether it excludes zero. A group of fewer than {MIN_GROUP_DAYS} "
+            "decision days is not tested. † marks a bound taken from the resamples that have a long-run variance (#1239); the others are on all of them. "
+            "Differences are shown in scientific notation because they are tiny.")
+        add("")
+        for metric in METRICS:
+            add(f"**{METRIC_TITLES[metric]}**")
+            add("")
+            L.extend(brier_table(w["groups"], metric, wanted))
+            add("")
+        add("**Exceedances: outcomes above the threshold against the sum of the probabilities** (calibration in the large; shown, not tested)")
+        add("")
+        add("| event | cells | outcomes above | status quo | (a) | (b) |")
+        add("|---|---|---|---|---|---|")
+        for event, title in (("above_5_bp", "above +5 bp"), ("above_10_bp", "above +10 bp"), ("above_the_line", "above the line")):
+            for label, t in w["exceedances"][event].items():
+                p = t["predicted"]
+                add(f"| {title}, {label} | {t['cells']} | {t['observed']} | {p['status_quo']:.3f} | {p['atom_at_line']:.3f} | {p['open_tail']:.3f} |")
+        add("")
+        add("**The cells by the number of upper levels the cap changes** (cells at full allotment; the status quo's probability depends on this number, "
+            "which is the incoherence the design note describes)")
+        add("")
+        add("| levels changed | cells | share of outcomes above +10 bp | mean P(> +10 bp): status quo | (a) | (b) | cells where the status quo's P(> +10 bp) is under 1e-6 | "
+            "mean tail above the line (bp): status quo | (a) | (b) |")
+        add("|---|---|---|---|---|---|---|---|---|---|")
+        for cls, v in w["binding_classes"].items():
+            m, t = v["mean_p10"], v["mean_tail_extent_bp"]
+            add(f"| {cls} | {v['cells']} | {v['observed_above_10']:.4f} | {m['status_quo']:.5f} | {m['atom_at_line']:.5f} | {m['open_tail']:.5f} | "
+                f"{v['status_quo_p10_under_1e-6']} | {t['status_quo']:.4f} | {t['atom_at_line']:.4f} | {t['open_tail']:.4f} |")
+        add("")
+        add("**Randomized PIT** on the cells at full allotment (whole-basis-point outcomes, one draw per cell from `random.Random(1389)`), cells per tenth of [0, 1]; "
+            "a calibrated law is flat. Shown, not tested.")
+        add("")
+        add("| rule | " + " | ".join(f"{i / 10:.1f}-{(i + 1) / 10:.1f}" for i in range(10)) + " |")
+        add("|---|" + "---|" * 10)
+        for rule in RULES:
+            add(f"| {LABELS[rule]} | " + " | ".join(str(c) for c in w["pit_deciles_at_full_allotment"][rule]) + " |")
+        add("")
+        add("**By regime and by pressure-day type of the target day: Brier P(> +10 bp)**")
+        add("")
+        splits = [(sp_, lab) for sp_ in ("regime", "pressure_day_type") for lab in w["groups"].get(sp_, {})]
+        L.extend(brier_table(w["groups"], "brier10", splits))
+        add("")
+        add("**By regime and by pressure-day type of the target day: Brier P(> +5 bp)**")
+        add("")
+        L.extend(brier_table(w["groups"], "brier5", splits))
+        add("")
+    add("## What it shows, and what it does not")
+    add("")
+    add("- The three rules score alike on the grid and the upper-tail scores because they share the quantiles. They differ in what they say beyond the line, "
+        "and the Brier scores on the events beyond it are close to zero under every rule: the differences above are of the order of a hundred-thousandth, "
+        "far below the Brier score of P(> +5 bp). The choice of rule is not decided by these scores.")
+    add("- The status quo's probability above the line depends on how many upper levels the cap changed (the table of cells by levels changed): one level "
+        "leaves a probability of a few thousandths, two or more leave almost none. Rules (a) and (b) do not.")
+    add("- (a) says nothing lies above the line. (b) says at most 1% does, and where the cap changes four or more levels its tail above the line runs a "
+        "fraction of a basis point, so that on whole basis points its P(> +10 bp) is also almost zero. A tail that matters at the line would need a tail "
+        "scale published with the percentiles; (b) as built has none.")
+    add("- On the development window the cells at full allotment are few and come from a short stretch of days; outcomes above the line occur there "
+        "and every rule gives them almost no probability. On the 2026 days none does. Neither window carries a rate that could be read as a verdict, "
+        "and the 2026 days have been seen.")
+    add("- Not done: the live-record hook, the registration text, any change to the cap, to `s3c_candidate` or to the published scoring of the candidate. "
+        "Walked at the 18:00 instant only.")
+    add("")
+    add("## Question for Eleonora")
+    add("")
+    L.extend(question())
+    add("")
+    return "\n".join(L) + "\n"
+
+
+def question() -> List[str]:
+    return [
+        "**Which rule does the registration freeze for the candidate's quantiles, probabilities and PIT?** Her ruling is needed; nothing here is settled in code.",
+        "",
+        "1. **(b), the capped percentiles with an open completion** (the recommendation). The registration states: the quantiles are capped at the line on target "
+        "days at full allotment, calibration comes before the cap, and every probability and PIT is read from the capped percentiles with an atom at the line and "
+        "the last 1% running on above it. No claim that the tail beyond the line is impossible.",
+        "2. **(a), the bounded law with an atom at the line.** The same order, with the uncapped law clipped at the line, so P(> line) is zero by rule. It claims "
+        "that nothing lies above the facility's minimum bid; outcomes above it have occurred in the development window.",
+        "3. **(b) with a published tail scale.** As 1, with the scale of the completion above the line registered beside the percentiles (as built, it is a "
+        "fraction of a basis point where the cap changes four or more levels). A later directive would design it.",
+        "4. **Keep the status quo.** No rule is frozen; the probabilities stay as the published code reads them, and the incoherence stays.",
+        "",
+        f"**Default if she has not answered by the next 5 pm batch: 1.** It follows #1361's result as it stands: [{PR_1361[1]}]({PR_1361[0]}) is an open pull request "
+        "whose description reports that the uncapped version loses to the candidate on the 2026 days (grid CRPS and upper-tail twCRPS) and is undecided on the "
+        "development window, so the uncapped law is not shown to be no worse and the recommendation, (b), holds. The default is re-read when that pull request "
+        "is merged or changes. It changes no flag and no claim: both rules stay off.",
+    ]
+
+
+def page_command(args) -> int:
+    result = json.loads(Path(args.score).read_text(encoding="utf-8"))
+    Path(args.output).parent.mkdir(parents=True, exist_ok=True)
+    Path(args.output).write_text(render(result), encoding="utf-8")
+    return 0
 
 
 if __name__ == "__main__":

@@ -127,6 +127,35 @@ class TailExtentTests(unittest.TestCase):
         self.assertEqual(script.tail_extent(many_knots(), None, "open_tail"), 0.0)
 
 
+class RecordTests(unittest.TestCase):
+    """The committed record and page: the page is the record rendered, and the record keeps what the study promises."""
+
+    record = REPO / "docs" / "research" / "cap-tail-rule-1389" / "result.json"
+    page = REPO / "docs" / "research" / "cap-tail-rule-1389-result.md"
+
+    def test_the_page_is_the_record_rendered(self):
+        import json
+
+        self.assertEqual(self.page.read_text(encoding="utf-8"), script.render(json.loads(self.record.read_text(encoding="utf-8"))))
+
+    def test_the_record_is_a_development_study_with_no_locked_day(self):
+        import json
+
+        r = json.loads(self.record.read_text(encoding="utf-8"))
+        self.assertEqual(r["label"], "development, not a verdict")
+        self.assertEqual(sorted(r["windows"]), ["2026", "development"])
+        for w in r["windows"].values():
+            self.assertTrue(w["grid_scores"]["identical_under_every_rule"])
+            self.assertLess(abs(w["reproduction"]["mean_grid_crps"] - w["reproduction"]["record_1314"]), 1e-9)
+
+    def test_the_page_asks_one_marked_question_with_options_and_a_default(self):
+        text = self.page.read_text(encoding="utf-8")
+        self.assertIn("## Question for Eleonora", text)
+        self.assertIn("Default if she has not answered", text)
+        for n in ("1.", "2.", "3.", "4."):
+            self.assertIn(f"\n{n} ", text)
+
+
 class RuleAgreementTests(unittest.TestCase):
     def test_where_the_cap_does_not_bind_the_open_tail_and_the_status_quo_agree(self):
         rng = random.Random(1389)
