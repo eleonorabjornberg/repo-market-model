@@ -52,17 +52,27 @@ from .data import DailyObservation, next_business_day
 from .splits import LookAheadError
 
 __all__ = [
+    "ABSENT",
     "Auction",
     "COLUMNS",
+    "COMPLETE",
+    "ClassRead",
+    "INCOMPLETE",
+    "MISSING_MATURING",
+    "MISSING_STATES",
+    "NetState",
+    "UNANNOUNCED",
     "COLUMN_FIELDS",
     "WINDOW_DAYS",
     "auction_records",
     "check_known_columns",
+    "cmb_pending",
     "gross_by_day",
     "known_auctions",
     "load_declaration",
     "load_snapshot",
     "net_for_day",
+    "net_state",
     "with_net_settlement",
 ]
 
@@ -224,52 +234,126 @@ def _visible_to_schedule(auctions: Sequence[Auction], instant: datetime, future_
     return [a for a in auctions if future_cmb or not a.cmb or a.announced_at <= instant]
 
 
+#: A class's reading of one settlement day at an instant (#1390). `absent`: no auction of the class settles that day. `complete`: fully
+#: announced, with a maturing estimate on an announced record (a net of exactly 0 here is a genuine zero). The next three are the states in which
+#: the class net rests on a missing figure: `missing_maturing` (fully announced, no announced record carries a maturing estimate, so `net_for_day`
+#: reads the maturing amount as 0.0), `incomplete` (partly announced: left out, reads 0.0, #679) and `unannounced` (on the published schedule,
+#: nothing announced yet: reads 0.0).
+ABSENT, COMPLETE = "absent", "complete"
+MISSING_MATURING, INCOMPLETE, UNANNOUNCED = "missing_maturing", "incomplete", "unannounced"
+MISSING_STATES = (MISSING_MATURING, INCOMPLETE, UNANNOUNCED)
+
+
+class ClassRead(NamedTuple):
+    """One class (bill types or coupon types) of one settlement day at an instant: its state and the net `net_for_day` reads for it (USD billions)."""
+
+    state: str
+    net: float
+
+
+class NetState(NamedTuple):
+    """The two classes of one settlement day at an instant, with the net each is read as (#1390). `net_for_day` is this, summed."""
+
+    bill: ClassRead
+    coupon: ClassRead
+
+    @property
+    def missing(self) -> bool:
+        """True when either class rests on a missing figure (`MISSING_STATES`)."""
+
+        return self.bill.state in MISSING_STATES or self.coupon.state in MISSING_STATES
+
+    @property
+    def unknown(self) -> int:
+        """The classes with no maturing figure, counted as `net_for_day` counts them."""
+
+        return int(self.bill.state == MISSING_MATURING) + int(self.coupon.state == MISSING_MATURING)
+
+    def net(self) -> float:
+        return self.bill.net + self.coupon.net
+
+    def terms(self, *, drop: bool) -> Dict[str, float]:
+        """The net by settlement term, in USD billions. With `drop`, a class that rests on a missing figure contributes 0.0 instead of its reading.
+
+        Without `drop` this is the reading of every figure to date (the maturing amount of a missing class taken as 0.0). Only `missing_maturing` differs
+        between the two: an `incomplete` or `unannounced` class already reads 0.0.
+        """
+
+        def value(read: ClassRead) -> float:
+            return 0.0 if drop and read.state in MISSING_STATES else read.net
+
+        return {"settlement_bill": value(self.bill), "settlement_coupon": value(self.coupon)}
+
+
+def net_state(auctions: Sequence[Auction], instant: datetime, *, future_cmb: bool = False) -> NetState:
+    """The state and the net of each class of one settlement day's auctions at `instant`: the rule of `net_for_day`, with the missing states named.
+
+    A class is `absent` when no auction of it is on the published schedule at `instant`; `unannounced` when some is and none is announced;
+    `incomplete` when only some are (#679); `missing_maturing` when all are and none carries a maturing figure; else `complete`. The net is what
+    `net_for_day` reads: the summed offerings less the largest maturing figure, 0.0 when the class is not fully announced or has no figure.
+    The state uses only what was public at `instant`.
+    """
+
+    everything: Dict[bool, List[Auction]] = {}
+    groups: Dict[bool, List[Auction]] = {}
+    for auction in _visible_to_schedule(auctions, instant, future_cmb):
+        everything.setdefault(auction.is_bill, []).append(auction)
+    for auction in known_auctions(auctions, instant):
+        groups.setdefault(auction.is_bill, []).append(auction)
+    out: Dict[bool, ClassRead] = {}
+    for is_bill in (True, False):
+        members = groups.get(is_bill, [])
+        scheduled = everything.get(is_bill, [])
+        if not scheduled and not members:
+            out[is_bill] = ClassRead(ABSENT, 0.0)
+        elif not members:
+            out[is_bill] = ClassRead(UNANNOUNCED, 0.0)
+        elif len(members) < len(scheduled):
+            out[is_bill] = ClassRead(INCOMPLETE, 0.0)
+        else:
+            figures = [a.maturing for a in members if a.maturing is not None]
+            state = COMPLETE if figures else MISSING_MATURING
+            out[is_bill] = ClassRead(state, sum(a.offering for a in members) - (max(figures) if figures else 0.0))
+    return NetState(out[True], out[False])
+
+
+def cmb_pending(auctions: Sequence[Auction], instant: datetime) -> int:
+    """The cash management bills of one settlement day announced after `instant`: HINDSIGHT, for counting only.
+
+    A cash management bill is on no published schedule before its own announcement (#738), so nothing at `instant` can say that one is coming. This
+    count therefore never enters a forecast, a flag or a log row of a forecast; it exists so a study can count the days on which the net at a lead
+    was short of a CMB that was announced later.
+    """
+
+    return sum(1 for a in auctions if a.is_bill and a.cmb and a.announced_at > instant)
+
+
 def net_for_day(
     auctions: Sequence[Auction], instant: datetime, *, future_cmb: bool = False
 ) -> Tuple[float, float, int]:
     """`(net, net of the bill types, groups with no maturing figure)` of one settlement day's auctions.
 
-    The auctions announced by `instant` are grouped into the bill types and the coupon
-    types (#566). A group's net is its summed offerings less its maturing amount, which
-    is the largest figure any of its announced auctions carries, and 0.0 when none
-    carries one (counted). The maturing figure is one total for every security of the
-    class maturing that day, repeated on each of its records, so Notes and Bonds
-    settling together subtract it once.
+    The auctions announced by `instant` are grouped into the bill types and the coupon types (#566). A group's net is its summed offerings less its
+    maturing amount, which is the largest figure any of its announced auctions carries, and 0.0 when none carries one (counted). The maturing figure
+    is one total for every security of the class maturing that day, repeated on each of its records, so Notes and Bonds settling together subtract it
+    once.
 
-    A class that is partly announced is left out of every figure until it is fully announced (#679). Its
-    maturing amount covers securities whose offerings are not yet known, so netting it against the announced
-    part reads a cash inflow that is not there (#620); counting the announced offerings with no maturing
-    amount reads a drain the unannounced part offsets (#665). Left out, the class reads 0.0, which has the
-    smallest mean absolute error of the three rules against the completed net (`scripts/partly_announced_679.py`). That a class has more auctions settling the day is read from
-    `auctions`, the day's whole list, as the Treasury's published schedule would show it; no unannounced
-    offering enters any figure.
+    A class that is partly announced is left out of every figure until it is fully announced (#679). Its maturing amount covers securities whose
+    offerings are not yet known, so netting it against the announced part reads a cash inflow that is not there (#620); counting the announced
+    offerings with no maturing amount reads a drain the unannounced part offsets (#665). Left out, the class reads 0.0, which has the smallest mean
+    absolute error of the three rules against the completed net (`scripts/partly_announced_679.py`). That a class has more auctions settling the day is read from
+    `auctions`, the day's whole list, as the Treasury's published schedule would show it; no unannounced offering enters any figure.
 
-    The schedule does not show a cash management bill (CMB) before its own announcement: CMBs are ad hoc, so
-    one announced after `instant` neither makes a class partly announced nor is counted (#738, Eleonora,
-    14 October 2026). `future_cmb=True` restores the earlier reading, which counted every CMB of the day; it
-    exists only so `check_known_columns` can recognise a column built that way.
+    The schedule does not show a cash management bill (CMB) before its own announcement: CMBs are ad hoc, so one announced after `instant` neither makes
+    a class partly announced nor is counted (#738, Eleonora, 14 October 2026). `future_cmb=True` restores the earlier reading, which counted every CMB of
+    the day; it exists only so `check_known_columns` can recognise a column built that way.
+
+    A figure of 0.0 does not say why it is 0.0: a genuine zero, a class left out, and a maturing amount read as 0.0 all look alike here. `net_state`
+    names which (#1390); this function's values are unchanged by it.
     """
 
-    groups: Dict[bool, List[Auction]] = {}
-    everything: Dict[bool, List[Auction]] = {}
-    for auction in _visible_to_schedule(auctions, instant, future_cmb):
-        everything.setdefault(auction.is_bill, []).append(auction)
-    for auction in known_auctions(auctions, instant):
-        groups.setdefault(auction.is_bill, []).append(auction)
-    net = bills = 0.0
-    unknown = 0
-    for is_bill, members in groups.items():
-        partly_announced = len(members) < len(everything[is_bill])
-        figures = [a.maturing for a in members if a.maturing is not None]
-        if partly_announced:
-            continue
-        maturing = max(figures) if figures else 0.0
-        unknown += not figures
-        value = sum(a.offering for a in members) - maturing
-        net += value
-        if is_bill:
-            bills += value
-    return net, bills, unknown
+    state = net_state(auctions, instant, future_cmb=future_cmb)
+    return state.net(), state.bill.net, state.unknown
 
 
 def _instant(day: date, declaration: Mapping[str, object]) -> datetime:

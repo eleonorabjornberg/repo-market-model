@@ -1,0 +1,77 @@
+{
+ "status": "declared by the pull request that closes #1363 before any figure was computed; a development study, never a verdict. Nothing is registered or published, no record in docs/runs/ is edited, no declaration already merged changes, docs/research/h5-candidate.json and scripts/final_test_preregistration.py do not change, no day after 2026-09-03 is read and no lockbox day is scored. The candidate (s3c-ann-net) is not changed or tuned here; the study re-walks it unchanged at the 18:00 decision instant and measures it. Amendments made after a figure was computed are listed in `amendments` (none at the time of writing).",
+ "issue": 1363,
+ "hypothesis": "H5 (primary goal), registration design: is the candidate's forecast distribution calibrated, in which periods and on which kinds of day, and do its misses cluster in time? Step 3 evidence for the known-limits section of the registration and the validation report",
+ "ruling": "Eleonora, 2 November 2026, chat, relayed on #1363, after the outside publication-readiness review of 95d21b1f; part of the H5 registration priority on #46",
+ "decision_instant": "18:00 America/New_York on the decision day (repo_model.decision_instant.DECISION_TIME, amended on 29 October 2026, #1312). The walk is made at that instant (RMM_DECISION_TIME=18:00, the panel built with --decision-time 18:00:00); no earlier record is edited",
+ "candidate": {
+  "name": "sc_s3c_ann_net",
+  "label": "(s3c-ann-net)",
+  "definition": "h5-candidate.json: (s3c) with its two settlement terms read at leads 2 to 5 from the auction announcement and sized by net settlement. Walked by the code of scripts/s3c_announced_settlement_1288.py unchanged (refit every 21 decision days, direct pairs, the SRF cap from full allotment); the study checks that the mean grid CRPS it recomputes from the walk equals docs/research/s3c-ann-net-1800-1314/announced-settlement-1800.json to 1e-9 and refuses to write a record otherwise"
+ },
+ "references": [
+  {
+   "name": "B1",
+   "label": "B1",
+   "role": "protocol benchmark B1"
+  },
+  {
+   "name": "B1_prime",
+   "label": "B1'",
+   "role": "protocol benchmark B1' (#960); the comparison she asked for"
+  },
+  {
+   "name": "B2",
+   "label": "B2",
+   "role": "protocol benchmark B2"
+  }
+ ],
+ "b4": "B4 (#1360, a plain quantile regression on reserves and calendar days) is not on main at the base of this pull request and is not compared; the page says so. Once #1360 merges the walk command can add it; nothing here waits on it",
+ "windows": {
+  "development": "decision days whose five targets fall on or before 2025-12-31 (the frame of scripts/s3c_announced_settlement_1288.py, window 'development'); decides",
+  "2026": "decision days whose five targets fall from 2026-01-02 to 2026-09-03 (window '2026', the near-blind tier open since GO #151); shown apart, already seen by #845, #1229, #1255, #1273, #1288 and #1321, decides nothing"
+ },
+ "unit": "the cell (decision day D, lead h = 1..5), target T = the h-th panel day after D, outcome the whole-basis-point spread at T. A group of cells is read by the day type or regime of T. For a rate over all leads the series is indexed by target day: the mean of the hits of the cells that target it (up to five); for one lead it is that lead's cell series in target-day order",
+ "calibration": {
+  "levels": "every grid quantile (scoring_protocol.GRID, 23 levels): the share of cells with y <= q_tau ('at or below') and with y < q_tau ('strictly below'). A calibrated forecast of a whole-basis-point target has the strict share at or below tau and the at-or-below share at or above tau, so both are shown; the hit-definition question of coverage_tests is open (Eleonora's) and this study chooses neither rule",
+  "bands": "the central 50% band (q25 to q75) and the central 90% band (q5 to q95): coverage with the band closed (q_lo <= y <= q_hi) and open (q_lo < y < q_hi), against 0.50 and 0.90",
+  "pit": "the randomised PIT of #970 (scripts/randomised_pit_970.py: randomised_pit, the draw uniform in the cell's level bracket, ties randomised), cells drawn in (decision day, lead) order within each group; seed 1363 for the main draw, seeds 1364 to 1383 for twenty further draws. Shown: the six bins of #707 (edges 0.10, 0.25, 0.50, 0.75, 0.90, expected 0.10, 0.15, 0.25, 0.25, 0.15, 0.10), the share at or below 0.10 and at or above 0.90, and the range of those two shares over the twenty further seeds",
+  "interval": "a 90% stationary-bootstrap percentile interval (mean block 10 target days, 2000 resamples, seed 1363) of each rate, from the series in target-day order. The current method for a day-type group (the group's target days, scattered, resampled in date order as if consecutive) is used, with the caveat that #1221 questions it and #1228 will decide; no reading of a day-type group is a finding. Groups of fewer than 20 target days are listed with their rates and not tested",
+  "reading": "a group of 20 or more target days is read: for a band, 'over-covers' when the interval of coverage lies wholly above the nominal, 'under-covers' when wholly below, otherwise 'consistent'; for a grid quantile tau, 'quantile too high' when the interval of the strict share lies wholly above tau, 'quantile too low' when the interval of the at-or-below share lies wholly below tau, otherwise 'consistent'. The size is the observed rate less the nominal (for a quantile, the nearer end of [strict, at-or-below] to tau). Nothing is corrected for the number of groups and the page states the count of readings made, so that some chance flags are expected"
+ },
+ "groups": {
+  "pooled": "all cells; by lead h = 1..5",
+  "regime": "the declared regimes of the splits declaration, by the regime of T (2018-19, 2020, 2021-23, 2024, 2025-26 or as declared)",
+  "target_day_type": "the types of T, which overlap: quarter_end, month_end, tax_date, coupon_settlement (the coupon flag of the term table), bill_settlement (the bill flag), fomc_day, iorb_window, dom_19_23, post_month_end_window (calendar_mr_1115.DAY_TYPES; 'settlement' split into its coupon and bill flags), and ordinary (none of them)",
+  "pressure_day_type": "the turn record in force (turn_days.reporting_day_type) of T, as every study since #1241",
+  "size": "every group is printed with its number of target days and cells"
+ },
+ "clustering": {
+  "question": "do the misses cluster in time: is the chance of a miss at lead h on decision day D+1 different after a miss on decision day D than after a hit",
+  "sequences": "for each lead, window and model, the 0/1 sequence over the scored decision days in panel order (consecutive panel days; a break in the scored days starts a new run, and no transition is counted across it) of four events, each under two rules: upper tail y > q95 (strict) or y >= q95 (weak); lower tail y < q05 or y <= q05; 90% band miss, outside the closed band (strict) or outside the open band (weak); 50% band miss, likewise. Eight sequences per lead",
+  "tests": "(1) Christoffersen's independence test (coverage_tests.christoffersen_independence, a first-order Markov chain against a constant probability, chi-square 1 df) on all the days, its transition counts summed over runs; (2) the same statistic's exact permutation p-value (10,000 shuffles of the sequence inside its runs, seed 1363), because the asymptotic p is weak when misses are few; (3) the protocol's own reading (scoring_protocol.coverage_cells, method 'thinned': every h-th decision day at lead h) for the q05 and q95 events; (4) the same independence test inside each regime of the development window, with no transition across a regime boundary. Descriptive: P(miss | previous miss), P(miss | previous hit), the longest run of misses, and the number of misses",
+  "reading": "the permutation p of (2) is the reading. A sequence 'clusters' when its Holm-adjusted p (scoring_protocol.holm, alpha 0.05, over the family of the 40 sequences of one model and window) is below alpha; the unadjusted p is shown beside. Clustering inside a regime (4) is read the same way. These tests do not separate clustering in time from a miss rate that moves with the regime or the day type; (4) and the day-type tables are there for that",
+  "references": "the same tests on B1, B1' and B2, so the candidate's clustering is read against theirs"
+ },
+ "answer_asked": "which groups are miscalibrated and by how much (the reading above, listed with sizes); whether the candidate's misses cluster, at which leads; against B1' and B2. The page ends with the known-limits text this feeds, as a draft for her, and states that nothing is adopted",
+ "limits": [
+  "development data on seen days, never a verdict; the 2026 days are shown apart and decide nothing",
+  "a hit rate by day type or regime has few days in some groups; intervals use the current method (#1221) and a flagged group is not a finding",
+  "the candidate's walk is refit every 21 decision days; its forecasts at D use only what was public at 18:00 on D (information-set.md); the outcome enters only the hit, never the forecast",
+  "B4 is not compared (not on main)"
+ ],
+ "seed": 1363,
+ "long_run": "the walk is the only long step (the two windows of scripts/s3c_announced_settlement_1288.py with the ann arms only, about 40 to 60 minutes on four cores by the 1288 script's own account of ninety minutes for its four walks); under two hours, so it runs in the cloud session. If it does not, the walk command writes one file per window and the score command scores the windows that exist (long-run skill, point 5)",
+ "amendments": [
+  {
+   "issue": 1363,
+   "what": "added the `variants` block above, after figures were computed, because tests/test_model_declarations.py (#803) requires a declaration to carry one. It restates the candidate and the three references already declared under `candidate` and `references`. No window, level, band, seed, unit, group or other setting changed, and no figure depends on it."
+  }
+ ],
+ "variants": {
+  "sc_s3c_ann_net": "scored arm, the candidate, walked unchanged from #1288/#1314 at the 18:00 decision instant: no new fit, nothing tuned",
+  "B1": "reference, protocol benchmark B1; not a new variant",
+  "B1_prime": "reference, protocol benchmark B1' (#960); not a new variant",
+  "B2": "reference, protocol benchmark B2; not a new variant"
+ }
+}
