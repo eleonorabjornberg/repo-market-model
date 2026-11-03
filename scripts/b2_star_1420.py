@@ -444,6 +444,10 @@ def question() -> List[str]:
         "1. **Two years, minimum 10, hard fallback, as declared** (default): the confirmation design (#1393, #1394) names B2* with these numbers.",
         "2. **Another pair** (name the lookback and the minimum): B2* is re-scored once under the new declaration, as an amendment before its score.",
         "3. **Shrinkage in place of a hard fallback** (a weight on the parent pool by thin-pool size): a new declaration, scored once.", "",
+        "**Read the B2* against B2 rows before choosing.** B2* differs from B2 in two ways (two years in place of one, a minimum of 10 in place of 4) and the "
+        "lookback applies to every day type, the ordinary ones included. Where B2* is read worse than B2 in the tables above, the longer window has cost more "
+        "than the thicker pools gained, and freezing B2* would put a weaker benchmark in the confirmation than the B2 in force; option 2 (a lookback of one "
+        "year with a different minimum) is then the way to separate the two changes. This page does not choose.", "",
         "**A second question: does B2* replace B2 as the protocol's calendar climatology, or sit beside it?** Default: beside it; B2 in force (#1155) and "
         "section 4 are unchanged until you rule."]
 
