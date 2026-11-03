@@ -1302,6 +1302,7 @@
   "metadata/net_settlement.json": "the availability declaration of the net settlement input (#1273); a declared input of the candidate's sizing, not a study or an arm",
   "metadata/owner_attestations.json": "the register of her GO attestations; it cites the candidate where she froze or ruled on it, not an arm",
   "metadata/settlement_announcement_dating.json": "the dating of the auction announcements (#1288) that the candidate's sizing reads; a data declaration, not an arm",
-  "metadata/sources.json": "the source registry; it lists the inputs the candidate reads, not an arm"
+  "metadata/s3c_uncapped_1361.json": "#1361's development study of the candidate without the Standing Repo Facility cap, declared before any score; a secondary result reported beside the candidate, which does not change, not an arm on the way to it",
+ "metadata/sources.json": "the source registry; it lists the inputs the candidate reads, not an arm"
  }
 }

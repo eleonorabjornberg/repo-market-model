@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/s3c_uncapped_1361.json",
+  "script": "scripts/s3c_uncapped_1361.py",
+  "pairing": "direct",
+  "why": "(s3c-ann-net) with and without the Standing Repo Facility cap (#1361). The fit is (s3)'s estimation routine, spread_mr_state_calendar.walk with training_pairs = direct (guarded by one_step_guard with no allow-list entry), as in #1288, whose walk this study takes unchanged; no gradient-boosted fit is called, so the study is not provisional. The settlement terms are scheduled fields of the target row, read at every lead from the announced auctions (repo_model.s3c_announced, leakage-tested), and the other terms are calendar columns read at the target day; no outcome is an input. The uncapped version only omits the cap, which fits nothing"
+}
