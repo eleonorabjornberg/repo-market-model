@@ -294,10 +294,14 @@ class V2AgreementTests(unittest.TestCase):
     def setUpClass(cls):
         import tempfile
         from pathlib import Path
+        from unittest import mock
 
         from test_live_record import REGISTRY, _auctions, _fixture_panel
         from repo_model.data import load_daily_panel
 
+        # The walk record was made at 16:00, so it is read at 16:00 (#1368: a 16:00 file is read at 16:00).
+        cls._instant = mock.patch.object(live, "DECISION", live.LEGACY_DECISION)
+        cls._instant.start()
         cls.tmp = tempfile.mkdtemp()
         panel, pit = _fixture_panel(cls.tmp)
         lines = panel.read_text(encoding="utf-8").splitlines(keepends=True)
@@ -318,6 +322,7 @@ class V2AgreementTests(unittest.TestCase):
         import shutil
 
         shutil.rmtree(cls.tmp, ignore_errors=True)
+        cls._instant.stop()
 
     def test_it_is_the_walks_vector_for_the_target_day(self):
         record = json.loads((score.REPO / live.V2_RECORD).read_text(encoding="utf-8"))
