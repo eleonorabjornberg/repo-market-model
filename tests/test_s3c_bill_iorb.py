@@ -215,7 +215,7 @@ class FitTests(unittest.TestCase):
         self.assertEqual(sc.IORB_EXTRAS, ("iorb_signed", "iorb_technical"))
         self.assertEqual(sc.SIZE_EXTRAS, ("net_coupon", "net_bill", "gross_coupon"))
         self.assertEqual(sc.PRICE_EXTRAS, (sc.BILL_LESS_IORB,))
-        self.assertEqual(sc.EXTRA_TERMS, sc.IORB_EXTRAS + sc.SIZE_EXTRAS + sc.CMB_EXTRAS + sc.OPS_EXTRAS + sc.MISSING_EXTRAS + sc.PRICE_EXTRAS)
+        self.assertEqual(sc.EXTRA_TERMS, sc.IORB_EXTRAS + sc.SIZE_EXTRAS + sc.CMB_EXTRAS + sc.OPS_EXTRAS + sc.MISSING_EXTRAS + sc.PRICE_EXTRAS + (sc.H9_FORECAST,))  # #1345 adds the H9 forecast
 
 
 class ArmTests(unittest.TestCase):
