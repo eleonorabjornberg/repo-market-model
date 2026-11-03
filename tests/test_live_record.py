@@ -1238,6 +1238,11 @@ class DistributionAgreementTests(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        # Both sides read at the legacy 16:00 instant. At 18:00 `compare` reads the decision day's own bill rates
+        # (`tbill_4w`, `tbill_13w`, public by then) and the placeholder decision row does not carry them until #1403, so
+        # the published side cannot agree at 18:00 before that change; the fold loop's agreement is what this checks.
+        cls._instant = mock.patch.object(live, "DECISION", live.LEGACY_DECISION)
+        cls._instant.start()
         cls.tmp = tempfile.mkdtemp()
         panel, cls.pit = _fixture_panel(cls.tmp)
         lines = panel.read_text(encoding="utf-8").splitlines(keepends=True)
@@ -1272,6 +1277,7 @@ class DistributionAgreementTests(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         shutil.rmtree(cls.tmp, ignore_errors=True)
+        cls._instant.stop()
 
     def test_each_side_gives_compares_crps_on_the_target_day(self):
         from repo_model.metrics import crps_from_quantiles

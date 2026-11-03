@@ -20,6 +20,7 @@ import json
 import sys
 import tempfile
 import unittest
+from unittest import mock
 from datetime import date, datetime, time, timedelta
 from pathlib import Path
 from types import SimpleNamespace
@@ -254,11 +255,13 @@ class ReferenceTests(unittest.TestCase):
 class DecisionInstantTests(unittest.TestCase):
 
     def test_the_chain_reads_18_00_inside_the_block_and_16_00_after_it(self):
-        with script.decision_instant_pinned() as instant:
-            self.assertEqual(instant, time(18, 0))
-            for module in (script.k, script.c, script.s686):
-                self.assertEqual(module.DECISION_TIME, time(18, 0), module.__name__)
-        self.assertEqual(script.s686.DECISION_TIME, time(16, 0))
+        # The family's default is 18:00 since #1397; a re-run of an old record sets 16:00, which the block pins to 18:00 and then restores.
+        with mock.patch.object(script.s686, "DECISION_TIME", time(16, 0)):
+            with script.decision_instant_pinned() as instant:
+                self.assertEqual(instant, time(18, 0))
+                for module in (script.k, script.c, script.s686):
+                    self.assertEqual(module.DECISION_TIME, time(18, 0), module.__name__)
+            self.assertEqual(script.s686.DECISION_TIME, time(16, 0))
 
 
 class PageTests(unittest.TestCase):

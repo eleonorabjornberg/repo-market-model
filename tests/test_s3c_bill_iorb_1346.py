@@ -16,11 +16,13 @@ it passes.
 
 from __future__ import annotations
 
+import contextlib
 import importlib.util
 import json
 import sys
 import tempfile
 import unittest
+from unittest import mock
 from datetime import date, time, timedelta
 from pathlib import Path
 from types import SimpleNamespace
@@ -185,15 +187,26 @@ class DecisionInstantTests(unittest.TestCase):
                 self.assertEqual(module.DECISION_TIME, time(18, 0), module.__name__)
 
     def test_the_legacy_instant_is_back_after_the_block(self):
-        with script.decision_instant_pinned():
-            pass
-        for module in (script.k, script.c, script.s686, script.m1255.d1222):
-            self.assertEqual(module.DECISION_TIME, time(16, 0), module.__name__)
+        # The family's default is 18:00 since #1397; a re-run of an old record sets 16:00, which the block pins to 18:00 and then restores.
+        with contextlib.ExitStack() as stack:
+            for module in (script.k, script.c, script.s686, script.m1255.d1222):
+                stack.enter_context(mock.patch.object(module, "DECISION_TIME", time(16, 0)))
+            with script.decision_instant_pinned():
+                pass
+            for module in (script.k, script.c, script.s686, script.m1255.d1222):
+                self.assertEqual(module.DECISION_TIME, time(16, 0), module.__name__)
 
     def test_a_block_that_fails_still_puts_it_back(self):
-        with self.assertRaises(RuntimeError), script.decision_instant_pinned():
-            raise RuntimeError("inside")
-        self.assertEqual(script.s686.DECISION_TIME, time(16, 0))
+        with mock.patch.object(script.s686, "DECISION_TIME", time(16, 0)):
+            with self.assertRaises(RuntimeError), script.decision_instant_pinned():
+                raise RuntimeError("inside")
+            self.assertEqual(script.s686.DECISION_TIME, time(16, 0))
+
+    def test_at_the_default_instant_the_block_leaves_the_modules_where_they_were(self):
+        before = [m.DECISION_TIME for m in (script.k, script.c, script.s686)]
+        with script.decision_instant_pinned():
+            pass
+        self.assertEqual([m.DECISION_TIME for m in (script.k, script.c, script.s686)], before)
 
 
 class PageTests(unittest.TestCase):

@@ -229,6 +229,14 @@ class ReferenceTests(unittest.TestCase):
 
 
 class DecisionInstantTests(unittest.TestCase):
+    """The chain held 16:00 until the family's default moved to 18:00 (#1397); the test puts it back at 16:00 for its length, as a run that sets
+    `RMM_DECISION_TIME=16:00` would have it."""
+
+    def setUp(self):
+        self._held = [(m, m.DECISION_TIME) for m in script.m1321.chain_modules() if hasattr(m, "DECISION_TIME")]
+        for module, _ in self._held:
+            module.DECISION_TIME = time(16, 0)
+        self.addCleanup(lambda: [setattr(m, "DECISION_TIME", t) for m, t in self._held])
 
     def test_the_chain_reads_18_00_inside_the_block_and_16_00_after_it(self):
         with script.decision_instant_pinned() as instant:

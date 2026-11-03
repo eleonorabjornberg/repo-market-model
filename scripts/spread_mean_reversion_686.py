@@ -34,7 +34,7 @@ from typing import Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
-from repo_model import lockbox, protocol_benchmarks as pb, scoring_protocol as sp  # noqa: E402
+from repo_model import decision_instant, lockbox, protocol_benchmarks as pb, scoring_protocol as sp  # noqa: E402
 from repo_model import spread_mean_reversion as smr  # noqa: E402
 from repo_model.anchor_day_type import anchor_day_types  # noqa: E402
 from repo_model.baseline import panel_sha256  # noqa: E402
@@ -69,11 +69,11 @@ LAST_DAY = date(2025, 12, 31)
 
 
 def _decision_time() -> time:
-    """16:00, the instant every record of this study family was made at (the family's scripts take it from here).
+    """The decision instant of a run of this study family: 18:00, the instant in force since #1312 (`repo_model.decision_instant`).
 
-    `RMM_DECISION_TIME=18:00` in the environment of a run re-runs the scripts that take it from here at the decision instant in force since #1312
-    (`repo_model.decision_instant`), as #1314 does; no other value is admitted. Left unset, nothing moves: the earlier studies' re-runs and their tests
-    stay at 16:00, and their records stay the records of that instant.
+    `RMM_DECISION_TIME=16:00` in the environment of a run re-runs a record made at the old instant (every record of this family up to #1314 was);
+    a re-run of an old record sets it explicitly. Left unset, a new run is made at 18:00 (Eleonora's ruling of 2 November 2026 on #1397, which moved
+    the default of #1314's knob). The records and declarations of earlier runs keep the instant they were made at and are not edited.
 
     Raises:
         ValueError: the variable names an instant other than 16:00 or 18:00.
@@ -81,9 +81,9 @@ def _decision_time() -> time:
 
     text = os.environ.get("RMM_DECISION_TIME")
     if not text:
-        return time(16, 0)
+        return decision_instant.DECISION_TIME
     if text not in ("16:00", "18:00"):
-        raise ValueError(f"RMM_DECISION_TIME={text!r}: only 16:00 (the records of this family) and 18:00 (#1314) are admitted")
+        raise ValueError(f"RMM_DECISION_TIME={text!r}: only 16:00 (the records of this family up to #1314) and 18:00 (#1312) are admitted")
     return time.fromisoformat(text)
 
 
