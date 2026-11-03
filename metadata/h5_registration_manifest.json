@@ -20,7 +20,7 @@
  "open_items": [
   "SETTLED by her ruling of 2 November 2026 (#1397): the study scripts' default decision instant (RMM_DECISION_TIME, scripts/spread_mean_reversion_686.py) is the library's 18:00 for new runs; historical records and declarations keep the instant they were made at, and a re-run of an old record sets 16:00 explicitly.",
   "repo_model.srf_line.DECISION_TIME is still the 16:00 of the dated declarations of #1241 and #1252 (tests/test_decision_instant_1312.py keeps it as a legacy constant). The cap reads the as_of the walk passes. Re-declaring the cap's availability at 18:00 is a later directive.",
-  "#1389 (one coherent rule for the cap, tail completion and probabilities) may change cap_*, probability_* and the tail completion; this manifest records the code on main when it was written.",
+  "SETTLED by her ruling of 2 November 2026 on #1395 (#1389, rule (b)): the candidate's probabilities and PIT read `capped_law` under `open_tail` (probability_rule, probability_tail_completion). The cap itself is unchanged; the default of the library stays the status quo for the published scripts (#1415).",
   "#1393 (the draft confirmation-design decision record) decides the inference settings; they are not part of the candidate's identity and are not listed here."
  ],
  "references": {
@@ -537,21 +537,30 @@
   },
   {
    "id": "probability_rule",
-   "what": "P(spread > tau) is read off the 23 quantiles: the CDF is linear between the quantiles, runs on at the outer segments' slopes to 0 and 1, ties are nudged by 1e-6 bp per level, and the cut is floor(tau) + 0.5",
-   "value": "linear CDF through the 23 quantiles, outer slopes extended",
-   "text": {
-    "file": "src/repo_model/spread_mean_reversion.py",
-    "contains": "cut = math.floor(float(tau)) + 0.5"
-   }
+   "what": "The candidate's probabilities and PIT read their law from `repo_model.capped_law` under rule (b), `open_tail` (her ruling of 2 November 2026 on #1395; #1415): the capped percentiles, linear between the levels below the line, an atom at the line of the mass between the first capped level and q99, and the last 1% running on above the line at the slope of the last open segment. The event is P(spread > tau) on whole basis points, the cut floor(tau) + 0.5. `capped_law.DEFAULT_RULE` stays the status quo so published scripts reproduce; where no cap applies, and for the uncapped secondary (#1361, #1376), (b) and the status quo coincide",
+   "value": "open_tail",
+   "code": "repo_model.s3c_candidate.PROBABILITY_RULE"
   },
   {
    "id": "probability_tail_completion",
-   "what": "Below the 1st and above the 99th percentile the law is completed by the slope of the outermost segment (no parametric tail). OPEN: #1389 proposes one coherent rule for the cap, tail completion and probabilities; this manifest records the code as it stands",
-   "value": "outer-segment slope",
+   "what": "Rule (b)'s completion above the line: if every level is capped there is no open segment and the law is bounded at the line (`OPEN_TAIL_NO_SLOPE`); otherwise the 1% above q99 runs on above the line, linearly, at the slope of the segment ending at the first capped level. Below the 1st percentile the law runs on at the first segment's slope",
+   "value": "bounded",
+   "code": "repo_model.capped_law.OPEN_TAIL_NO_SLOPE"
+  },
+  {
+   "id": "probability_rule_wiring",
+   "what": "What the candidate passes: its exceedance is `capped_law.exceedance` with `PROBABILITY_RULE` and the cap margin, on (s3)'s uncapped quantiles and the line of the target day (`s3c_candidate.candidate_exceedance`; its law and PIT interval go through `candidate_law` and `candidate_pit_interval` the same way)",
+   "value": "capped_law.exceedance(quantiles, cap_line, tau, PROBABILITY_RULE, MARGIN_BP)",
    "text": {
-    "file": "src/repo_model/spread_mean_reversion.py",
-    "contains": "edges = [knots[0] - GRID[0] * low] + knots + [knots[-1] + (1.0 - GRID[-1]) * high]"
+    "file": "src/repo_model/s3c_candidate.py",
+    "contains": "return _law.exceedance(quantiles, cap_line(register, as_of, target), tau, PROBABILITY_RULE, MARGIN_BP)"
    }
+  },
+  {
+   "id": "probability_default_rule_untouched",
+   "what": "The library default is not changed: published scripts read the status quo and reproduce bit for bit (#1415)",
+   "value": "status_quo",
+   "code": "repo_model.capped_law.DEFAULT_RULE"
   },
   {
    "id": "grid_levels_count",
@@ -1186,10 +1195,99 @@
    "declaration": "metadata/s3c_net_missing_1390.json",
    "page": "docs/research/s3c-net-missing-1390-result.md",
    "log": "docs/research/log/2026-11-02-model-01390-H5-step3.md"
+  },
+  {
+   "id": "h41_per_release",
+   "label": "(s3c-ann-net x state) and (s3c+state), with the H.4.1 weeklies read per release at 18:00",
+   "issue": 1350,
+   "pr": 1379,
+   "merged": "2026-11-02",
+   "role": "tried_not_adopted",
+   "parent": "ann_net_1800",
+   "change": "Two readings (carried, per release) of the one weekly series that feeds the scarcity state (WRESBAL), on three arms: (s3c-ann-net), (s3c+state) and (s3c-ann-net x state); the last two built for this comparison, no tuned setting",
+   "outcome": "(s3c-ann-net) per release equals it cell for cell, as it reads no H.4.1 series. Grid CRPS per release against carried: (s3c+state) +0.02% [+0.01%, +0.04%], (s3c-ann-net x state) +0.01% [+0.00%, +0.08%], undecided on the 2026 days. Neither state arm beats (s3c-ann-net) on either reading. Not in the candidate",
+   "declaration": "metadata/h41_per_release_1350.json",
+   "page": "docs/research/h41-per-release-1350-result.md",
+   "log": "docs/research/log/2026-11-02-model-01350-H5-step3.md"
+  },
+  {
+   "id": "h5_robustness",
+   "label": "(s3c-ann-net) with a trailing one, three or all-history window, and a refit every 5 or 63 decision days",
+   "issue": 1364,
+   "pr": 1382,
+   "merged": "2026-11-02",
+   "role": "tried_not_adopted",
+   "parent": "ann_net_1800",
+   "change": "Five fixed robustness arms of the candidate, the length of its training history and its refit cadence, none searched, nothing combined",
+   "outcome": "No arm changes the pooled reading against B1, B1' or B2. Against the candidate as run, all history and the three-year window lose about 2% on grid CRPS, refit every 63 loses about 0.6%, the one-year window and refit every 5 are undecided; the one-year window gains on twCRPS. None replaces the candidate (trailing two years, refit every 21)",
+   "declaration": "metadata/h5_robustness_1364.json",
+   "page": "docs/research/h5-robustness-1364-result.md",
+   "log": "docs/research/log/2026-11-02-model-01364-H5-step3.md"
+  },
+  {
+   "id": "day_type_scale",
+   "label": "(s3c-ann-net-typed) and (s3c-ann-net-pooled): a residual scale by pressure-day type",
+   "issue": 1402,
+   "pr": 1407,
+   "merged": "2026-11-02",
+   "role": "tried_not_adopted",
+   "parent": "ann_net_1800",
+   "change": "Two arms that multiply the residual pool's spread per refit and lead by the ratio of a type's training residuals to all of them: one multiplier per type (typed), one for the four non-ordinary types together (pooled)",
+   "outcome": "Typed: pooled grid CRPS -1.1% [-2.3%, -0.1%], a gain on quarter_end_turn (+6.2% [+0.9%, +17.8%]) and a loss on turn. Pooled-scale: quarter_end_turn +7.6% [+4.4%, +11.0%], non-ordinary days together +2.7% [-0.0%, +6.8%], equal to the candidate on ordinary days. Neither has a gain on the non-ordinary days on the mean-d bound; the candidate stays frozen",
+   "declaration": "metadata/day_type_scale_1402.json",
+   "page": "docs/research/day-type-scale-1402-result.md",
+   "log": "docs/research/log/2026-11-02-model-01402-H5-step3.md"
+  },
+  {
+   "id": "b4_benchmark",
+   "label": "B4: a plain linear quantile regression on the last spread, the as-of reserves and the calendar terms",
+   "issue": 1360,
+   "pr": 1380,
+   "merged": "2026-11-02",
+   "role": "side_check",
+   "parent": "ann_net_1800",
+   "change": "A benchmark beside B1, B1' and B2, not a candidate arm; the candidate is scored against it",
+   "outcome": "On the development window the candidate is better than B4 on grid CRPS (+23.8% [+15.2%, +32.2%]), upper-tail twCRPS (+10.1% [+2.4%, +18.7%]) and the Brier score of P(> +5 bp), and on every lead; B4 is worse than B1' and better than B2. On the 2026 days the candidate against B4 is undecided. The candidate is unchanged",
+   "declaration": "metadata/b4_quantile_regression_1360.json",
+   "page": "docs/research/b4-quantile-regression-1360-result.md",
+   "log": "docs/research/log/2026-11-02-model-01360-H5-step4.md"
+  },
+  {
+   "id": "cap_tail_rule",
+   "label": "Three readings of the candidate's law: the status quo, (a) an atom at the line, (b) open tail",
+   "issue": 1389,
+   "pr": 1395,
+   "merged": "2026-11-02",
+   "role": "side_check",
+   "parent": "ann_net_1800",
+   "change": "One coherent rule for the cap, the tail completion and the probabilities, behind a flag (`repo_model.capped_law`) whose default is the published reading; (b) `open_tail` is in the candidate (#1415), (a) `atom_at_line` is not adopted",
+   "outcome": "The quantile scores are the same under every rule by construction. The status quo's probability above the line depends on how many upper levels the cap changed, which (a) and (b) remove; the Brier scores differ by about a hundred-thousandth or less, so the scores do not choose a rule. Her ruling of 2 November 2026 on #1395: (b), recorded in the manifest",
+   "declaration": "metadata/cap_tail_rule_1389.json",
+   "page": "docs/research/cap-tail-rule-1389-result.md",
+   "log": "docs/research/log/2026-11-02-model-01389-H5-step3.md"
+  },
+  {
+   "id": "clustering_thinned",
+   "label": "Clustering of the candidate's misses at leads 2 to 5 on thinned days",
+   "issue": 1400,
+   "pr": 1406,
+   "merged": "2026-11-02",
+   "role": "side_check",
+   "parent": "ann_net_1800",
+   "change": "A reading of the candidate's calibration, not an arm: Christoffersen independence on every phase of the thinned series, and a simulation of the unthinned test's size",
+   "outcome": "For a calibrated forecaster at 1855 decision days the unthinned permutation family flags a sequence on 100% of paths and the thinned reading on 2.4%. On the thinned reading the candidate still clusters over the whole development window (as do the references'), mainly in 2021-23; on the 2026 days none at leads 2 to 5",
+   "declaration": "metadata/clustering_thinned_1400.json",
+   "page": "docs/research/clustering-thinned-1400-result.md",
+   "log": "docs/research/log/2026-11-02-model-01400-H5-step3.md"
   }
  ],
  "not_arms": {
   "metadata/aligned_pairs_931.json": "#931's scratch measurement of the gbm_funding line's pair construction, declared before any score with nothing published; a precursor of #1027, not an arm on the way to the candidate",
-  "metadata/s3c_flagnet_prospective_draft_1344.json": "#1344's draft prospective test of (s3c-ann-flagnet), not registered; a draft for her review, not an arm on the way to the candidate"
+  "metadata/s3c_flagnet_prospective_draft_1344.json": "#1344's draft prospective test of (s3c-ann-flagnet), not registered; a draft for her review, not an arm on the way to the candidate",
+  "metadata/h5_registration_manifest.json": "this manifest, which names the candidate in every row; it is the inventory, not an arm in it",
+  "metadata/net_settlement.json": "the availability declaration of the net settlement input (#1273); a declared input of the candidate's sizing, not a study or an arm",
+  "metadata/owner_attestations.json": "the register of her GO attestations; it cites the candidate where she froze or ruled on it, not an arm",
+  "metadata/settlement_announcement_dating.json": "the dating of the auction announcements (#1288) that the candidate's sizing reads; a data declaration, not an arm",
+  "metadata/sources.json": "the source registry; it lists the inputs the candidate reads, not an arm"
  }
 }

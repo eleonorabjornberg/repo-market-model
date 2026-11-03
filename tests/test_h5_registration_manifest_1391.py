@@ -20,6 +20,14 @@ Recorded mutation (the manifest-equals-code check): `src/repo_model/spread_mean_
 the manifest says 10); restored, it passes. A second mutation, in the stale-wording check: the words "(`repo_model.decision_instant`: 18:00 America/New_York," in the
 module docstring of `src/repo_model/s3c_announced.py` put back as "(16:00, the published": `StaleWordingTests.test_no_current_text_says_16_00`
 fails with `AssertionError` ('16:00' unexpectedly found); restored, it passes.
+
+Recorded mutation (#1415, the candidate's probability rule): `src/repo_model/s3c_candidate.py`, the line `PROBABILITY_RULE = "open_tail"` changed to
+`PROBABILITY_RULE = "status_quo"`: `CandidateProbabilityRuleTests.test_the_candidate_names_rule_b_and_the_default_stays_the_status_quo` fails with
+`AssertionError` ('status_quo' != 'open_tail'), as do `test_the_candidates_law_exceedance_and_pit_are_rule_b_not_the_status_quo`,
+`test_the_manifest_records_rule_b_pinned_to_the_code` and `ManifestEqualsCodeTests.test_every_code_choice_equals_the_code`; restored, they pass. The
+content test `InventoryTests.test_every_declaration_that_names_the_candidate_is_a_row_or_not_an_arm` was run first against main's manifest and failed with
+`AssertionError`, naming `b4_quantile_regression_1360`, `cap_tail_rule_1389`, `clustering_thinned_1400`, `day_type_scale_1402`, `h41_per_release_1350` and
+`h5_robustness_1364` (and the five files now in `not_arms`).
 """
 
 from __future__ import annotations
@@ -222,10 +230,128 @@ class InventoryTests(unittest.TestCase):
         self.assertTrue(found)
         self.assertFalse(found - listed, f"declarations not in the inventory or in `not_arms`: {sorted(found - listed)}")
 
+    def test_every_declaration_that_names_the_candidate_is_a_row_or_not_an_arm(self):
+        """Found by content (#1415): a metadata file whose text names the candidate or its builder is an inventory row or a reasoned `not_arms`."""
+
+        names = ("s3c-ann-net", "s3c_ann_net", "s3c_announced")
+        listed = {r.get("declaration") for r in self.rows} | set(self.m["not_arms"])
+        found = {str(p.relative_to(REPO)) for p in sorted((REPO / "metadata").glob("*.json"))
+                 if any(name in p.read_text(encoding="utf-8") for name in names)}
+        self.assertTrue(found)
+        self.assertFalse(found - listed, f"declarations that name the candidate and are neither a row nor in `not_arms`: {sorted(found - listed)}")
+        for path in ("metadata/h5_registration_manifest.json", "metadata/net_settlement.json", "metadata/owner_attestations.json",
+                     "metadata/settlement_announcement_dating.json", "metadata/sources.json"):
+            self.assertIn(path, self.m["not_arms"])
+
+    def test_the_six_studies_of_1415_are_rows_with_the_right_roles(self):
+        expected = {"h5_robustness_1364": ("tried_not_adopted", 1364, 1382), "h41_per_release_1350": ("tried_not_adopted", 1350, 1379),
+                    "day_type_scale_1402": ("tried_not_adopted", 1402, 1407), "b4_quantile_regression_1360": ("side_check", 1360, 1380),
+                    "cap_tail_rule_1389": ("side_check", 1389, 1395), "clustering_thinned_1400": ("side_check", 1400, 1406)}
+        by_decl = {r.get("declaration"): r for r in self.rows}
+        for stem, (role, issue, pr) in expected.items():
+            row = by_decl.get(f"metadata/{stem}.json")
+            self.assertIsNotNone(row, stem)
+            self.assertEqual((row["role"], row["issue"], row["pr"]), (role, issue, pr), stem)
+            self.assertTrue(row.get("page") and row.get("log"), stem)
+
     def test_not_arms_names_files_that_exist_and_says_why(self):
         for path, why in self.m["not_arms"].items():
             self.assertTrue((REPO / path).is_file(), path)
             self.assertTrue(why.strip(), path)
+
+
+class CandidateProbabilityRuleTests(unittest.TestCase):
+    """The candidate's probability and PIT path reads rule (b), `open_tail`, from `repo_model.capped_law` (#1415; her ruling of 2 November 2026 on #1395)."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.m = json.loads(MANIFEST.read_text(encoding="utf-8"))
+        from datetime import datetime
+
+        from repo_model import policy_events as pe
+
+        cls.register = pe.load_register()
+        cls.as_of = datetime(2026, 3, 2, 18, 0)
+        cls.target = date(2026, 3, 3)
+
+    def uncapped(self):
+        from repo_model.scoring_protocol import GRID
+
+        return [-2.0 + 14.0 * g for g in GRID]
+
+    def line(self):
+        from repo_model import s3c_candidate as cand
+
+        line = cand.cap_line(self.register, self.as_of, self.target)
+        self.assertIsNotNone(line)
+        return line
+
+    def test_the_candidate_names_rule_b_and_the_default_stays_the_status_quo(self):
+        from repo_model import capped_law as cl
+        from repo_model import s3c_candidate as cand
+
+        self.assertEqual(cand.PROBABILITY_RULE, "open_tail")
+        self.assertIn(cand.PROBABILITY_RULE, cl.RULES)
+        self.assertEqual(cl.DEFAULT_RULE, "status_quo")
+
+    def test_the_candidates_law_exceedance_and_pit_are_rule_b_not_the_status_quo(self):
+        from repo_model import capped_law as cl
+        from repo_model import s3c_candidate as cand
+
+        q = self.uncapped()
+        line = self.line()
+        self.assertGreater(q[-1], line)  # the cap binds on this vector
+        law = cand.candidate_law(q, self.register, self.as_of, self.target)
+        wanted = cl.emitted_law(q, line, "open_tail", cand.MARGIN_BP)
+        status_quo = cl.emitted_law(q, line, "status_quo", cand.MARGIN_BP)
+        self.assertEqual(law.points, wanted.points)
+        self.assertNotEqual(law.points, status_quo.points)
+        for tau in (5.0, 10.0, line - 0.5):
+            self.assertEqual(cand.candidate_exceedance(q, self.register, self.as_of, self.target, tau),
+                             cl.exceedance(q, line, tau, "open_tail", cand.MARGIN_BP))
+        self.assertNotEqual(cand.candidate_exceedance(q, self.register, self.as_of, self.target, line - 0.5),
+                            cl.exceedance(q, line, line - 0.5, "status_quo", cand.MARGIN_BP))
+        self.assertEqual(cand.candidate_pit_interval(q, self.register, self.as_of, self.target, line),
+                         cl.pit_interval(wanted, line))
+
+    def test_without_a_cap_rule_b_and_the_status_quo_coincide(self):
+        """No line, no cap: the uncapped secondary (#1361, #1376) reads the same law under either rule."""
+
+        from datetime import datetime
+
+        from repo_model import capped_law as cl
+        from repo_model import s3c_candidate as cand
+
+        q = self.uncapped()
+        early = datetime(2025, 6, 2, 18, 0)
+        self.assertIsNone(cand.cap_line(self.register, early, date(2025, 6, 3)))
+        self.assertEqual(cand.candidate_law(q, self.register, early, date(2025, 6, 3)).points,
+                         cl.emitted_law(q, None, "status_quo").points)
+
+    def test_no_published_script_reads_the_candidates_rule(self):
+        """Scripts that read `capped_law` pass their rule explicitly or take the default (the status quo); none reads the candidate's frozen rule."""
+
+        for path in sorted((REPO / "scripts").glob("*.py")):
+            text = path.read_text(encoding="utf-8")
+            self.assertNotIn("PROBABILITY_RULE", text, path.name)
+            self.assertNotIn("candidate_exceedance", text, path.name)
+
+    def test_the_manifest_records_rule_b_pinned_to_the_code(self):
+        by_id = {c["id"]: c for c in self.m["choices"]}
+        rule, tail = by_id["probability_rule"], by_id["probability_tail_completion"]
+        for choice in (rule, tail):
+            self.assertNotIn("OPEN:", choice["what"])
+        self.assertEqual(rule["value"], "open_tail")
+        self.assertEqual(rule["code"], "repo_model.s3c_candidate.PROBABILITY_RULE")
+        self.assertEqual(resolve(rule["code"]), "open_tail")
+        self.assertIn(resolve(rule["code"]), resolve("repo_model.capped_law.RULES"))
+        self.assertEqual(tail["code"], "repo_model.capped_law.OPEN_TAIL_NO_SLOPE")
+        self.assertEqual(tail["value"], "bounded")
+        self.assertEqual(self.m["open_items"][2].split()[0], "SETTLED")
+        self.assertNotIn("OPEN", json.dumps(self.m["open_items"]))
+        reader = READER.read_text(encoding="utf-8")
+        self.assertIn("open_tail", reader)
+        self.assertNotIn("run on at the outer", reader.split("7. **Probability.**")[1].split("\n")[0])
 
 
 class StaleWordingTests(unittest.TestCase):
