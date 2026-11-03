@@ -11,8 +11,8 @@ so these arms are the readers at leads 2 to 5. Nothing in
 declaration reads this module.
 
 * `AnnouncedTermTable` is `spread_mr_calendar.TermTable` with the two settlement flags served at every lead. At lead `h` the flag of target day
-  `T` is 1 when the coupon (bill) auctions settling on `T` that had been announced by the decision instant of day `T - h` (16:00, the published
-  records' decision time) offer more than zero in total. At lead 1 it is the panel's flag exactly as (s3c) reads it (the dating declaration
+  `T` is 1 when the coupon (bill) auctions settling on `T` that had been announced by the decision instant of day `T - h` (`repo_model.decision_instant`: 18:00 America/New_York,
+  since #1312) offer more than zero in total. At lead 1 it is the panel's flag exactly as (s3c) reads it (the dating declaration
   states the two agree at lead 1; the study compares them). `legs` admits one leg alone at leads 2 to 5, for the reference walks that report
   the coupon and the bill leg separately.
 * `AnnouncedNetSizeTable` is #1273's `s3c_net.NetSizeTable` (the signed net of the target day in USD 100 bn, each figure read at its
@@ -21,7 +21,7 @@ declaration reads this module.
   unchanged, on direct pairs (`TRAINING_PAIRS`), so `one_step_guard` holds with no allow-list entry.
 
 **Information set.** A figure for target `T` at lead `h` counts an auction only when its announcement (12:00 on its `announcemt_date`) is at or
-before 16:00 on the panel day `h` rows before `T`. A training pair reads the figure of its own decision, `T - h`, so a training figure and a
+before the decision instant (18:00) on the panel day `h` rows before `T`. A training pair reads the figure of its own decision, `T - h`, so a training figure and a
 forecast figure are the same function of the same announcements. `read` re-checks the figure it serves against the decision it is asked for:
 a figure that counts an auction announced after that decision raises `LookAheadError`, one that leaves an announced auction out raises
 `StaleReadError` (the analogue of `settlement_dating.check_known_columns`). Lens E's caveat (item G) is settled in part by #1301

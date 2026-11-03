@@ -1,0 +1,1195 @@
+{
+ "status": "DRAFT for her review (#1391; H5 registration design, identity). Freezing it is the registration, her own GO; until then nothing here is in force and no choice below is changed by this file. No figure changes.",
+ "issue": 1391,
+ "serves": "H5 (primary goal), registration design (identity). Part of the H5 registration priority on #46. Her ruling of 2 November 2026 (chat, relayed): queue the new items of the second outside review; her default: the specification-search inventory goes into this manifest now.",
+ "reading": "A choice has a value and one place where it lives: `code` (a dotted path into a repo_model module), `json` (a file and a path) or `text` (a rule written in code with no constant, and the line that holds it). tests/test_h5_registration_manifest_1391.py fails if the code, a declaration or a quoted line no longer matches. The inventory lists each study on the way to the candidate with its pull request, date, page and declaration; outcomes are the research log's own words condensed, development data, never a verdict.",
+ "candidate": {
+  "name": "sc_s3c_ann_net",
+  "label": "(s3c-ann-net)",
+  "scored_as": "sc_s3c_ann_net",
+  "walk_arm": "sc_s3_ann_net",
+  "walk_arm_note": "The walk arm's name lacks the cap wrapper (the finding of the outside review): the cap is applied to the walk's forecasts by scripts/s3c_candidate_1255.py (s3c_forecasts, repo_model.s3c_candidate.capped_quantiles) and the result is scored as sc_s3c_ann_net. The recipe is: scaled mean reversion (#941) + term table (#1145 (s3)) + net sizing read from the announcement (#1273, #1288) + SRF cap (#1255) + probability conversion, at 18:00 America/New_York",
+  "inventory_id": "ann_net_1800",
+  "candidate_file": "docs/research/h5-candidate.json",
+  "dating_declaration": "metadata/settlement_announcement_dating.json",
+  "sizing_declaration": "metadata/s3c_announced_settlement_1288.json",
+  "cap_declaration": "metadata/s3c_candidate_1255.json",
+  "builder": "scripts/s3c_announced_settlement_1288.py (build, extra_walks) with scripts/s3c_candidate_1255.py (s3c_forecasts); the study family reads the decision instant in force (18:00) unless RMM_DECISION_TIME says 16:00, which a re-run of an older record sets explicitly (#1397)",
+  "freeze_target": "the code at the commit she names with her GO"
+ },
+ "open_items": [
+  "SETTLED by her ruling of 2 November 2026 (#1397): the study scripts' default decision instant (RMM_DECISION_TIME, scripts/spread_mean_reversion_686.py) is the library's 18:00 for new runs; historical records and declarations keep the instant they were made at, and a re-run of an old record sets 16:00 explicitly.",
+  "repo_model.srf_line.DECISION_TIME is still the 16:00 of the dated declarations of #1241 and #1252 (tests/test_decision_instant_1312.py keeps it as a legacy constant). The cap reads the as_of the walk passes. Re-declaring the cap's availability at 18:00 is a later directive.",
+  "#1389 (one coherent rule for the cap, tail completion and probabilities) may change cap_*, probability_* and the tail completion; this manifest records the code on main when it was written.",
+  "#1393 (the draft confirmation-design decision record) decides the inference settings; they are not part of the candidate's identity and are not listed here."
+ ],
+ "references": {
+  "B1": "protocol_benchmarks.b1_forecast, the protocol's persistence benchmark (scoring-protocol.md)",
+  "B1_prime": "repo_model.b1_calendar.b1_calendar_forecast (#960, #976): persistence centred on the last ordinary-day spread",
+  "B2": "protocol_benchmarks B2: climatology by pressure-day type",
+  "B3": "the incumbent published distribution, scored on its own five levels",
+  "B1_star": "B1* (#1388): B1 with the change window anchor-to-target",
+  "B1_prime_star": "B1'* (#1388): B1' with the change window anchor-to-target"
+ },
+ "choices": [
+  {
+   "id": "decision_instant",
+   "what": "The decision instant: a forecast for day T is made at this wall-clock time, New York, on the last panel day before T (docs/decisions/information-set.md as amended by #1312)",
+   "value": "18:00",
+   "code": "repo_model.decision_instant.DECISION_TIME_TEXT"
+  },
+  {
+   "id": "decision_instant_timezone",
+   "what": "Its time zone",
+   "value": "America/New_York",
+   "code": "repo_model.decision_instant.DECISION_TIMEZONE"
+  },
+  {
+   "id": "level_days",
+   "what": "The level: the median of the last this-many ordinary spreads at or before a row; a row reads only rows at or before it",
+   "value": 10,
+   "code": "repo_model.spread_mean_reversion.LEVEL_DAYS"
+  },
+  {
+   "id": "ordinary_days_definition",
+   "what": "What 'ordinary' means for the level: the pressure-day type of the row is 'ordinary' under the reporting day type in force (turn_days.reporting_day_type, #1135); every other type is left out of the level",
+   "value": "ordinary",
+   "text": {
+    "file": "src/repo_model/spread_mean_reversion.py",
+    "contains": "turn_days.reporting_day_type(splits, row.date, row.values) == \"ordinary\""
+   }
+  },
+  {
+   "id": "training_window_years",
+   "what": "The training window: the pairs whose target is in the trailing window of this many years before the decision day (B1's), and at or before the anchor",
+   "value": 2,
+   "code": "repo_model.spread_mean_reversion.TRAIN_YEARS"
+  },
+  {
+   "id": "training_window_anchor",
+   "what": "The anchor is the last public spread row at the decision instant; the lag is decision_index - anchor in panel rows, and a pair of lead h is k = h + lag rows apart",
+   "value": "k = h + lag",
+   "text": {
+    "file": "src/repo_model/spread_mean_reversion.py",
+    "contains": "k = h + lag"
+   }
+  },
+  {
+   "id": "phi_grid_first",
+   "what": "Phi is searched on a grid from this value",
+   "value": 0.0,
+   "code": "repo_model.spread_mean_reversion.PHI_GRID[0]"
+  },
+  {
+   "id": "phi_grid_last",
+   "what": "... to this value",
+   "value": 1.0,
+   "code": "repo_model.spread_mean_reversion.PHI_GRID[100]"
+  },
+  {
+   "id": "phi_grid_count",
+   "what": "... in this many values (steps of 0.01)",
+   "value": 101,
+   "code": "repo_model.spread_mean_reversion.PHI_GRID#len"
+  },
+  {
+   "id": "phi_fit_rule",
+   "what": "One phi, common to the five leads, minimises the squared error of y - phi^k x over the training pairs of all leads, on the unscaled deviations from the level; a tie takes the smaller phi",
+   "value": "one pooled phi, least squares on the grid, ties to the smaller phi",
+   "text": {
+    "file": "src/repo_model/spread_mean_reversion.py",
+    "contains": "pairs.extend((k, x, y) for x, y in deviations[h])"
+   }
+  },
+  {
+   "id": "min_pairs",
+   "what": "A decision with fewer training pairs at any lead has no forecast",
+   "value": 60,
+   "code": "repo_model.spread_mean_reversion.MIN_PAIRS"
+  },
+  {
+   "id": "refit_every",
+   "what": "Decision days between refits",
+   "value": 21,
+   "code": "repo_model.spread_mean_reversion.REFIT_EVERY"
+  },
+  {
+   "id": "scale_variant",
+   "what": "The scale: #941's declared variant",
+   "value": "spread_mr_fhs_mad20_f0.5",
+   "code": "repo_model.spread_mr_state_calendar.BASE_VARIANT.name"
+  },
+  {
+   "id": "scale_estimator",
+   "what": "The scale estimator: MAD of the daily changes",
+   "value": "mad",
+   "code": "repo_model.spread_mr_state_calendar.BASE_VARIANT.estimator"
+  },
+  {
+   "id": "scale_window_rows",
+   "what": "The scale window: the daily changes of the last this-many panel rows ending at the row read",
+   "value": 20,
+   "code": "repo_model.spread_mr_state_calendar.BASE_VARIANT.window"
+  },
+  {
+   "id": "scale_floor_bp",
+   "what": "The scale floor in bp",
+   "value": 0.5,
+   "code": "repo_model.spread_mr_state_calendar.BASE_VARIANT.floor"
+  },
+  {
+   "id": "scale_mad_constant",
+   "what": "The consistency constant that turns the median absolute change into an sd estimate",
+   "value": 1.4826,
+   "code": "repo_model.spread_mr_fhs.MAD_CONSTANT"
+  },
+  {
+   "id": "scale_read_at",
+   "what": "A training pair is standardised by the scale at its origin; a forecast is scaled by the scale at the anchor",
+   "value": "origin for a pair, anchor for a forecast",
+   "text": {
+    "file": "src/repo_model/spread_mr_state_calendar.py",
+    "contains": "scale = reader.at(origin)"
+   }
+  },
+  {
+   "id": "residual_pool_definition",
+   "what": "The raw residual of a pair: (spread[target] - level[origin]) - phi^k (spread[origin] - level[origin]); the pool is the standardised residual (raw over the scale at the origin) less the fitted terms, with the intercept dropped so the pool keeps the ordinary-day centre",
+   "value": "see text",
+   "text": {
+    "file": "src/repo_model/spread_mr_state_calendar.py",
+    "contains": "raw = (spreads[target] - levels[origin]) - base.phi**k * (spreads[origin] - levels[origin])"
+   }
+  },
+  {
+   "id": "residual_pool_quantiles",
+   "what": "The 23 quantiles of the pool are its empirical quantiles, linearly interpolated at the grid levels",
+   "value": "protocol_benchmarks.empirical_quantiles",
+   "text": {
+    "file": "src/repo_model/spread_mr_state_calendar.py",
+    "contains": "pb.empirical_quantiles(sorted(pool))"
+   }
+  },
+  {
+   "id": "residual_pool_forecast",
+   "what": "A forecast is centre + scale(anchor) * (term shift + pool quantile), centre = level + phi^(h + lag) (last - level)",
+   "value": "see text",
+   "text": {
+    "file": "src/repo_model/spread_mr_state_calendar.py",
+    "contains": "return [centre + scale * (shift + value) for value in estimate.pool]"
+   }
+  },
+  {
+   "id": "huber_k",
+   "what": "Huber's threshold, in robust standard deviations (1.4826 times the median absolute deviation) of the current residuals",
+   "value": 1.345,
+   "code": "repo_model.spread_mr_state_calendar.HUBER_K"
+  },
+  {
+   "id": "huber_max_iterations",
+   "what": "Huber's iteratively re-weighted least squares stops after at most this many iterations",
+   "value": 50,
+   "code": "repo_model.spread_mr_state_calendar.MAX_ITERATIONS"
+  },
+  {
+   "id": "huber_tolerance",
+   "what": "... or when the largest coefficient change is below this",
+   "value": 1e-08,
+   "code": "repo_model.spread_mr_state_calendar.TOLERANCE"
+  },
+  {
+   "id": "huber_sigma_floor",
+   "what": "The robust standard deviation is floored at this",
+   "value": 1e-06,
+   "text": {
+    "file": "src/repo_model/spread_mr_state_calendar.py",
+    "contains": "sigma = max(1.4826 * statistics.median([abs(r - centre) for r in residual]), 1e-6)"
+   }
+  },
+  {
+   "id": "huber_calendar_threshold",
+   "what": "No separate Huber threshold for calendar target rows (#1226's variants were not adopted)",
+   "value": null,
+   "code": "repo_model.s3c_announced.ANN_NET_ARM.calendar_k"
+  },
+  {
+   "id": "ridge_penalty",
+   "what": "The L2 penalty on every term coefficient in pseudo-days, none on the intercept: the robust arm's",
+   "value": 5.0,
+   "code": "repo_model.spread_mr_state_calendar.ROBUST_RIDGE"
+  },
+  {
+   "id": "ridge_arm_setting",
+   "what": "The candidate arm sets no penalty of its own, so the robust arm's applies",
+   "value": null,
+   "code": "repo_model.s3c_announced.ANN_NET_ARM.ridge"
+  },
+  {
+   "id": "fit_robust",
+   "what": "The candidate arm is a Huber fit",
+   "value": true,
+   "code": "repo_model.s3c_announced.ANN_NET_ARM.robust"
+  },
+  {
+   "id": "fit_state_interaction",
+   "what": "No term is interacted with the scarcity state; the candidate has no state interaction",
+   "value": false,
+   "code": "repo_model.s3c_announced.ANN_NET_ARM.interact"
+  },
+  {
+   "id": "fit_extra_terms",
+   "what": "No extra (non-flag) term: no IORB, CMB or same-day operations term",
+   "value": [],
+   "code": "repo_model.s3c_announced.ANN_NET_ARM.extra"
+  },
+  {
+   "id": "terms_candidate",
+   "what": "The terms of the fit, in order: month-end, quarter-end, tax date, coupon settlement, bill settlement, the 19th to 23rd, the first three market days. No FOMC-day and no IORB-window term",
+   "value": [
+    "month_end",
+    "quarter_end",
+    "tax_date",
+    "settlement_coupon",
+    "settlement_bill",
+    "dom_19_23",
+    "post_month_end_window"
+   ],
+   "code": "repo_model.s3c_announced.ANN_NET_ARM.location"
+  },
+  {
+   "id": "terms_min_flagged",
+   "what": "A term enters a lead's fit only if this many training pairs carry its flag (a sized term: a positive size)",
+   "value": 3,
+   "code": "repo_model.spread_mr_state_calendar.MIN_FLAGGED"
+  },
+  {
+   "id": "terms_overlap",
+   "what": "The terms are additive 0/1 flags and may overlap on one day (a quarter-end that is also a month-end carries both); no term is orthogonalised to another and none has a precedence",
+   "value": "additive, overlapping",
+   "text": {
+    "file": "src/repo_model/spread_mr_calendar.py",
+    "contains": "\"quarter_end\": [1 if value > 0 else 0 for value in column(\"quarter_end\")],"
+   }
+  },
+  {
+   "id": "calendar_term_month_end",
+   "what": "month_end: the day is among the last two business days of its month on the market calendar (data.in_last_business_days_of_month)",
+   "value": "in_last_business_days_of_month",
+   "text": {
+    "file": "src/repo_model/spread_mr_calendar.py",
+    "contains": "\"month_end\": [1 if in_last_business_days_of_month(row.date) else 0 for row in panel],"
+   }
+  },
+  {
+   "id": "calendar_term_quarter_end",
+   "what": "quarter_end: the panel's quarter_end column is positive",
+   "value": "quarter_end > 0",
+   "text": {
+    "file": "src/repo_model/spread_mr_calendar.py",
+    "contains": "\"quarter_end\": [1 if value > 0 else 0 for value in column(\"quarter_end\")],"
+   }
+  },
+  {
+   "id": "calendar_term_tax_date",
+   "what": "tax_date: the panel's tax_date column is positive",
+   "value": "tax_date > 0",
+   "text": {
+    "file": "src/repo_model/spread_mr_calendar.py",
+    "contains": "\"tax_date\": [1 if value > 0 else 0 for value in column(\"tax_date\")],"
+   }
+  },
+  {
+   "id": "calendar_term_dom_19_23",
+   "what": "dom_19_23: the calendar day of the month is 19 to 23",
+   "value": "19 <= day <= 23",
+   "text": {
+    "file": "src/repo_model/spread_mr_calendar.py",
+    "contains": "\"dom_19_23\": [1 if 19 <= day.day <= 23 else 0 for day in self.dates],"
+   }
+  },
+  {
+   "id": "calendar_term_post_month_end",
+   "what": "post_month_end_window: the business day of the month is at most 3",
+   "value": "bday_of_month <= 3",
+   "text": {
+    "file": "src/repo_model/spread_mr_calendar.py",
+    "contains": "\"post_month_end_window\": [1 if derived_features.bday_of_month(day) <= 3 else 0 for day in self.dates],"
+   }
+  },
+  {
+   "id": "calendar_term_read_at",
+   "what": "Non-scheduled calendar terms are read at the target day at every lead; the settlement terms are scheduled fields of the target row, served at leads 2 to 5 from the auction announcement (see announcement_*)",
+   "value": "target row",
+   "text": {
+    "file": "src/repo_model/spread_mr_calendar.py",
+    "contains": "Term(\"month_end\", (\"days_to_month_end\",), False, (0,))"
+   }
+  },
+  {
+   "id": "direct_pairs",
+   "what": "Training pairs are direct: the terms are read at the target day of each pair, never from the origin; the one-step guard needs no allow-list entry",
+   "value": "direct",
+   "code": "repo_model.s3c_announced.TRAINING_PAIRS"
+  },
+  {
+   "id": "direct_pairs_guard",
+   "what": "fit_state_terms refuses any other training pairs",
+   "value": "direct only",
+   "text": {
+    "file": "src/repo_model/spread_mr_state_calendar.py",
+    "contains": "if training_pairs != \"direct\":"
+   }
+  },
+  {
+   "id": "announcement_basis",
+   "what": "A settlement is dated from its auction's announcement, not its result",
+   "value": "auction_announcement",
+   "json": {
+    "file": "metadata/settlement_announcement_dating.json",
+    "path": "basis"
+   }
+  },
+  {
+   "id": "announcement_instant",
+   "what": "The announcement instant: an auction's settlement date and offering are public from 12:00 on its announcemt_date (the default for every announcement; the release times Treasury's files state were checked against it in #1301)",
+   "value": "12:00",
+   "json": {
+    "file": "metadata/settlement_announcement_dating.json",
+    "path": "available_time"
+   }
+  },
+  {
+   "id": "announcement_timezone",
+   "what": "... in New York time",
+   "value": "America/New_York",
+   "json": {
+    "file": "metadata/settlement_announcement_dating.json",
+    "path": "timezone"
+   }
+  },
+  {
+   "id": "announcement_field",
+   "what": "... the date field read",
+   "value": "announcemt_date",
+   "json": {
+    "file": "metadata/settlement_announcement_dating.json",
+    "path": "announcement_date_field"
+   }
+  },
+  {
+   "id": "announcement_leads",
+   "what": "Where the announcement reader serves the settlement terms: leads 2 to 5; at lead 1 the term is the panel's flag exactly as (s3c) reads it",
+   "value": "leads 2 to 5; lead 1 is the panel's",
+   "text": {
+    "file": "src/repo_model/s3c_announced.py",
+    "contains": "At lead 1 it is the panel's flag exactly as (s3c) reads it"
+   }
+  },
+  {
+   "id": "announcement_immediate_release",
+   "what": "Announcements whose file says 'for immediate release' (no clock time) are dated 12:00 on their announcemt_date like every other; #1367 re-ran the walk with them dated 23:59:59: the candidate's scores moved only in the fourth or fifth decimal place and the declaration is unchanged",
+   "value": "12:00 default",
+   "text": {
+    "file": "src/repo_model/s3c_announced.py",
+    "contains": "163 announcements say \"for immediate release\""
+   }
+  },
+  {
+   "id": "net_sizing_terms",
+   "what": "The two settlement terms are sized: the signed net of each class (offering less maturing, bills and coupons separately) in units of USD 100 bn, at every lead h = 1 to 5",
+   "value": [
+    "settlement_coupon",
+    "settlement_bill"
+   ],
+   "code": "repo_model.spread_mr_state_calendar.SIZED_TERMS"
+  },
+  {
+   "id": "net_sizing_flag",
+   "what": "The candidate arm reads sizes, not 0/1 flags, for the two settlement terms",
+   "value": true,
+   "code": "repo_model.s3c_announced.ANN_NET_ARM.sized"
+  },
+  {
+   "id": "net_size_unit",
+   "what": "The unit of a size",
+   "value": 100.0,
+   "code": "repo_model.spread_mr_state_calendar.SIZE_UNIT"
+  },
+  {
+   "id": "net_state_held_at",
+   "what": "The scarcity state is held at its maximum for the sized terms, so the term is the plain size over the unit; the net arm has no state interaction",
+   "value": 3.0,
+   "code": "repo_model.spread_mr_state_calendar.STATE_MAX"
+  },
+  {
+   "id": "net_state_constant",
+   "what": "constant_states holds the state at STATE_MAX on every day",
+   "value": "STATE_MAX",
+   "text": {
+    "file": "src/repo_model/s3c_net.py",
+    "contains": "return {row.date: sc.STATE_MAX for row in panel}"
+   }
+  },
+  {
+   "id": "net_maturing_rule",
+   "what": "The maturing amount of a class is the largest figure any announced auction of the class carries (one total repeated on each record), 0.0 when none carries one (net_for_day and net_state read it alike; #1390 added the explicit missing state `missing_maturing` and changed no figure)",
+   "value": "max of the announced figures",
+   "text": {
+    "file": "src/repo_model/net_settlement.py",
+    "contains": "max(figures) if figures else 0.0"
+   }
+  },
+  {
+   "id": "net_partly_announced_rule",
+   "what": "A class announced only in part is left out (reads 0.0) until it is fully announced (#679)",
+   "value": "left out",
+   "text": {
+    "file": "src/repo_model/net_settlement.py",
+    "contains": "elif len(members) < len(scheduled):"
+   }
+  },
+  {
+   "id": "net_cmb_rule",
+   "what": "A cash management bill is on no published schedule: it counts toward a class's partial status only from its own announcement (#738)",
+   "value": "from its own announcement",
+   "text": {
+    "file": "src/repo_model/net_settlement.py",
+    "contains": "def _visible_to_schedule("
+   }
+  },
+  {
+   "id": "net_cmb_term",
+   "what": "No separate cash management bill term (#1356: both forms undecided against the candidate)",
+   "value": [],
+   "code": "repo_model.s3c_announced.ANN_NET_ARM.extra"
+  },
+  {
+   "id": "cap_margin_bp",
+   "what": "The cap margin above the SRF line, in bp (declared primary by #1241 and #1252, not tuned)",
+   "value": 0.0,
+   "code": "repo_model.s3c_candidate.MARGIN_BP"
+  },
+  {
+   "id": "cap_rule",
+   "what": "Every quantile is clipped at min(q, line + margin) on target days at full allotment; the quantile levels stay ordered",
+   "value": "min(q, line + margin)",
+   "text": {
+    "file": "src/repo_model/srf_line.py",
+    "contains": "return [min(float(q), ceiling) for q in quantiles]"
+   }
+  },
+  {
+   "id": "cap_line",
+   "what": "The line is the standing repo entry's rate in force on the target day less the IORB entry in force, in bp, read from the point-in-time policy register",
+   "value": "100 * (srf rate - iorb rate)",
+   "text": {
+    "file": "src/repo_model/srf_line.py",
+    "contains": "return round(100.0 * (float(srf.details[\"rate_percent\"]) - float(iorb.details[\"rate_percent\"])), 6)"
+   }
+  },
+  {
+   "id": "cap_full_allotment_rule",
+   "what": "Full allotment on a target day: the standing_repo entry in force, among those announced at or before the decision instant, states no aggregate operation limit; an entry without the field is refused",
+   "value": "aggregate_operation_limit_bn is None",
+   "text": {
+    "file": "src/repo_model/s3c_candidate.py",
+    "contains": "return entry.details[_LIMIT] is None"
+   }
+  },
+  {
+   "id": "cap_policy_timing",
+   "what": "The policy entries read are those announced at or before the decision instant (18:00); an entry announced later raises LookAheadError",
+   "value": "announced <= decision instant",
+   "text": {
+    "file": "src/repo_model/srf_line.py",
+    "contains": "require_announced(used, as_of)"
+   }
+  },
+  {
+   "id": "cap_first_entry_effective",
+   "what": "The first full-allotment entry in the register, standing_repo-20251210 (announced 2025-12-10 14:00), is effective on this day; no date is written in the code",
+   "value": "2025-12-11",
+   "json": {
+    "file": "metadata/policy_events.json",
+    "path": "entries.id=standing_repo-20251210.effective_date"
+   }
+  },
+  {
+   "id": "cap_first_entry_limit",
+   "what": "... and it states no aggregate operation limit",
+   "value": null,
+   "json": {
+    "file": "metadata/policy_events.json",
+    "path": "entries.id=standing_repo-20251210.details.aggregate_operation_limit_bn"
+   }
+  },
+  {
+   "id": "cap_legacy_instant_constant",
+   "what": "OPEN, recorded as it is: srf_line.DECISION_TIME stays the 16:00 of the dated declarations of #1241 and #1252 (#1312 kept it); the candidate's cap is read at the as_of the walk passes, which is the decision instant of the run. Re-declaring the cap at 18:00 is not done here",
+   "value": 16,
+   "code": "repo_model.srf_line.DECISION_TIME.hour"
+  },
+  {
+   "id": "probability_tau_bp",
+   "what": "The headline event is the spread strictly above this many bp, on whole basis points (docs/decisions/pressure-probability.md)",
+   "value": 5.0,
+   "code": "repo_model.spread_mean_reversion.TAIL_TAU"
+  },
+  {
+   "id": "probability_rule",
+   "what": "P(spread > tau) is read off the 23 quantiles: the CDF is linear between the quantiles, runs on at the outer segments' slopes to 0 and 1, ties are nudged by 1e-6 bp per level, and the cut is floor(tau) + 0.5",
+   "value": "linear CDF through the 23 quantiles, outer slopes extended",
+   "text": {
+    "file": "src/repo_model/spread_mean_reversion.py",
+    "contains": "cut = math.floor(float(tau)) + 0.5"
+   }
+  },
+  {
+   "id": "probability_tail_completion",
+   "what": "Below the 1st and above the 99th percentile the law is completed by the slope of the outermost segment (no parametric tail). OPEN: #1389 proposes one coherent rule for the cap, tail completion and probabilities; this manifest records the code as it stands",
+   "value": "outer-segment slope",
+   "text": {
+    "file": "src/repo_model/spread_mean_reversion.py",
+    "contains": "edges = [knots[0] - GRID[0] * low] + knots + [knots[-1] + (1.0 - GRID[-1]) * high]"
+   }
+  },
+  {
+   "id": "grid_levels_count",
+   "what": "The number of quantile levels every forecast is made at",
+   "value": 23,
+   "code": "repo_model.scoring_protocol.GRID#len"
+  },
+  {
+   "id": "grid_levels_first",
+   "what": "The lowest level",
+   "value": 0.01,
+   "code": "repo_model.scoring_protocol.GRID[0]"
+  },
+  {
+   "id": "grid_levels_last",
+   "what": "The highest level",
+   "value": 0.99,
+   "code": "repo_model.scoring_protocol.GRID[22]"
+  },
+  {
+   "id": "horizons",
+   "what": "Leads in business days, averaged with equal weight into one score per decision day",
+   "value": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "code": "repo_model.scoring_protocol.HORIZONS"
+  },
+  {
+   "id": "score_twcrps_threshold_bp",
+   "what": "The key secondary's weight is 1{z > this}, in bp",
+   "value": 0.0,
+   "code": "repo_model.scoring_protocol.TWCRPS_THRESHOLD_BP"
+  }
+ ],
+ "genealogy": [
+  "mr_level10",
+  "fhs_scale",
+  "state_calendar_s1_s4",
+  "s3c",
+  "s3c_net",
+  "s3c_ann_net",
+  "ann_net_1800"
+ ],
+ "inventory": [
+  {
+   "id": "mr_level10",
+   "label": "spread_mr_level10: persistence with partial mean reversion to the median of the last 10 ordinary days",
+   "issue": 686,
+   "pr": 713,
+   "merged": "2026-10-13",
+   "role": "in_candidate",
+   "parent": "B1",
+   "change": "Adds a level (10 ordinary days), phi on a grid, empirical residual quantiles, refit every 21 decision days; 1 variant",
+   "outcome": "Grid CRPS 1.778 bp on 1,855 decision days: +22.3% [+13.7%, +29.5%] against B1 and +29.4% [+21.4%, +37.3%] against B2; a tie with the published distribution on five levels (+1.2% [-2.3%, +4.8%]); weak in 2021-23 and at quarter-ends. Adopted: the base of everything after it",
+   "declaration": "metadata/spread_distribution_686.json",
+   "log": "docs/research/log/0027-2026-10-13-model-00713-H5-step2.md",
+   "no_page_because": "its result is in the research log entry and the pre-pivot evidence page named there, not in docs/research/"
+  },
+  {
+   "id": "gbm_funding",
+   "label": "gbm_funding: gradient-boosted quantiles of the post-phase-2 inputs (the incumbent candidate before #941)",
+   "issue": 634,
+   "pr": 711,
+   "merged": "2026-10-15",
+   "role": "incumbent_replaced",
+   "parent": null,
+   "change": "The phase 2 gbm and the published declaration re-scored under protocol v1, plus 3 variants with the post-phase-2 inputs",
+   "outcome": "The new inputs add nothing on the primary score (ablation -0.9% [-2.3%, +0.6%]); no variant beats B3 on its five levels. Replaced as H5 candidate on 22 October by #941's scaled mean reversion, which beat it by +6.8% pooled [+3.3%, +10.1%] (#1115, #1141)",
+   "declaration": "metadata/spread_distribution_634.json",
+   "log": "docs/research/log/0026-2026-10-13-model-00711-H5-step1.md",
+   "no_page_because": "the step-1 page is the pre-pivot evidence named in the log entry"
+  },
+  {
+   "id": "mr_ctx",
+   "label": "spread_mr_ctx and the B2 average (variants i, ii, iii of #761)",
+   "issue": 761,
+   "pr": 767,
+   "merged": "2026-10-15",
+   "role": "tried_not_adopted",
+   "parent": "mr_level10",
+   "change": "Three variants of mean reversion: (i) residuals pooled by the target day's context, (ii) a quantile average with B2, (iii) both; B1 re-centred on the last ordinary day as a reference row",
+   "outcome": "Grid CRPS 1.737 / 1.780 / 1.745 bp against 1.778: (i) +2.3% [+1.0%, +3.6%], (ii) -0.1% [-4.5%, +3.1%], (iii) +1.9% [-2.7%, +5.2%]. (i) loses in 2020 and 2021-23. Not in the candidate (the candidate pools residuals across all days)",
+   "declaration": "metadata/spread_distribution_761.json",
+   "log": "docs/research/log/0051-2026-10-14-model-00767-H5-step2.md",
+   "no_page_because": "the page is docs/pivot/spread-mr-variants-result.md, named in the log entry"
+  },
+  {
+   "id": "aligned_pairs",
+   "label": "gbm_funding_cal_aligned and gbm_funding_cal_direct: calendar and scheduled columns read from the target row",
+   "issue": 1027,
+   "pr": 1036,
+   "merged": "2026-10-21",
+   "role": "tried_not_adopted",
+   "parent": "gbm_funding",
+   "change": "Two declared variants of gbm_funding with the calendar columns at the target day, one-step pairs (aligned) and direct pairs",
+   "outcome": "Aligned beats gbm_funding on calendar days (+3.2%, lower bound +0.7%) and is pooled +1.1% [-1.1%, +3.5%], weak in 2021-23 (-7.9% [-14.3%, -2.1%]); direct is not shown to beat gbm_funding on calendar days. Superseded by #941's line",
+   "declaration": "metadata/aligned_calendar_1027.json",
+   "page": "docs/research/aligned-calendar-1027.md",
+   "log": "docs/research/log/2026-10-20-model-01036-H5-step3.md"
+  },
+  {
+   "id": "balance_sheet_flags",
+   "label": "gbm_funding_cal_direct plus the balance-sheet day flags (coded and turn)",
+   "issue": 1031,
+   "pr": 1089,
+   "merged": "2026-10-22",
+   "role": "tried_not_adopted",
+   "parent": "aligned_pairs",
+   "change": "Two arms: the G-SIB and foreign-bank balance-sheet day flags as coded and on the turn days, on the direct variant",
+   "outcome": "Little added: pooled +0.4% [+0.1%, +0.9%] (coded), +0.3% [-0.3%, +0.9%] (turn); only the quarter-end turn days show an interval above zero. Not in the candidate",
+   "declaration": "metadata/balance_sheet_nested_1031.json",
+   "page": "docs/research/balance-sheet-nested-1031.md",
+   "log": "docs/research/log/2026-10-21-model-01089-H5-step2.md"
+  },
+  {
+   "id": "dom_term",
+   "label": "gbm_funding_cal_direct_dom: the day-of-month bucket on the direct variant",
+   "issue": 1032,
+   "pr": 1098,
+   "merged": "2026-10-22",
+   "role": "tried_not_adopted",
+   "parent": "aligned_pairs",
+   "change": "One declared variant: the bucket (1-5, 6-14, 15-18, 19-23, 24-31) of the target day's day of the month at every lead",
+   "outcome": "+0.4% [+0.2%, +0.6%] pooled over the direct variant; -3.3% [-7.3%, +0.5%] against the aligned variant. The 19th-to-23rd idea survives as the candidate's dom_19_23 term",
+   "declaration": "metadata/dom_level_term_1032.json",
+   "page": "docs/research/dom-level-term-1032-result.md",
+   "log": "docs/research/log/2026-10-22-model-01032-H5-step2.md"
+  },
+  {
+   "id": "fomc_gbm",
+   "label": "gbm_funding_cal_direct_fomc: FOMC meeting columns on the direct variant",
+   "issue": 1087,
+   "pr": 1093,
+   "merged": "2026-10-22",
+   "role": "tried_not_adopted",
+   "parent": "aligned_pairs",
+   "change": "One direct arm with fomc_meeting_day and fomc_days_to_next_meeting at every lead",
+   "outcome": "No gain: -0.7% pooled over the direct variant (-1.5% to +0.1%), -1.2% on the 120 FOMC days. The candidate has no FOMC term",
+   "declaration": "metadata/fomc_variants_1087.json",
+   "page": "docs/research/fomc-variants-1087-result.md",
+   "log": "docs/research/log/2026-10-22-model-01093-H5-step3.md"
+  },
+  {
+   "id": "aligned_announcement",
+   "label": "gbm_funding_cal_direct_ann and _ann_coupons: announcement-dated settlement arms of the direct variant",
+   "issue": 1124,
+   "pr": 1127,
+   "merged": "2026-10-22",
+   "role": "tried_not_adopted",
+   "parent": "aligned_pairs",
+   "change": "Two declared arms with the settlement aggregate (and the coupon leg alone) dated from the auction announcement",
+   "outcome": "Declared before any score; the log entry records no result and no page is on main. The announcement reading is tested on the candidate's own line (#1288)",
+   "declaration": "metadata/aligned_announcement_1124.json",
+   "log": "docs/research/log/2026-10-22-model-01124-H5-step3.md",
+   "no_page_because": "declared; the walks were queued for her Mac and no result page is on main"
+  },
+  {
+   "id": "fhs_scale",
+   "label": "spread_mr_fhs_*: six variants of the residual scale (#941)",
+   "issue": 941,
+   "pr": 1099,
+   "merged": "2026-10-22",
+   "role": "in_candidate",
+   "parent": "mr_level10",
+   "change": "Six variants of the residual scale: MAD over 20, 10 or 40 rows (floor 0.5 bp), floors 0.25 and 1.0 at 20 rows, sd over 20 rows; filtered historical simulation",
+   "outcome": "The declared variant (MAD, 20 rows, floor 0.5) takes grid CRPS from 1.778 to 1.698 bp: +4.5% [+2.8%, +6.3%]; the other four MAD variants gain +3.0% to +3.8%; the sd variant loses (-6.1%). Adopted: the candidate's scale. Replaced gbm_funding as H5 candidate on 22 October (her ruling, relayed)",
+   "declaration": "metadata/fhs_scale_941.json",
+   "page": "docs/research/fhs-scale-941-result.md",
+   "log": "docs/research/log/2026-10-22-model-00941-H5-step3.md"
+  },
+  {
+   "id": "calendar_mr",
+   "label": "(a) to (d): calendar terms as location and scale terms on #941's base",
+   "issue": 1115,
+   "pr": 1125,
+   "merged": "2026-10-22",
+   "role": "tried_not_adopted",
+   "parent": "fhs_scale",
+   "change": "Three arms added to the base (a): (b) eight additive location terms, (c) the same as location and scale terms, (d) (c) without the FOMC and IORB terms; unit: bp per term, one effect everywhere",
+   "outcome": "The terms lose pooled: (b) -16.5%, (c) -9.6%, (d) -6.2% against (a); they gain in 2024 and 2025-26 and lose heavily in 2020 and 2021-23. (a) is the base kept. Led to #1145",
+   "declaration": "metadata/calendar_mr_1115.json",
+   "page": "docs/research/calendar-mr-1115-result.md",
+   "log": "docs/research/log/2026-10-22-model-01115-H5-step3.md"
+  },
+  {
+   "id": "walk_calibration",
+   "label": "Walk-forward split-conformal calibration of the base's 23 levels (arms a to c)",
+   "issue": 1133,
+   "pr": 1141,
+   "merged": "2026-10-22",
+   "role": "tried_not_adopted",
+   "parent": "fhs_scale",
+   "change": "One arm on the base's laws re-estimated at a refit from past cells whose target is at or before the anchor: (a) pooled split-conformal correction of each level (arms (b) by floor flag and (c) declared)",
+   "outcome": "The base is already calibrated pooled: (a) -1.7% [-2.9%, -0.3%] against the base on grid CRPS. Not in the candidate (no calibration subfit; #1366 confirmed the closure)",
+   "declaration": "metadata/walk_calibration_1133.json",
+   "page": "docs/research/walk-calibration-1133-result.md",
+   "log": "docs/research/log/2026-10-22-model-01133-H5-step3.md"
+  },
+  {
+   "id": "faster_scale",
+   "label": "Nine faster-reacting scales on (a): MAD 5/10/blend, EWMA half-lives 3, 5, 10 and asymmetric 5, miss feedback, calendar-type factor",
+   "issue": 1153,
+   "pr": 1158,
+   "merged": "2026-10-23",
+   "role": "tried_not_adopted",
+   "parent": "fhs_scale",
+   "change": "Nine arms changing only the scale (v1 MAD 5 and 10 days and a 5/20 blend; v2 EWMA; v3 miss feedback; v4 miss feedback and a calendar-type factor on direct pairs)",
+   "outcome": "No arm fixes the clustering of band misses (Christoffersen independence p = 0.000 at every lead); v1 and v2 lose to (a) on grid CRPS (-1.2% to -7.3%); v3 and v4 within noise. The base's scale stays",
+   "declaration": "metadata/faster_scale_1153.json",
+   "page": "docs/research/faster-scale-1153-result.md",
+   "log": "docs/research/log/2026-10-23-model-01153-H5-step3.md"
+  },
+  {
+   "id": "state_calendar_s1_s4",
+   "label": "(s1) to (s4): state-scaled calendar effects in standardised units",
+   "issue": 1145,
+   "pr": 1151,
+   "merged": "2026-10-23",
+   "role": "in_candidate",
+   "parent": "fhs_scale",
+   "change": "Four arms on (a): (s1) terms in standardised units, (s2) (s1) times the scarcity state, (s3) (s1) with a Huber fit and a ridge of 5, (s4) (s1) with the FOMC and IORB terms",
+   "outcome": "Grid CRPS 1.698 (a), 1.720 (s1), 1.715 (s2), 1.624 (s3), 1.760 (s4); only (s3) beats (a): +4.3% [+1.8%, +6.4%]; (s1), (s2) and (s4) lose in 2020. Adopted: (s3), the candidate's fit (her ruling of 23 October, option 2 on #1151)",
+   "declaration": "metadata/state_calendar_1145.json",
+   "page": "docs/research/state-calendar-1145-result.md",
+   "log": "docs/research/log/2026-10-22-model-01145-H5-step3.md"
+  },
+  {
+   "id": "s3_decomposition",
+   "label": "(r1) (r2) (r3): why (s3) wins (ridge alone, Huber alone, gross sizes)",
+   "issue": 1172,
+   "pr": 1181,
+   "merged": "2026-10-23",
+   "role": "tried_not_adopted",
+   "parent": "state_calendar_s1_s4",
+   "change": "(r1) (s1) with the ridge of 5 alone, (r2) (s1) with the Huber fit alone, (r3) (s3) with gross coupon and bill sizes times the scarcity state in place of the flags (lead 1 only); (v4) miss feedback and calendar-type factor",
+   "outcome": "Share of (s3)'s gain over (a) recovered: (r1) 29%, (r2) 73%, (r3) 101%, (v4) 111%; the Huber fit carries most of it. (s3) stays; sizing at every lead needed the announcement dating (#1288)",
+   "declaration": "metadata/s3_decomposition_1172.json",
+   "page": "docs/research/s3-decomposition-1172-result.md",
+   "log": "docs/research/log/2026-10-23-model-01172-H5-step3.md"
+  },
+  {
+   "id": "sofr_dispersion",
+   "label": "(d1) (d2) (d3): scale by SOFR in-panel dispersion on (s3)",
+   "issue": 1175,
+   "pr": 1178,
+   "merged": "2026-10-23",
+   "role": "tried_not_adopted",
+   "parent": "state_calendar_s1_s4",
+   "change": "Three arms changing only the scale by a factor 1 + gamma (x - 1) with x the as-of dispersion relative to its trailing 60-row median: (d1) width p75 - p25, (d2) p75 - SOFR, (d3) (d1) on the upper half",
+   "outcome": "No arm fixes the clustering; (d2) +0.8% [+0.4%, +1.4%] over (s3) on grid CRPS, no loss; (d1) +0.3%. Not adopted into the candidate",
+   "declaration": "metadata/sofr_dispersion_1175.json",
+   "page": "docs/research/sofr-dispersion-1175-result.md",
+   "log": "docs/research/log/2026-10-23-model-01175-H5-step3.md"
+  },
+  {
+   "id": "regime_spells",
+   "label": "(m1) (m2) (m3): calm and stress spells on (s3)",
+   "issue": 1182,
+   "pr": 1203,
+   "merged": "2026-10-24",
+   "role": "tried_not_adopted",
+   "parent": "state_calendar_s1_s4",
+   "change": "Four arms: (m1) an observable episode state (a miss of (s3)'s own 90% band within the last k = 3 or 5 rows) with its own pool, (m2) a two-state Markov-switching scale, (m3) (m2) with the entry to stress a logistic function of the day type",
+   "outcome": "Independence of misses stays at p = 0.000 for every arm; (m1, k = 3) +0.7% [+0.3%, +1.2%] over (s3) on grid CRPS; (m2) and (m3) undecided and too narrow. Not adopted",
+   "declaration": "metadata/regime_spells_1182.json",
+   "page": "docs/research/regime-spells-1182-result.md",
+   "log": "docs/research/log/2026-10-24-model-01182-H5-step3.md"
+  },
+  {
+   "id": "s3_terms",
+   "label": "(s3+state) and (s3+FOMC/IORB): the scarcity interaction and the FOMC and IORB terms on (s3)'s fit",
+   "issue": 1196,
+   "pr": 1204,
+   "merged": "2026-10-24",
+   "role": "tried_not_adopted",
+   "parent": "state_calendar_s1_s4",
+   "change": "Two arms: (s3+state) each term times the as-of scarcity state; (s3+FOMC/IORB) with fomc_day and iorb_window; both Huber, ridge 5",
+   "outcome": "Both undecided against (s3) (grid CRPS d -0.007 [-0.023, +0.003] and -0.003 [-0.013, +0.001]); neither repairs (s3)'s upper-tail losses in 2020 and on FOMC days. The candidate has neither",
+   "declaration": "metadata/s3_terms_1196.json",
+   "page": "docs/research/s3-terms-1196-result.md",
+   "log": "docs/research/log/2026-10-24-model-01196-H5-step3.md"
+  },
+  {
+   "id": "s3_huber_calendar",
+   "label": "(s3-hw1) (s3-hw2): Huber weights on calendar rows",
+   "issue": 1226,
+   "pr": 1237,
+   "merged": "2026-10-26",
+   "role": "tried_not_adopted",
+   "parent": "state_calendar_s1_s4",
+   "change": "(s3-hw1) Huber downweighting on ordinary target rows only; (s3-hw2) calendar rows' Huber threshold at 2 times the ordinary one (declared, not tuned)",
+   "outcome": "(s3-hw1) a loss (grid CRPS d -0.049 [-0.080, -0.025]); (s3-hw2) undecided (d -0.009 [-0.023, +0.000]). The candidate's Huber threshold is one for all rows",
+   "declaration": "metadata/s3_huber_calendar_1226.json",
+   "page": "docs/research/s3-huber-calendar-1226-result.md",
+   "log": "docs/research/log/2026-10-26-model-01226-H5-step3.md"
+  },
+  {
+   "id": "s3_iorbs",
+   "label": "(s3+IORBs): the signed announced IORB change and a technical-adjustment indicator on (s3)",
+   "issue": 1227,
+   "pr": 1238,
+   "merged": "2026-10-26",
+   "role": "tried_not_adopted",
+   "parent": "state_calendar_s1_s4",
+   "change": "(s3+IORBs) with iorb_window and the signed announced IORB change over 25 bp and a technical-adjustment indicator, read at the target day at leads 1 to 3",
+   "outcome": "Grid CRPS d +0.001 [-0.002, +0.005] against (s3): undecided pooled; no gain by regime. Not adopted",
+   "declaration": "metadata/s3_iorbs_1227.json",
+   "page": "docs/research/s3-iorbs-1227-result.md",
+   "log": "docs/research/log/2026-10-26-model-01227-H5-step3.md"
+  },
+  {
+   "id": "srf_cap_1241",
+   "label": "(s3) with its quantiles clipped at the SRF line plus a margin of 0, 5 or 10 bp",
+   "issue": 1241,
+   "pr": 1246,
+   "merged": "2026-10-26",
+   "role": "tried_not_adopted",
+   "parent": "state_calendar_s1_s4",
+   "change": "Three margins declared up front (0 primary, 5, 10) on (s3); a look at 2021-2025 aimed at the upper tail after (s3) was chosen on those days",
+   "outcome": "SOFR - IORB closed above the line on 19 of 1,104 scored target days since 2021-07-29; the cap's effect is the subject of #1252 (before full allotment it did not help). The cap since full allotment is adopted by #1255",
+   "declaration": "metadata/srf_cap_1241.json",
+   "page": "docs/research/srf-cap-1241-result.md",
+   "log": "docs/research/log/2026-10-26-model-01241-H5-step3.md"
+  },
+  {
+   "id": "srf_cap_2026",
+   "label": "The SRF cap since full allotment on the 2026 development days",
+   "issue": 1252,
+   "pr": 1254,
+   "merged": "2026-10-26",
+   "role": "tried_not_adopted",
+   "parent": "srf_cap_1241",
+   "change": "No new arm or setting: the realised counts against the line in three periods and since full allotment, and (s3) with the cap on the 2026 days",
+   "outcome": "The cap gains on (s3) on the 2026 days (+0.7% grid CRPS); the evidence her 26 October ruling rests on",
+   "declaration": "metadata/srf_cap_2026_1252.json",
+   "page": "docs/research/srf-cap-2026-1252-result.md",
+   "log": "docs/research/log/2026-10-26-model-01252-H5-step3.md"
+  },
+  {
+   "id": "s3_2026_check",
+   "label": "(s3) on the 2026 development days: a calibration check",
+   "issue": 1229,
+   "pr": 1235,
+   "merged": "2026-10-26",
+   "role": "side_check",
+   "parent": "state_calendar_s1_s4",
+   "change": "No new arm and no choice: (s3) scored on the 165 decision days with targets 2026-01-02 to 2026-09-03",
+   "outcome": "A check of the chosen model on days it had not been scored on; development data, decides nothing",
+   "declaration": "metadata/s3_2026_check_1222.json",
+   "page": "docs/research/s3-2026-check-1222-result.md",
+   "log": "docs/research/log/2026-10-26-model-01229-H5-step3.md"
+  },
+  {
+   "id": "s3c",
+   "label": "(s3c): (s3) capped at the SRF line from full allotment onwards",
+   "issue": 1255,
+   "pr": 1256,
+   "merged": "2026-10-27",
+   "role": "in_candidate",
+   "parent": "state_calendar_s1_s4",
+   "change": "No new arm and no tuned setting: (s3c) against (s3), (a), B1, B1' and B2 on both windows; every cell with a target before full allotment is (s3)'s",
+   "outcome": "2026 days, (s3c) against (s3): grid CRPS +0.7% [+0.2%, +2.0%]; development window: differs from (s3) only on the 50 cells with a target from 2025-12-11. Adopted: named the candidate by her ruling of 26 October (ledger 61)",
+   "declaration": "metadata/s3c_candidate_1255.json",
+   "page": "docs/research/s3c-candidate-1255-result.md",
+   "log": "docs/research/log/2026-10-26-model-01255-H5-step3.md"
+  },
+  {
+   "id": "s3c_turn_cap",
+   "label": "(s3c-t): the cap off on turn days",
+   "issue": 1265,
+   "pr": 1270,
+   "merged": "2026-10-27",
+   "role": "tried_not_adopted",
+   "parent": "s3c",
+   "change": "No tuned setting: (s3), (s3c) and (s3c-t) paired, every day since full allotment including 24 to 30 December 2025",
+   "outcome": "Pooled (s3c-t) against (s3c): grid CRPS +2.4% [-0.6%, +154.9%], undecided; Brier P(> +10 bp) +28.0% [+6.4%, +56.8%]. Not adopted (18 turn-day targets, below the testing line)",
+   "declaration": "metadata/s3c_turn_cap_1265.json",
+   "page": "docs/research/s3c-turn-cap-1265-result.md",
+   "log": "docs/research/log/2026-10-27-model-01265-H5-step3.md"
+  },
+  {
+   "id": "s3c_net",
+   "label": "(s3c-net): net bill and coupon settlement in place of gross, lead 1 only",
+   "issue": 1273,
+   "pr": 1279,
+   "merged": "2026-10-27",
+   "role": "in_candidate",
+   "parent": "s3c",
+   "change": "No tuned setting: the two settlement terms as signed net sizes in USD 100 bn (state held at its maximum), with a gross-size control",
+   "outcome": "Acts at lead 1 only: 2026 days +0.5% [+0.0%, +1.0%], development window -0.1% [-0.2%, +0.1%] undecided, Brier a loss on the development window. The form of the candidate's sizing; its gain came with the announcement reader (#1288)",
+   "declaration": "metadata/s3c_net_settlement_1273.json",
+   "page": "docs/research/s3c-net-settlement-1273-result.md",
+   "log": "docs/research/log/2026-10-27-model-01273-H5-step3.md"
+  },
+  {
+   "id": "s3c_gse",
+   "label": "(s3c-gse): the GSE cash cycle as a 19th-to-25th ramp",
+   "issue": 1274,
+   "pr": 1277,
+   "merged": "2026-10-27",
+   "role": "tried_not_adopted",
+   "parent": "s3c",
+   "change": "One declared shape, not tuned: a ramp over the 19th to 25th in place of the flat dom_19_23 term",
+   "outcome": "Pooled undecided: development window against (s3c) -0.4% [-1.0%, +0.1%], 2026 days +0.2% [-2.8%, +2.2%]. Not adopted",
+   "declaration": "metadata/s3c_gse_1274.json",
+   "page": "docs/research/s3c-gse-1274-result.md",
+   "log": "docs/research/log/2026-10-27-model-01274-H5-step3.md"
+  },
+  {
+   "id": "s3c_carry",
+   "label": "(s3c-carry): month-end carryover sized to the spike",
+   "issue": 1275,
+   "pr": 1278,
+   "merged": "2026-10-27",
+   "role": "tried_not_adopted",
+   "parent": "s3c",
+   "change": "No tuned setting: a month-end carryover term, readable only at lead 1 on business day 2 under the as-of rule",
+   "outcome": "Development window grid CRPS d -0.001 [-0.002, +0.000], undecided; Brier a loss; 2026 days a loss on grid CRPS (d -0.001 [-0.002, -0.000]). Not adopted",
+   "declaration": "metadata/s3c_carry_1275.json",
+   "page": "docs/research/s3c-carry-1275-result.md",
+   "log": "docs/research/log/2026-10-27-model-01275-H5-step3.md"
+  },
+  {
+   "id": "s3c_gse_roll",
+   "label": "(s3c-gse-roll): the GSE ramp with the payment-day roll",
+   "issue": 1287,
+   "pr": 1291,
+   "merged": "2026-10-28",
+   "role": "tried_not_adopted",
+   "parent": "s3c_gse",
+   "change": "One declared rule, not tuned: the ramp with the payment day rolled to the next business day",
+   "outcome": "On the 33 rolled payment days of the development window grid CRPS is worse than the ramp (-9.3% [-13.0%, -5.3%]); pooled a loss against (s3c) (-0.6% [-1.2%, -0.0%]). Not adopted",
+   "declaration": "metadata/s3c_gse_roll_1287.json",
+   "page": "docs/research/s3c-gse-roll-1287-result.md",
+   "log": "docs/research/log/2026-10-28-model-01287-H5-step3.md"
+  },
+  {
+   "id": "s3c_ann_net",
+   "label": "(s3c-ann) and (s3c-ann-net): the settlement terms read at leads 2 to 5 from the auction announcement; (s3c-ann-net) sized by net",
+   "issue": 1288,
+   "pr": 1293,
+   "merged": "2026-10-28",
+   "role": "in_candidate",
+   "parent": "s3c_net",
+   "change": "No tuned setting: the settlement terms of (s3c) read at leads 2 to 5 from the announcement (12:00 on announcemt_date), as flags ((s3c-ann)) and as net sizes ((s3c-ann-net)), plus the leg references",
+   "outcome": "The arms equal (s3c) and (s3c-net) at lead 1 cell for cell, so the gain sits at leads 2 to 5. (s3c-ann-net) against (s3c): 2026 days +4.8% [+1.4%, +7.0%], development window +1.7% [+1.0%, +2.5%]. Adopted: the H5 candidate (her ruling of 29 October, ledger 73)",
+   "declaration": "metadata/s3c_announced_settlement_1288.json",
+   "page": "docs/research/s3c-announced-settlement-1288-result.md",
+   "log": "docs/research/log/2026-10-28-model-01288-H5-step3.md"
+  },
+  {
+   "id": "s3c_pd",
+   "label": "(s3c-pd): primary dealers' reverse repo plus securities borrowed as a balance-sheet state input",
+   "issue": 1296,
+   "pr": 1297,
+   "merged": "2026-10-29",
+   "role": "tried_not_adopted",
+   "parent": "s3c",
+   "change": "No tuned setting: the state input from the New York Fed's primary dealer statistics, read as the latest public level",
+   "outcome": "Development window grid CRPS against (s3c) d -0.019 [-0.042, -0.007], a loss; 2026 days undecided. More than half the weeks of 2025 and 2026 have no level. Not adopted; the bounded re-score is a later directive",
+   "declaration": "metadata/s3c_pd_1296.json",
+   "page": "docs/research/s3c-pd-1296-result.md",
+   "log": "docs/research/log/2026-10-28-model-01296-H5-step3.md"
+  },
+  {
+   "id": "s3c_pd_1329",
+   "label": "(s3c-pd) with the 13-day carry bound",
+   "issue": 1329,
+   "pr": 1332,
+   "merged": "2026-10-31",
+   "role": "side_check",
+   "parent": "s3c_pd",
+   "change": "Nothing scored: the weekly-carry 13-day bound binds the weekly state terms (draft decision text)",
+   "outcome": "A guard and a decision text, no figure",
+   "declaration": "metadata/s3c_pd_1329.json",
+   "no_page_because": "a guard and a draft decision text; no result page"
+  },
+  {
+   "id": "ann_net_1800",
+   "label": "(s3c-ann-net) re-made at the 18:00 decision instant, with B3 and the 16:00 side paired",
+   "issue": 1314,
+   "pr": 1333,
+   "merged": "2026-10-31",
+   "role": "in_candidate",
+   "parent": "s3c_ann_net",
+   "change": "No tuned setting: #1288's and #1320's walks and fits run unchanged at 18:00, the 16:00 side kept per cell, B3 on its five levels",
+   "outcome": "The candidate and its comparison at the instant the registration reads; every figure has a 16:00 column on the page. The candidate itself did not change",
+   "declaration": "metadata/s3c_ann_net_1800_1314.json",
+   "page": "docs/research/s3c-ann-net-1800-1314-result.md",
+   "log": "docs/research/log/2026-10-30-model-01314-H5-step3.md"
+  },
+  {
+   "id": "ann_net_diagnosis",
+   "label": "Diagnosis of (s3c-ann-net)'s lead-1 loss and the settlement premium by regime",
+   "issue": 1319,
+   "pr": 1320,
+   "merged": "2026-10-30",
+   "role": "side_check",
+   "parent": "s3c_ann_net",
+   "change": "One set of declared diagnostic tables: lead-1 loss by target-day type, net-to-gross class and maturing share; regressions of the residual on gross and maturing amounts",
+   "outcome": "At lead 1 the net arm's loss against (s3c) is on Brier P(> +5 bp) and on days with no settlement, not on large-maturing days. Led to #1321",
+   "declaration": "metadata/s3c_ann_net_diagnosis_1319.json",
+   "page": "docs/research/s3c-ann-net-diagnosis-1319-result.md",
+   "log": "docs/research/log/2026-10-30-model-01319-H5-step3.md"
+  },
+  {
+   "id": "flagnet_gross",
+   "label": "(s3c-ann-flagnet) and (s3c-ann-gross)",
+   "issue": 1321,
+   "pr": 1326,
+   "merged": "2026-10-30",
+   "role": "tried_not_adopted",
+   "parent": "s3c_ann_net",
+   "change": "Two declared arms: the announced flags beside the announced nets, and the coupon flag replaced by the announced gross coupon offering",
+   "outcome": "Against (s3c-ann-net): flagnet development window +0.6% [-0.4%, +1.4%], 2026 days +0.4% [-0.5%, +1.4%], undecided; gross +0.4% undecided and -3.5% [-8.9%, -0.9%], a loss, on the 2026 days. Not adopted; #1344 diagnoses flagnet further",
+   "declaration": "metadata/s3c_flagnet_gross_1321.json",
+   "page": "docs/research/s3c-flagnet-gross-1321-result.md",
+   "log": "docs/research/log/2026-10-30-model-01321-H5-step3.md"
+  },
+  {
+   "id": "sameday_ops",
+   "label": "(s3c-ann-net) with the same-day ON RRP and SRF take-up at 18:00",
+   "issue": 1349,
+   "pr": 1372,
+   "merged": "2026-11-02",
+   "role": "tried_not_adopted",
+   "parent": "s3c_ann_net",
+   "change": "No tuned setting: one declared arm adding the decision day's own ON RRP and SRF take-up (written by 18:00 for 99.5% and 99.8% of operation dates)",
+   "outcome": "Against (s3c-ann-net): 2026 days +0.0% [-0.3%, +0.3%], development window -0.2% [-0.7%, +0.1%], both undecided. Not adopted",
+   "declaration": "metadata/s3c_sameday_ops_1349.json",
+   "page": "docs/research/s3c-sameday-ops-1349-result.md",
+   "log": "docs/research/log/2026-11-02-model-01349-H5-step3.md"
+  },
+  {
+   "id": "cmb_terms",
+   "label": "(s3c-ann-net) with a cash management bill term (flag and size forms)",
+   "issue": 1356,
+   "pr": 1374,
+   "merged": "2026-11-02",
+   "role": "tried_not_adopted",
+   "parent": "s3c_ann_net",
+   "change": "No tuned setting: two declared forms, the net bill ex-CMB with a CMB flag or a CMB size term",
+   "outcome": "Against (s3c-ann-net): flag form +0.0% [-0.2%, +0.6%] and -0.1% [-0.5%, +0.1%]; size form +0.0% and -0.2%; all undecided. Not adopted",
+   "declaration": "metadata/s3c_ann_net_cmb_1356.json",
+   "page": "docs/research/s3c-ann-net-cmb-1356-result.md",
+   "log": "docs/research/log/2026-11-02-model-01356-H5-step3.md"
+  },
+  {
+   "id": "candidate_calibration",
+   "label": "Calibration of (s3c-ann-net) by period and day type",
+   "issue": 1363,
+   "pr": 1378,
+   "merged": "2026-11-02",
+   "role": "side_check",
+   "parent": "ann_net_1800",
+   "change": "No tuned setting and no variant: coverage of the 50% and 90% bands (closed and open) and the strict and at-or-below hit rules by period and day type",
+   "outcome": "A check of the candidate's bands on seen days; nothing changed",
+   "declaration": "metadata/candidate_calibration_1363.json",
+   "page": "docs/research/candidate-calibration-1363-result.md",
+   "log": "docs/research/log/2026-11-02-model-01363-H5-step3.md"
+  },
+  {
+   "id": "calibration_masking",
+   "label": "(s3c-ann-net) with the training pairs filtered to targets observable at each refit's decision instant",
+   "issue": 1366,
+   "pr": 1381,
+   "merged": "2026-11-02",
+   "role": "side_check",
+   "parent": "ann_net_1800",
+   "change": "A check, not a tuning: the candidate walked twice per window, as run and with the training pairs filtered by the information-set note's masking; a closure audit for conformal calibration",
+   "outcome": "The candidate has no calibration subfit of the kind the note describes; the honest filter drops 0 of 207580 training pairs on the development window, so the two versions are one computation",
+   "declaration": "metadata/calibration_masking_candidate_1366.json",
+   "page": "docs/research/calibration-masking-candidate-1366-result.md",
+   "log": "docs/research/log/2026-11-02-model-01366-H5-step3.md"
+  },
+  {
+   "id": "b1_anchor",
+   "label": "B1* and B1'*: the persistence benchmarks' horizon from the last public anchor",
+   "issue": 1388,
+   "pr": 1396,
+   "merged": "2026-11-02",
+   "role": "side_check",
+   "parent": "ann_net_1800",
+   "change": "Two corrected benchmarks (the change window is anchor-to-target, h plus the anchor's lag in rows), scored against the candidate; no candidate change",
+   "outcome": "A reference check; whether B1* and B1'* replace B1 and B1' in the registered comparison is her question on the page",
+   "declaration": "metadata/b1_anchor_horizon_1388.json",
+   "page": "docs/research/b1-anchor-horizon-1388-result.md",
+   "log": "docs/research/log/2026-11-02-model-01388-H5-step3.md"
+  },
+  {
+   "id": "flagnet_diagnosis",
+   "label": "Diagnosis of (s3c-ann-flagnet) beside (s3c-ann-net)",
+   "issue": 1344,
+   "pr": 1358,
+   "merged": "2026-11-02",
+   "role": "side_check",
+   "parent": "flagnet_gross",
+   "change": "No new arm and no tuned setting: #1321's walks rebuilt at the 18:00 decision instant and split by lead, settlement-day type, leg, regime, month, scarcity state and realised event; a drafted prospective test of the arm, not registered",
+   "outcome": "The flagnet's Brier gain is on settlement days and other days alike; its grid CRPS difference sits on days when no leg settles; the 2020 loss is not an over-shift of the declared rule; from 2020-04-03 a prospective comparison with the candidate has almost no power at the observed effect. Whether to register the arm is her question on the page (default no)",
+   "declaration": "metadata/s3c_flagnet_diagnosis_1344.json",
+   "page": "docs/research/s3c-flagnet-diagnosis-1344-result.md",
+   "log": "docs/research/log/2026-11-02-model-01344-H5-step3.md"
+  },
+  {
+   "id": "bill_iorb",
+   "label": "(s3c-ann-net-bill): the 4-week bill rate less IORB as one more term",
+   "issue": 1346,
+   "pr": 1357,
+   "merged": "2026-11-02",
+   "role": "tried_not_adopted",
+   "parent": "ann_net_1800",
+   "change": "One declared arm: the 4-week bill rate less IORB of the previous business day as one more term, read at the 18:00 decision instant",
+   "outcome": "Against (s3c-ann-net): development window -1.0% [-1.8%, -0.3%], a loss at every lead; 2026 days +0.6% [-2.6%, +3.8%], undecided. Not adopted; whether it replaces the candidate is her question on the page (default no)",
+   "declaration": "metadata/s3c_bill_iorb_1346.json",
+   "page": "docs/research/s3c-bill-iorb-1346-result.md",
+   "log": "docs/research/log/2026-11-02-model-01346-H5-step3.md"
+  },
+  {
+   "id": "net_missing",
+   "label": "(s3c-ann-net) with a class resting on a missing figure read as 0.0 beside a 0/1 missingness flag",
+   "issue": 1390,
+   "pr": 1398,
+   "merged": "2026-11-02",
+   "role": "tried_not_adopted",
+   "parent": "ann_net_1800",
+   "change": "One declared alternative reading of a missing maturing amount (the class contributes 0.0 and a flag marks it), and the reader's explicit missing state (`net_state`); `net_for_day` returns the same numbers",
+   "outcome": "Against (s3c-ann-net): development window +0.1% [+0.0%, +0.2%]; 2026 days +0.1% [-0.3%, +0.4%], undecided; a tenth of a percent on days already seen. What a missing maturing amount should mean in the registered recipe is her question on the page (default keep the current reading and log the state)",
+   "declaration": "metadata/s3c_net_missing_1390.json",
+   "page": "docs/research/s3c-net-missing-1390-result.md",
+   "log": "docs/research/log/2026-11-02-model-01390-H5-step3.md"
+  }
+ ],
+ "not_arms": {
+  "metadata/aligned_pairs_931.json": "#931's scratch measurement of the gbm_funding line's pair construction, declared before any score with nothing published; a precursor of #1027, not an arm on the way to the candidate",
+  "metadata/s3c_flagnet_prospective_draft_1344.json": "#1344's draft prospective test of (s3c-ann-flagnet), not registered; a draft for her review, not an arm on the way to the candidate"
+ }
+}
