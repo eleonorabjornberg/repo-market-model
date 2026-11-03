@@ -175,16 +175,15 @@ class RuleTests(unittest.TestCase):
         self.assertEqual(set(made), {time(18, 0)})
 
 
-class OpenQuestionTests(unittest.TestCase):
-    """What the live path does at 18:00 with v1's frozen features: it refuses, and it is not settled here (#1368).
+class DecisionRowBillRateTests(unittest.TestCase):
+    """What the live path does at 18:00 with v1's frozen features (#1368, settled by #1403).
 
     `treasury_bill_rates` is declared available at 16:30 on its own day (`metadata/sources.json`), so at 18:00 the
-    as-of rule serves v1's `tbill_4w` and `tbill_13w` from the decision day's own row. The live panel's real rows end on
-    the day before the decision day and the decision row is a placeholder that carries only the calendar and the
-    scheduled settlements, so `require_reads_on_real_rows` raises `LookAheadError`: the guard holds and a live run at
-    18:00 would stop at it. Making the decision row carry the same-day bill rates changes what the published model
-    reads live (#1323's Q3), so it is a question for Eleonora and not settled in code. This test pins the refusal; the
-    change that settles the question flips it.
+    as-of rule serves v1's `tbill_4w` and `tbill_13w` from the decision day's own row. #1368 pinned the refusal while
+    the decision row was a placeholder carrying only the calendar and the scheduled settlements. Her ruling of
+    2 November 2026 (PR #1384, question 1, option 1) makes the decision row carry the day's own bill rates, and
+    `require_reads_on_real_rows` admits those reads there when the row carries them; the pin is flipped here, and
+    `test_live_decision_row_1403.py` holds the rest.
     """
 
     @classmethod
@@ -203,13 +202,24 @@ class OpenQuestionTests(unittest.TestCase):
     def tearDownClass(cls):
         shutil.rmtree(cls.tmp, ignore_errors=True)
 
-    def test_the_decision_row_is_not_read_for_the_bill_rates_at_eighteen_hundred(self):
+    def test_the_decision_row_is_read_for_the_bill_rates_at_eighteen_hundred(self):
+        index = len(self.rows) - 1
+        rule = asof.InformationRule(self.registry, live.V1_FEATURES[1], decision_time=live.DECISION, horizon=1)
+        live.require_reads_on_real_rows(self.rows, rule, index, index - 2)
+
+    def test_a_decision_row_without_the_bill_rates_is_still_refused(self):
+        from repo_model.data import DailyObservation
         from repo_model.splits import LookAheadError
 
         index = len(self.rows) - 1
+        bare = list(self.rows)
+        bare[index - 1] = DailyObservation(
+            date=bare[index - 1].date,
+            values={k: v for k, v in bare[index - 1].values.items() if k not in live.DECISION_ROW_COLUMNS},
+        )
         rule = asof.InformationRule(self.registry, live.V1_FEATURES[1], decision_time=live.DECISION, horizon=1)
         with self.assertRaisesRegex(LookAheadError, "tbill_"):
-            live.require_reads_on_real_rows(self.rows, rule, index, index - 2)
+            live.require_reads_on_real_rows(bare, rule, index, index - 2)
 
     def test_the_same_reads_are_on_real_rows_at_sixteen_hundred(self):
         index = len(self.rows) - 1
