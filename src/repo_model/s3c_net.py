@@ -15,10 +15,10 @@ from gross to net.
 
 **Information set.** A settlement size is a scheduled field of the *target* row, read at lead 1 only, exactly as the gross flag of the same
 term is (`spread_mr_calendar.TERMS`: span `(0,)`). The net of target day `T` read by the decision on day `D` is `net_settlement.net_for_day`
-over the auctions settling on `T`, at the instant 16:00 on `D` (the published records' decision time): an auction counts only when its
+over the auctions settling on `T`, at the decision instant on `D` (`repo_model.decision_instant`: 18:00 America/New_York since #1312): an auction counts only when its
 `announcemt_date` is on or before `D` (its announcement is stamped 12:00, `metadata/net_settlement.json`), and a class announced only in
 part reads 0 until fully announced (#679, #738). A training pair reads the figure of its own decision, `target_row - lead`. The declared
-`net_settlement` column is read at 12:00 on `T` itself, which is after the 16:00 decision of the day before, so it is not used for the
+`net_settlement` column is read at 12:00 on `T` itself, which is after the decision instant (18:00) of the day before, so it is not used for the
 target day; this table reads the same function at the decision instant.
 
 Stdlib only.

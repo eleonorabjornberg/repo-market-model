@@ -368,24 +368,24 @@ details.terms{margin-top:72px}
   <p class="kicker">Working paper &middot; overnight funding markets</p>
   <h1>When overnight cash runs short</h1>
   <p class="dek">Forecasting when the cost of overnight borrowing against Treasuries climbs above the Fed&rsquo;s rate on reserves, using only what was public at the time.</p>
-  <p class="byline">repo-market-model &middot; every figure generated from the project&rsquo;s tracked records</p>
+  <p class="byline">Every figure on this page is generated from the project&rsquo;s published records</p>
 </header>
 
 <div class="prose intro">
-  <p>Every business day, banks, dealers and money-market funds lend each other cash overnight against U.S. Treasury securities. The benchmark rate for those loans is <strong>SOFR</strong>; on {{shown_day}} it was set from about <strong>{{latest_volume}}</strong> of trades. The Federal Reserve pays banks its own rate on the cash they hold with it, <strong>IORB</strong>, and on most days SOFR sits at or just below it. When spare cash runs short, SOFR climbs above.</p>
+  <p>Every business day, banks, dealers and money-market funds lend each other cash overnight against U.S. Treasury securities. The benchmark rate for those loans is <strong>SOFR</strong>; on {{shown_day}} it was set from about <strong>{{latest_volume}}</strong> of trades. The Federal Reserve pays banks its own rate on the cash they hold with it, the administered reserve rate (<strong>IORB</strong> since 29 July 2021, <strong>IOER</strong> before), and on most days SOFR sits at or just below it. The target throughout is SOFR minus that rate. When spare cash runs short, SOFR climbs above.</p>
 </div>
 
 <section id="research-summary" class="rs" aria-labelledby="research-summary-title">
   <h2 id="research-summary-title" class="abstract-h">Executive summary</h2>
   {{research_summary}}
-  <p class="uselimit"><b>Limits.</b> {{use_limitation}} The final test was near-blind, and the central range is not yet fully calibrated. <a href="https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/use-limitation.md">Method and limits</a></p>
+  <p class="uselimit"><b>Limits.</b> {{use_limitation}} The final test on past data was near-blind, since its days had appeared in earlier results, and the forecast&rsquo;s central range is not yet fully calibrated (it is still too narrow). <a href="#final-test">More on the final test</a></p>
 </section>
 
 <nav aria-label="Contents" class="toc">
   <h2 class="toc-h">Contents</h2>
   <ol>
     <li><b>1</b><span><a href="#best-performer">Current best performer</a><small>The incumbent forecast and the development leader</small></span></li>
-    <li><b>2</b><span><a href="#hypotheses">The hypotheses, H1 to H10</a><small>One line each; details fold open</small></span></li>
+    <li><b>2</b><span><a href="#hypotheses">The research questions</a><small>One line each; details fold open</small></span></li>
     <li class="part"><span>Background and detailed records</span></li>
     <li><b>3</b><span><a href="#start">Start here</a><small>Short views for a reader new to this market</small></span>{{newcomer_nav}}</li>
     <li><b>4</b><span><a href="#final-test">The final test</a><small>The result, from its record</small></span></li>
@@ -408,9 +408,9 @@ details.terms{margin-top:72px}
 </section>
 
 <section id="hypotheses" class="rs" aria-labelledby="hypotheses-title">
-  <h2 id="hypotheses-title"><span class="n">2</span>The hypotheses, H1 to H10</h2>
+  <h2 id="hypotheses-title"><span class="n">2</span>The research questions</h2>
   {{research_steps}}
-  <p class="prose">Each hypothesis follows the same six steps, from question to verdict. Open a line for its step, status, tests, kill criterion, milestones and research log. Development figures are labelled &ldquo;development, not a verdict&rdquo;; a figure nobody has measured says so.</p>
+  <p class="prose">Each research question follows the same six steps, from question to verdict. Open a line to see the question in full, how it is tested, what would end it and where it stands. Development figures are labelled &ldquo;development, not a verdict&rdquo;; a figure nobody has measured says so.</p>
   <div class="rs-list">{{research_hypotheses}}</div>
 </section>
 
@@ -565,7 +565,7 @@ details.terms{margin-top:72px}
     <ul>
       <li><b>Used</b>: a published forecast reads it. <b>Tried and hurt</b>: adding it made the forecast worse. <b>In progress</b>: being worked on. <b>Registered but unused</b>: the project has the source and no forecast reads it. <b>Not registered</b>: the project has no source for it.</li>
       <li>The days were chosen by one rule that reads only inputs known before each day: {{n4_seg_rule}}. It never reads a rate or a spread.</li>
-      <li>The segment chart's days come from the panel's <code>quarter_end</code> flag (the last business day of the quarter), the statutory corporate tax deadlines, the scheduled coupon settlements, and the New York Fed's ON RRP results read as they stood at each day's decision. The values are below.</li>
+      <li>The segment chart's days come from the panel's quarter-end marker (the last business day of the quarter), the statutory corporate tax deadlines, the scheduled coupon settlements, and the New York Fed's ON RRP results read as they stood at each day's decision. The values are below.</li>
     </ul>
     {{n4_seg_table}}
     <p>The segments nested inside each other, with their rates on one day, and the Fed's administered rates are in <a href="#plumbing">section 6</a>.</p>
@@ -590,7 +590,7 @@ details.terms{margin-top:72px}
     <summary>Go deeper: the values, and how the two quarter-ends were chosen</summary>
     <p>{{n5_rule}}</p>
     <ul>
-      <li>The two quarter-ends come from one rule, declared in the generator before any chart was drawn. It reads only the panel's <code>quarter_end</code> flag (the quarter's last business day) and the New York Fed's ON RRP results, read as they stood at each decision, as N3 and N4 read them (<a href="https://www.newyorkfed.org/markets/desk-operations/reverse-repo">source</a>).</li>
+      <li>The two quarter-ends come from one rule, declared in the generator before any chart was drawn. It reads only the panel's quarter-end marker (the quarter's last business day) and the New York Fed's ON RRP results, read as they stood at each decision, as N3 and N4 read them (<a href="https://www.newyorkfed.org/markets/desk-operations/reverse-repo">source</a>).</li>
       <li>The Treasury's account and reserve balances are drawn as the change since the window's first day, because their levels differ by thousands of billions. Rates are drawn less IORB, in whole basis points.</li>
       <li>Each step's publication times come from the project's source declarations, the same ones the forecasts are read under.</li>
     </ul>
@@ -760,13 +760,13 @@ details.terms{margin-top:72px}
     <summary>Go deeper: how the days are classified</summary>
     <p>Each day is counted once, in this order:</p>
     <ul>
-      <li><b>Quarter-end:</b> the last business day of March, June, September or December (the panel's <code>quarter_end</code> flag).</li>
+      <li><b>Quarter-end:</b> the last business day of March, June, September or December (the panel's quarter-end marker).</li>
       <li><b>Month-end:</b> the last business day of any other month.</li>
-      <li><b>Tax window:</b> the corporate tax dates and the business days after each that the panel's <code>tax_date</code> flag marks.</li>
+      <li><b>Tax window:</b> the corporate tax dates and the business days after each that the panel's tax-date marker marks.</li>
       <li><b>Coupon settlement:</b> a day on which Treasury notes or bonds sold at auction settle.</li>
       <li><b>Other:</b> every remaining business day, bill settlements included.</li>
     </ul>
-    <p>A type with few days a year, such as quarter-ends, moves a long way on a single day. Read the counts, not only the shade. The periods are the regimes of <code>metadata/evaluation_splits.json</code>, the period slices declared before the reserve-scarcity state existed; re-declaring them by that state is a decision still open.</p>
+    <p>A type with few days a year, such as quarter-ends, moves a long way on a single day. Read the counts, not only the shade. The periods are the project&rsquo;s declared regimes, the period slices declared before the reserve-scarcity state existed; re-declaring them by that state is a decision still open.</p>
   </details>
 </section>
 

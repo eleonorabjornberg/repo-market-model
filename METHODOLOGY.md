@@ -14,12 +14,11 @@ it has not, and that convention is enforced rather than left to editorial care.
 | Person | Role |
 |---|---|
 | Eleonora Björnberg | Author. Designed the model, the methodology and the workflow: research design, implementation, evaluation protocol, and academic responsibility for any submission based on this work. |
-| Nicholas Beroud | Advisor. Selected the data the model is built on and settled what it means: which public series carry the funding market's mechanics, which quantities are economically meaningful, and which open decisions are finance questions rather than engineering ones. |
+| Nicholas Beroud | Advisor. Advised on a few issues. He is not a major part of this work. |
 
-Ownership divides by kind of judgment. What the project measures, and what a
-measurement means, answer to the advisor; how it is modelled and evaluated,
-and whether a result has been earned, answer to the author. No result is certified by
-either judgment alone.
+The author answers for what the project measures, what a measurement means, how it is
+modelled and evaluated, and whether a result has been earned. The advisor advised on a
+few issues; no result rests on his judgment.
 
 ## Research question
 
@@ -27,7 +26,7 @@ Can publicly observable funding, reserve, Treasury-settlement, dealer, money-fun
 and calendar variables forecast the next-day distribution of Treasury repo-market
 pressure, including transitions into the upper tail?
 
-The primary outcome is the SOFR spread to the administered reserve rate. Secondary
+The primary outcome is the spread of SOFR minus the administered reserve rate: IOER before 29 July 2021, IORB after (the pages write it as SOFR − IORB). Secondary
 outcomes are SOFR dispersion, volume, and a pre-declared stress indicator. The headline
 target is the probability that the spread is more than +5 bp (and +10 bp) on the scored
 day, as [`docs/decisions/pressure-probability.md`](docs/decisions/pressure-probability.md)

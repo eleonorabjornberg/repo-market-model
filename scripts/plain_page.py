@@ -155,11 +155,13 @@ def question_block(emit):
         "This is the repo market. The rate on that lending is called SOFR. The Federal Reserve also pays banks a "
         "rate on the money they keep with it, called IORB. Most days SOFR sits at or just below IORB. On some days "
         "spare cash runs short and SOFR jumps above it.</p>",
-        "<p>This project forecasts the gap between the two, SOFR minus IORB, for the next business day. The "
-        "headline forecast is the <strong>chance that the gap is more than %s basis points</strong>. A basis point "
-        "is a hundredth of one percentage point. It uses public data only, and only what was public at %s on the "
-        "day before the forecast. The public data runs from %s to %s.</p>"
-        % (" and more than ".join("%d" % tau for tau in taus), _e(_clock(emit.require(emit.load(emit.PERSISTENCE), "declaration", "decision_time"))),
+        "<p>This project forecasts the gap between the two, SOFR minus the administered reserve rate, for the next business day. That rate is IOER before 29 July 2021 and IORB after; the pages write the gap as SOFR minus IORB. Its main aim "
+        "is a forecast of the <strong>full range of likely outcomes for the gap</strong>, in basis points, not only a "
+        "yes-or-no answer. A basis point is a hundredth of one percentage point. The published forecast on this page "
+        "is narrower: the <strong>chance that the gap is more than %s basis points</strong>. Both use public data only, "
+        "and only what was public at %s New York time on the business day before the day forecast. The public data "
+        "runs from %s to %s.</p>"
+        % (" and more than ".join("%d" % tau for tau in taus), _e(_clock(manifest["decision_time"])),
            _e(manifest["start_date"]), _e(manifest["end_date"])),
         '<p class="src">Where this comes from: %s, %s, and %s.</p>' % (
             _link("metadata/stress_thresholds.json"), _link("metadata/funding_panel_manifest.json"),
@@ -352,10 +354,11 @@ def scarcity_block(emit):
         % _e(states),
         "<p>The label is set by two cut-points. Reserves count as ample or tight depending on where they stand "
         "as a share of all commercial-bank assets: %s%% to %s%% is the band where banks stop treating reserves as "
-        "abundant. And the Fed's overnight reverse repo facility is a buffer only while it holds more than "
-        "$%d billion; below that it no longer absorbs a drain on reserves. Both cut-points were chosen from the "
-        "literature and from the same history they are checked on, so they describe the market and have not been "
-        "proven in a separate test.</p>" % (
+        "abundant. And the Fed's overnight reverse repo facility is counted as a buffer while it holds more than "
+        "$%d billion. That line is a classification the project chose, not a break measured in the data: the "
+        "project has not shown that the facility stops absorbing a drain on reserves below it. Both cut-points were "
+        "chosen from the literature and from the same history they are checked on, so they describe the market and "
+        "have not been proven in a separate test.</p>" % (
             "%g" % (low * 100), "%g" % (high * 100), int(scarcity.ON_RRP_BUFFER_BN)),
         _sources(emit, extra=[_link("src/repo_model/scarcity.py"), _link("scripts/desk_outputs.py")]),
     ]
@@ -404,6 +407,7 @@ def _plain_use_limitation():
 
 def limits_block(emit):
     declaration = _json(ROOT / "metadata/lockbox.json")
+    tiers = {tier["name"]: tier for tier in declaration["tiers"]}
     first_locked = declaration["tiers"][0]["start"]
     last_scored = emit.require(emit.load(emit.PERSISTENCE), "folds", "last", "scored_date")
     final = emit.load(FINAL_TEST_RECORD)
@@ -431,7 +435,7 @@ def limits_block(emit):
         "+%d bp has a %s interval of %s, so it was <strong>%s</strong>. Against the %s it was <strong>%s</strong>.</li>" % (
             top, _e(PERSISTENCE), top, _level(paired), _range(paired, 4), _words(paired["lower"], paired["upper"]),
             _e(CLIMATOLOGY), _words(climatology["lower"], climatology["upper"])),
-        "<li><strong>Days that are locked.</strong> %s</li>" % _lockbox_sentence(first_locked, last_scored),
+        "<li><strong>Days that are locked.</strong> %s</li>" % _lockbox_sentence(tiers, first_locked, last_scored),
         "</ul>",
     ]
     lines.extend(_details("The statement of record", ["<p>%s</p>" % _e(emit.use_limitation())]))
@@ -441,7 +445,14 @@ def limits_block(emit):
     return lines
 
 
-def _lockbox_sentence(first_locked, last_scored):
+def _lockbox_sentence(tiers, first_locked, last_scored):
+    """The sealed days in words, from `metadata/lockbox.json`: the near-blind tier is opened history once it has a date."""
+    near, blind = tiers["near_blind"], tiers["blind"]
+    if near.get("opened"):
+        return _e("Some days are kept sealed so that no result can be tuned on them: every day from %s onwards. "
+                  "The days %s to %s were sealed too until the final test opened them on %s. They are ordinary "
+                  "history now, and studies run since use them to develop and compare models, so a result on them "
+                  "is not blind." % (blind["start"], near["start"], near["end"], near["opened"]["date"]))
     return _e("Some days are kept sealed so that no result can be tuned on them. A comparison scores only days "
               "before %s. The older pooled distribution tables scored days through %s (the near-blind period); "
               "the results published since score only days before %s." % (first_locked, last_scored, first_locked))

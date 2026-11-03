@@ -10,6 +10,10 @@ Read by `scripts/emit_visual.py`. Everything shown is parsed from tracked source
   tracked file that shows it and the merged pull request) and each hypothesis's phase on the plan's six-step scale.
   A log entry's step is the step of the hypothesis's own manual, so it never sets the phase.
 - `docs/research/taglines.json`: each hypothesis's one plain-language line, the only part of it shown unfolded (#893).
+- `docs/research/summary.json`: the executive summary's plain wording, the two aims and one line per critical-path link
+  (#1352). The summary is for a reader who may not know the repo market: it names no hypothesis, link, milestone,
+  issue or file (`INTERNAL`). It also holds the plain fold of each research question, the plain name of each comparison
+  model and kind of day, and the description of the current best candidate (#1355), checked against `INTERNAL_PAGE`.
 
 Nothing is typed into the page. A figure with no source reads "not measured"; a figure from development days
 carries the label `DEV_LABEL`. Standard library only.
@@ -35,6 +39,7 @@ LOG = "docs/research/log"
 PROGRESS = "docs/research/milestones.json"
 HYPOTHESES = "docs/research/hypotheses"
 TAGLINES = "docs/research/taglines.json"
+SUMMARY = "docs/research/summary.json"
 REGISTER = provisional_register.REGISTER
 #: The committed records the development standings are read from (#1020): the step 4 record names the candidate; the
 #: #960 score holds the paired grid-CRPS figures, and its declaration says how the intervals were drawn.
@@ -47,7 +52,7 @@ CANDIDATE = "docs/research/h5-candidate.json"
 CANDIDATE_SCORES = "docs/research/state-calendar-1145/result.json"
 #: Every source the page is built from: the one list a new input is added to (#1059). `LOG` and `HYPOTHESES` are
 #: directories; `input_files` expands them, and `emit_visual.py` stamps the page with the digest of each.
-INPUTS = (PLAN, LOG, PROGRESS, HYPOTHESES, TAGLINES, REGISTER, STEP4, STANDINGS, STANDINGS_DECLARATION,
+INPUTS = (PLAN, LOG, PROGRESS, HYPOTHESES, TAGLINES, SUMMARY, REGISTER, STEP4, STANDINGS, STANDINGS_DECLARATION,
           CANDIDATE, CANDIDATE_SCORES)
 
 DEV_LABEL = "development, not a verdict"
@@ -318,40 +323,104 @@ def lowered(tagline):
     return text if (first.isupper() and len(first) > 1) or any(c.isdigit() for c in first) else text[:1].lower() + text[1:]
 
 
-def summary_html(hypotheses, links):
-    """The executive summary as an abstract (#893): prose, the goals and every hypothesis named in running text.
+#: What the executive summary never shows (#1352): a hypothesis, critical-path link or milestone id, an issue number, a
+#: file in the repository, or code. The page is for a reader, not for the project.
+INTERNAL = re.compile(r"\bH\d+\b|\bCP\d+\b|\bM\d+[a-z]?\b|#\d+|<code>|\b(?:docs|metadata|scripts)/|\.(?:json|md|py)\b")
 
-    No table and no list: where each hypothesis stands is in its own fold in section 2.
+
+#: What no changed section of the page shows (#1355), a superset of `INTERNAL`: also a code name of a model or arm
+#: (`sc_s3c_ann_net`, `spread_mr_ctx`, `(s3c-ann-net)`), a benchmark label (B1, B1&prime;, B2, B3), project shorthand
+#: (MME, twCRPS, Lens C, "phase 2"), a ledger item and the lay-reader substitute "a tracked directive". Tested on the
+#: visible text of the built page, and on every line of `SUMMARY`.
+INTERNAL_PAGE = re.compile(
+    INTERNAL.pattern + r"|\bB[123]\b|B1[\u2032']|B1&prime;|\bMME\b|\btwCRPS\b|\bLens C\b|\bphase \d\b|\bledger\b"
+    r"|\btracked directives?\b|\brepo-market-|\b[a-z][a-z0-9]*(?:_[a-z0-9.]+)+\b|\(s\d[a-z]*(?:-[a-z]+)*\)")
+
+
+def _plain_strings(node):
+    if isinstance(node, dict):
+        for value in node.values():
+            yield from _plain_strings(value)
+    elif isinstance(node, str):
+        yield node
+
+
+def load_plain(repo):
+    """The plain wording of the sections below the summary (#1355): `questions`, `models`, `day_types`, `candidate`.
+
+    Refused when one is missing, or when any line of them names something internal (`INTERNAL_PAGE`).
+    """
+    data = json.loads(read(repo, SUMMARY))
+    for part in ("questions", "models", "day_types", "candidate"):
+        if not data.get(part):
+            raise ResearchError(f"{SUMMARY}: no plain {part}")
+    for part in ("questions", "models", "day_types", "candidate"):
+        for text in _plain_strings(data[part]):
+            if INTERNAL_PAGE.search(text):
+                raise ResearchError(f"{SUMMARY}: a line of {part} names something internal: {text!r}")
+    return data
+
+
+def load_summary(repo, hypotheses, links):
+    """The plain wording of `SUMMARY`: an aim for each goal of the plan and a line for each critical-path link.
+
+    Refused when a goal or a link has no line, or a line names something internal (`INTERNAL`).
+    """
+    data = json.loads(read(repo, SUMMARY))
+    aims, nexts = data.get("aims", {}), data.get("next", {})
+    for h in hypotheses:
+        if h["role"] and not str(aims.get(h["id"], "")).strip():
+            raise ResearchError(f"{SUMMARY}: the {h['role']} goal {h['id']} has no plain aim")
+    for link in links:
+        if not str(nexts.get(link["milestone"], "")).strip():
+            raise ResearchError(f"{SUMMARY}: the critical-path link {link['id']} ({link['milestone']}) has no plain line")
+    for key, text in list(aims.items()) + list(nexts.items()):
+        if INTERNAL.search(text):
+            raise ResearchError(f"{SUMMARY}: the line for {key} names something internal: {text!r}")
+    return aims, nexts
+
+
+def summary_html(hypotheses, links, aims, nexts):
+    """The executive summary (#893, #1352): plain prose for a reader who may not know the repo market.
+
+    It says what the project forecasts, its two aims, whether any conclusion has been reached and what comes next, in
+    the words of `SUMMARY`. No table, no list, and nothing internal (`INTERNAL`): where each hypothesis stands is in
+    its own fold in section 2.
     """
     goals = sorted((h for h in hypotheses if h["role"]), key=lambda h: h["role"] != "primary")
-    others = [h for h in hypotheses if not h["role"]]
-    goal_text = " ".join(
-        f'<b>{esc(h["role"].capitalize())} goal</b> ({ref(h)}): {inline(lowered(h["tagline"]))}.' for h in goals)
+    named = {"primary": "The main aim is", "secondary": "The second is"}
+    aim_text = " ".join(f'{named[h["role"]]} {esc(aims[h["id"]].rstrip("."))}.' for h in goals)
     reached = verdicts(hypotheses)
-    verdict_text = ("none yet" if not reached else "; ".join(f'{ref(h)}, {esc(h["status"])}' for h in reached))
-    nexts = {}
+    if reached:
+        verdict_text = ("<b>Conclusions so far.</b> " + " ".join(
+            f'{esc(h["status"].capitalize())}: {esc(lowered(h["tagline"]))}.' for h in reached)
+            + " Every other question is still open.")
+    else:
+        verdict_text = "<b>No conclusions yet.</b>"
+    nexts_by_link = {}
     for h in goals:
         opened = next((l for l in links if h["id"] in l["gates"] and not l["done"]), None)
         if opened:
-            nexts.setdefault(opened["id"], (opened, []))[1].append(h["id"])
-    next_text = " ".join(
-        f'For {"both goals" if len(gated) == len(goals) > 1 else joined(gated)} it is {link["id"]} '
-        f'({link["milestone"]}), {inline(lowered(link["text"]))}, which waits on {inline(link["waits"].rstrip("."))}.'
-        for link, gated in nexts.values())
+            nexts_by_link.setdefault(opened["id"], (opened, []))[1].append(h)
+    aim_name = {"primary": "the main aim", "secondary": "the second"}
+    clauses = [
+        (f'For {"both aims" if len(gated) == len(goals) > 1 else joined(aim_name[h["role"]] for h in gated)}, '
+         f'the next step is to {esc(nexts[link["milestone"]].rstrip("."))}')
+        for link, gated in nexts_by_link.values()]
+    next_text = ("<b>What comes next.</b> " + "; ".join(clauses) + ".") if clauses else ""
     return (
         '<div class="abstract">'
-        '<p>This study forecasts the overnight cost of borrowing cash against U.S. Treasuries, measured as SOFR '
-        f'minus the Fed&rsquo;s rate on reserves, and asks what drives it. It has two goals. {goal_text} '
-        f'{joined([ref(h) for h in others])} support those goals or follow from them; section 2 gives each one '
-        'line, with its step, tests and milestones folded beneath it.</p>'
-        f'<p><b>Verdicts reached:</b> {verdict_text}. A verdict needs prospective confirmation days; development '
-        'data never gives one '
-        '(<a href="https://github.com/eleonorabjornberg/repo-market-model/blob/main/docs/decisions/scoring-protocol.md">'
-        'scoring protocol v1</a>). Every figure from development days below is marked '
-        f'&ldquo;{esc(DEV_LABEL)}&rdquo;, and one from a model that did not read calendar days at the target day is '
-        f'also marked &ldquo;{esc(PROVISIONAL_LABEL)}&rdquo; until it is re-run. <b>Next on the critical path.</b> {next_text}</p>'
-        '<p class="rs-note">The next link is the first in the plan&rsquo;s &ldquo;Critical path&rdquo; section that '
-        'gates the goal and whose milestone is not marked done in <code>docs/research/milestones.json</code>.</p>'
+        '<p>This project forecasts the overnight cost of borrowing cash against U.S. Treasury securities, measured '
+        'as the spread between SOFR, the benchmark rate for those loans, and IORB, the rate the Federal Reserve pays '
+        'banks on the reserves they hold with it, and asks what drives that spread. It has two aims. '
+        f'{aim_text} The other research questions in section 2 support those aims or follow from them; each has one '
+        'line there, with its details folded beneath it.</p>'
+        f'<p>{verdict_text} A conclusion can come only from forecasts made in advance and then checked against what '
+        'happened; tests on past data help build and choose a model but never settle the question. Figures '
+        f'from those tests are marked &ldquo;{esc(DEV_LABEL)}&rdquo;. A figure from a model that did not yet read the '
+        'calendar on the day it forecasts (quarter-ends, tax dates, Treasury settlements) is also marked '
+        f'&ldquo;{esc(PROVISIONAL_LABEL)}&rdquo; until it is re-run.</p>'
+        + (f'<p>{next_text}</p>' if next_text else '') +
         '</div>')
 
 
@@ -376,8 +445,8 @@ CANDIDATE_GROUPS = (("pooled", "all decision days", "all decision days"), ("targ
 CANDIDATE_SPLITS = (("regime", "by regime"), ("target_day_type", "by target-day type"))
 #: What the page calls each evidence page of the candidate record: the page is for a lay reader, so no issue number.
 EVIDENCE_NAMES = {1145: "state-scaled calendar study", 1115: "calendar-terms study",
-                  1141: "walk-forward calibration study", 1255: "SRF-capped candidate study", 1288: "announced-settlement study"}
-SPLIT_BENCHMARKS = (("B1", "B1"), ("B1_prime", "B1&prime;"))
+                  1141: "walk-forward calibration study", 1255: "capped-candidate study", 1288: "announced-settlement study"}
+SPLIT_BENCHMARKS = (("B1", "B1"), ("B1_prime", "B1&prime;"))  # keys only: the page prints their plain names (#1355)
 
 
 def read_mean_d(interval):
@@ -419,7 +488,14 @@ def candidate_standings(root):
         return None
     declared = rec["scores"].get("benchmarks")
     pairs = [(x["key"], x["label"]) for x in declared] if declared else CANDIDATE_BENCHMARKS
-    benches = [(b, shown) for b, shown in pairs if b in score["models"]]
+    plain = load_plain(root)
+    models = plain["models"]
+    benches = []
+    for b, _ in pairs:
+        if b in score["models"]:
+            if b not in models:
+                raise ResearchError(f"{SUMMARY}: the comparison model {b} has no plain name")
+            benches.append((b, models[b]["name"]))
     groups = []
     for key, label, caption in CANDIDATE_GROUPS:
         group = (score.get("groups") or {}).get(key, {}).get(label)
@@ -437,13 +513,15 @@ def candidate_standings(root):
             means = ((group or {}).get("grid_crps") or {}).get("means") or {}
             if model not in means:
                 continue
-            rows.append({"label": label, "days": group["days"], "own": means[model],
+            if key == "target_day_type" and label not in plain["day_types"]:
+                raise ResearchError(f"{SUMMARY}: the kind of day {label} has no plain name")
+            rows.append({"label": plain["day_types"].get(label, label), "days": group["days"], "own": means[model],
                          "pairs": {b: _pair(group, model, b) for b, _ in SPLIT_BENCHMARKS}})
         splits.append({"caption": caption, "rows": rows})
-    return {"kind": "candidate", "candidate": name, "benchmarks": benches, "groups": groups, "splits": splits,
+    return {"kind": "candidate", "candidate": name, "benchmarks": benches, "plain": plain, "groups": groups, "splits": splits,
             "first": score["notes"]["first"], "last": score["notes"]["last"], "date": rec["date"],
             "ruling": rec["ruling"], "replaces": rec.get("replaces"), "note": rec.get("note"),
-            "description": rec.get("description"), "shown_as": rec["scores"].get("shown_as"), "provisional": rec.get("provisional", True),
+            "description": plain["candidate"]["description"], "shown_as": rec["scores"].get("shown_as"), "provisional": rec.get("provisional", True),
             "missing": list(rec["scores"].get("not_supplied") or ()),
             "evidence": list(rec.get("evidence") or []), "record": scores_path, "file": CANDIDATE}
 
@@ -488,12 +566,16 @@ def standings(repo):
 
 
 def candidate_standings_html(st):
-    """The standings of the candidate the committed ruling record names (#1152): mean d with its interval and reading."""
-    candidate = esc(st["candidate"])
-    #: When the scoring record is the candidate's base (#1259), the tables are the base's and say so.
-    name = esc(st.get("shown_as") or st["candidate"])
-    scored = (f'The tables are not {candidate}&rsquo;s own: they are {name}, scored on the record below; {candidate}&rsquo;s own '
-              'scores are on the last evidence page. ') if st.get("shown_as") else ""
+    """The standings of the candidate the committed ruling record names (#1152): mean d with its interval and reading.
+
+    Every name on it is plain (#1355): a comparison model by what it does, a kind of day in words, the candidate by a
+    description from `SUMMARY`. The figures are copied from the committed record, unchanged.
+    """
+    plain = st["plain"]
+    names = {key: m["name"] for key, m in plain["models"].items()}
+    #: The tables are the candidate's base model's when the scoring record is not the candidate's own (#1259).
+    scored = (esc(plain["candidate"]["base"]) + " ") if st.get("shown_as") else ""
+    own = "The candidate&rsquo;s base model" if st.get("shown_as") else "The candidate"
 
     def mean_d(pair):
         if not pair:
@@ -511,17 +593,18 @@ def candidate_standings_html(st):
     def mean(x):
         return NOT_MEASURED if x is None else f"{x:.2f}"
 
-    head = "".join(f'<th scope="col">Grid CRPS, {esc(g["caption"])} ({g["days"]} days)</th>'
-                   f'<th scope="col">d = benchmark &minus; {name}, bp [90%], read</th>'
-                   f'<th scope="col">{name}&rsquo;s skill [90%]</th>' for g in st["groups"])
+    head = "".join(f'<th scope="col">Accuracy score, {esc(g["caption"])} ({g["days"]} days)</th>'
+                   f'<th scope="col">Gain over the comparison model, bp [90%], read</th>'
+                   f'<th scope="col">Gain as a share of its score [90%]</th>' for g in st["groups"])
     body = []
     for b, shown in st["benchmarks"]:
         cells = "".join(f'<td>{mean(g["rows"][b]["mean"])}</td><td>{mean_d(g["rows"][b]["pair"])}</td>'
                         f'<td>{skill(g["rows"][b]["pair"])}</td>' for g in st["groups"])
-        body.append(f'<tr><th scope="row">{shown}</th>{cells}</tr>')
-    body.append(f'<tr><th scope="row">{name}</th>' + "".join(
+        body.append(f'<tr><th scope="row">{esc(shown)}</th>{cells}</tr>')
+    body.append(f'<tr><th scope="row">{own}</th>' + "".join(
         f'<td>{mean(g["own"])}</td><td>&mdash;</td><td>&mdash;</td>' for g in st["groups"]) + '</tr>')
-    split_head = "".join(f'<th scope="col">d against {shown} (bp) [90%], read</th>' for _, shown in SPLIT_BENCHMARKS)
+    split_head = "".join(f'<th scope="col">Gain over {esc(names[key].lower())} (bp) [90%], read</th>'
+                         for key, _ in SPLIT_BENCHMARKS)
     split_body = []
     for split in st["splits"]:
         split_body.append(f'<tr><th scope="rowgroup" colspan="{3 + len(SPLIT_BENCHMARKS)}">'
@@ -530,9 +613,11 @@ def candidate_standings_html(st):
             split_body.append(
                 f'<tr><th scope="row">{esc(row["label"])}</th><td>{row["days"]}</td><td>{mean(row["own"])}</td>'
                 + "".join(f'<td>{mean_d(row["pairs"][b])}</td>' for b, _ in SPLIT_BENCHMARKS) + '</tr>')
-    beside = ", ".join(shown for _, shown in st["benchmarks"][:-1]) + " and " + st["benchmarks"][-1][1]
-    missing = ("".join(f"No row compares it with {esc(b)}: its walks were not supplied to the study that scored it. "
+    beside = ", ".join(esc(shown) for _, shown in st["benchmarks"][:-1]) + " and " + esc(st["benchmarks"][-1][1])
+    missing = ("".join(f"No row compares it with {esc(names.get(b, 'another model').lower())}: its forecasts were not supplied to the study that scored it. "
                        for b in st.get("missing") or ()))
+    key = " ".join(f'<b>{esc(m["name"])}</b>: {esc(m["what"])}.' for k, m in plain["models"].items()
+                   if k in {b for b, _ in st["benchmarks"]})
     if st.get("provisional", True):
         mark = " " + provisional_mark()
         caveat = ('The candidate reads no calendar column, so every figure here is provisional until it is re-run with '
@@ -544,31 +629,33 @@ def candidate_standings_html(st):
                   'on that account; it was chosen after seeing the development days, so they are optimistic for it. ')
     links = ", ".join(
         f'<a href="{BLOB}{esc(e["page"])}">{esc(EVIDENCE_NAMES.get(e["issue"], "the study"))}</a>'
-        + (f' (<a href="{BLOB}{esc(e["mean_d_page"])}">read on the mean-d bound</a>)' if e.get("mean_d_page") else "")
+        + (f' (<a href="{BLOB}{esc(e["mean_d_page"])}">read on the gain&rsquo;s interval</a>)' if e.get("mean_d_page") else "")
         for e in st["evidence"])
     return (
         '<p><span class="runin">The development standings.</span> '
-        f'The H5 candidate is <b>{candidate}</b>, {esc(st["description"] or "the scaled mean reversion of the volatility-scaling study")}. '
-        f'<a href="{esc(st["ruling"])}">Eleonora ruled on {esc(st["date"])}</a> that it replaces '
-        f'{esc(st["replaces"] or "the previous candidate")}; the committed record is <code>{esc(st["file"])}</code> '
-        f'and the evidence pages are {links}. Nothing is registered: registration remains her own action. '
+        f'The current best candidate is {esc(st["description"])}. '
+        f'Eleonora ruled on {esc(st["date"])} that it replaces {esc(plain["candidate"]["replaces"])}. '
+        f'The evidence is in these studies: {links}. Nothing is registered: registration remains her own action. '
         f'The tables set it beside {beside} on the decision days '
-        f'{esc(st["first"])} to {esc(st["last"])}, from the record <code>{esc(st["record"])}</code>; '
-        'every figure is copied from it. Mean grid CRPS in bp over horizons one to five, lower is better. '
-        'd is the benchmark&rsquo;s score minus the candidate&rsquo;s, positive favouring the candidate; the '
-        'interval is the studentized stationary bootstrap&rsquo;s two-sided 90% interval, whose ends are the one-sided '
-        '95% bounds, and the reading follows the bound on mean d as the protocol does: better when the lower end is '
-        'above zero, worse when the upper end is below, no difference otherwise. The skill interval is drawn '
-        'separately and can fall on the other side of zero (Eleonora&rsquo;s ruling on which interval is read), so it is shown for reference and not read. '
-        f'{scored}{missing}<span class="rs-tag">{esc(DEV_LABEL)}</span>{mark}</p>'
+        f'{esc(st["first"])} to {esc(st["last"])}, copied from <a href="{BLOB}{esc(st["record"])}">the study&rsquo;s record</a>. '
+        'Accuracy is the mean grid CRPS, a score for a whole forecast range, in basis points over one to five days ahead; '
+        'lower is better. The gain is the comparison model&rsquo;s score minus the candidate&rsquo;s, positive favouring the '
+        'candidate; its interval is the two-sided 90% interval of a resampling method that allows for day-to-day dependence '
+        '(the studentized stationary bootstrap), whose ends are the one-sided 95% bounds, and the reading follows the lower '
+        'and upper end of the interval on the gain as the scoring rules do: better when the lower end is '
+        'above zero, worse when the upper end is below, no difference otherwise. The gain as a share of the comparison '
+        'model&rsquo;s score is drawn separately and can fall on the other side of zero (Eleonora&rsquo;s ruling on which '
+        f'interval is read), so it is shown for reference and not read. {scored}{missing}'
+        f'<span class="rs-tag">{esc(DEV_LABEL)}</span>{mark}</p>'
         f'<table class="rs-standings"><thead><tr><th scope="col">Model</th>{head}</tr></thead>'
         f'<tbody>{"".join(body)}</tbody></table>'
-        '<p class="rs-note"><b>Lens C&rsquo;s caveat.</b> B1&prime; is Lens C&rsquo;s calendar-aware persistence: '
-        'B1 with its changes pooled by the target day&rsquo;s type. B1 stays the protocol&rsquo;s benchmark, '
-        'but B1 alone is not the honest baseline, so the candidate&rsquo;s gain over B1&prime; is the one to weigh. '
-        f'{caveat}The split below is the protocol&rsquo;s: a pooled figure alone is not a result.</p>'
+        f'<p class="rs-note"><b>The comparison models.</b> {key}</p>'
+        '<p class="rs-note"><b>A caution on the baselines.</b> Persistence by day type is persistence with its changes '
+        'pooled by the target day&rsquo;s type. Plain persistence stays the scoring rules&rsquo; benchmark, '
+        'but it alone is not the honest baseline, so the candidate&rsquo;s gain over persistence by day type is the one to '
+        f'weigh. {caveat}The split below is the scoring rules&rsquo;: a pooled figure alone is not a result.</p>'
         f'<table class="rs-standings"><thead><tr><th scope="col">Split</th><th scope="col">Days</th>'
-        f'<th scope="col">{name}&rsquo;s grid CRPS</th>{split_head}</tr></thead>'
+        f'<th scope="col">{own}&rsquo;s accuracy score</th>{split_head}</tr></thead>'
         f'<tbody>{"".join(split_body)}</tbody></table>')
 
 
@@ -627,32 +714,33 @@ def best_html(final, provisional=False, standing=None):
     `standings(repo)` (#1020): the development standings of the candidate the step 4 record names.
     """
     mark = f' {provisional_mark()}' if provisional else ""
-    figs = (f'On the {final["days"]} days {final["first"]} to {final["last"]} the published declaration scored '
-            f'{final["published"]:.2f} bp mean CRPS at h = 1, as that record scores it (not the protocol’s '
-            f'grid CRPS), against {final["persistence"]:.2f} bp for as-of persistence '
+    figs = (f'On the {final["days"]} days {final["first"]} to {final["last"]} the published forecast scored '
+            f'{final["published"]:.2f} bp mean pinball loss over the five published quantiles one day ahead (the legacy five-quantile score; the record\'s field '
+            f'names say CRPS, but it is not the grid CRPS of the scoring rules), against {final["persistence"]:.2f} bp for persistence, the last public spread repeated '
             f'(edge {final["mean"]:+.2f} bp, {final["level"]}% interval {final["lower"]:+.2f} to '
             f'{final["upper"]:+.2f}).')
     callouts = (
         f'<div class="callouts side"><aside class="callout" aria-label="Key figure: the incumbent&rsquo;s edge">'
         f'<span class="big">{final["mean"]:+.2f}<small>bp</small></span>'
-        f'<span class="cap">The published declaration&rsquo;s edge in mean CRPS over as-of persistence at h = 1, on '
+        f'<span class="cap">The published forecast&rsquo;s edge in the five-quantile score (mean pinball loss) over persistence one day ahead, on '
         f'{final["days"]} days; {final["level"]}% interval {final["lower"]:+.2f} to {final["upper"]:+.2f}.</span>'
         f'<span class="rs-tag">{esc(DEV_LABEL)}</span>{mark}</aside>'
         f'<aside class="callout" aria-label="Key figure: the incumbent&rsquo;s score">'
         f'<span class="big">{final["published"]:.2f}<small>bp against {final["persistence"]:.2f}</small></span>'
-        f'<span class="cap">Mean CRPS at h = 1 of the published declaration and of as-of persistence, as that record '
-        f'scores it; lower is better.</span><span class="rs-tag">{esc(DEV_LABEL)}</span>{mark}</aside></div>')
+        f'<span class="cap">Five-quantile score (mean pinball loss) one day ahead of the published forecast and of persistence; '
+        f'lower is better.</span><span class="rs-tag">{esc(DEV_LABEL)}</span>{mark}</aside></div>')
     return (
-        '<p class="lede">No candidate is registered under the scoring protocol yet, so the incumbent stands: '
-        'the published v1 funding declaration, which the protocol uses as its benchmark B3.</p>'
+        '<p class="lede">No candidate has been registered yet (set down in writing before any new day is scored), so '
+        'the incumbent stands: the project&rsquo;s published forecast, which the scoring rules use as the model a new '
+        'candidate is compared with.</p>'
         + callouts +
         '<p><span class="runin">The incumbent.</span> '
         f'{esc(figs)} <span class="rs-tag">{esc(DEV_LABEL)}</span>{mark}</p>'
         + standings_html(standing) +
-        f'<p class="rs-note">The incumbent&rsquo;s figures are from the published record <code>{esc(final["record"])}</code>, '
-        'read by the final-test section below; this page scores nothing itself.</p>'
+        f'<p class="rs-note">The incumbent&rsquo;s figures are from <a href="{BLOB}{esc(final["record"])}">the published '
+        'final-test record</a>, read by the final-test section below; this page scores nothing itself.</p>'
         '<aside class="rs-q"><b>Question for Eleonora.</b> The default rule shown here is the best registered '
-        'candidate under the protocol, else the incumbent, with the development leader beside it. It stands until '
+        'candidate under the scoring rules, else the incumbent, with the development leader beside it. It stands until '
         'she rules.</aside>')
 
 
@@ -672,43 +760,38 @@ def log_html(h):
 
 
 def row(label, text):
-    """A definition row, or nothing when the text is empty once issue numbers are gone."""
-    return f"<dt>{label}</dt><dd>{inline(text)}</dd>" if text and lay(text) else ""
+    """A definition row, or nothing when the text is empty."""
+    return f"<dt>{label}</dt><dd>{esc(text)}</dd>" if text else ""
 
 
-def hypothesis_html(h):
-    """One hypothesis (#893): one line, its id and tagline, over a native <details> fold holding all the rest."""
-    m, p = h["manual"], h["plan"]
-    goal = p.get("target") or p.get("targets")
-    open_questions = p.get("open questions")
-    kill = p.get("kill") or p.get("kill or fix") or NOT_MEASURED
-    tests = p.get("test") or p.get("tests")
-    miles = "".join(
-        f'<li class="{"done" if mid in h["done"] else "open"}"><b>{mid}</b> '
-        f'<span class="rs-state">{"done" if mid in h["done"] else "open"}</span> {inline(text)}'
-        + (f' <a href="{BLOB}{esc(h["evidence"][mid])}">evidence</a>' if mid in h["done"] else "") + '</li>'
-        for mid, text in m["milestones"])
-    markers = "".join(f'<li>{inline(x)}: <span class="rs-nm">{NOT_MEASURED}</span></li>' for x in m["markers"]) \
-        or f'<li>{NOT_MEASURED}</li>'
-    role = f' <span class="rs-tag">{esc(h["role"])} goal</span>' if h["role"] else ""
+#: How a hypothesis's role reads on the page (#1355): the plan's "primary goal" and "secondary goal" as the summary says them.
+ROLE_WORDS = {"primary": "main aim", "secondary": "second aim"}
+
+
+def hypothesis_html(h, plain):
+    """One research question (#893, #1355): its one plain line over a native <details> fold holding the rest.
+
+    The line is the tagline, with no id in front of it. The fold holds the question, how it is tested, what would end
+    it and where it stands, from `SUMMARY`; the plan's own text, its milestones and its research log are in the
+    repository and are not shown. `id` stays as an anchor only.
+    """
+    q = plain["questions"].get(h["id"])
+    if not q:
+        raise ResearchError(f"{SUMMARY}: the research question {h['id']} has no plain fold")
+    for part in ("question", "test", "stop"):
+        if not str(q.get(part, "")).strip():
+            raise ResearchError(f"{SUMMARY}: the research question {h['id']} has no plain {part}")
+    role = f' <span class="rs-tag">{ROLE_WORDS[h["role"]]}</span>' if h["role"] else ""
     hid = h["id"].lower()
     return (
         f'<article class="rs-h" id="{hid}" aria-labelledby="{hid}-t">'
-        f'<details class="rs-fold"><summary><span class="rs-id" id="{hid}-t">{h["id"]}</span> '
-        f'<span class="rs-line">{inline(h["tagline"])}</span></summary>'
-        f'<div class="rs-body"><p class="rs-title"><span class="runin">In the plan.</span> {inline(h["title"])}.{role}</p>'
-        f'<dl><dt>Question</dt><dd>{inline(m["question"])}</dd>'
-        + row("Goal", goal) + row("Open questions", open_questions) + row("Test", tests)
-        + f'<dt>Kill criterion</dt><dd>{inline(kill[:1].upper() + kill[1:])}</dd>'
-        f'<dt>Owner</dt><dd>{inline(m["owner"] or NOT_MEASURED)}</dd>'
-        f'<dt>Step</dt><dd>{h["step"]} of {len(STEPS)}: {STEPS[h["step"] - 1]}; status {esc(h["status_text"] or "open")}'
-        + (f'; the manual&rsquo;s own step {h["manual_step"]}' if h["manual_step"] else "") + '</dd>'
-        f'<dt>Milestones</dt><dd><ul class="rs-miles">{miles}</ul></dd>'
-        f'<dt>Progress markers</dt><dd><ul>{markers}</ul></dd>'
-        f'<dt>Development variants</dt><dd><span class="rs-nm">{NOT_MEASURED}</span> '
-        f'(the running count belongs to the progress page, which is not built yet)</dd>'
-        f'</dl><details class="rs-logfold"><summary>Research log for {h["id"]}</summary>{log_html(h)}</details>'
-        f'</div></details></article>')
+        f'<details class="rs-fold"><summary>'
+        f'<span class="rs-line" id="{hid}-t">{inline(h["tagline"])}</span>{role}</summary>'
+        f'<div class="rs-body"><dl><dt>Question</dt><dd>{esc(q["question"])}</dd>'
+        + row("How it is tested", q["test"]) + row("What would end it", q["stop"]) + row("Where it is done", q.get("where"))
+        + f'<dt>Where it stands</dt><dd>Step {h["step"]} of {len(STEPS)}: {STEPS[h["step"] - 1]}; '
+        f'{esc(h["status"])}</dd>'
+        f'</dl></div></details></article>')
 
 
 BLOB = f"https://github.com/{REPOSITORY}/blob/main/"
@@ -722,8 +805,8 @@ def steps_html():
             '</aside>')
 
 
-def hypotheses_html(hypotheses):
-    return "".join(hypothesis_html(h) for h in hypotheses)
+def hypotheses_html(hypotheses, plain):
+    return "".join(hypothesis_html(h, plain) for h in hypotheses)
 
 
 def payload(hypotheses):
@@ -740,7 +823,9 @@ def payload(hypotheses):
 def fills(repo, final):
     hypotheses = load(repo)
     links = load_critical_path(repo, hypotheses)
+    aims, nexts = load_summary(repo, hypotheses, links)
+    plain = load_plain(repo)
     incumbent = provisional_register.marks_incumbent(provisional_register.load(repo))
-    return {"research_summary": summary_html(hypotheses, links), "research_best": best_html(final, incumbent, standings(repo)),
+    return {"research_summary": summary_html(hypotheses, links, aims, nexts), "research_best": best_html(final, incumbent, standings(repo)),
             "research_steps": steps_html(),
-            "research_hypotheses": hypotheses_html(hypotheses)}, payload(hypotheses)
+            "research_hypotheses": hypotheses_html(hypotheses, plain)}, payload(hypotheses)

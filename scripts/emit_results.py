@@ -717,7 +717,7 @@ def landing_block():
              % (verdict_text[0].upper() + verdict_text[1:]),
              "",
              "**The final test** (near blind, run once; distribution accuracy only, not a stress warning): "
-             "over %d scored days, %s to %s, the model's five-quantile score (CRPS in the records) is %s bp against "
+             "over %d scored days, %s to %s, the model's five-quantile score (the mean pinball loss over the five published quantiles; the records' field names say CRPS) is %s bp against "
              "as-of persistence's %s bp; the difference is %s bp, 90%% interval %s bp. "
              "[The full account, with its limits](docs/final-test.md)."
              % (require(cell, "days"), require(cell, "first"), require(cell, "last"),
@@ -774,10 +774,13 @@ def _influence_blocks(cell, record):
            signed(dm["stat"], 2), dm["lag"], "%.3f" % dm["plain_p"], signed(dm["plain_stat"], 2)))
     add("")
     (first_day, first_loss), (second_day, second_loss) = got["persistence_loss"]
+    if (first_day, second_day) != ("2026-01-05", "2026-01-06"):
+        raise ValueError("the dominant-days sentence names the persistence prints of 2026-01-05 and 2026-01-06; the record's days differ")
     add("**Why %s and %s dominate.** On those two days as-of persistence lost %s and %s bp of the five-quantile score, against a "
-        "median of %s bp across the window (the record's `loss_a_bps`). The second independent review traced "
-        "this to as-of persistence reading the 2025-12-31 print (about +22 bp) two rows back; that cause is "
-        "the review's, and is not recomputed here because the panel is not tracked."
+        "median of %s bp across the window (the record's `loss_a_bps`). Two panel rows before each scored day, "
+        "as-of persistence reads the spread of the day shown: for 2026-01-05 the 2025-12-31 print (+22 bp), and for "
+        "2026-01-06 the 2026-01-02 print (+10 bp), read from the published panel by the as-of rule at the 16:00 "
+        "decision instant of the published records."
         % (first_day, second_day, bp(first_loss, 2), bp(second_loss, 2), bp(got["median_persistence_loss"], 2)))
     add("")
     return out
@@ -809,7 +812,8 @@ def final_test_section():
         "The frozen command of `docs/decisions/final-test-preregistration.md` was run once. Its one "
         "primary cell is the published distribution (#169's gbm with nested conformal PID) against "
         "as-of persistence, by the five-quantile score (the mean pinball loss over the published "
-        "quantiles; the record's field names say CRPS), one day ahead. The record is `docs/runs/%s`."
+        "quantiles; the record's field names say CRPS, but it is not the CRPS of the scoring rules, which is the grid "
+        "CRPS over h = 1 to 5), one day ahead. The record is `docs/runs/%s`."
         % (require(cell, "first"), require(cell, "last"), require(opened, "date"),
            require(opened, "ruling"), FINAL_TEST))
     add("")
