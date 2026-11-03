@@ -1,0 +1,107 @@
+{
+ "status": "declared by the pull request that closes #1345 before any score was computed; a measurement, not a record. Nothing is published or registered: no record in docs/runs/ is edited, the live record and its pin do not move, no day after 2025-12-31 is read or scored (docs/decisions/lockbox.md), no rule changes. Development data gives no verdict (scoring protocol v1, #640): every figure here is exploration. The kill clause of H9 is not read by this study; any reading goes to Eleonora as a marked question on the pull request.",
+ "issue": 1345,
+ "hypothesis": "H9 (richer targets carry more learnable signal), step 3: the nested test against H5's candidate (s3c-ann-net), made at the 18:00 decision instant. Milestone M4.",
+ "re_runs": "metadata/h9_nested_932.json (#932, PR #986), whose base was gbm_funding at 16:00",
+ "rulings": [
+  "Eleonora, 1 November 2026 (chat, relayed; ledger item 96): queue the 18:00 re-run of H9's nested test on her Mac, with the base (s3c-ann-net), the instant pinned explicitly, aligned direct pairs, the same targets (bgcr, on_rrp, sofr) and the published panel; the kill clause is not read",
+  "Eleonora, 29 October 2026 (ledger item 77): the decision instant moves from 16:00 to 18:00 New York time (#1312, in force)",
+  "Eleonora, 29 October 2026 (ledger item 73): the H5 candidate is (s3c-ann-net)",
+  "Eleonora, 19 October 2026 (ruling on finding #915): H9 step 3 is run on aligned (direct) pairs",
+  "Eleonora, 12 October 2026 (scoring protocol v1, #640): development data gives a score and an interval, never a verdict",
+  "Eleonora, #798: every headline is reported with and without decision day 2019-09-18"
+ ],
+ "instant": {
+  "now": "18:00 America/New_York (repo_model.decision_instant.DECISION_TIME)",
+  "pinned": "scripts/h9_nested_1800_1345.py instant_pinned sets, for the length of a command and in every loaded module of scripts/, the legacy 16:00 held as DECISION or DECISION_TIME to 18:00 (the family of #1115 to #1321 through s3c_flagnet_gross_1321.decision_instant_pinned, and the H9 chain: spread_distribution_634.DECISION, richer_targets_706.DECISION, richer_targets_639.DECISION_TIME, h9_nested_842.DECISION), refuses a module that still holds another instant, and restores on exit. Both commands (target-walk, score) run inside it",
+  "why_the_targets_are_redone": "#1333 found that 18:00 changes nothing for (s3c-ann-net). The targets, however, read series published between 16:00 and 18:00 (the H.4.1 release on Thursdays is the one that changes the scratch panel: its satiation-distance column differs at 18:00), so #706's fifteen target walks are redone at 18:00, not read from #986's 16:00 walks"
+ },
+ "panels": {
+  "published_sha256": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+  "published_note": "the published panel built with --decision-time 18:00:00 is byte-identical to the 16:00 one (#1314); the base is walked on it",
+  "scratch_1800_sha256": "0967f5c0c55541b4c8a9e75be11b50afcb69e0ac11c52d29429eab419c79749a",
+  "scratch_1600_sha256": "26c51093de80bc1c5f6cc4e9e3742fd6606160e4c6ba0db2fa19d6fcbf3e1313",
+  "scratch_how": "the commands of scripts/h9_nested_1800_1345.py's docstring: the tax-date-on-market-days wrapper over pressure_v1_1, measurement_fields and satiation_distance_598 (with RMM_DECISION_TIME=18:00, the only step that reads the instant), then richer_targets_639 panel. Built in the cloud and shipped to the Mac: finding #1309 (the sd15 column's libm digest differs on macOS, so the Mac cannot build it); the Mac run verifies the shipped file against scratch_1800_sha256 and refuses another",
+  "difference": "the 18:00 and 16:00 scratch panels differ in the satiation-distance columns only (the two legs are read through the H.4.1 release rule at the instant); every walk records the digest it was made from"
+ },
+ "base": {
+  "name": "(s3c-ann-net)",
+  "is": "repo_model.s3c_announced.ANN_NET_ARM walked by repo_model.spread_mr_state_calendar.walk on direct pairs, its quantiles capped at the SRF line as (s3c) (repo_model.s3c_candidate), exactly as scripts/s3c_flagnet_gross_1321.py walks and caps its reference (ANNNET): the frame, decision days, tables, states and caps are #1255's, #1273's, #1288's and #1321's as merged",
+  "walk": "minimum history and refit cadence of that family (refit every 21 decision days); the plus arms are walked on the same decision days, tables and refit blocks",
+  "pairs": "direct (training_pairs='direct'), so a settlement flag, the announced net and the forecast column below are all read at the target day"
+ },
+ "targets": {
+  "chosen": ["bgcr_dispersion_bps", "on_rrp_change_bn", "sofr_dispersion_bps"],
+  "source": "metadata/richer_targets_706.json, choice.chosen; the targets, model class (candidate (b) of #634), minimum history 61, refit every 21 days, leads 1 to 5, 23-level law and direct pairs (amendment of #932) are #706's",
+  "forecasts": "the fifteen walks of scripts/richer_targets_706.py, redone at 18:00 on the 18:00 scratch panel by `target-walk` (the same walk, pinned), each refused by `check_target_walk` unless it names this target and lead, instant 18:00, the declared scratch panel, this declaration and direct pairs"
+ },
+ "input": {
+  "form": "one value per target and lead: the median (level 0.5 of the 23-level grid, target_forecasts.median_of) of the target's lead-h law for the target day h business days after the decision day, in the target's unit divided by a declared scale (UNITS: bgcr_dispersion_bps 1 (bp), sofr_dispersion_bps 1 (bp), on_rrp_change_bn 100 (USD billions to USD 100 bn, the unit of the settlement sizes)), as one extra term of the arm (spread_mr_state_calendar.H9_FORECAST), beside the two net settlement terms. No other function of the law (width, tail level, mean), no interaction with the state, and no combination of targets is declared or tried",
+  "alignment": "direct pairs: the training pair of target row t reads s3c_h9.TargetForecastTable.at(lead, t), the forecast made on decision row t - lead for t; a forecast reads read(lead, decision_index), the same decision's own forecast for its target row. The value is the one the walk made, never another day's (a decision day without a forecast serves nothing)",
+  "availability": "public at the 18:00 decision instant of the decision day (metadata/sources_measurement.json, h9_target_forecasts, zero lag). Each forecast comes from a fit made at or before that instant: TargetForecastTable refuses, with LookAheadError, a forecast whose recorded fit (rebuilt by target_forecasts.fit_decision_dates from the fold grid and refit blocks the walk used) is after its own decision day or has none",
+  "holes": "a decision day with no forecast of the target (the first 61 labels of the target walk, a lead with no law) serves nothing. The fit centres the term on its mean over the training pairs that have it and gives a pair without it the value of that mean, so a hole is neither a zero forecast nor another day's; the term enters a refit only if at least 61 training pairs have it (spread_mr_state_calendar.H9_MIN_OBSERVED), otherwise the plus arm's refit is the base's to the bit (tested). The share of scored cells whose refit had the term is reported per lead",
+  "fit": "the arm's own Huber fit (threshold 1.345 robust standard deviations, ridge 5 pseudo-days on every term coefficient, none on the intercept), the target in scale units (raw residual over the scale at the pair's origin), so the coefficient is in scale units per unit of the scaled forecast; the effect in bp is the coefficient times the anchor's scale. Nothing about the base's terms changes"
+ },
+ "variants": {
+  "(s3c-ann-net)": "the base, unchanged from #1288/#1321: no new fit",
+  "(s3c-ann-net)+bgcr_dispersion_bps": "the base and the lead-h median of the BGCR dispersion walk as one centred extra term, on direct pairs",
+  "(s3c-ann-net)+on_rrp_change_bn": "the base and the lead-h median of the ON RRP daily change walk (USD 100 bn) as one centred extra term, on direct pairs",
+  "(s3c-ann-net)+sofr_dispersion_bps": "the base and the lead-h median of the SOFR dispersion walk as one centred extra term, on direct pairs",
+  "count": "three added fits (the plus arms), one per target. The fifteen target walks are #706's redone at 18:00 and add no variant of the base. No hyperparameter differs from the arm's, no form of the input is tried besides the one declared"
+ },
+ "window": {
+  "name": "development",
+  "first_day": "the first decision day of #1255's development frame",
+  "last_target_day": "2025-12-31",
+  "why": "the target walks (#706) end at 2025-12-31; the 2026 development days (#1229) and the blind tier are not read or scored; the frame's own guards refuse a locked day"
+ },
+ "comparisons": {
+  "primary": [
+   ["(s3c-ann-net)", "(s3c-ann-net)+bgcr_dispersion_bps"],
+   ["(s3c-ann-net)", "(s3c-ann-net)+on_rrp_change_bn"],
+   ["(s3c-ann-net)", "(s3c-ann-net)+sofr_dispersion_bps"]
+  ],
+  "primary_why": "the base and the plus arm differ in the input alone (same pairing, same days, same caps); Holm across the three on the pooled grid CRPS, with and without 2019-09-18",
+  "not_included": "plus arms against (s3c), B1, B2 or B3: those are the base's (docs/research/s3c-ann-net-1800-1314-result.md, made at 18:00). #986's gbm_funding figures stay what they were, made at 16:00 on another base; the page does not set them side by side"
+ },
+ "protocol": {
+  "record": "docs/decisions/scoring-protocol.md (version 1)",
+  "primary_score": "grid CRPS over the protocol's 23 levels, equal weight over h = 1 to 5, one number per decision day",
+  "key_secondary": "upper-tail twCRPS with weight 1{y > 0 bp}",
+  "nested_difference": "d = S(base) - S(base + target); positive favours the target's forecast; skill = mean(d) / mean(S(base))",
+  "interval": "studentized stationary bootstrap (Newey-West lag 10), mean block 10, the protocol's draws, seed 1345, one-sided 95% lower bound on mean d (scripts/spread_mr_variants_761.run_pairs, the test #1288 and #1321 use); a group whose forecasts are identical is reported as identical",
+  "multiplicity": "Holm across the three targets on the pooled primary score, on the Diebold-Mariano one-sided p-value the paired row carries (the bootstrap p of #932 is not in that row); nothing here is a claim",
+  "splits": "pooled; without decision day 2019-09-18 (#798; every split group holding it is also read without it); by lead; by regime of the target day (metadata/evaluation_splits.json); by pressure-day type of the target day. No split is a pass requirement; a group of fewer than 20 decision days is not tested"
+ },
+ "reading_rule": {
+  "per_target": "as #842 and #932: a target's forecast IMPROVES the candidate when the one-sided 95% lower bound of mean(d) on the pooled primary score is above zero; otherwise 'no improvement beyond its interval', with the point skill beside it. Both with and without 2019-09-18; both stated if they differ. A split cell that shows a gain is reported with the number of cells read, never alone",
+  "h9_kill_clause": "the page states each target's reading; it does not read H9's kill clause (\"no nested gain for H5\"). That reading is Eleonora's"
+ },
+ "horizons": [1, 2, 3, 4, 5],
+ "marked_questions": [
+  {
+   "id": "Q1",
+   "question": "How does a target's forecast enter (s3c-ann-net)? (s3c-ann-net) is a Huber regression of volatility-scaled residuals on settlement terms, not a gradient-boosted model, so 'add the target's forecast as an input' needs a form. Declared: one extra term, the lead-h median in the target's unit over a fixed scale, centred on its training mean, fitted with the arm's own Huber and ridge-5 penalty.",
+   "options": [
+    "(1) as declared: the median, centred, one coefficient per lead",
+    "(2) the median relative to the target's as-of value (a forecast change, not a level), which needs a new as-of read of each target",
+    "(3) a stacked check instead: regress the base's pinball residual on the forecast, outside the fit"
+   ],
+   "default": "(1). It changes no claim; a different form is a new declaration and a re-run of the plus arms only (minutes, not the target walks)"
+  },
+  {
+   "id": "Q2",
+   "question": "Is the scratch panel's satiation-distance column to be read at 18:00 (the H.4.1 release is public by then on Thursdays), which gives a new scratch digest, or kept at 16:00 (digest 26c51093..., #986's)?",
+   "options": ["(1) 18:00 (0967f5c0...), as declared: the targets are re-read at the decision instant", "(2) 16:00 columns with 18:00 walks"],
+   "default": "(1)"
+  },
+  {
+   "id": "Q3",
+   "question": "Does the 2026 development window enter? It does not: the target walks end at 2025-12-31 and the plan's development tier for H9 is the same window as #986's.",
+   "options": ["(1) development window only, as declared", "(2) also the 2026 development days, which needs target walks to 2026-09-03"],
+   "default": "(1)"
+  }
+ ],
+ "long_run": "fifteen target walks at 18:00 (#706's walks, 3 targets x 5 leads, each independent and written to its own file) are expected to take more than about two hours: they run on the Mac under the needs-mac rule of #46. The (s3c-ann-net) walks and the scoring follow in the same paste (tens of minutes). The paste is on the pull request",
+ "not_included": "any 2026 day; combinations of targets; any other form of the input (Q1); the ON RRP offering rate, the SRF rate and the H.8 bank groups (liquidity repository); gbm_funding as a base; the two-part form; a registration or a published record"
+}

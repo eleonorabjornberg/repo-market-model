@@ -41,6 +41,7 @@ import csv
 import hashlib
 import importlib.util
 import json
+import os
 import statistics
 import sys
 from datetime import date, time
@@ -65,6 +66,28 @@ from repo_model.lockbox import require_unlocked  # noqa: E402
 DECLARATION = REPO / "metadata" / "satiation_distance_598.json"
 PARENT_DECLARATION = REPO / "metadata" / "satiation_587.json"
 H41 = REPO / "metadata" / "h41_release_dating.json"
+
+
+def _decision_time() -> time:
+    """16:00, the instant this build was made at (the published scratch panel `H9D.csv` and every record that reads it).
+
+    `RMM_DECISION_TIME=18:00` in the environment of a build reads the two legs through the rule at the decision instant in force since #1312
+    (`repo_model.decision_instant`), as `scripts/spread_mean_reversion_686.py` does for the study family (#1314); no other value is admitted.
+    Left unset, nothing moves.
+
+    Raises:
+        ValueError: the variable names an instant other than 16:00 or 18:00.
+    """
+
+    text = os.environ.get("RMM_DECISION_TIME")
+    if not text:
+        return time(16, 0)
+    if text not in ("16:00", "18:00"):
+        raise ValueError(f"RMM_DECISION_TIME={text!r}: only 16:00 and 18:00 are admitted")
+    return time.fromisoformat(text)
+
+
+DECISION_TIME = _decision_time()
 SPLITS = REPO / "metadata" / "evaluation_splits.json"
 
 
@@ -164,7 +187,7 @@ def distance_rule() -> InformationRule:
     """
 
     registry = h41_release.release_dated_registry(measurement_fields.load_registry(), h41_release.load_release_dating(H41))
-    return InformationRule(registry, sat.READ_FEATURES, decision_time=time(16, 0), horizon=1)
+    return InformationRule(registry, sat.READ_FEATURES, decision_time=DECISION_TIME, horizon=1)
 
 
 def distance_rows(rows, end: date, check_every: int, rule: InformationRule = None, release: bool = True):
