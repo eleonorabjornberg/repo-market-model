@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/b4_quantile_regression_1360.json",
+  "script": "scripts/b4_quantile_regression_1360.py",
+  "pairing": "direct",
+  "why": "B4, a plain linear quantile regression of the target-day spread on the last observed spread, the as-of reserve balances and the calendar terms of spread_mr_calendar.NO_FOMC_IORB, one fit per lead and per level of the protocol's grid (repo_model.b4_quantile_regression). Every fit trains on direct pairs (b4_quantile_regression.fit_quantile_regression carries guard_one_step_fit and takes training_pairs = direct only; repo_model.one_step_guard.ONE_STEP_ALLOW_LIST is not changed); the calendar flags are read from the target row, the scheduled settlement flags only at lead 1 where asof rule 2 admits them. No gradient-boosted fitter is called, so the study is not provisional"
+}
