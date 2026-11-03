@@ -27,7 +27,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
-from repo_model import live_monitor as lm  # noqa: E402
+from repo_model import decision_instant, live_monitor as lm  # noqa: E402
 from repo_model import protocol_benchmarks as pb  # noqa: E402
 from repo_model.contract import QUANTILE_LEVELS  # noqa: E402
 from repo_model.data import load_daily_panel  # noqa: E402
@@ -39,7 +39,9 @@ DECLARATION = REPO / "metadata" / "live_monitoring_969.json"
 SOURCES = REPO / "metadata" / "sources.json"
 SPLITS = REPO / "metadata" / "evaluation_splits.json"
 DEV_RECORD = REPO / "docs" / "runs" / "published_distribution_daily_h1.json"
-DECISION_TIME = time(16, 0)
+#: The replay reads the development record, a file made at 16:00, so it reads it at 16:00 (#1368); a live record is
+#: read at the `decision_instant` it declares (`lm.staleness`).
+DECISION_TIME = decision_instant.LEGACY_DECISION_TIME
 
 
 def _script(name):

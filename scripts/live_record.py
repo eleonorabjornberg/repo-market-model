@@ -1,7 +1,7 @@
 """Live record (#215): log the published pressure model's forecast, frozen, each decision day.
 
 Eleonora's decision of 3 October 2026 (#215). Every business day, after the
-16:00 ET decision instant, `.github/workflows/live-log.yml` runs this script at
+18:00 ET decision instant (16:00 until #1368), `.github/workflows/live-log.yml` runs this script at
 a pinned code SHA. It fetches the day's sources with the repository's own
 fetchers, builds the as-of panel, runs every declared model (`MODELS`: the
 published pressure model v1 now) and its baselines for horizons 1-5, and writes
@@ -100,7 +100,7 @@ v1 = _script("pressure_model_v1")
 #: published distribution and as-of persistence exactly as `compare` does.
 final_test = _script("final_test_preregistration")
 
-from repo_model import field_flags, onset, pressure, prospective_log  # noqa: E402
+from repo_model import decision_instant, field_flags, onset, pressure, prospective_log  # noqa: E402
 from repo_model.asof import (  # noqa: E402
     KIND_OBSERVED,
     InformationRule,
@@ -173,7 +173,12 @@ PROTOCOL_VERSIONS = (RECORD_VERSION_V3, RECORD_VERSION_V4)
 #: after it; the live record logs no day on or before it.
 PANEL_END = date(2026, 9, 3)
 HORIZONS = v1.HORIZONS
-DECISION = v1.DECISION
+#: The decision instant in force (`repo_model.decision_instant`, 18:00 since the amendment of 29 October 2026, #1312, #1368).
+#: Not `v1.DECISION`: the published model's own module is frozen at the 16:00 it was published at, and the live record
+#: is made at the instant in force. A record declares the instant it was made at (`decision_instant`).
+DECISION = decision_instant.DECISION_TIME
+#: 16:00, the instant every record made before the amendment declares. For readers of such a file only.
+LEGACY_DECISION = decision_instant.LEGACY_DECISION_TIME
 MINIMUM_HISTORY = v1.MINIMUM_HISTORY
 REFIT_EVERY = v1.REFIT_EVERY
 CALENDAR_FEATURES = v1.CALENDAR_FEATURES
@@ -281,6 +286,31 @@ BASELINE_NAMES = {
 
 
 # -- the calendar -------------------------------------------------------------
+
+
+def instant_of(day: date) -> datetime:
+    """`day`'s decision instant in force, New York time (aware): what a record made for `day` declares."""
+
+    return datetime.combine(day, DECISION, tzinfo=EASTERN)
+
+
+def declared_decision_time(record: dict) -> time:
+    """The wall-clock decision time (New York) a record declares in its `decision_instant`.
+
+    A record made at 16:00 is a record of that instant (the amendment of 29 October 2026): a reader takes this, not
+    `DECISION`, so it never reads a 16:00 file at 18:00.
+
+    Raises:
+        ValueError: the record declares no decision instant, or one without a time zone.
+    """
+
+    text = record.get("decision_instant")
+    if not isinstance(text, str):
+        raise ValueError("the record declares no decision_instant")
+    moment = datetime.fromisoformat(text)
+    if moment.tzinfo is None:
+        raise ValueError(f"decision_instant {text!r} has no time zone")
+    return moment.astimezone(EASTERN).timetz().replace(tzinfo=None)
 
 
 def is_decision_day(day: date) -> bool:
@@ -571,7 +601,7 @@ def fetch(raw_root: Path, day: date) -> None:
 def build(raw_root: Path, panel: Path, cutoff: datetime) -> None:
     argv = [
         "build", "--raw-root", str(raw_root), "--output", str(panel),
-        "--build-cutoff", cutoff.isoformat(), "--decision-time", "16:00:00",
+        "--build-cutoff", cutoff.isoformat(), "--decision-time", decision_instant.DECISION_TIME_SECONDS_TEXT,
     ]
     for column in BUILD_COLUMNS:
         argv += ["--column", column]
@@ -1242,7 +1272,7 @@ def run_command(args) -> int:
     if record_path(out_dir, day).exists():
         raise ValueError(f"{record_path(out_dir, day)} exists: a day is logged once")
     started = datetime.now(timezone.utc)
-    instant = datetime.combine(day, DECISION, tzinfo=EASTERN)
+    instant = instant_of(day)
     if not args.dry_run:
         now = started.astimezone(EASTERN)
         if now.date() != day or now < instant:
