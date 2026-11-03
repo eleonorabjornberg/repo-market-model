@@ -1,0 +1,65 @@
+{
+ "status": "declared by the pull request that closes #1400 before any figure was computed; a development study, never a verdict. Nothing is registered or published, no record in docs/runs/ is edited, metadata/candidate_calibration_1363.json is not edited (this declaration amends its clustering reading at leads 2 to 5 and leaves the rest of it in force), the page of #1378 stays, docs/research/h5-candidate.json and scripts/final_test_preregistration.py do not change, no day after 2026-09-03 is read and no lockbox day is scored. The candidate (s3c-ann-net) is walked unchanged by `scripts/candidate_calibration_1363.py walk` at the 18:00 decision instant; nothing is tuned. Amendments made after a figure was computed are listed in `amendments` (none at the time of writing).",
+ "issue": 1400,
+ "hypothesis": "H5 (primary goal), registration design (known limits): do the candidate's misses cluster in time at leads 2 to 5 when independence is read on thinned days, as the protocol reads it, and how often does the unthinned permutation test of #1363 reject a calibrated forecaster at this sample size? Step 3 evidence for the known-limits section of the registration and for rule 7 of the confirmation-design draft (#1393)",
+ "ruling": "Eleonora, 2 November 2026, chat, relayed on #1400, option 1 on finding #1385; part of the H5 registration priority on #46",
+ "reason": "#1363 read clustering with an unthinned permutation test whose null keeps no overlap between consecutive h-step forecasts: the outcomes of the forecasts made on days D and D+1 at lead h share h - 1 innovations, so a calibrated forecaster's hit sequence is serially dependent by construction and is rejected too often (#998, docs/research/coverage-gate-961-result.md). The protocol reads independence on every h-th decision day (scoring_protocol.coverage_cells, method 'thinned'), where the overlap is gone.",
+ "decision_instant": "18:00 America/New_York, as metadata/candidate_calibration_1363.json",
+ "amends": {
+  "declaration": "metadata/candidate_calibration_1363.json, key `clustering`",
+  "what": "At leads h = 2 to 5 the reading of clustering is Christoffersen's independence test on thinned days, by phase (below). At lead 1 the reading is unchanged: the permutation p of the unthinned sequence, Holm-adjusted over the 8 sequences of lead 1 and recomputed here by the same code and seed, so that the lead-1 rows reproduce #1378's. The unthinned permutation rows at leads 2 to 5 of #1378 are no longer a reading; they are shown on the new page only beside the simulation of their size."
+ },
+ "candidate": {
+  "name": "sc_s3c_ann_net",
+  "label": "(s3c-ann-net)",
+  "definition": "as metadata/candidate_calibration_1363.json: walked by `scripts/candidate_calibration_1363.py walk` (the code of scripts/s3c_announced_settlement_1288.py unchanged); the score step refuses to write unless the mean grid CRPS it recomputes from the walk equals docs/research/s3c-ann-net-1800-1314/announced-settlement-1800.json to 1e-9"
+ },
+ "references": [
+  {"name": "B1", "label": "B1", "role": "protocol benchmark B1"},
+  {"name": "B1_prime", "label": "B1'", "role": "protocol benchmark B1' (#960)"},
+  {"name": "B2", "label": "B2", "role": "protocol benchmark B2"}
+ ],
+ "b4": "B4 (#1360) is not compared here, as in #1363",
+ "windows": {
+  "development": "decision days whose five targets fall on or before 2025-12-31; decides",
+  "2026": "decision days whose five targets fall from 2026-01-02 to 2026-09-03; shown apart, already seen, decides nothing"
+ },
+ "sequences": "the eight 0/1 miss sequences of #1363 per lead, window and model (upper tail y > q95 strict or y >= q95 weak; lower tail y < q05 or y <= q05; outside the 90% band, closed or open; outside the 50% band, closed or open), over the scored decision days in panel order, unchanged",
+ "thinned_reading": {
+  "phases": "at lead h >= 2 the thinned series of phase r (r = 0 .. h - 1) is the sequence's values at the lead's decision-day indices i with i mod h = r, in order. Phase 0 is the series scoring_protocol.coverage_cells reads (its 'order mod h = 0'); the other h - 1 phases are the same reading started on another day and are read as well, so that no single start decides. Two kept values are adjacent in a thinned series only when their panel positions differ by exactly h; a gap in the scored days starts a new run and no transition is counted across it. Inside a regime the series keeps the kept values whose decision day is in that regime, and a regime change also starts a new run",
+  "test": "Christoffersen's independence test (coverage_tests.christoffersen_independence: a first-order Markov chain against a constant hit probability, chi-square 1 df; the transition counts summed over runs) on each phase series, the asymptotic p being the protocol's own and the reading; the exact permutation p of #1363 (10,000 shuffles inside the runs, seed 1400) is shown beside it, because misses are few in a thinned series",
+  "family": "Holm (scoring_protocol.holm, alpha 0.05) over every phase series of one model and window at leads 2 to 5: 14 phases times 8 sequences, 112 p-values (inside a regime, over that regime's 112)",
+  "clusters": "a (lead, sequence) 'clusters on the declared reading' when at least one of its phase series has a Holm-adjusted asymptotic p below 0.05. The count of phase series with an unadjusted p below 0.05 is shown beside, with the 5% a calibrated forecaster would give and the simulated family-wise rate of this exact rule (below)",
+  "lead_1": "unchanged from #1363: the permutation p of the unthinned sequence, Holm-adjusted over the 8 sequences of lead 1 (alpha 0.05), seed 1363, 10,000 shuffles; a lead-1 sequence 'clusters' when its adjusted p is below alpha",
+  "regime": "the same inside each declared regime of the development window (as #1363 item 4), no transition across a regime boundary; a regime series with fewer than 20 kept values is listed and not read",
+  "which_leads": "the page states, per model and window, the leads (and the sequences at each) whose misses cluster on this reading, and for the candidate lists the regimes in which they do. This feeds the known-limits section and rule 7 of #1393; whether and how it is written in is hers"
+ },
+ "simulation": {
+  "question": "the rejection rate, for a forecaster that is calibrated by construction, of (a) #1363's unthinned permutation test and (b) the thinned reading above, at h = 1 to 5 and at the sample sizes of the two windows",
+  "world": "the two-regime AR(1) world of #961/#998 (scripts/coverage_gate_961.py: simulate, sigma_schedule, ideal, quantiles; phi 0.9, innovation sd 1.0 in calm and 2.5 in stress blocks of 250 days), forecaster 'ideal' (calibrated by construction at every lead). It has a continuous outcome, so strict and weak rules coincide and only the strict rule is simulated; the real target is in whole basis points, which the simulation does not copy",
+  "sample_sizes": "1855 decision days (the development window of #1378) and 165 decision days (the 2026 window), the five leads read from the same simulated path",
+  "paths": 500,
+  "events": "four, as the strict rule of the real study: upper tail (y > q95), lower tail (y < q05), outside the 90% band, outside the 50% band",
+  "unthinned_test": "permutation_p of scripts/candidate_calibration_1363.py with 1999 shuffles (not 10,000, for run time; the rejection rate at 0.05 needs no finer p), runs = the whole path",
+  "thinned_test": "as the thinned reading above on the one regime of the path (the whole path is one run; no regime restriction is simulated)",
+  "reported": "per lead and event: the share of paths with an unadjusted p below 0.05 for the unthinned permutation test, for phase 0 alone (the protocol's series), and for any phase (the lead's series, one per phase, mean share of phases rejecting is also shown). Per path, family-wise: the share of paths on which Holm (alpha 0.05) flags at least one sequence, over the 20 sequences of the unthinned family (4 events, 5 leads), and over the thinned family (the 4 lead-1 sequences read unthinned and the 14 phases times 4 events at leads 2 to 5, 60 p-values), and over leads 2 to 5 alone for both. Monte Carlo error: with 500 paths the standard error of a rate near 5% is about 1 percentage point",
+  "seed": 1400
+ },
+ "intervals_and_splits": "no new rate interval is made: the clustering reading is a test, and the tables are split by lead, by model, by window and (candidate and references, development window) by regime, as #1363. A day-type split of the clustering is not made: the thinned series are too short to read inside a day type, and the page says so",
+ "limits": [
+  "development data on seen days, never a verdict; the 2026 days are shown apart and decide nothing",
+  "a thinned series is short (about 370 values at lead 5 on the development window, and 20 or so misses at the 5% tails), so its asymptotic test is weak; the permutation p is shown beside and the simulation measures the declared reading's own size",
+  "thinning removes the overlap but not a miss rate that moves with the regime or the day type; the regime rows are there for that, and no day-type split is made",
+  "the simulated world is not the repo market: it shows the size of the tests under overlap and nothing about power against the clustering the market may have",
+  "nothing is corrected for the number of readings across models and windows; the page states the number made"
+ ],
+ "seed": 1400,
+ "long_run": "the walk is the only long step (about 40 to 60 minutes, via scripts/candidate_calibration_1363.py walk, run unchanged); the simulation and the scoring take minutes. Under two hours, so the cloud session runs them (long-run skill, point 5: one walk file per window, the score step reads the windows that exist)",
+ "amendments": [],
+ "variants": {
+  "sc_s3c_ann_net": "scored arm, the candidate, walked unchanged by the 1363 walk command: no new fit, nothing tuned",
+  "B1": "reference, protocol benchmark B1; not a new variant",
+  "B1_prime": "reference, protocol benchmark B1' (#960); not a new variant",
+  "B2": "reference, protocol benchmark B2; not a new variant"
+ }
+}

@@ -73,10 +73,20 @@ def _load_686(env):
 
 
 class FamilyInstantTests(unittest.TestCase):
-    """The study family's base module keeps 16:00 unless a run asks for 18:00, so no earlier study's re-run moves; #1314 asks for 18:00."""
+    """The study family's base module reads the decision instant in force (18:00, #1312) unless a run sets 16:00 explicitly, as a re-run of an
+    older record does (Eleonora's ruling of 2 November 2026 on #1397, moving the default of #1314's knob).
 
-    def test_by_default_the_family_stays_at_sixteen_hundred(self):
-        self.assertEqual(_load_686(None).DECISION_TIME, time(16, 0))
+    Mutation recorded: `return time(16, 0)` put back for the unset case in `_decision_time` of `scripts/spread_mean_reversion_686.py`
+    makes `test_by_default_the_family_reads_the_instant_in_force` fail with AssertionError (restored)."""
+
+    def test_by_default_the_family_reads_the_instant_in_force(self):
+        from repo_model import decision_instant
+
+        self.assertEqual(_load_686(None).DECISION_TIME, decision_instant.DECISION_TIME)
+        self.assertEqual(_load_686(None).DECISION_TIME, time(18, 0))
+
+    def test_a_re_run_of_an_older_record_sets_sixteen_hundred(self):
+        self.assertEqual(_load_686("16:00").DECISION_TIME, time(16, 0))
 
     def test_a_run_can_ask_for_eighteen_hundred(self):
         self.assertEqual(_load_686("18:00").DECISION_TIME, time(18, 0))

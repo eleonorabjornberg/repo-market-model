@@ -154,8 +154,12 @@ MISSING_EXTRAS: Tuple[str, ...] = (MISSING_FLAG,)
 #: and in units of `SIZE_UNIT`, and the change in the ON RRP amount accepted from the previous panel day in units of `SIZE_UNIT`.
 SRF_FLAG, SRF_SIZE, RRP_CHANGE = "srf_flag", "srf_size", "on_rrp_change"
 OPS_EXTRAS: Tuple[str, ...] = (SRF_FLAG, SRF_SIZE, RRP_CHANGE)
+#: The 4-week bill rate less IORB of the previous business day, in units of 10 bp (#1346, `s3c_bill_iorb.BillLessIorbTable`): a price, not a
+#: flag or a size.
+BILL_LESS_IORB = "bill_less_iorb"
+PRICE_EXTRAS: Tuple[str, ...] = (BILL_LESS_IORB,)
 #: Every `extra` term: it is read from `pair.extras` and not from the flags.
-EXTRA_TERMS: Tuple[str, ...] = IORB_EXTRAS + SIZE_EXTRAS + CMB_EXTRAS + OPS_EXTRAS + MISSING_EXTRAS + (H9_FORECAST,)
+EXTRA_TERMS: Tuple[str, ...] = IORB_EXTRAS + SIZE_EXTRAS + CMB_EXTRAS + OPS_EXTRAS + MISSING_EXTRAS + PRICE_EXTRAS + (H9_FORECAST,)
 #: An IORB change that is not a multiple of 25 bp is a technical adjustment: the rule of `setup_diagnostic`.
 technical = setup_diagnostic.is_technical
 #: (s3+IORBs): (s3), with `iorb_window` and the two terms beside it. The FOMC-day term is not added.

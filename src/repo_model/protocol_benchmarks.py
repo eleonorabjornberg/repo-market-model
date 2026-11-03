@@ -8,6 +8,9 @@ quantiles of `scoring_protocol.GRID` at leads h = 1..5, made at the decision ins
   that horizon's own h-day changes over the trailing two years.
 - **B2, calendar climatology.** The empirical distribution of the spread over the trailing
   year, on days of the same type as the target (quarter-end, month-end, tax date, ordinary).
+- **B4, a plain quantile regression (#1360)** on the last spread, the as-of reserve balances and the calendar terms at the target day: `b4_forecast`.
+  Added at Eleonora's ruling of 2 November 2026 beside the benchmarks of §4; whether it joins the decision rule is hers (a marked question), and until
+  she rules it is reported beside them.
 - **B3, the incumbent.** The best registered model; initially the published v1 funding
   declaration. Scored on its own five levels against the candidate's same five, as a
   secondary comparison (`b3_forecast`; ruling of 13 October 2026, PR #660).
@@ -40,7 +43,7 @@ from __future__ import annotations
 import json
 from datetime import date, time
 from pathlib import Path
-from typing import Dict, Iterable, List, Mapping, Sequence, Tuple
+from typing import Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
 from . import turn_days
 from .asof import InformationRule
@@ -304,6 +307,41 @@ def b2_forecast_no_minimum(
         sample = sorted(panel[s].spread_bps for s in rows)
         out[h] = empirical_quantiles(sample)
     return out
+
+
+def b4_forecast(
+    panel: Sequence[DailyObservation],
+    decision_index: int,
+    *,
+    registry: Mapping[str, Mapping[str, object]],
+    decision_time: time,
+    splits: Optional[SplitDeclaration] = None,
+    table=None,
+    reserves=None,
+) -> Dict[int, List[float]]:
+    """B4, the plain quantile regression of #1360, for the decision on row `decision_index`: the 23 quantiles at each lead h = 1..5.
+
+    A linear quantile regression per lead and level on the last observed spread, the as-of reserve balances and the calendar terms read at the target day,
+    on direct pairs of the expanding window, refitted at this decision (`repo_model.b4_quantile_regression`; `metadata/b4_quantile_regression_1360.json`). The
+    walk of the study refits every 21 decision days instead, as the candidate does. `table` (a `spread_mr_calendar.TermTable`) and `reserves` (a
+    `b4_quantile_regression.ReserveTable`) are built here when not given; a caller that scores many days builds them once. `splits` is accepted so that B4 is
+    called as B2 is, and is not read.
+
+    Whether B4 is a benchmark of the protocol's decision rule, or is reported beside it, is not decided here (the marked question of the pull request that
+    closes #1360): this function only makes the forecast available to the registration and the live record.
+
+    Raises:
+        InsufficientHistory: fewer than `b4_quantile_regression.MIN_PAIRS` training pairs at some lead.
+        LookAheadError: a row after the anchor, or a reserve value after the decision, is read.
+    """
+
+    from . import b4_quantile_regression as b4  # b4 imports this module
+    from . import spread_mr_calendar as cal
+
+    table = cal.TermTable(panel, (), decision_time=decision_time) if table is None else table
+    reserves = b4.ReserveTable(panel, registry=registry, decision_time=decision_time) if reserves is None else reserves
+    estimates = b4.refit(panel, decision_index, table, reserves, registry=registry, decision_time=decision_time)
+    return b4.forecast(panel, decision_index, estimates, table, reserves, registry=registry, decision_time=decision_time)
 
 
 def forecasts(
