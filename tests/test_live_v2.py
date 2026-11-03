@@ -300,7 +300,8 @@ class V2AgreementTests(unittest.TestCase):
         from repo_model.data import load_daily_panel
 
         # The walk record was made at 16:00, so it is read at 16:00 (#1368: a 16:00 file is read at 16:00).
-        cls._instant = mock.patch.object(live, "DECISION", live.LEGACY_DECISION)
+        # At 16:00 the day's bill rates are not yet public (#1403), so the decision row carries none, as in the walk.
+        cls._instant = mock.patch.multiple(live, DECISION=live.LEGACY_DECISION, DECISION_ROW_COLUMNS=())
         cls._instant.start()
         cls.tmp = tempfile.mkdtemp()
         panel, pit = _fixture_panel(cls.tmp)
