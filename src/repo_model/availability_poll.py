@@ -33,7 +33,9 @@ from . import ingest
 from .data import market_holidays
 
 EASTERN = ZoneInfo("America/New_York")
-WINDOW_START = time(16, 0)
+#: The poll window opens at the earliest scheduled release of the polled sources. It is not the decision clock
+#: (`decision_instant.DECISION_TIME`), which the poll only records against.
+WINDOW_START = time.fromisoformat("16:00")
 WINDOW_END = time(18, 30)
 POLL_MINUTES = 10
 THURSDAY = 3
