@@ -1279,6 +1279,20 @@
    "declaration": "metadata/clustering_thinned_1400.json",
    "page": "docs/research/clustering-thinned-1400-result.md",
    "log": "docs/research/log/2026-11-02-model-01400-H5-step3.md"
+  },
+  {
+   "id": "h9_nested_1800",
+   "label": "H9 nested test on the candidate at 18:00 (BGCR dispersion, SOFR dispersion, ON RRP change as targets)",
+   "issue": 1345,
+   "pr": 1348,
+   "merged": "2026-11-03",
+   "role": "side_check",
+   "parent": "ann_net_1800",
+   "change": "Not an arm of the candidate: H9's nested test adds each target's forecast to (s3c-ann-net) and scores the gain; nothing was adopted",
+   "outcome": "None of the three targets improves the candidate on the development window, pooled, at any lead or in any regime (Holm p = 1.000 for each); H9's kill clause is read on confirmation days only (her ruling of 3 November 2026)",
+   "declaration": "metadata/h9_nested_1800_1345.json",
+   "page": "docs/research/h9-nested-1800-1345-result.md",
+   "log": "docs/research/log/2026-11-01-model-01348-H9-step3.md"
   }
  ],
  "not_arms": {
