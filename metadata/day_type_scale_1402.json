@@ -1,0 +1,103 @@
+{
+ "status": "declared by the pull request that closes #1402 before any score was computed; a development study, never a verdict. (s3c-ann-net) stays the frozen H5 candidate (her ruling of 2 November 2026): the result of this arm goes to the known limits and does not reopen the candidate unless she says so. Nothing is adopted, registered or published: no record in docs/runs/ is edited, the live record and its pin do not change, no declaration already merged changes, docs/research/h5-candidate.json and scripts/final_test_preregistration.py do not change, no day after 2026-09-03 is scored and no lockbox day is scored. Amendments made after a number was computed are listed in `amendments`; there are none.",
+ "issue": 1402,
+ "avenue": "#1387",
+ "ruling": "Eleonora, 2 November 2026, chat, relayed on avenue #1387, option 1; the candidate is frozen as (s3c-ann-net) by the same ruling.",
+ "hypothesis": "H5 (primary goal): the SOFR - IORB spread distribution in bp. Step 3, two arms on the candidate (s3c-ann-net), for the known-limits section of the registration. Development tier",
+ "target": "spread_bps at the scored day, in basis points, as a 23-quantile distribution at each lead h = 1..5 (scoring_protocol.GRID)",
+ "why": "#1378 (directive #1363): the candidate's 90% band covers 49.3% on quarter-end days, 58.6% on quarter-end turns and 73.8% to 83.3% on the other calendar types, against 92.5% on ordinary days. Its bands come from one residual pool (spread_mr_state_calendar.StateEstimate.pool), with no split by day type: the calendar terms move the centre on calendar days, every day draws its spread from the same pool. No directive has scored a day-type residual scale on (s3), (s3c) or (s3c-ann-net) (avenue #1387).",
+ "decision_instant": "18:00 America/New_York on the decision day (repo_model.decision_instant.DECISION_TIME, amended on 29 October 2026, #1312). Every walk of this study is made at that instant and the instant is pinned for the run; no record made at 16:00 is edited.",
+ "form": {
+  "what": "a multiplier on the candidate's residual spread, one per pressure-day type of the TARGET day, fitted at each refit and applied at every lead h = 1..5 of the forecasts that refit serves. The candidate's quantiles are centre + scale * (shift + pool_j), with pool_j the 23 empirical quantiles of the standardised residuals z of the refit's direct training pairs. An arm replaces pool_j by c + m * (pool_j - c), with c the pool's median (the grid level 0.5) and m the multiplier of the target day's type. The shift (the calendar and settlement terms), the centre, the scale at the anchor and the Huber fit are the candidate's, unchanged; m = 1 reproduces the candidate exactly. The SRF cap is applied after the multiplier, exactly as to the candidate (repo_model.s3c_candidate, margin 0 bp).",
+  "module": "repo_model.day_type_scale (multipliers, rescaled_pool, DayTypeScale); the walk is spread_mr_state_calendar.walk with training_pairs = direct, unchanged, and the arms are made from its estimates after the walk (they add no fit, only the ratio below)",
+  "types": [
+   "turn",
+   "quarter_end_turn",
+   "tax_date",
+   "year_end",
+   "ordinary"
+  ],
+  "type_of_a_day": "repo_model.turn_days.reporting_day_type, the record in force (#1135), on the day's own calendar columns: a function of the date alone, known years ahead, read at the target day for a training row and for a forecast",
+  "statistic": "m_T = sqrt( mean over the refit's training pairs whose target day is of type T of (z - c)^2 / mean over all the refit's training pairs of (z - c)^2 ), z the pair's standardised residual after the terms (StateEstimate.residuals), computed per lead. The ratio is of root mean squares about the pool's median, so a type whose residuals are as spread as the whole pool has m = 1, and a type whose residuals are twice as spread has m = 2.",
+  "minimum_rows": 10,
+  "minimum_rows_rule": "a type with fewer than 10 training pairs at a lead (target days of that type in the trailing window up to the anchor) has m = 1 at that lead; so has a refit where the all-pairs mean square is zero",
+  "bounds": [
+   0.5,
+   4.0
+  ],
+  "bounds_rule": "m is clamped to [0.5, 4.0]; the share of (refit, lead, type) cells at a bound or at the fallback is reported",
+  "training_rows": "exactly the refit's direct training pairs: targets in the trailing window and at or before the anchor (spread_mean_reversion.training_rows), each required public by pb._require_public. A target after the anchor raises LookAheadError in repo_model.day_type_scale.multipliers"
+ },
+ "arms": [
+  {
+   "name": "sc_s3c_ann_net",
+   "role": "(s3c-ann-net), the frozen candidate; reference",
+   "margin_bp": 0.0
+  },
+  {
+   "name": "sc_s3c_ann_net_typed",
+   "role": "(s3c-ann-net-typed): one multiplier per pressure-day type (turn, quarter_end_turn, tax_date, year_end, ordinary)",
+   "margin_bp": 0.0,
+   "mode": "typed"
+  },
+  {
+   "name": "sc_s3c_ann_net_pooledscale",
+   "role": "(s3c-ann-net-pooled): one multiplier for all non-ordinary days (turn, quarter_end_turn, tax_date, year_end together), ordinary days keep m = 1, the candidate's pool",
+   "margin_bp": 0.0,
+   "mode": "pooled"
+  }
+ ],
+ "models": [
+  "sc_s3c_ann_net",
+  "sc_s3c_ann_net_typed",
+  "sc_s3c_ann_net_pooledscale",
+  "B1_prime_star"
+ ],
+ "references": [
+  {
+   "name": "sc_s3c_ann_net",
+   "role": "the candidate, re-run at 18:00 in the same run; the reference both arms are measured against"
+  },
+  {
+   "name": "B1_prime_star",
+   "role": "B1'*, the calendar-aware persistence benchmark with the horizon counted from the last public anchor (#1388, repo_model.b1_calendar.b1_calendar_anchor_forecast), beside"
+  }
+ ],
+ "pairs": "direct: the fit is spread_mr_state_calendar.fit_state_terms with training_pairs = 'direct' (guarded by one_step_guard with no allow-list entry; repo_model.one_step_guard.ONE_STEP_ALLOW_LIST is not changed). The arms add no fit: they rescale the candidate's pool by a ratio of second moments of that fit's own residuals. The type of a target day is a calendar column read at the target day. The provisional-register row is metadata/provisional/cleared/day_type_scale_1402.json",
+ "frame": {
+  "windows": "the two windows of #1255, loaded as #1255 loads them: the development window (decision days whose five targets fall on or before 2025-12-31) and the 2026 development days (decision days whose five targets fall from 2026-01-02 to 2026-09-03, the near-blind tier open since GO #151). The 2026 days are reported on their own, as a window, and decide nothing",
+  "walk": "(s3c-ann-net) is walked as #1363 walks it (arms ANN_ARM and ANN_NET_ARM, refit every 21 decision days, direct pairs) over #1255's decision days; the study refuses to write a record unless the candidate's mean grid CRPS equals #1314's 18:00 record to 1e-9 and unless an arm with every multiplier set to 1 equals the candidate element for element",
+  "guards": "a scored decision day or target day passes lockbox.require_unlocked through spread_mean_reversion_686.require_scored_days with the last day of the window; the blind tier (from 2026-09-04) and every lockbox day are refused"
+ },
+ "reading": {
+  "which_reading": "BY TYPE, declared before any score. The typed arm is read type by type on the pressure-day type of the target day (turn, quarter_end_turn, tax_date, year_end, ordinary), each with 20 or more target days, on grid CRPS and the 90% band coverage, against the candidate. The pooled-scale arm is read on the two groups it changes or leaves alone: all non-ordinary target days together (a gain there is its claim) and ordinary target days (which it leaves element for element as the candidate, so a difference there is a bug). A pooled figure over all days is shown but never read alone: a gain is a gain only where its type-level reading agrees, and a pooled gain that no type carries is not one. A type of fewer than 20 target days is listed with its coverage and not read",
+  "primary": "grid CRPS (23 levels) averaged over leads h = 1..5, paired with (s3c-ann-net), studentized stationary bootstrap, mean block 10 business days, 10,000 draws, seed 1402, two-sided 90% interval (the lower end is the one-sided 95% bound), read from the mean-d bound (her ruling on #1009), with the skill interval beside it",
+  "key_secondary": "upper-tail twCRPS (weight 1{z > 0 bp})",
+  "pressure_probability": "the Brier score of P(spread > +5 bp), the probability read off the 23 quantiles as 1 - F(floor(tau) + 0.5), F linear between them (spread_mean_reversion.exceedance), the event strict and on whole basis points (data.exceeds_bp)",
+  "benchmark": "B1'* beside: both arms and the candidate against B1'* on the same three scores, pooled and by lead, regime and pressure-day type; the benchmark is not a threshold of this study",
+  "splits": "pooled; by lead; by regime (the declared regimes, 2018-19 and 2020 on their own among them); by pressure-day type of the target day (turn_days.reporting_day_type) and the union of the non-ordinary types; the 2026 days are the second window and carry the same splits. The intervals of a group of days keep the current method (the group's days, scattered, resampled in date order as if consecutive), which #1221 questions and #1228 will decide",
+  "coverage": "the empirical coverage of the central 50% and 90% bands of the candidate and both arms, by regime, by pressure-day type and by the calendar target-day types of #1363 (candidate_calibration_1363.group_report: the stationary-bootstrap interval of a rate, groups of 20 or more target days read), and the serial dependence of the band-miss sequences by the reading in force at the base of this pull request: #1363's Christoffersen independence test with its permutation p-value and the protocol's thinned reading (scoring_protocol.coverage_cells). The thinned reading for leads 2 to 5 that #1400 declares is not on main and is not used; the page says so",
+  "identical_groups": "a group in which an arm's score equals the reference's on every day is listed as identical and not tested; a group of fewer than 20 days is listed and not tested",
+  "seed": 1402
+ },
+ "scoring": {
+  "scorer": "repo_model.scoring_protocol (#655), the development tier: no verdict, no registration",
+  "test": "scoring_protocol.paired_tests, the studentized stationary bootstrap (ruling 1), mean block 10 business days, 10,000 draws, seed 1402, two-sided 90% interval; the skill interval and the studentized interval on mean d are reported for every tested row; where the studentized bound cannot be computed the unstudentized percentile interval of mean d is given beside it, with no reading taken from it",
+  "seed": 1402
+ },
+ "reading_rules": [
+  "A figure is a check on days that were already seen. Nothing here is a verdict, nothing is registered and no choice is made on it; (s3c-ann-net) stays the frozen H5 candidate.",
+  "A gain or loss is read from the 90% interval of mean d excluding zero; otherwise undecided. A point estimate alone is not read.",
+  "A pooled figure is never read without the lead, regime and pressure-day-type splits beside it, and a gain is read by type (see reading.which_reading).",
+  "Nothing is adopted. Whether a day-type scale joins the registered candidate, and whether its result changes what the registration says about the known limits, is hers; the page ends with a marked question whose default changes no claim."
+ ],
+ "limits": {
+  "last_day": "2026-09-03",
+  "named_candidate": "unchanged; docs/research/h5-candidate.json is not changed",
+  "preregistration": "scripts/final_test_preregistration.py is not touched; test_final_test_freeze and test_live_score_freeze are run before the push",
+  "allow_list": "repo_model.one_step_guard.ONE_STEP_ALLOW_LIST is not changed",
+  "sources": "no source, no declaration already merged and no page already merged is changed; docs/runs/ is not touched; spread_mr_state_calendar, s3c_announced and the scoring modules are not edited"
+ },
+ "long_run": "cloud first: two walks of the candidate per window (minutes each, #1366 measured about a minute per 2026 walk), the multipliers (a ratio per refit, lead and type) and the paired tests of three models against one or two references on about thirty groups and three metrics per window (the longer part). If the measured time on a subset says the full run exceeds about two hours, the run goes to the Mac as a `needs-mac:` comment",
+ "amendments": []
+}

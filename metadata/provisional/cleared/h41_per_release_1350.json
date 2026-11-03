@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/h41_per_release_1350.json",
+  "script": "scripts/h41_per_release_1350.py",
+  "pairing": "direct",
+  "why": "the H.4.1 weeklies read per release, against the carried reading, on (s3c-ann-net), (s3c+state) and (s3c-ann-net x state). Every fit is spread_mr_state_calendar.walk with training_pairs = direct (guarded by one_step_guard with no allow-list entry), and no gradient-boosted fit is called, so the study is not provisional; the settlement terms are scheduled fields of the target row, read at the target day from the panel's flags (the (s3c+state) arm) or from the announced auctions at every lead (repo_model.s3c_announced, each figure counting an auction only when it was announced at or before the decision instant), and the other terms are calendar columns read at the target day; the scarcity state is a slow variable of the decision day, read at the decision instant (the H.4.1 leg on each reading, guarded by h41_release.require_release_read); no outcome is an input"
+}
