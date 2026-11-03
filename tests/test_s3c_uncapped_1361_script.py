@@ -242,6 +242,20 @@ class PageTests(unittest.TestCase):
         self.assertIn("2.", text)
         self.assertNotIn("GO #", text)
 
+    def test_the_secondary_section_is_a_draft_on_the_page_not_a_file_under_decisions(self):
+        """The section lives on the result page, marked as a draft for her, not in force (her ruling on #1376, option 2).
+
+        A file under `docs/decisions/` binds the owner-attested check; the page does not.
+        """
+        text = "\n".join(script.draft_section() + script.question())
+        self.assertIn("a draft for Eleonora, not in force", text)
+        self.assertIn("sc_s3c_ann_net_uncapped", text)
+        self.assertNotIn("docs/decisions/drafts", text)
+        self.assertNotIn("GO #", text)
+        self.assertFalse((ROOT / "docs" / "decisions" / "drafts" / "h5-uncapped-secondary.md").exists())
+        declaration = (ROOT / "metadata" / "s3c_uncapped_1361.json").read_text(encoding="utf-8")
+        self.assertNotIn("docs/decisions/drafts", declaration)
+
 
 class EndToEndTests(unittest.TestCase):
     """`score` and `page` with the walk started late on the fixture panel, with few resamples: the shape, not the figures."""

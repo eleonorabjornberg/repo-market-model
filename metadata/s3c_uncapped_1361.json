@@ -54,7 +54,7 @@
   "preregistration": "scripts/final_test_preregistration.py is not touched; test_final_test_freeze and test_live_score_freeze are run before the push",
   "allow_list": "repo_model.one_step_guard.ONE_STEP_ALLOW_LIST is not changed",
   "sources": "metadata/sources.json, metadata/settlement_announcement_dating.json, metadata/net_settlement.json and docs/decisions/information-set.md are not changed; docs/runs/ is not touched; nothing in src/ is edited",
-  "registration": "the registration's secondary-results section is drafted in docs/decisions/drafts/h5-uncapped-secondary.md for her review; registering is her own GO action"
+  "registration": "the registration's secondary-results section is drafted on the result page docs/research/s3c-uncapped-1361-result.md for her review; registering is her own GO action"
  },
  "long_run": "cloud first: two walks of (s3) (the frame) and one of the candidate's arm per window, then the paired tests of one candidate on about thirty groups and three metrics per window. If the measured time on a subset says the full run exceeds about two hours, the run goes to the Mac as a `needs-mac:` comment",
  "amendments": []
