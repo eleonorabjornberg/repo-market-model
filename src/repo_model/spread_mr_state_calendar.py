@@ -35,7 +35,7 @@ from __future__ import annotations
 
 import math
 import statistics
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, time
 from typing import Dict, Iterable, List, Mapping, NamedTuple, Optional, Sequence, Tuple
 
@@ -136,12 +136,30 @@ IORB_EXTRAS: Tuple[str, ...] = (IORB_SIGNED, IORB_TECHNICAL)
 #: announced net coupon and net bill settlement, and the announced gross coupon offering, each in units of `SIZE_UNIT` (USD 100 bn).
 NET_COUPON, NET_BILL, GROSS_COUPON = "net_coupon", "net_bill", "gross_coupon"
 SIZE_EXTRAS: Tuple[str, ...] = (NET_COUPON, NET_BILL, GROSS_COUPON)
+#: A richer target's forecast as a continuous input (H9 step 3 on (s3c-ann-net), #1345): the median of the target's lead-h law for the target day, in the
+#: target's unit over a declared scale (`repo_model.s3c_h9`). Unlike the terms above it can be missing on a training pair (the target's own walk starts after
+#: its first 61 labels) and it is not a 0/1 flag: it enters centred on its mean over the pairs that have it, and a pair without it enters at 0 (its mean).
+H9_FORECAST = "h9_forecast"
+#: The forecast enters a fit only if at least this many training pairs carry it (the minimum history of the walks).
+H9_MIN_OBSERVED = 61
 #: The cash management bill term of (s3c-ann-net-cmb) (#1356, `s3c_announced.AnnouncedCmbTerms`): a 0/1 flag that a cash management bill announced by the
 #: decision instant settles on the target day, or the announced offering of those bills in units of `SIZE_UNIT` (USD 100 bn).
 CMB_FLAG, CMB_SIZE = "cmb_flag", "cmb_size"
 CMB_EXTRAS: Tuple[str, ...] = (CMB_FLAG, CMB_SIZE)
+#: The missingness flag of the net settlement reader (#1390, `s3c_net_missing.NetMissingTerms`): 1 when a class of the target day's settlement rests on a
+#: missing figure at the decision instant (a maturing estimate not announced, or a class not fully announced), else 0.
+MISSING_FLAG = "net_missing"
+MISSING_EXTRAS: Tuple[str, ...] = (MISSING_FLAG,)
+#: The decision day's own Fed operation take-up (#1349, `same_day_operations.SameDayOperationTerms`): the overnight Standing Repo Facility take-up as a 0/1 flag
+#: and in units of `SIZE_UNIT`, and the change in the ON RRP amount accepted from the previous panel day in units of `SIZE_UNIT`.
+SRF_FLAG, SRF_SIZE, RRP_CHANGE = "srf_flag", "srf_size", "on_rrp_change"
+OPS_EXTRAS: Tuple[str, ...] = (SRF_FLAG, SRF_SIZE, RRP_CHANGE)
+#: The 4-week bill rate less IORB of the previous business day, in units of 10 bp (#1346, `s3c_bill_iorb.BillLessIorbTable`): a price, not a
+#: flag or a size.
+BILL_LESS_IORB = "bill_less_iorb"
+PRICE_EXTRAS: Tuple[str, ...] = (BILL_LESS_IORB,)
 #: Every `extra` term: it is read from `pair.extras` and not from the flags.
-EXTRA_TERMS: Tuple[str, ...] = IORB_EXTRAS + SIZE_EXTRAS + CMB_EXTRAS
+EXTRA_TERMS: Tuple[str, ...] = IORB_EXTRAS + SIZE_EXTRAS + CMB_EXTRAS + OPS_EXTRAS + MISSING_EXTRAS + PRICE_EXTRAS + (H9_FORECAST,)
 #: An IORB change that is not a multiple of 25 bp is a technical adjustment: the rule of `setup_diagnostic`.
 technical = setup_diagnostic.is_technical
 #: (s3+IORBs): (s3), with `iorb_window` and the two terms beside it. The FOMC-day term is not added.
@@ -411,6 +429,16 @@ class StateEstimate:
     residuals: Tuple[float, ...] = ()
     #: The pairs whose target row is a calendar row (set only for an arm with a `calendar_k`, #1226).
     calendar_pairs: int = 0
+    #: The mean a centred extra term (`H9_FORECAST`) was centred on, over the training pairs that had it (#1345); empty for every other arm.
+    centre: Mapping[str, float] = field(default_factory=dict)
+
+
+def extra_value(name: str, extras: Mapping[str, float], centre: Mapping[str, float]) -> float:
+    """The column value of extra term `name`: the value itself, or for a centred term (`centre` holds it) the value less its mean, 0 where missing."""
+
+    if name in centre:
+        return extras[name] - centre[name] if name in extras else 0.0
+    return extras[name]
 
 
 def _entering(
@@ -472,9 +500,15 @@ def fit_state_terms(
         raise smr.InsufficientHistory("no training pair to estimate the state-scaled calendar terms on")
     penalty = (ridge if ridge is not None else (ROBUST_RIDGE if robust else RIDGE))
     active, counts = _entering(terms, pairs, min_flagged, sized)
-    counts_extra = {name: sum(1 for p in pairs if p.extras.get(name, 0.0) != 0.0) for name in extra if name in pairs[0].extras}
+    counts_extra = {name: sum(1 for p in pairs if p.extras.get(name, 0.0) != 0.0) for name in extra if name in pairs[0].extras and name != H9_FORECAST}
+    centre: Dict[str, float] = {}
+    if H9_FORECAST in extra:
+        seen = [p.extras[H9_FORECAST] for p in pairs if H9_FORECAST in p.extras]
+        counts_extra[H9_FORECAST] = len(seen)
+        if len(seen) >= H9_MIN_OBSERVED:
+            centre[H9_FORECAST] = sum(seen) / len(seen)
     counts.update(counts_extra)
-    active_extra = tuple(n for n in extra if counts_extra.get(n, 0) >= min_flagged)
+    active_extra = tuple(n for n in extra if (n in centre if n == H9_FORECAST else counts_extra.get(n, 0) >= min_flagged))
     target = [p.raw / p.scale for p in pairs]
     effect: Dict[str, float] = {}
     slope: Dict[str, float] = {}
@@ -483,7 +517,7 @@ def fit_state_terms(
         design = []
         for p in pairs:
             s = 0.0 if p.state is None else p.state
-            row = [1.0] + [regressor(name, p.flags, p.sizes, p.state, sized) for name in active] + [p.extras[n] for n in active_extra]
+            row = [1.0] + [regressor(name, p.flags, p.sizes, p.state, sized) for name in active] + [extra_value(n, p.extras, centre) for n in active_extra]
             if interact:
                 row += [float(p.flags[name]) * s for name in active]
             design.append(row)
@@ -501,14 +535,14 @@ def fit_state_terms(
         s = 0.0 if p.state is None else p.state
         pool.append(
             y - sum(effect[n] * regressor(n, p.flags, p.sizes, p.state, sized) for n in effect if n not in EXTRA_TERMS)
-            - sum(effect[n] * p.extras[n] for n in effect if n in EXTRA_TERMS)
+            - sum(effect[n] * extra_value(n, p.extras, centre) for n in effect if n in EXTRA_TERMS)
             - sum(slope[n] * p.flags[n] * s for n in slope)
         )
     return StateEstimate(
         active + active_extra, effect, slope, counts, pb.empirical_quantiles(sorted(pool)), len(pairs),
         sum(1 for p in pairs if p.state is None), iterations, sized,
         tuple(p.origin for p in pairs), tuple(p.target for p in pairs), tuple(pool),
-        sum(1 for p in pairs if p.calendar),
+        sum(1 for p in pairs if p.calendar), centre,
     )
 
 
@@ -525,7 +559,10 @@ def standardised_shift(
     return sum(
         effect * regressor(name, flags, sizes, state, estimate.sized) for name, effect in estimate.effect.items()
         if name not in EXTRA_TERMS
-    ) + sum(effect * extras.get(name, 0.0) for name, effect in estimate.effect.items() if name in EXTRA_TERMS) + sum(g * flags[name] * s for name, g in estimate.slope.items())
+    ) + sum(
+        effect * (extra_value(name, extras, estimate.centre) if name in estimate.centre else extras.get(name, 0.0))
+        for name, effect in estimate.effect.items() if name in EXTRA_TERMS
+    ) + sum(g * flags[name] * s for name, g in estimate.slope.items())
 
 
 def lead_quantiles(

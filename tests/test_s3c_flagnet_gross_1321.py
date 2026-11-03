@@ -206,13 +206,23 @@ class WalkTests(unittest.TestCase):
 
 
 class DecisionInstantTests(unittest.TestCase):
-    """The study modules of #1115 to #1288 type 16:00; this study runs them at the declared instant and puts them back.
+    """The study modules of #1115 to #1288 held 16:00 until the family's default moved to 18:00 (#1397); a run that sets `RMM_DECISION_TIME=16:00`
+    still holds it. These tests put the chain back at 16:00 for their length, as such a run would have it; this study runs the chain at the
+    declared instant and puts it back.
 
     Recorded mutation (#1321): in `decision_instant_pinned`, `module.DECISION_TIME = DECISION_TIME` was changed to
     `module.DECISION_TIME = LEGACY_DECISION_TIME` (the pin that pins nothing). All three tests then failed with `ValueError` (`k.DECISION_TIME is
     16:00:00, not the declared instant 18:00:00`, the guard on entry to the block); restored, they pass. The first full run of this study was made
     without the pin, so at 16:00 (it reproduced #1288's pooled means exactly, which is how the miss was seen); it was discarded and re-run.
     """
+
+    def setUp(self):
+        from datetime import time
+
+        self._held = [(m, m.DECISION_TIME) for m in script.chain_modules() if hasattr(m, "DECISION_TIME")]
+        for module, _ in self._held:
+            module.DECISION_TIME = time(16, 0)
+        self.addCleanup(lambda: [setattr(m, "DECISION_TIME", t) for m, t in self._held])
 
     def test_the_chain_reads_18_00_inside_the_block(self):
         from datetime import time

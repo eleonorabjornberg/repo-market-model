@@ -418,9 +418,7 @@ research directions, not completed features.
   She did not review all of the machine-written code: see "Who decides and who reviews"
   below for what she decided, what a delegated Claude routine reviewed, and what she
   merged herself.
-- **Nicholas Beroud** — advisor on data selection and economic interpretation: which
-  public series carry the funding market's mechanics, what each one means, and which
-  open questions are questions of finance rather than of code.
+- **Nicholas Beroud** — advised on a few issues. He is not a major part of this work.
 
 The split matters to how this repository is read. Most of what is built here is data
 engineering and evaluation discipline, and those are the parts a test suite can
@@ -466,9 +464,8 @@ Then, for how the work is controlled rather than what it claims:
 
 Much of the implementation is written by AI coding agents. Each session works one directive, on one branch and one
 pull request ([`docs/decisions/workflow.md`](docs/decisions/workflow.md)). The earlier development process is documented in
-[`docs/archive/`](docs/archive). The author and the advisor answer for different things:
-the model, methodology, workflow and tests with Eleonora Björnberg; the choice
-of data and its economic meaning with Nicholas Beroud. Any academic submission based
+[`docs/archive/`](docs/archive). The author answers for the model, methodology, workflow, tests, choice
+of data and its economic meaning; Nicholas Beroud advised on a few issues. Any academic submission based
 on this repository remains the author's academic responsibility, should follow the
 relevant instructor's AI-use and citation requirements, and should disclose both the
 AI-agent workflow and the collaboration.

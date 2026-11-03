@@ -7,7 +7,7 @@ wherever the register says the minimum bid is at the top of the range and IORB 1
 whatever the register says elsewhere: the number is never written here.
 
 **Information set.** The line on a target day, as a decision at `as_of` could know it, uses only the entries announced at or before
-`as_of` (the instant a forecast is made, 16:00 on its decision day) that are effective on or before the target day: a change announced
+`as_of` (the decision instant of the forecast, `repo_model.decision_instant`: 18:00 on its decision day since #1312) that are effective on or before the target day: a change announced
 at an FOMC meeting after the decision instant is not known, and a change already announced and scheduled for the target day is, the
 same rule the scheduled IORB follows (`announced_iorb`, `scheduled_availability`). Each entry used is passed through
 `policy_events.require_announced`, so a read of an entry announced after `as_of` raises `LookAheadError`. The declaration of

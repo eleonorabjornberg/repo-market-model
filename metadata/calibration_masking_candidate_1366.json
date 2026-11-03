@@ -1,0 +1,38 @@
+{
+ "status": "declared by the pull request that closes #1366 before any figure was computed; a development study, never a verdict. Nothing is registered or published, no record in docs/runs/ is edited, no declaration already merged changes, the candidate is not changed or tuned, no day after 2026-09-03 is read and no lockbox day is scored. Amendments made after a figure was computed are listed in `amendments` (none at the time of writing).",
+ "issue": 1366,
+ "hypothesis": "H5 (primary goal), registration design (calibration): how optimistic is the candidate's historical band calibration because a calibration subfit may train on a frame masked at a later cutoff than its own decision instant (docs/decisions/information-set.md, 'Calibration masking is a calibration bias, not leakage')? Step 3 evidence for the registration and the validation report",
+ "ruling": "Eleonora, 2 November 2026, chat, relayed on #1366, after the outside publication-readiness review of 95d21b1f; part of the H5 registration priority on #46",
+ "decision_instant": "18:00 America/New_York on the decision day (repo_model.decision_instant.DECISION_TIME, amended on 29 October 2026, #1312). The walks are made at that instant (RMM_DECISION_TIME=18:00, the panel built with --decision-time 18:00:00); no earlier record is edited",
+ "candidate": {
+  "name": "sc_s3c_ann_net",
+  "label": "(s3c-ann-net)",
+  "definition": "h5-candidate.json: (s3c) with its two settlement terms read at leads 2 to 5 from the auction announcement and sized by net settlement, walked by the code of scripts/s3c_announced_settlement_1288.py unchanged (refit every 21 decision days, direct pairs, the SRF cap from full allotment)"
+ },
+ "question_asked": "The directive asks for the candidate's band calibration to be re-run with every subfit restricted to pairs whose targets were observable at that subfit's own decision instant, both versions scored on the development window (2026 apart): band coverage, grid CRPS, upper-tail twCRPS, and the size of the bias reported.",
+ "reading_of_the_question": "The candidate has one fitting step that produces its bands: the refit of its residual pool and term effects, made every 21 decision days (repo_model.spread_mr_state_calendar.refit; repo_model.spread_mean_reversion.training_rows). The study calls that refit the subfit. It has no calibration subfit of the kind the information-set note describes (a conformal or cross-conformal block fit on a frame masked at the later fold's cutoff, ml.fit_gradient_boosted_quantiles with calibration_masking), and the study first checks that on the tree (the closure audit). The two versions are: AS RUN, the walk of #1288/#1314 unchanged; and HONEST, the same walk with the training pairs of every refit filtered to those whose target row is at or before repo_model.asof.InformationRule.anchor of that refit's decision, per lead (the last row whose target is observable at the decision instant), by a check that does not use the production guard. If the filter drops nothing the two versions are one computation and the bias is exactly zero; if it drops pairs, every score is recomputed and the difference is reported.",
+ "windows": {
+  "development": "decision days whose five targets fall on or before 2025-12-31 (window 'development' of scripts/s3c_announced_settlement_1288.py); decides",
+  "2026": "decision days whose five targets fall from 2026-01-02 to 2026-09-03 (window '2026', the near-blind tier open since GO #151); shown apart, decides nothing"
+ },
+ "measures": {
+  "closure_audit": "the repo_model modules reachable by import from s3c_announced, s3c_candidate and spread_mr_state_calendar, and the repo_model imports of the scripts that walk the candidate; none may be ml, calibrated_stack, walk_calibration, group_calibration, recalibration or probability_calibration, and none may contain the text calibration_masking or cross_conformal",
+  "pair_audit": "for every refit of each walk: the number of training pairs per lead, the latest target row against the honest anchor, the pairs the honest filter drops (with the day), and for every scored decision day that the fit it used was made on or before that day",
+  "scores": "mean grid CRPS over h = 1..5 (primary), upper-tail twCRPS (key secondary), coverage of the closed central 50% and 90% bands, for AS RUN and HONEST, pooled and by regime of the target day and by pressure-day type of the target day; the paired difference HONEST minus AS RUN (positive = the as-run score was the more optimistic for the loss scores). When the walks are identical the difference is exactly zero on every cell and the interval is degenerate [0, 0]; the page then says so instead of printing a bootstrap interval",
+  "reproduction": "the AS RUN mean grid CRPS of each window equals docs/research/s3c-ann-net-1800-1314/announced-settlement-1800.json to 1e-9, or no record is written"
+ },
+ "judgement": "If the HONEST version differs materially from AS RUN the page asks Eleonora whether to adopt it for the registration (default: no change). The study adopts nothing and sets no threshold of 'material'; it reports the size and both versions",
+ "limits": "The study does not re-run the gbm_funding cross-conformal bands, which are the records the information-set note describes; scripts/calibration_masking_effect.py (#78) is the tool for those and is not run here",
+ "seed": 1366,
+ "long_run": "four walks of (s3c-ann-net), minutes each (the 2026 walk of #1363 took about one minute), a cloud run",
+ "amendments": [
+  {
+   "issue": 1366,
+   "what": "The closure audit's text test reads the names, keyword arguments and string constants of a module's code, not its docstrings and comments. Made after the first run of the audit on the 2026 walk file, which flagged `baseline` for a docstring that mentions `cross_conformal` (baseline is reachable only through a function-local import in scarcity.py and its docstring is not code). The test is stricter on code and looser on prose; it changes no walk, window, score or setting."
+  }
+ ],
+ "variants": {
+  "sc_s3c_ann_net_as_run": "scored arm, the candidate walked unchanged from #1288/#1314 at the 18:00 decision instant: no new fit, nothing tuned",
+  "sc_s3c_ann_net_honest": "the same walk with each refit's training pairs filtered to targets observable at that refit's decision instant (per lead); a check, not a tuning"
+ }
+}

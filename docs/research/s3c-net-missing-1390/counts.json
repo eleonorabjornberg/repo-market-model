@@ -1,0 +1,1720 @@
+{
+ "counts": {
+  "2018": {
+   "0": {
+    "abs_net_bn": 1487.8920000000003,
+    "bill": {
+     "absent": 20,
+     "complete": 42,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "coupon": {
+     "absent": 40,
+     "complete": 22,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "day": {
+     "cmb_pending_and_not_otherwise_missing": 0,
+     "cmb_pending_days": 0,
+     "complete_nonzero": 62,
+     "genuine_zero": 0,
+     "net_rests_on_missing": 0,
+     "nothing_public": 0,
+     "of_which_class_not_fully_announced": 0,
+     "of_which_missing_maturing": 0,
+     "settlement_days": 62
+    },
+    "drain_read_on_missing_maturing_bn": 0.0
+   },
+   "1": {
+    "abs_net_bn": 1487.8920000000003,
+    "bill": {
+     "absent": 20,
+     "complete": 42,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "coupon": {
+     "absent": 40,
+     "complete": 22,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "day": {
+     "cmb_pending_and_not_otherwise_missing": 0,
+     "cmb_pending_days": 0,
+     "complete_nonzero": 62,
+     "genuine_zero": 0,
+     "net_rests_on_missing": 0,
+     "nothing_public": 0,
+     "of_which_class_not_fully_announced": 0,
+     "of_which_missing_maturing": 0,
+     "settlement_days": 62
+    },
+    "drain_read_on_missing_maturing_bn": 0.0
+   },
+   "2": {
+    "abs_net_bn": 1487.8920000000003,
+    "bill": {
+     "absent": 20,
+     "complete": 42,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "coupon": {
+     "absent": 40,
+     "complete": 22,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "day": {
+     "cmb_pending_and_not_otherwise_missing": 0,
+     "cmb_pending_days": 0,
+     "complete_nonzero": 62,
+     "genuine_zero": 0,
+     "net_rests_on_missing": 0,
+     "nothing_public": 0,
+     "of_which_class_not_fully_announced": 0,
+     "of_which_missing_maturing": 0,
+     "settlement_days": 62
+    },
+    "drain_read_on_missing_maturing_bn": 0.0
+   },
+   "3": {
+    "abs_net_bn": 1472.8980000000001,
+    "bill": {
+     "absent": 20,
+     "complete": 40,
+     "complete_zero": 0,
+     "incomplete": 1,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "coupon": {
+     "absent": 39,
+     "complete": 22,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "day": {
+     "cmb_pending_and_not_otherwise_missing": 0,
+     "cmb_pending_days": 0,
+     "complete_nonzero": 60,
+     "genuine_zero": 0,
+     "net_rests_on_missing": 1,
+     "nothing_public": 0,
+     "of_which_class_not_fully_announced": 1,
+     "of_which_missing_maturing": 0,
+     "settlement_days": 61
+    },
+    "drain_read_on_missing_maturing_bn": 0.0
+   },
+   "4": {
+    "abs_net_bn": 892.9000000000001,
+    "bill": {
+     "absent": 20,
+     "complete": 11,
+     "complete_zero": 0,
+     "incomplete": 30,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "coupon": {
+     "absent": 39,
+     "complete": 22,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "day": {
+     "cmb_pending_and_not_otherwise_missing": 0,
+     "cmb_pending_days": 0,
+     "complete_nonzero": 31,
+     "genuine_zero": 0,
+     "net_rests_on_missing": 30,
+     "nothing_public": 0,
+     "of_which_class_not_fully_announced": 30,
+     "of_which_missing_maturing": 0,
+     "settlement_days": 61
+    },
+    "drain_read_on_missing_maturing_bn": 0.0
+   },
+   "5": {
+    "abs_net_bn": 824.7860000000001,
+    "bill": {
+     "absent": 20,
+     "complete": 4,
+     "complete_zero": 0,
+     "incomplete": 29,
+     "missing_maturing": 0,
+     "unannounced": 8
+    },
+    "coupon": {
+     "absent": 39,
+     "complete": 22,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "day": {
+     "cmb_pending_and_not_otherwise_missing": 0,
+     "cmb_pending_days": 0,
+     "complete_nonzero": 24,
+     "genuine_zero": 0,
+     "net_rests_on_missing": 37,
+     "nothing_public": 0,
+     "of_which_class_not_fully_announced": 37,
+     "of_which_missing_maturing": 0,
+     "settlement_days": 61
+    },
+    "drain_read_on_missing_maturing_bn": 0.0
+   }
+  },
+  "2019": {
+   "0": {
+    "abs_net_bn": 2225.2550000000006,
+    "bill": {
+     "absent": 23,
+     "complete": 105,
+     "complete_zero": 1,
+     "incomplete": 0,
+     "missing_maturing": 3,
+     "unannounced": 0
+    },
+    "coupon": {
+     "absent": 98,
+     "complete": 33,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "day": {
+     "cmb_pending_and_not_otherwise_missing": 0,
+     "cmb_pending_days": 0,
+     "complete_nonzero": 127,
+     "genuine_zero": 1,
+     "net_rests_on_missing": 3,
+     "nothing_public": 0,
+     "of_which_class_not_fully_announced": 0,
+     "of_which_missing_maturing": 3,
+     "settlement_days": 131
+    },
+    "drain_read_on_missing_maturing_bn": 108.0
+   },
+   "1": {
+    "abs_net_bn": 2225.2550000000006,
+    "bill": {
+     "absent": 23,
+     "complete": 105,
+     "complete_zero": 1,
+     "incomplete": 0,
+     "missing_maturing": 3,
+     "unannounced": 0
+    },
+    "coupon": {
+     "absent": 98,
+     "complete": 33,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "day": {
+     "cmb_pending_and_not_otherwise_missing": 0,
+     "cmb_pending_days": 0,
+     "complete_nonzero": 127,
+     "genuine_zero": 1,
+     "net_rests_on_missing": 3,
+     "nothing_public": 0,
+     "of_which_class_not_fully_announced": 0,
+     "of_which_missing_maturing": 3,
+     "settlement_days": 131
+    },
+    "drain_read_on_missing_maturing_bn": 108.0
+   },
+   "2": {
+    "abs_net_bn": 2202.230000000001,
+    "bill": {
+     "absent": 24,
+     "complete": 105,
+     "complete_zero": 1,
+     "incomplete": 0,
+     "missing_maturing": 2,
+     "unannounced": 0
+    },
+    "coupon": {
+     "absent": 98,
+     "complete": 32,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 1
+    },
+    "day": {
+     "cmb_pending_and_not_otherwise_missing": 1,
+     "cmb_pending_days": 1,
+     "complete_nonzero": 126,
+     "genuine_zero": 1,
+     "net_rests_on_missing": 3,
+     "nothing_public": 1,
+     "of_which_class_not_fully_announced": 1,
+     "of_which_missing_maturing": 2,
+     "settlement_days": 131
+    },
+    "drain_read_on_missing_maturing_bn": 85.0
+   },
+   "3": {
+    "abs_net_bn": 2167.230000000001,
+    "bill": {
+     "absent": 25,
+     "complete": 105,
+     "complete_zero": 1,
+     "incomplete": 0,
+     "missing_maturing": 1,
+     "unannounced": 0
+    },
+    "coupon": {
+     "absent": 98,
+     "complete": 32,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 1
+    },
+    "day": {
+     "cmb_pending_and_not_otherwise_missing": 2,
+     "cmb_pending_days": 2,
+     "complete_nonzero": 126,
+     "genuine_zero": 1,
+     "net_rests_on_missing": 2,
+     "nothing_public": 2,
+     "of_which_class_not_fully_announced": 1,
+     "of_which_missing_maturing": 1,
+     "settlement_days": 131
+    },
+    "drain_read_on_missing_maturing_bn": 50.0
+   },
+   "4": {
+    "abs_net_bn": 2137.2050000000004,
+    "bill": {
+     "absent": 25,
+     "complete": 105,
+     "complete_zero": 1,
+     "incomplete": 0,
+     "missing_maturing": 1,
+     "unannounced": 0
+    },
+    "coupon": {
+     "absent": 98,
+     "complete": 31,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 2
+    },
+    "day": {
+     "cmb_pending_and_not_otherwise_missing": 3,
+     "cmb_pending_days": 3,
+     "complete_nonzero": 125,
+     "genuine_zero": 1,
+     "net_rests_on_missing": 3,
+     "nothing_public": 2,
+     "of_which_class_not_fully_announced": 2,
+     "of_which_missing_maturing": 1,
+     "settlement_days": 131
+    },
+    "drain_read_on_missing_maturing_bn": 50.0
+   },
+   "5": {
+    "abs_net_bn": 1998.517,
+    "bill": {
+     "absent": 25,
+     "complete": 86,
+     "complete_zero": 1,
+     "incomplete": 0,
+     "missing_maturing": 1,
+     "unannounced": 19
+    },
+    "coupon": {
+     "absent": 98,
+     "complete": 31,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 2
+    },
+    "day": {
+     "cmb_pending_and_not_otherwise_missing": 3,
+     "cmb_pending_days": 3,
+     "complete_nonzero": 106,
+     "genuine_zero": 1,
+     "net_rests_on_missing": 22,
+     "nothing_public": 2,
+     "of_which_class_not_fully_announced": 21,
+     "of_which_missing_maturing": 1,
+     "settlement_days": 131
+    },
+    "drain_read_on_missing_maturing_bn": 50.0
+   }
+  },
+  "2020": {
+   "0": {
+    "abs_net_bn": 5142.408000000003,
+    "bill": {
+     "absent": 24,
+     "complete": 105,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 7,
+     "unannounced": 0
+    },
+    "coupon": {
+     "absent": 102,
+     "complete": 34,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "day": {
+     "cmb_pending_and_not_otherwise_missing": 0,
+     "cmb_pending_days": 0,
+     "complete_nonzero": 129,
+     "genuine_zero": 0,
+     "net_rests_on_missing": 7,
+     "nothing_public": 0,
+     "of_which_class_not_fully_announced": 0,
+     "of_which_missing_maturing": 7,
+     "settlement_days": 136
+    },
+    "drain_read_on_missing_maturing_bn": 455.025
+   },
+   "1": {
+    "abs_net_bn": 5142.408000000003,
+    "bill": {
+     "absent": 24,
+     "complete": 105,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 7,
+     "unannounced": 0
+    },
+    "coupon": {
+     "absent": 102,
+     "complete": 34,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "day": {
+     "cmb_pending_and_not_otherwise_missing": 0,
+     "cmb_pending_days": 0,
+     "complete_nonzero": 129,
+     "genuine_zero": 0,
+     "net_rests_on_missing": 7,
+     "nothing_public": 0,
+     "of_which_class_not_fully_announced": 0,
+     "of_which_missing_maturing": 7,
+     "settlement_days": 136
+    },
+    "drain_read_on_missing_maturing_bn": 455.025
+   },
+   "2": {
+    "abs_net_bn": 5082.383000000002,
+    "bill": {
+     "absent": 24,
+     "complete": 105,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 7,
+     "unannounced": 0
+    },
+    "coupon": {
+     "absent": 102,
+     "complete": 33,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 1
+    },
+    "day": {
+     "cmb_pending_and_not_otherwise_missing": 1,
+     "cmb_pending_days": 1,
+     "complete_nonzero": 128,
+     "genuine_zero": 0,
+     "net_rests_on_missing": 8,
+     "nothing_public": 0,
+     "of_which_class_not_fully_announced": 1,
+     "of_which_missing_maturing": 7,
+     "settlement_days": 136
+    },
+    "drain_read_on_missing_maturing_bn": 455.025
+   },
+   "3": {
+    "abs_net_bn": 4737.358,
+    "bill": {
+     "absent": 26,
+     "complete": 105,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 5,
+     "unannounced": 0
+    },
+    "coupon": {
+     "absent": 102,
+     "complete": 33,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 1
+    },
+    "day": {
+     "cmb_pending_and_not_otherwise_missing": 8,
+     "cmb_pending_days": 10,
+     "complete_nonzero": 128,
+     "genuine_zero": 0,
+     "net_rests_on_missing": 6,
+     "nothing_public": 2,
+     "of_which_class_not_fully_announced": 1,
+     "of_which_missing_maturing": 5,
+     "settlement_days": 136
+    },
+    "drain_read_on_missing_maturing_bn": 325.0
+   },
+   "4": {
+    "abs_net_bn": 4502.357999999999,
+    "bill": {
+     "absent": 29,
+     "complete": 105,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 2,
+     "unannounced": 0
+    },
+    "coupon": {
+     "absent": 102,
+     "complete": 33,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 1
+    },
+    "day": {
+     "cmb_pending_and_not_otherwise_missing": 12,
+     "cmb_pending_days": 12,
+     "complete_nonzero": 129,
+     "genuine_zero": 0,
+     "net_rests_on_missing": 3,
+     "nothing_public": 4,
+     "of_which_class_not_fully_announced": 1,
+     "of_which_missing_maturing": 2,
+     "settlement_days": 136
+    },
+    "drain_read_on_missing_maturing_bn": 120.0
+   },
+   "5": {
+    "abs_net_bn": 3651.035,
+    "bill": {
+     "absent": 31,
+     "complete": 84,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 21
+    },
+    "coupon": {
+     "absent": 102,
+     "complete": 32,
+     "complete_zero": 0,
+     "incomplete": 1,
+     "missing_maturing": 0,
+     "unannounced": 1
+    },
+    "day": {
+     "cmb_pending_and_not_otherwise_missing": 13,
+     "cmb_pending_days": 29,
+     "complete_nonzero": 108,
+     "genuine_zero": 0,
+     "net_rests_on_missing": 22,
+     "nothing_public": 6,
+     "of_which_class_not_fully_announced": 22,
+     "of_which_missing_maturing": 0,
+     "settlement_days": 136
+    },
+    "drain_read_on_missing_maturing_bn": 0.0
+   }
+  },
+  "2021": {
+   "0": {
+    "abs_net_bn": 4567.215,
+    "bill": {
+     "absent": 26,
+     "complete": 104,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 4,
+     "unannounced": 0
+    },
+    "coupon": {
+     "absent": 99,
+     "complete": 35,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "day": {
+     "cmb_pending_and_not_otherwise_missing": 0,
+     "cmb_pending_days": 0,
+     "complete_nonzero": 130,
+     "genuine_zero": 0,
+     "net_rests_on_missing": 4,
+     "nothing_public": 0,
+     "of_which_class_not_fully_announced": 0,
+     "of_which_missing_maturing": 4,
+     "settlement_days": 134
+    },
+    "drain_read_on_missing_maturing_bn": 220.0
+   },
+   "1": {
+    "abs_net_bn": 4567.215,
+    "bill": {
+     "absent": 26,
+     "complete": 104,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 4,
+     "unannounced": 0
+    },
+    "coupon": {
+     "absent": 99,
+     "complete": 35,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "day": {
+     "cmb_pending_and_not_otherwise_missing": 0,
+     "cmb_pending_days": 0,
+     "complete_nonzero": 130,
+     "genuine_zero": 0,
+     "net_rests_on_missing": 4,
+     "nothing_public": 0,
+     "of_which_class_not_fully_announced": 0,
+     "of_which_missing_maturing": 4,
+     "settlement_days": 134
+    },
+    "drain_read_on_missing_maturing_bn": 220.0
+   },
+   "2": {
+    "abs_net_bn": 4567.215,
+    "bill": {
+     "absent": 26,
+     "complete": 104,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 4,
+     "unannounced": 0
+    },
+    "coupon": {
+     "absent": 99,
+     "complete": 35,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "day": {
+     "cmb_pending_and_not_otherwise_missing": 0,
+     "cmb_pending_days": 0,
+     "complete_nonzero": 130,
+     "genuine_zero": 0,
+     "net_rests_on_missing": 4,
+     "nothing_public": 0,
+     "of_which_class_not_fully_announced": 0,
+     "of_which_missing_maturing": 4,
+     "settlement_days": 134
+    },
+    "drain_read_on_missing_maturing_bn": 220.0
+   },
+   "3": {
+    "abs_net_bn": 4567.1900000000005,
+    "bill": {
+     "absent": 26,
+     "complete": 104,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 4,
+     "unannounced": 0
+    },
+    "coupon": {
+     "absent": 99,
+     "complete": 34,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 1
+    },
+    "day": {
+     "cmb_pending_and_not_otherwise_missing": 0,
+     "cmb_pending_days": 0,
+     "complete_nonzero": 129,
+     "genuine_zero": 0,
+     "net_rests_on_missing": 5,
+     "nothing_public": 0,
+     "of_which_class_not_fully_announced": 1,
+     "of_which_missing_maturing": 4,
+     "settlement_days": 134
+    },
+    "drain_read_on_missing_maturing_bn": 220.0
+   },
+   "4": {
+    "abs_net_bn": 4412.19,
+    "bill": {
+     "absent": 28,
+     "complete": 104,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 2,
+     "unannounced": 0
+    },
+    "coupon": {
+     "absent": 99,
+     "complete": 34,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 1
+    },
+    "day": {
+     "cmb_pending_and_not_otherwise_missing": 4,
+     "cmb_pending_days": 4,
+     "complete_nonzero": 129,
+     "genuine_zero": 0,
+     "net_rests_on_missing": 3,
+     "nothing_public": 2,
+     "of_which_class_not_fully_announced": 1,
+     "of_which_missing_maturing": 2,
+     "settlement_days": 134
+    },
+    "drain_read_on_missing_maturing_bn": 100.0
+   },
+   "5": {
+    "abs_net_bn": 4156.156000000001,
+    "bill": {
+     "absent": 29,
+     "complete": 84,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 1,
+     "unannounced": 20
+    },
+    "coupon": {
+     "absent": 99,
+     "complete": 34,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 1
+    },
+    "day": {
+     "cmb_pending_and_not_otherwise_missing": 5,
+     "cmb_pending_days": 23,
+     "complete_nonzero": 109,
+     "genuine_zero": 0,
+     "net_rests_on_missing": 22,
+     "nothing_public": 3,
+     "of_which_class_not_fully_announced": 21,
+     "of_which_missing_maturing": 1,
+     "settlement_days": 134
+    },
+    "drain_read_on_missing_maturing_bn": 40.0
+   }
+  },
+  "2022": {
+   "0": {
+    "abs_net_bn": 3038.6990000000014,
+    "bill": {
+     "absent": 23,
+     "complete": 104,
+     "complete_zero": 1,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "coupon": {
+     "absent": 94,
+     "complete": 33,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "day": {
+     "cmb_pending_and_not_otherwise_missing": 0,
+     "cmb_pending_days": 0,
+     "complete_nonzero": 126,
+     "genuine_zero": 1,
+     "net_rests_on_missing": 0,
+     "nothing_public": 0,
+     "of_which_class_not_fully_announced": 0,
+     "of_which_missing_maturing": 0,
+     "settlement_days": 127
+    },
+    "drain_read_on_missing_maturing_bn": 0.0
+   },
+   "1": {
+    "abs_net_bn": 3038.6990000000014,
+    "bill": {
+     "absent": 23,
+     "complete": 104,
+     "complete_zero": 1,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "coupon": {
+     "absent": 94,
+     "complete": 33,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "day": {
+     "cmb_pending_and_not_otherwise_missing": 0,
+     "cmb_pending_days": 0,
+     "complete_nonzero": 126,
+     "genuine_zero": 1,
+     "net_rests_on_missing": 0,
+     "nothing_public": 0,
+     "of_which_class_not_fully_announced": 0,
+     "of_which_missing_maturing": 0,
+     "settlement_days": 127
+    },
+    "drain_read_on_missing_maturing_bn": 0.0
+   },
+   "2": {
+    "abs_net_bn": 3038.6990000000014,
+    "bill": {
+     "absent": 23,
+     "complete": 104,
+     "complete_zero": 1,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "coupon": {
+     "absent": 94,
+     "complete": 33,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "day": {
+     "cmb_pending_and_not_otherwise_missing": 0,
+     "cmb_pending_days": 0,
+     "complete_nonzero": 126,
+     "genuine_zero": 1,
+     "net_rests_on_missing": 0,
+     "nothing_public": 0,
+     "of_which_class_not_fully_announced": 0,
+     "of_which_missing_maturing": 0,
+     "settlement_days": 127
+    },
+    "drain_read_on_missing_maturing_bn": 0.0
+   },
+   "3": {
+    "abs_net_bn": 3038.6740000000013,
+    "bill": {
+     "absent": 23,
+     "complete": 104,
+     "complete_zero": 1,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "coupon": {
+     "absent": 94,
+     "complete": 32,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 1
+    },
+    "day": {
+     "cmb_pending_and_not_otherwise_missing": 0,
+     "cmb_pending_days": 0,
+     "complete_nonzero": 125,
+     "genuine_zero": 1,
+     "net_rests_on_missing": 1,
+     "nothing_public": 0,
+     "of_which_class_not_fully_announced": 1,
+     "of_which_missing_maturing": 0,
+     "settlement_days": 127
+    },
+    "drain_read_on_missing_maturing_bn": 0.0
+   },
+   "4": {
+    "abs_net_bn": 3038.6740000000013,
+    "bill": {
+     "absent": 23,
+     "complete": 104,
+     "complete_zero": 1,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "coupon": {
+     "absent": 94,
+     "complete": 32,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 1
+    },
+    "day": {
+     "cmb_pending_and_not_otherwise_missing": 0,
+     "cmb_pending_days": 0,
+     "complete_nonzero": 125,
+     "genuine_zero": 1,
+     "net_rests_on_missing": 1,
+     "nothing_public": 0,
+     "of_which_class_not_fully_announced": 1,
+     "of_which_missing_maturing": 0,
+     "settlement_days": 127
+    },
+    "drain_read_on_missing_maturing_bn": 0.0
+   },
+   "5": {
+    "abs_net_bn": 2815.724,
+    "bill": {
+     "absent": 23,
+     "complete": 83,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 21
+    },
+    "coupon": {
+     "absent": 94,
+     "complete": 32,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 1
+    },
+    "day": {
+     "cmb_pending_and_not_otherwise_missing": 0,
+     "cmb_pending_days": 8,
+     "complete_nonzero": 105,
+     "genuine_zero": 0,
+     "net_rests_on_missing": 22,
+     "nothing_public": 0,
+     "of_which_class_not_fully_announced": 22,
+     "of_which_missing_maturing": 0,
+     "settlement_days": 127
+    },
+    "drain_read_on_missing_maturing_bn": 0.0
+   }
+  },
+  "2023": {
+   "0": {
+    "abs_net_bn": 3917.231,
+    "bill": {
+     "absent": 19,
+     "complete": 104,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 4,
+     "unannounced": 0
+    },
+    "coupon": {
+     "absent": 96,
+     "complete": 31,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "day": {
+     "cmb_pending_and_not_otherwise_missing": 0,
+     "cmb_pending_days": 0,
+     "complete_nonzero": 123,
+     "genuine_zero": 0,
+     "net_rests_on_missing": 4,
+     "nothing_public": 0,
+     "of_which_class_not_fully_announced": 0,
+     "of_which_missing_maturing": 4,
+     "settlement_days": 127
+    },
+    "drain_read_on_missing_maturing_bn": 180.0
+   },
+   "1": {
+    "abs_net_bn": 3917.231,
+    "bill": {
+     "absent": 19,
+     "complete": 104,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 4,
+     "unannounced": 0
+    },
+    "coupon": {
+     "absent": 96,
+     "complete": 31,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "day": {
+     "cmb_pending_and_not_otherwise_missing": 0,
+     "cmb_pending_days": 0,
+     "complete_nonzero": 123,
+     "genuine_zero": 0,
+     "net_rests_on_missing": 4,
+     "nothing_public": 0,
+     "of_which_class_not_fully_announced": 0,
+     "of_which_missing_maturing": 4,
+     "settlement_days": 127
+    },
+    "drain_read_on_missing_maturing_bn": 180.0
+   },
+   "2": {
+    "abs_net_bn": 3867.231,
+    "bill": {
+     "absent": 19,
+     "complete": 104,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 4,
+     "unannounced": 0
+    },
+    "coupon": {
+     "absent": 96,
+     "complete": 31,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "day": {
+     "cmb_pending_and_not_otherwise_missing": 0,
+     "cmb_pending_days": 1,
+     "complete_nonzero": 123,
+     "genuine_zero": 0,
+     "net_rests_on_missing": 4,
+     "nothing_public": 0,
+     "of_which_class_not_fully_announced": 0,
+     "of_which_missing_maturing": 4,
+     "settlement_days": 127
+    },
+    "drain_read_on_missing_maturing_bn": 130.0
+   },
+   "3": {
+    "abs_net_bn": 3836.189,
+    "bill": {
+     "absent": 21,
+     "complete": 104,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 2,
+     "unannounced": 0
+    },
+    "coupon": {
+     "absent": 96,
+     "complete": 31,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "day": {
+     "cmb_pending_and_not_otherwise_missing": 3,
+     "cmb_pending_days": 3,
+     "complete_nonzero": 123,
+     "genuine_zero": 0,
+     "net_rests_on_missing": 2,
+     "nothing_public": 2,
+     "of_which_class_not_fully_announced": 0,
+     "of_which_missing_maturing": 2,
+     "settlement_days": 127
+    },
+    "drain_read_on_missing_maturing_bn": 90.0
+   },
+   "4": {
+    "abs_net_bn": 3836.1639999999998,
+    "bill": {
+     "absent": 21,
+     "complete": 104,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 2,
+     "unannounced": 0
+    },
+    "coupon": {
+     "absent": 96,
+     "complete": 31,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "day": {
+     "cmb_pending_and_not_otherwise_missing": 4,
+     "cmb_pending_days": 4,
+     "complete_nonzero": 123,
+     "genuine_zero": 0,
+     "net_rests_on_missing": 2,
+     "nothing_public": 2,
+     "of_which_class_not_fully_announced": 0,
+     "of_which_missing_maturing": 2,
+     "settlement_days": 127
+    },
+    "drain_read_on_missing_maturing_bn": 90.0
+   },
+   "5": {
+    "abs_net_bn": 3209.8720000000003,
+    "bill": {
+     "absent": 22,
+     "complete": 83,
+     "complete_zero": 0,
+     "incomplete": 1,
+     "missing_maturing": 1,
+     "unannounced": 20
+    },
+    "coupon": {
+     "absent": 96,
+     "complete": 31,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "day": {
+     "cmb_pending_and_not_otherwise_missing": 5,
+     "cmb_pending_days": 11,
+     "complete_nonzero": 103,
+     "genuine_zero": 0,
+     "net_rests_on_missing": 22,
+     "nothing_public": 2,
+     "of_which_class_not_fully_announced": 21,
+     "of_which_missing_maturing": 1,
+     "settlement_days": 127
+    },
+    "drain_read_on_missing_maturing_bn": 45.0
+   }
+  },
+  "2024": {
+   "0": {
+    "abs_net_bn": 3597.4390000000003,
+    "bill": {
+     "absent": 20,
+     "complete": 106,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "coupon": {
+     "absent": 94,
+     "complete": 32,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "day": {
+     "cmb_pending_and_not_otherwise_missing": 0,
+     "cmb_pending_days": 0,
+     "complete_nonzero": 126,
+     "genuine_zero": 0,
+     "net_rests_on_missing": 0,
+     "nothing_public": 0,
+     "of_which_class_not_fully_announced": 0,
+     "of_which_missing_maturing": 0,
+     "settlement_days": 126
+    },
+    "drain_read_on_missing_maturing_bn": 0.0
+   },
+   "1": {
+    "abs_net_bn": 3597.4390000000003,
+    "bill": {
+     "absent": 20,
+     "complete": 106,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "coupon": {
+     "absent": 94,
+     "complete": 32,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "day": {
+     "cmb_pending_and_not_otherwise_missing": 0,
+     "cmb_pending_days": 0,
+     "complete_nonzero": 126,
+     "genuine_zero": 0,
+     "net_rests_on_missing": 0,
+     "nothing_public": 0,
+     "of_which_class_not_fully_announced": 0,
+     "of_which_missing_maturing": 0,
+     "settlement_days": 126
+    },
+    "drain_read_on_missing_maturing_bn": 0.0
+   },
+   "2": {
+    "abs_net_bn": 3597.4139999999998,
+    "bill": {
+     "absent": 21,
+     "complete": 105,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "coupon": {
+     "absent": 94,
+     "complete": 32,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "day": {
+     "cmb_pending_and_not_otherwise_missing": 1,
+     "cmb_pending_days": 1,
+     "complete_nonzero": 125,
+     "genuine_zero": 0,
+     "net_rests_on_missing": 0,
+     "nothing_public": 1,
+     "of_which_class_not_fully_announced": 0,
+     "of_which_missing_maturing": 0,
+     "settlement_days": 126
+    },
+    "drain_read_on_missing_maturing_bn": 0.0
+   },
+   "3": {
+    "abs_net_bn": 3597.4139999999998,
+    "bill": {
+     "absent": 21,
+     "complete": 105,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "coupon": {
+     "absent": 94,
+     "complete": 32,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "day": {
+     "cmb_pending_and_not_otherwise_missing": 1,
+     "cmb_pending_days": 1,
+     "complete_nonzero": 125,
+     "genuine_zero": 0,
+     "net_rests_on_missing": 0,
+     "nothing_public": 1,
+     "of_which_class_not_fully_announced": 0,
+     "of_which_missing_maturing": 0,
+     "settlement_days": 126
+    },
+    "drain_read_on_missing_maturing_bn": 0.0
+   },
+   "4": {
+    "abs_net_bn": 3557.4139999999998,
+    "bill": {
+     "absent": 21,
+     "complete": 105,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "coupon": {
+     "absent": 94,
+     "complete": 32,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "day": {
+     "cmb_pending_and_not_otherwise_missing": 2,
+     "cmb_pending_days": 2,
+     "complete_nonzero": 125,
+     "genuine_zero": 0,
+     "net_rests_on_missing": 0,
+     "nothing_public": 1,
+     "of_which_class_not_fully_announced": 0,
+     "of_which_missing_maturing": 0,
+     "settlement_days": 126
+    },
+    "drain_read_on_missing_maturing_bn": 0.0
+   },
+   "5": {
+    "abs_net_bn": 3338.2300000000005,
+    "bill": {
+     "absent": 21,
+     "complete": 83,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 22
+    },
+    "coupon": {
+     "absent": 94,
+     "complete": 32,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "day": {
+     "cmb_pending_and_not_otherwise_missing": 2,
+     "cmb_pending_days": 12,
+     "complete_nonzero": 103,
+     "genuine_zero": 0,
+     "net_rests_on_missing": 22,
+     "nothing_public": 1,
+     "of_which_class_not_fully_announced": 22,
+     "of_which_missing_maturing": 0,
+     "settlement_days": 126
+    },
+    "drain_read_on_missing_maturing_bn": 0.0
+   }
+  },
+  "2025": {
+   "0": {
+    "abs_net_bn": 4397.277,
+    "bill": {
+     "absent": 22,
+     "complete": 105,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "coupon": {
+     "absent": 96,
+     "complete": 31,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "day": {
+     "cmb_pending_and_not_otherwise_missing": 0,
+     "cmb_pending_days": 0,
+     "complete_nonzero": 127,
+     "genuine_zero": 0,
+     "net_rests_on_missing": 0,
+     "nothing_public": 0,
+     "of_which_class_not_fully_announced": 0,
+     "of_which_missing_maturing": 0,
+     "settlement_days": 127
+    },
+    "drain_read_on_missing_maturing_bn": 0.0
+   },
+   "1": {
+    "abs_net_bn": 4397.277,
+    "bill": {
+     "absent": 22,
+     "complete": 105,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "coupon": {
+     "absent": 96,
+     "complete": 31,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "day": {
+     "cmb_pending_and_not_otherwise_missing": 0,
+     "cmb_pending_days": 0,
+     "complete_nonzero": 127,
+     "genuine_zero": 0,
+     "net_rests_on_missing": 0,
+     "nothing_public": 0,
+     "of_which_class_not_fully_announced": 0,
+     "of_which_missing_maturing": 0,
+     "settlement_days": 127
+    },
+    "drain_read_on_missing_maturing_bn": 0.0
+   },
+   "2": {
+    "abs_net_bn": 4397.277,
+    "bill": {
+     "absent": 22,
+     "complete": 105,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "coupon": {
+     "absent": 96,
+     "complete": 31,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "day": {
+     "cmb_pending_and_not_otherwise_missing": 0,
+     "cmb_pending_days": 0,
+     "complete_nonzero": 127,
+     "genuine_zero": 0,
+     "net_rests_on_missing": 0,
+     "nothing_public": 0,
+     "of_which_class_not_fully_announced": 0,
+     "of_which_missing_maturing": 0,
+     "settlement_days": 127
+    },
+    "drain_read_on_missing_maturing_bn": 0.0
+   },
+   "3": {
+    "abs_net_bn": 4397.2519999999995,
+    "bill": {
+     "absent": 23,
+     "complete": 104,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "coupon": {
+     "absent": 96,
+     "complete": 31,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "day": {
+     "cmb_pending_and_not_otherwise_missing": 1,
+     "cmb_pending_days": 1,
+     "complete_nonzero": 126,
+     "genuine_zero": 0,
+     "net_rests_on_missing": 0,
+     "nothing_public": 1,
+     "of_which_class_not_fully_announced": 0,
+     "of_which_missing_maturing": 0,
+     "settlement_days": 127
+    },
+    "drain_read_on_missing_maturing_bn": 0.0
+   },
+   "4": {
+    "abs_net_bn": 4375.1939999999995,
+    "bill": {
+     "absent": 23,
+     "complete": 104,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "coupon": {
+     "absent": 96,
+     "complete": 31,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "day": {
+     "cmb_pending_and_not_otherwise_missing": 2,
+     "cmb_pending_days": 2,
+     "complete_nonzero": 126,
+     "genuine_zero": 0,
+     "net_rests_on_missing": 0,
+     "nothing_public": 1,
+     "of_which_class_not_fully_announced": 0,
+     "of_which_missing_maturing": 0,
+     "settlement_days": 127
+    },
+    "drain_read_on_missing_maturing_bn": 0.0
+   },
+   "5": {
+    "abs_net_bn": 3899.1339999999996,
+    "bill": {
+     "absent": 23,
+     "complete": 84,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 20
+    },
+    "coupon": {
+     "absent": 96,
+     "complete": 31,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "day": {
+     "cmb_pending_and_not_otherwise_missing": 2,
+     "cmb_pending_days": 5,
+     "complete_nonzero": 106,
+     "genuine_zero": 0,
+     "net_rests_on_missing": 20,
+     "nothing_public": 1,
+     "of_which_class_not_fully_announced": 20,
+     "of_which_missing_maturing": 0,
+     "settlement_days": 127
+    },
+    "drain_read_on_missing_maturing_bn": 0.0
+   }
+  },
+  "2026": {
+   "0": {
+    "abs_net_bn": 2428.0190000000002,
+    "bill": {
+     "absent": 19,
+     "complete": 72,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "coupon": {
+     "absent": 67,
+     "complete": 24,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "day": {
+     "cmb_pending_and_not_otherwise_missing": 0,
+     "cmb_pending_days": 0,
+     "complete_nonzero": 91,
+     "genuine_zero": 0,
+     "net_rests_on_missing": 0,
+     "nothing_public": 0,
+     "of_which_class_not_fully_announced": 0,
+     "of_which_missing_maturing": 0,
+     "settlement_days": 91
+    },
+    "drain_read_on_missing_maturing_bn": 0.0
+   },
+   "1": {
+    "abs_net_bn": 2428.0190000000002,
+    "bill": {
+     "absent": 19,
+     "complete": 72,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "coupon": {
+     "absent": 67,
+     "complete": 24,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "day": {
+     "cmb_pending_and_not_otherwise_missing": 0,
+     "cmb_pending_days": 0,
+     "complete_nonzero": 91,
+     "genuine_zero": 0,
+     "net_rests_on_missing": 0,
+     "nothing_public": 0,
+     "of_which_class_not_fully_announced": 0,
+     "of_which_missing_maturing": 0,
+     "settlement_days": 91
+    },
+    "drain_read_on_missing_maturing_bn": 0.0
+   },
+   "2": {
+    "abs_net_bn": 2428.0190000000002,
+    "bill": {
+     "absent": 19,
+     "complete": 72,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "coupon": {
+     "absent": 67,
+     "complete": 24,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "day": {
+     "cmb_pending_and_not_otherwise_missing": 0,
+     "cmb_pending_days": 0,
+     "complete_nonzero": 91,
+     "genuine_zero": 0,
+     "net_rests_on_missing": 0,
+     "nothing_public": 0,
+     "of_which_class_not_fully_announced": 0,
+     "of_which_missing_maturing": 0,
+     "settlement_days": 91
+    },
+    "drain_read_on_missing_maturing_bn": 0.0
+   },
+   "3": {
+    "abs_net_bn": 2403.0190000000002,
+    "bill": {
+     "absent": 20,
+     "complete": 71,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "coupon": {
+     "absent": 67,
+     "complete": 24,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "day": {
+     "cmb_pending_and_not_otherwise_missing": 1,
+     "cmb_pending_days": 1,
+     "complete_nonzero": 90,
+     "genuine_zero": 0,
+     "net_rests_on_missing": 0,
+     "nothing_public": 1,
+     "of_which_class_not_fully_announced": 0,
+     "of_which_missing_maturing": 0,
+     "settlement_days": 91
+    },
+    "drain_read_on_missing_maturing_bn": 0.0
+   },
+   "4": {
+    "abs_net_bn": 2403.0190000000002,
+    "bill": {
+     "absent": 20,
+     "complete": 71,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "coupon": {
+     "absent": 67,
+     "complete": 24,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "day": {
+     "cmb_pending_and_not_otherwise_missing": 1,
+     "cmb_pending_days": 1,
+     "complete_nonzero": 90,
+     "genuine_zero": 0,
+     "net_rests_on_missing": 0,
+     "nothing_public": 1,
+     "of_which_class_not_fully_announced": 0,
+     "of_which_missing_maturing": 0,
+     "settlement_days": 91
+    },
+    "drain_read_on_missing_maturing_bn": 0.0
+   },
+   "5": {
+    "abs_net_bn": 2123.426,
+    "bill": {
+     "absent": 20,
+     "complete": 58,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 13
+    },
+    "coupon": {
+     "absent": 67,
+     "complete": 24,
+     "complete_zero": 0,
+     "incomplete": 0,
+     "missing_maturing": 0,
+     "unannounced": 0
+    },
+    "day": {
+     "cmb_pending_and_not_otherwise_missing": 1,
+     "cmb_pending_days": 1,
+     "complete_nonzero": 77,
+     "genuine_zero": 0,
+     "net_rests_on_missing": 13,
+     "nothing_public": 1,
+     "of_which_class_not_fully_announced": 13,
+     "of_which_missing_maturing": 0,
+     "settlement_days": 91
+    },
+    "drain_read_on_missing_maturing_bn": 0.0
+   }
+  }
+ },
+ "decision_time": "18:00",
+ "declaration": "metadata/s3c_net_missing_1390.json",
+ "issue": 1390,
+ "label": "development, not a verdict",
+ "last_day": "2026-09-03",
+ "leads": [
+  0,
+  1,
+  2,
+  3,
+  4,
+  5
+ ],
+ "panel_sha256": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+ "states": {
+  "absent": "no auction of the class is on the published schedule at the instant: a genuine zero (nothing settles)",
+  "cmb_pending": "a cash management bill settling that day that was announced after the instant. It is on no published schedule (#738), so nothing at the instant can say it is coming: it is counted in step 1 in hindsight and is NOT part of the state, the flag or the per-forecast log",
+  "complete": "the class is fully announced and an announced record carries a maturing estimate: a reading; a net of exactly 0.0 here is a genuine zero",
+  "day_level": "a settlement day rests on a missing figure when either class is in missing_maturing, incomplete or unannounced",
+  "incomplete": "some auctions of the class settling that day are announced and others on the published schedule are not (#679): the class is left out and reads 0.0",
+  "missing_maturing": "fully announced, no announced record carries a maturing estimate (est_pub_held_mat_by_type_amt null): net_for_day reads the maturing amount as 0.0 and the class drains its whole offering",
+  "source": "repo_model.net_settlement.net_state, per class (bill types, coupon types) of one settlement day at an instant; net_for_day is unchanged and returns the same numbers.",
+  "unannounced": "auctions of the class are on the published schedule and none is announced: the class reads 0.0. Counted with 'incomplete' in the tables of classes not fully announced"
+ }
+}

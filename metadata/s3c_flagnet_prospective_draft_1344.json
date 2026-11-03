@@ -1,0 +1,53 @@
+{
+ "status": "DRAFT, not registered. Drafted by the pull request that closes #1344 for Eleonora to review. Registering it is her GitHub action (`GO #1344`, an entry in metadata/owner_attestations.json citing her own comment, and the file moved or copied to metadata/registrations/ by the registering change); a relayed ruling does not register it. Nothing here is scored, logged or published, and nothing is in force.",
+ "issue": 1344,
+ "hypothesis": "H5 (primary goal): the SOFR - IORB spread distribution in bp. Step 3.",
+ "ruling": "Eleonora, 1 November 2026, chat, relayed on #1344 (ledger item 95): on #1326 question 1, test and diagnose the better arm, (s3c-ann-flagnet); draft its prospective test for her GO.",
+ "scoring_protocol": "docs/decisions/scoring-protocol.md (v1)",
+ "arm": {
+  "name": "sc_s3c_ann_flagnet",
+  "label": "(s3c-ann-flagnet)",
+  "definition": "(s3c-ann) with #1273's announced net beside each announced 0/1 flag: per leg two settlement terms (the flag and the net in units of USD 100 bn), read from the auction announcements public at the decision instant (12:00 America/New_York on announcemt_date, the dating of metadata/settlement_announcement_dating.json), at every lead h = 1..5; everything else is (s3)'s, capped at the Standing Repo Facility line from full allotment as (s3c) is (repo_model.s3c_candidate, margin 0 bp); direct pairs, refit every 21 decision days, Huber fit and ridge as (s3c). Defined in metadata/s3c_flagnet_gross_1321.json and repo_model.s3c_announced.FLAGNET_ARM; frozen at registration by the hash of the code, configuration, inputs and training rule (scoring-protocol.md section 2).",
+  "role": "a secondary candidate (section 2 allows at most two) beside the candidate, not a replacement for it"
+ },
+ "candidate": {
+  "name": "sc_s3c_ann_net",
+  "label": "(s3c-ann-net)",
+  "changes": false,
+  "statement": "The candidate (s3c-ann-net) does not change: docs/research/h5-candidate.json and its declaration are untouched. Whether and how it is registered is a separate act of hers; this draft only adds the arm beside whatever she registers."
+ },
+ "variants": {
+  "sc_s3c_ann_net": {"role": "control", "label": "(s3c-ann-net)", "statement": "The candidate, unchanged; the control the arm is compared with."},
+  "sc_s3c_ann_flagnet": {"role": "secondary candidate", "label": "(s3c-ann-flagnet)", "statement": "The arm this draft proposes to test prospectively; defined under `arm`."}
+ },
+ "days": {
+  "statement": "Prospective confirmation days only (scoring-protocol.md section 1): the business days after the registration, the forecasts produced by the live pipeline at the decision instant and committed with hash and timestamp before the outcome is published. No 2018 to 2025 day and none of the 2026 days (all seen) is scored; the blind tier from 2026-09-04 stays locked until she opens it at a checkpoint, an attested action each time (scoring-protocol.md, item 3 of the amendments). Checkpoints at 60, 125 and 250 confirmation days, alpha spent by Lan-DeMets O'Brien-Fleming (nominal one-sided levels from scoring_protocol.nominal_levels)."
+ },
+ "scoring": {
+  "statement": "Under scoring protocol v1: primary score grid CRPS (23 levels) averaged over h = 1..5, one number per decision day; key secondary upper-tail twCRPS (weight 1{z > 0 bp}); reported, not decision rules: Brier P(> +5 bp) and P(> +10 bp), coverage, PIT. d = S(benchmark) - S(arm), skill = mean(d)/mean(S(benchmark)), studentized stationary bootstrap, mean block 10, 10,000 draws (100,000 at interim checkpoints), one-sided 95% at the checkpoint's nominal level. The arm is tested against B1 and B2 exactly as a secondary candidate is (supported needs a win over both and the point skill at least the MME of 3% against B1). The comparison with the candidate (S(candidate) - S(arm), same machinery) is a reported comparison, no rule, printed beside the verdict as the protocol prints B3 (ruling of 19 October 2026, #768): it has no efficacy or futility rule and changes nothing registered."
+ },
+ "multiplicity": {
+  "statement": "Section 8: no correction for the primary candidate; Holm across the secondaries and the key secondary metric. With the arm registered as the one secondary, the Holm family of the hypothesis is the candidate's key secondary, the arm's primary score and the arm's key secondary: three tests (the arm against B1 and against B2 is one test per metric, as for the candidate: both legs must clear). The result page states the cost of the family: the critical value of each look at alpha/1, alpha/2 and alpha/3. The development variant count to date is published with the registration (#1321 tested two arms; #1319 none; #1288 two; #1273 one). The comparison with the candidate is outside the family (a reported comparison). Whether the family is these three is a reading of section 8 and is marked as a question on the page.",
+  "family": ["candidate: upper-tail twCRPS", "arm: grid CRPS (primary)", "arm: upper-tail twCRPS"],
+  "alpha": 0.05
+ },
+ "power": {
+  "statement": "Stated on the result page (docs/research/s3c-flagnet-diagnosis-1344-result.md, section 'Power of the prospective comparison') from docs/research/s3c-flagnet-diagnosis-1344/result.json: the power of the arm against the candidate at 125 and 250 confirmation days, at the observed development effect and at skills of 0.5%, 1% and 3%, at family sizes 1, 2 and 3, and the days needed for 80%. It is a development estimate; no minimum power is set here. The protocol's own MME (3% against B1) and the power study for the candidate against B1 and B2 (#656, #886) are the candidate's and are not restated for the arm.",
+  "source": "docs/research/s3c-flagnet-diagnosis-1344/result.json, key power"
+ },
+ "dependencies": [
+  "The live pipeline must log the arm's forecast every business day (scripts/live_record.py, the live pin of metadata/live_pin.json). Neither (s3c-ann-net) nor the arm is logged live today as far as this draft checked; adding a producer and moving the pin are hers (docs/decisions/live-pin.md) and are not part of this draft.",
+  "A registration needs the coverage report of the arm on its development walk (scoring-protocol.md amendment 4) once that amendment is in force; it has not been run for the arm.",
+  "The announcement dating of the settlement terms is off in every published declaration (question 2 of #1326, default off). This draft reads the announcements at the decision instant as (s3c-ann-net) does, which is the candidate's own reading; it does not turn the dating on in any declaration in force."
+ ],
+ "registration": {
+  "by": "GO #1344, Eleonora's own GitHub comment",
+  "registered": false,
+  "statement": "Not registered. The registering change adds the declaration under metadata/registrations/, appends the owner attestation, and is hers; this draft changes no decision record, lockbox, live pin or published record."
+ },
+ "not_checked": [
+  "The live producer and the pin (above).",
+  "The coverage report of the arm.",
+  "Lens E item G: the 12:00 announcement time of a cash management bill is unverified; the arm's bill flag and net bill carry it."
+ ]
+}

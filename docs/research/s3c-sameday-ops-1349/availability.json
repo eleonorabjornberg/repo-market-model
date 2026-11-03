@@ -1,0 +1,176 @@
+{
+ "caveat": "lastUpdated is the Desk's last write, not a stated publication time: the Desk states no clock time for its results, and the reading assumes the API serves a record from the time it is written, which cannot be verified from outside",
+ "decision_time": "18:00",
+ "issue": 1349,
+ "last_day": "2026-09-03",
+ "on_rrp": {
+  "by_year": {
+   "2018": {
+    "dates": 249,
+    "public": 247
+   },
+   "2019": {
+    "dates": 250,
+    "public": 249
+   },
+   "2020": {
+    "dates": 251,
+    "public": 249
+   },
+   "2021": {
+    "dates": 250,
+    "public": 247
+   },
+   "2022": {
+    "dates": 249,
+    "public": 248
+   },
+   "2023": {
+    "dates": 249,
+    "public": 248
+   },
+   "2024": {
+    "dates": 250,
+    "public": 250
+   },
+   "2025": {
+    "dates": 249,
+    "public": 249
+   },
+   "2026": {
+    "dates": 169,
+    "public": 169
+   }
+  },
+  "close_to_write_minutes": {
+   "max": 350.5,
+   "median": 0.85,
+   "operations": 2174,
+   "p99": 9.266666666666667
+  },
+  "closest_public_write": {
+   "date": "2024-10-16",
+   "last_write": "2024-10-16 16:50:30"
+  },
+  "first": "2018-01-02",
+  "last": "2026-09-03",
+  "margin_minutes_of_closest_public_write": 69.5,
+  "operation_dates": 2166,
+  "public_by_16": 2154,
+  "public_by_decision": 2156,
+  "share_public": 0.9953831948291783,
+  "withheld": [
+   {
+    "date": "2018-03-29",
+    "last_write": "2023-09-27 14:15:30"
+   },
+   {
+    "date": "2018-12-04",
+    "last_write": "2023-09-27 15:33:00"
+   },
+   {
+    "date": "2019-04-18",
+    "last_write": "2023-09-27 14:11:30"
+   },
+   {
+    "date": "2020-04-09",
+    "last_write": "2023-09-27 14:10:30"
+   },
+   {
+    "date": "2020-07-02",
+    "last_write": "2023-09-27 14:05:01"
+   },
+   {
+    "date": "2021-04-01",
+    "last_write": "2023-09-27 14:23:30"
+   },
+   {
+    "date": "2021-09-03",
+    "last_write": "2021-09-16 10:55:30"
+   },
+   {
+    "date": "2021-09-10",
+    "last_write": "2021-09-16 10:50:30"
+   },
+   {
+    "date": "2022-11-17",
+    "last_write": "2024-11-13 15:49:00"
+   },
+   {
+    "date": "2023-01-05",
+    "last_write": "2023-01-13 16:57:00"
+   }
+  ],
+  "write_hour_max": 16.841666666666665,
+  "write_hour_median": 13.26388888888889,
+  "write_hour_p99": 13.361666666666666
+ },
+ "reading": "both sources are used",
+ "rule": "a date's figure is public at the decision instant of its own day when the latest lastUpdated of its records is at or before 18:00 New York on that day; a date written later (or rewritten later) is withheld and reads as no take-up",
+ "srf": {
+  "by_year": {
+   "2021": {
+    "dates": 107,
+    "public": 105
+   },
+   "2022": {
+    "dates": 249,
+    "public": 249
+   },
+   "2023": {
+    "dates": 249,
+    "public": 248
+   },
+   "2024": {
+    "dates": 250,
+    "public": 250
+   },
+   "2025": {
+    "dates": 249,
+    "public": 249
+   },
+   "2026": {
+    "dates": 169,
+    "public": 169
+   }
+  },
+  "close_to_write_minutes": {
+   "max": 217.0,
+   "median": 0.7,
+   "operations": 1589,
+   "p99": 5.5
+  },
+  "closest_public_write": {
+   "date": "2023-03-22",
+   "last_write": "2023-03-22 17:22:00"
+  },
+  "first": "2021-07-29",
+  "last": "2026-09-03",
+  "margin_minutes_of_closest_public_write": 38.0,
+  "operation_dates": 1273,
+  "public_by_16": 1268,
+  "public_by_decision": 1270,
+  "share_public": 0.997643362136685,
+  "withheld": [
+   {
+    "date": "2021-09-03",
+    "last_write": "2021-09-16 10:53:00"
+   },
+   {
+    "date": "2021-09-10",
+    "last_write": "2021-09-16 10:46:30"
+   },
+   {
+    "date": "2023-05-11",
+    "last_write": "2023-05-12 09:29:30"
+   }
+  ],
+  "write_hour_max": 17.366666666666667,
+  "write_hour_median": 13.761388888888888,
+  "write_hour_p99": 13.783333333333333
+ },
+ "used": [
+  "on_rrp",
+  "srf"
+ ]
+}
