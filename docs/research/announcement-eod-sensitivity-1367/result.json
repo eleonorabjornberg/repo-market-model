@@ -1,0 +1,102 @@
+{
+ "announcements": 3828,
+ "baseline": "docs/research/s3c-ann-net-1800-1314/announced-settlement-1800.json",
+ "declared_instant": "12:00",
+ "headline": {
+  "2026": {
+   "grid_crps": {
+    "declared_12_00": {
+     "mean_bp": 1.6685241749689974,
+     "skill_against_b1": 0.2274151957621284,
+     "skill_interval": [
+      0.0044404151732001795,
+      0.35707595979270074
+     ]
+    },
+    "end_of_day": {
+     "mean_bp": 1.6685161323191655,
+     "skill_against_b1": 0.22741891978910944,
+     "skill_interval": [
+      0.004440979919732468,
+      0.357081573608215
+     ]
+    },
+    "mean_change_bp": -8.042649831896398e-06,
+    "skill_change": 3.724026981039019e-06
+   },
+   "upper_tail_twcrps": {
+    "declared_12_00": {
+     "mean_bp": 0.5142206574896756,
+     "skill_against_b1": 0.3770413962147782,
+     "skill_interval": [
+      0.23617326910319922,
+      0.5185572585449697
+     ]
+    },
+    "end_of_day": {
+     "mean_bp": 0.514215338385589,
+     "skill_against_b1": 0.3770478401053672,
+     "skill_interval": [
+      0.23617910421725968,
+      0.5185575384209928
+     ]
+    },
+    "mean_change_bp": -5.319104086631832e-06,
+    "skill_change": 6.443890588958556e-06
+   }
+  },
+  "development": {
+   "grid_crps": {
+    "declared_12_00": {
+     "mean_bp": 1.6011621706422636,
+     "skill_against_b1": 0.30045987549075814,
+     "skill_interval": [
+      0.23989810583441917,
+      0.42959504451908814
+     ]
+    },
+    "end_of_day": {
+     "mean_bp": 1.6008653742393468,
+     "skill_against_b1": 0.3005895444252704,
+     "skill_interval": [
+      0.24025872521411298,
+      0.4301597219692703
+     ]
+    },
+    "mean_change_bp": -0.0002967964029167991,
+    "skill_change": 0.00012966893451227257
+   },
+   "upper_tail_twcrps": {
+    "declared_12_00": {
+     "mean_bp": 0.8447116415214198,
+     "skill_against_b1": 0.3856771428322187,
+     "skill_interval": [
+      0.3102209234959725,
+      0.5237978910506669
+     ]
+    },
+    "end_of_day": {
+     "mean_bp": 0.8445982515387075,
+     "skill_against_b1": 0.38575960654496,
+     "skill_interval": [
+      0.31035913419032524,
+      0.5240275148290129
+     ]
+    },
+    "mean_change_bp": -0.00011338998271226419,
+    "skill_change": 8.24637127412875e-05
+   }
+  }
+ },
+ "immediate_release_announcements": 163,
+ "issue": 1367,
+ "label": "development, not a verdict",
+ "panel_sha256": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+ "result": {
+  "any_score_changes": true,
+  "candidate_leaves_changed": 14477,
+  "leaves_changed": 23128,
+  "leaves_compared": 51764
+ },
+ "variant_instant": "23:59:59 on announcemt_date"
+}

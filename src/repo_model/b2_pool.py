@@ -86,11 +86,13 @@ def b2_fallback_forecast(
     pool_min: int = POOL_MIN,
     chains: Mapping[str, Sequence[str]] = CHAINS,
     used: Optional[Dict[int, Tuple[str, int]]] = None,
+    years: int = pb.B2_YEARS,
 ) -> Dict[int, List[float]]:
     """§4 B2 with the fallback: the trailing year's spreads on days of the pool `choose_pool` picks, per lead.
 
     `splits` is whatever `turn_days.reporting_day_type` reads (a `turn_days.TurnLabels` for the turn definition). When `used`
-    is given it is filled with `{lead: (pool, rows)}`.
+    is given it is filled with `{lead: (pool, rows)}`. `years` is the lookback in calendar years (B2 in force: `protocol_benchmarks.B2_YEARS`, one;
+    B2*, #1420: `protocol_benchmarks.B2STAR_YEARS`, two).
 
     Raises:
         ProtocolError: as `protocol_benchmarks.b2_forecast`, but only for a window with no row at all.
@@ -100,7 +102,7 @@ def b2_fallback_forecast(
 
     anchor = pb._anchor(panel, decision_index, registry, decision_time)
     dates = [row.date for row in panel]
-    first = pb._window_start(panel, decision_index, pb.B2_YEARS)
+    first = pb._window_start(panel, decision_index, years)
     kinds = {s: turn_days.reporting_day_type(splits, panel[s].date, panel[s].values) for s in range(first, anchor + 1)}
     counts: Dict[str, int] = {}
     for kind in kinds.values():

@@ -76,8 +76,7 @@ point-in-time and model-risk controls, and specified the evaluation protocol and
 plan. I make the methodological decisions this repository records: what may count as a zero,
 what a purge must guarantee, which calibration is adopted, and whether a phase has reached its exit
 criterion. AI coding agents implement much of the code, one session per pull request, and nothing
-lands on `main` without CI and my review. Nicholas Beroud advises on the
-funding market itself — which public series carry its mechanics and what they mean — and is not
+lands on `main` without CI and my review. Nicholas Beroud advised on a few issues and is not
 a co-owner of the code.
 
 ## Results and limitations

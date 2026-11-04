@@ -58,6 +58,42 @@ def b1_calendar_forecast(
         LookAheadError: a row read after the anchor (`protocol_benchmarks._require_public`).
     """
 
+    return _forecast(panel, decision_index, registry=registry, decision_time=decision_time, splits=splits, from_anchor=False)
+
+
+def b1_calendar_anchor_forecast(
+    panel: Sequence[DailyObservation],
+    decision_index: int,
+    *,
+    registry: Mapping[str, Mapping[str, object]],
+    decision_time: time,
+    splits: SplitDeclaration,
+) -> Dict[int, List[float]]:
+    """B1'*: B1' with the change window anchor-to-target (#1388; development tier, `metadata/b1_anchor_horizon_1388.json`).
+
+    The changes are `spread[e] - last_ordinary[e - h - lag]` over the trailing two years up to the anchor, where `lag` is the
+    decision row less the anchor row (`protocol_benchmarks.anchor_lag`). The centre, the pool by the target day's type and the
+    floor of `POOL_MIN` are B1''s. It is not a benchmark of the protocol; whether it replaces B1' is Eleonora's.
+
+    Raises:
+        ProtocolError: no ordinary day at or before the anchor, or a lead with no change in the window.
+        LookAheadError: a row read after the anchor (`protocol_benchmarks._require_public`).
+    """
+
+    return _forecast(panel, decision_index, registry=registry, decision_time=decision_time, splits=splits, from_anchor=True)
+
+
+def _forecast(
+    panel: Sequence[DailyObservation],
+    decision_index: int,
+    *,
+    registry: Mapping[str, Mapping[str, object]],
+    decision_time: time,
+    splits: SplitDeclaration,
+    from_anchor: bool,
+) -> Dict[int, List[float]]:
+    """B1' (`from_anchor` False: each change spans h rows) and B1'* (True: it spans h plus the anchor's lag)."""
+
     anchor = pb._anchor(panel, decision_index, registry, decision_time)
     dates = [row.date for row in panel]
     ordinary = last_ordinary_rows(panel, splits, anchor)
@@ -69,16 +105,19 @@ def b1_calendar_forecast(
     def kind_of(s: int) -> str:
         return turn_days.reporting_day_type(splits, panel[s].date, panel[s].values)
 
+    lag = decision_index - anchor if from_anchor else 0
+    name = "B1'*" if from_anchor else "B1'"
     out = {}
     for h in HORIZONS:
+        span = h + lag
         kind = kind_of(decision_index + h)
-        ends = [s for s in range(max(first, h), anchor + 1) if ordinary[s - h] is not None]
+        ends = [s for s in range(max(first, span), anchor + 1) if ordinary[s - span] is not None]
         if not ends:
-            raise ProtocolError(f"B1' has no {h}-day change before {dates[anchor]}")
+            raise ProtocolError(f"{name} has no {span}-day change before {dates[anchor]}")
         same = [s for s in ends if kind_of(s) == kind]
         rows = same if len(same) >= POOL_MIN else ends
-        pb._require_public(rows + [ordinary[s - h] for s in rows], anchor, dates,
-                           f"B1' for {dates[decision_index]}, lead {h}")
-        changes = sorted(panel[s].spread_bps - panel[ordinary[s - h]].spread_bps for s in rows)
+        pb._require_public(rows + [ordinary[s - span] for s in rows], anchor, dates,
+                           f"{name} for {dates[decision_index]}, lead {h}")
+        changes = sorted(panel[s].spread_bps - panel[ordinary[s - span]].spread_bps for s in rows)
         out[h] = pb.empirical_quantiles(changes, centre)
     return out

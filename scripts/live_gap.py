@@ -13,8 +13,8 @@ whose forecast reaches a gap day (`live_score.gap_decision_days`), it keeps the
 rows dated before that day and runs the declared models, baselines and
 distributions exactly as the day's live run does after its build
 (`forecast_day`). What each forecast may read is the as-of rule's
-(`docs/decisions/information-set.md`): every read is priced at the day's 16:00
-ET decision instant, field by field, and a read off a placeholder row is
+(`docs/decisions/information-set.md`): every read is priced at the day's decision
+instant of the pinned code (`live.DECISION`: 16:00 ET until #1368 moved the live code to 18:00), field by field, and a read off a placeholder row is
 refused (`require_reads_on_real_rows`), as in the live run and the final test.
 The panel is not cut at each decision instant: a latest-vintage source (FRED's
 IORB, reserves and TGA) is available only from its snapshot's retrieval, so a

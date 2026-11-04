@@ -359,7 +359,8 @@ class PanelTests(unittest.TestCase):
         self.assertEqual(argv[0], "build")
         self.assertEqual([argv[i + 1] for i, a in enumerate(argv) if a == "--column"],
                          list(live.BUILD_COLUMNS))
-        self.assertEqual(argv[argv.index("--decision-time") + 1], "16:00:00")
+        self.assertEqual(argv[argv.index("--decision-time") + 1], live.DECISION.isoformat(timespec="seconds"))
+        self.assertEqual(live.DECISION.isoformat(), "18:00:00")  # the instant in force (#1368)
 
     def test_an_archived_panel_is_registered(self):
         self.assertEqual(self.registered()["panel_sha256"], self.provenance["panel_sha256"])
