@@ -528,6 +528,11 @@
     "url": "https://github.com/eleonorabjornberg/repo-market-model/blob/main/metadata/satiation_distance_598.json"
   },
   "nyfed_pd_financing": {
+    "same_release_as": {
+      "issue": 1296,
+      "study_file": "metadata/sources_pd_financing_1296.json",
+      "what": "The #1296 study keeps its own declaration of this id, for the four Treasury totals it reads from a fuller snapshot. Both are kept (her ruling of 4 November 2026, #1457); tests/test_pd_financing_declarations_1457.py fails, naming both files, if they differ on the release lag, the publication instant, the provider, a shared series or the staleness bound."
+    },
     "access": "public",
     "identities": [],
     "structural_zeros": [],
