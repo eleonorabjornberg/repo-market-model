@@ -461,7 +461,9 @@ def render(r: dict) -> str:
         "It is development data on days already seen. It does not adopt the label, change the frozen candidate or settle the data meaning of `tax_date`. The October windows "
         "are few days (see the group sizes above); a group below the study's minimum is not tested and is listed with its size in `result.json`. The model's level still "
         "counts an October-window day as an ordinary day, as the control does; a level that also skips those days is a different arm and was not run. B2 and the calendar "
-        "ranker, which #965 tested, are not re-run.",
+        "ranker, which #965 tested, are not re-run. The label changes the fitted `tax_date` term, so the arm's forecast differs from the control's on days far from any October "
+        "window (the count is stated under each window's heading); a pooled move is therefore not a move on the October windows, and the October-window rows are the ones "
+        "that speak to the label. Where the leave-out reading is below the minimum group size it is not read, and the means beside it are descriptive only.",
         "",
         "Every figure on this page is in [`result.json`](s3c-ann-net-october-1455/result.json).",
         "",
