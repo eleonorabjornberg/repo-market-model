@@ -1,0 +1,72 @@
+{
+ "status": "declared by the pull request that closes #1342 before any score was computed; a development comparison, never a verdict. It scores the variant carry_bounded_v2 that metadata/s3c_pd_1329.json declared and left unscored. Nothing is registered or published; the record of #1296 (docs/research/s3c-pd-1296-result.md, docs/research/s3c-pd-1296/result.json) is not edited and stands as made, at 16:00 with the unbounded read; metadata/s3c_pd_1329.json and metadata/s3c_pd_1296.json are not edited either.",
+ "issue": 1342,
+ "predecessors": ["#1296", "#1329", "#1332", "#1340", "#1341"],
+ "ruling": "Eleonora, 1 November 2026 (chat, relayed on #1340; ledger item 93): option (a), queued as #1342 after #1341. #1341 merged on 3 November 2026 under her GO #1341: it added the decision-day check to the weekly-carry bound (docs/decisions/weekly-carry.md, 'The bound also runs from the decision day') and made scripts/s3c_pd_1296.py read the state at the walk's own instant.",
+ "hypothesis": "H5 (primary goal): the SOFR - IORB spread distribution in bp. Step 3, an arm on the candidate (s3c) with a public source already tracked. Development tier",
+ "target": "spread_bps at the scored day, in basis points, as a 23-quantile distribution at each lead h = 1..5 (scoring_protocol.GRID)",
+ "question": "Was #1296's loss for the primary dealers' financing level a loss of the input, or of how stale the level it read could be? Score (s3c-pd) once with the weekly-carry bound on, at 18:00, and read it against (s3c-ann-net) and (s3c).",
+ "variant": "carry_bounded_v2",
+ "decision_instant": "18:00 America/New_York on the decision day (repo_model.decision_instant.DECISION_TIME, #1312), pinned explicitly: the run's decision_time is checked against it and the study modules run under decision_instant_pinned (#1321's context). The state is read at that instant (s3c_pd.decision_states with decision_time=DECISION_TIME), and so is the walk. At 18:00 the FR 2004 week released at 16:30 on a Thursday is public the same day.",
+ "anchor": "the bound of docs/decisions/weekly-carry.md as #1341 amended it and repo_model.s3c_pd implements it with its defaults: a level is no level when it is more than data.WEEKLY_CARRY_MAX_STALENESS_DAYS days older than the latest public week, and the whole state is unknown once the newest public week is older than that many days from the decision day plus the source's declared release lag (the decision day is more than that many days after the day the newest week was released). The number is the panel's constant (s3c_pd.MAX_CARRY_DAYS is that constant, not a copy); nothing is chosen for this study.",
+ "arms": [
+  {
+   "name": "sc_s3c_pd_bounded",
+   "label": "(s3c-pd), bounded",
+   "role": "repo_model.s3c_pd.walk with states from s3c_pd.decision_states at the 18:00 instant and the default bound; (s3)'s fit with the state term added, the Huber fit, the ridge of 5, the SRF cap at full allotment as (s3c) applies it. Walked over the same decision days and with the same refit schedule as (s3), and the (s3) re-forecast inside the walk must equal the frame's (s3) cell for cell or the run stops."
+  }
+ ],
+ "references": [
+  {"name": "sc_s3c_ann_net", "label": "(s3c-ann-net)", "role": "named by the directive; walked as #1321 and #1356 walked it, at 18:00 (it holds the scarcity state constant)"},
+  {"name": "sc_s3c", "label": "(s3c)", "role": "the H5 candidate; named by the directive"},
+  {"name": "B1", "label": "B1", "role": "scored beside them (means only)"},
+  {"name": "B1_prime", "label": "B1'", "role": "scored beside them (means only)"},
+  {"name": "B2", "label": "B2", "role": "scored beside them (means only)"}
+ ],
+ "models": ["B1", "B1_prime", "B2", "sc_s3c", "sc_s3c_ann_net", "sc_s3c_pd_bounded"],
+ "comparisons": "(s3c-pd), bounded, against (s3c-ann-net) and against (s3c), paired, on all decision days, by lead, by regime, by pressure-day type of the target day and by the state class of the decision day; both windows, so the 2026 days are separate. Beside them, as context and not as a test, the page quotes #1296's published figures for (s3c-pd) against (s3c): they were made at 16:00 with the unbounded read, so they differ from this study in the instant and in the bound, and no paired test between the two records is made.",
+ "state_classes": {
+  "fresh": "the state is defined and the level read is the latest public week's own (no withheld week is carried over): s3c_pd.skipped_weeks is 0. This is the 'days where the state is fresh' of the directive.",
+  "carried": "the state is defined and the level read is older than the latest public week, carried over withheld weeks and within the bound (one withheld week, 7 days).",
+  "removed_by_bound": "the state would be defined on the unbounded read of #1296 and is not defined on the bounded one: the bound (or the decision-day check) turned the term to 0 on that day. These are the days on which (s3c-pd), bounded, is (s3c) up to the refit.",
+  "no_state": "no state on either read: fewer than the minimum of defined weeks in the year before the level read, a flat year, or no public week."
+ },
+ "primary": {
+  "metric": "grid CRPS (23 levels) averaged over leads h = 1..5",
+  "key_secondary": "upper-tail twCRPS (weight 1{z > 0 bp})",
+  "pressure_probability": "the Brier score of P(spread > +5 bp), as in #1356",
+  "calibration": "the central 90% band's coverage is reported as a mean, not tested"
+ },
+ "scoring": {
+  "scorer": "repo_model.scoring_protocol (#655), the development tier: no verdict, no registration",
+  "test": "scoring_protocol.paired_tests, the studentized stationary bootstrap (ruling 1), mean block 10 business days, 10,000 draws, seed 1342, two-sided 90% interval (the lower end is the one-sided 95% bound); a reading is taken from the mean-d bound (her ruling on #1009), with the skill interval beside it; where the studentized bound cannot be computed the unstudentized interval of mean d is given beside it and no reading is taken from it. Lens C's caveat (the lag-10 HAC standard error is understated about 2x after 2020) is printed on the page.",
+  "splits": "all decision days; by lead; by regime; by pressure-day type of the target day; by the state class of the decision day. Both windows: the development window of #1145 and #1241 (targets to 2025-12-31) and the 2026 development days of #1229 (targets 2026-01-02 to 2026-09-03). A group of fewer than 20 days is listed and not tested; a group in which two models score alike on every day is listed as identical.",
+  "seed": 1342
+ },
+ "pairs": "direct: every walk is trained on direct pairs (s3c_pd.walk, training_pairs = 'direct', guarded by one_step_guard with no allow-list entry; ONE_STEP_ALLOW_LIST is not changed). No gradient-boosted fit is called, so no producer is added to the provisional calendar register.",
+ "frame": {
+  "windows": "the two windows of #1255. The blind tier and every lockbox day are refused by the frames' own guards.",
+  "walk": "the walk runs over every panel day whose fifth target is on or before 2026-09-03, refit every 21 decision days, as #1296 ran it; a decision day of a frame that the walk lacks is an error, not a skip."
+ },
+ "checks_reported": [
+  "(s3) of the state walk against the frame's (s3), cell for cell (the run stops otherwise)",
+  "(s3c) and (s3c-ann-net) against #1321's record (made at 18:00): the pooled means agree to 1e-9, or the run refuses to write",
+  "the decision days by state class, the age of the level read against the bound, and the cells on which (s3c-pd), bounded, differs from (s3c)",
+  "the largest age of any level read, which the run refuses to exceed past the bound"
+ ],
+ "reading_rules": [
+  "A figure is a check on days that were already seen. Nothing here is a verdict, nothing is registered and no choice is made on it; (s3c-ann-net) stays the candidate of avenue #1318 and (s3c) the H5 candidate until she rules.",
+  "A gain or loss is read from the 90% interval of mean d excluding zero; a group that is identical is not a gain or a loss.",
+  "On the days the bound removed, (s3c-pd), bounded, is (s3c) up to the refit, so a pooled figure moves toward (s3c) by construction. The page reads the fresh-state days beside the pooled figure for that reason.",
+  "If the candidate should change, that goes to her as a marked question on the page, with numbered options and a default."
+ ],
+ "limits": {
+  "last_day": "2026-09-03",
+  "named_candidate": "unchanged; docs/research/h5-candidate.json is not changed",
+  "preregistration": "scripts/final_test_preregistration.py is not touched; metadata/sources.json is not edited",
+  "allow_list": "repo_model.one_step_guard.ONE_STEP_ALLOW_LIST is not changed",
+  "records": "docs/runs/ is not touched; the record of #1296, metadata/s3c_pd_1296.json and metadata/s3c_pd_1329.json are not edited"
+ },
+ "long_run": "cloud: one (s3c-ann-net) walk and one state walk per window plus the paired tests; #1296 took about 25 minutes. If the measured time exceeds about two hours the run goes to her Mac with a needs-mac comment (.claude/skills/long-run).",
+ "declared_before_any_score": true
+}
