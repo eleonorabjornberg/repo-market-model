@@ -1,0 +1,54 @@
+{
+ "status": "declared by the pull request that closes #1444 before any score was computed. A development study and a scratch measurement, never a verdict. Nothing is registered, published or adopted: no record in docs/runs/ is edited, the live record and its pin do not change, docs/research/h5-candidate.json does not change, the frozen candidate (s3c-ann-net) does not change, and a model trained on the back-fill stays a scratch measurement until a later decision of hers (docs/decisions/information-set.md, back-fill amendment, item 3).",
+ "issue": 1444,
+ "ruling": "Eleonora, 26 October 2026, chat, relayed (ledger item 56 on #1116, option 1, recommended): IOER/IORB on back-filled rows is admitted as training history only, on the same terms as the back-filled SOFR; then the scratch measurement is queued. The amendment merged as #1230 / PR #1268 (her GO #1263). The measurement is the avenue of #1223; the directive was filed on 4 November 2026 on her request.",
+ "hypothesis": "H4 (longer history fixes part of 2018-19), step 3 (training history), measured on the H5 candidate (s3c-ann-net). Development tier.",
+ "arms": {
+  "control": "(s3c-ann-net) as it is in #1288 / #1319 / #1314: the published panel from 2018-04-03, the walk of scripts/s3c_announced_settlement_1288.py unchanged, read at the 18:00 decision instant.",
+  "arm": "(s3c-ann-net+bf): the same model, the same decision days, the same refit days, the same cap at the SRF line, on the extended panel (the back-filled rows 2014-08-22 to 2018-03-29 before the published rows) in every training frame. The training frames are extended back to 2014-08-22 from a scratch panel built by scripts/backfill_history.py panel and blanked by scripts/backfill_h5_726.py's `established_panel` to the admitted series (SOFR, TGCR, BGCR, IORB; metadata/backfill_posting.json) and the calendar columns."
+ },
+ "back_filled_rows": {
+  "rule": "a back-filled row carries the date, SOFR, IORB, TGCR, BGCR and the calendar columns the extended panel computes for it (quarter_end, tax_date, days_to_month_end). Every other cell is blank, and `require_backfilled_admitted` refuses a panel whose back-filled rows carry any other value.",
+  "settlement_terms_not_fitted": "The two settlement terms (net coupon and net bill settlement, sized in USD 100 bn) are not fitted on back-filled rows: a back-filled row has no settlement column (blank, information-set.md back-fill amendment item 4) and the auction records the net is built from start in 2018, so a back-filled pair read as 'no settlement' would teach the model that settlement days are ordinary days.",
+  "market_holiday_terms_not_fitted": "Found while building, before any score: the pinned market holiday table (metadata/market_holidays.json, sha256 in repo_model.data) starts on 2018-01-01, and `month_end` (the month's last two business days) and `post_month_end_window` (the first three business days) are computed from it. They are not fitted on back-filled rows either, the same treatment as the settlement terms. The table is not extended: that is a data decision of hers. `quarter_end` is the extended panel's own calendar column (a weekday rule before 2018, scripts/backfill_history.py), `tax_date` its own column, `dom_19_23` a function of the date.",
+  "how": "A two-stage refit of each lead, in the script. Stage 1 fits the arm's own terms (Huber, ridge 5, settlement terms sized by net, state held at its maximum: scripts' `s3c_announced.ANN_NET_ARM`) with `fit_state_terms` on the pairs whose target row is a published row only; its effects of the four terms of the second group above are kept. Stage 2 fits the three terms known on back-filled rows (quarter_end, tax_date, dom_19_23) with `fit_state_terms` on every pair, back-filled targets included, on the standardised residual net of the stage-1 effects of the four kept terms where the pair's row carries them (a back-filled pair has no such flags and is left as it is). The estimate that forecasts reads the stage-2 effects of the three terms, the stage-1 effects of the four, and the stage-2 pool (the standardised residual after all of them). Both stages train on direct pairs (`training_pairs='direct'`); the one-step guard is not met, no allow-list entry is used or added.",
+  "consequence": "A back-filled settlement or month-end day is not flagged, so its residual stays in the pool and in the quarter-end, tax and day-of-month fits: the pool is wider and those three terms are fitted against an omitted-variable contamination. The measurement includes that cost; it is the price of reading no settlement or holiday information the information set does not admit. Reported beside the result."
+ },
+ "guards": {
+  "every fit": "`backfill.require_posting_established` and `backfill.require_series_admitted` on a fold built from every refit (training start, training end = the anchor of the refit's first decision day) with the series the fit reads (`backfill.series_read` of the spread and the calendar terms: SOFR and IORB), against metadata/backfill_posting.json.",
+  "every scored decision": "`backfill.require_training_only`: the scored day and its feature date are published days.",
+  "panel": "`require_backfilled_admitted` (726's) on the extended panel, and the published rows of the extended panel equal the published panel's cell for cell in the fields the model reads; a difference refuses the run.",
+  "term fit": "`require_published_targets` refuses a stage-1 pair whose target row is a back-filled row (LookAheadError)",
+  "lockbox and window": "no day after 2026-09-03 (`exploration.require_exploratory_window`; the frames refuse a locked day); no back-filled day is scored.",
+  "instant": "refused unless the repository's decision instant is 18:00."
+ },
+ "frame": "the frames, decision days, refit days, seeds and draws of #1288 (seed 1288, `scoring_protocol.DRAWS`, block `scoring_protocol.BLOCK_LENGTH`); the two windows of #1288, the development window (targets to 2025-12-31) and the 2026 development days. The extended walk starts at the control's first forecast day (the first scored decision day is the control's), so that the refit days are the control's refit days; a different refit day set refuses the run.",
+ "scoring": {
+  "protocol": "scoring protocol v1: grid CRPS averaged over h = 1 to 5 (primary), upper-tail twCRPS (key secondary), the Brier score of P(spread > +5 bp), at 18:00, on the same scored days as the control.",
+  "comparisons": "(s3c-ann-net+bf) against (s3c-ann-net), and each arm against B1'* (`b1_calendar.b1_calendar_anchor_forecast`, on the published panel), paired by decision day, the studentized stationary bootstrap of `scoring_protocol.paired_tests` through `scripts/spread_mr_variants_761.py` `run_pairs` as #1288 runs it; d = the reference's score less the arm's (positive favours the arm), as in #1288's paired rows.",
+  "splits": "pooled; by lead; by regime of metadata/evaluation_splits.json, naming 2018-19 (the headline); 2018 H2 (targets 2018-07-01 to 2018-12-31, a declared sub-window of 2018-19); by pressure-day type; by target-day type. The two quarter-end targets 2018-09-28 and 2018-12-31 are named cell by cell, at each lead.",
+  "coverage": "the closed central 90% band (q0.05 to q0.95) hit rate of each arm on the 2018-19 targets, and its move with an interval, beside the scores.",
+  "terms": "per refit and lead, which terms entered each arm's fit and the flagged-pair count of each; the first refit at which quarter_end entered, for the control and the arm.",
+  "second_window": "the 2026 development days (targets 2026-01-02 to 2026-09-03), where back-filled history reaches the fits only as the oldest part of a long frame; reported as a check that the extension costs nothing there."
+ },
+ "reading_rules": {
+  "gain": "on 2018-19, the studentized 90% interval of d (control less arm) on the grid CRPS lies wholly above zero",
+  "cost": "in any regime or in the pooled window, the studentized 90% interval of d (control less arm) lies wholly below zero",
+  "otherwise": "undecided",
+  "kill": "H4's kill rule, read in words and labelled development, not a verdict: extended training moves 2018-19 calibration by less than its interval",
+  "scope": "development data never gives a verdict; the result goes to the validation report's known limits and changes nothing the project claims, and the frozen candidate does not change."
+ },
+ "pairs": "direct, as in #1288 and #1273: the fit is `spread_mr_state_calendar.fit_state_terms`, decorated with `one_step_guard.guard_one_step_fit`, called with `training_pairs='direct'`. No gradient-boosted fitter is called, so there is no provisional-register producer row.",
+ "variant_count": "one new arm, (s3c-ann-net+bf); (s3c-ann-net) is the control re-run, not a new variant.",
+ "expected_run": "two walks of about six minutes (the control, #1314's figure) and two of about the same again for the arm, and the paired tests a few minutes more: a cloud run, under two hours. If it is not, it is a long-run step and goes to her Mac.",
+ "not_checked": [
+  "any day after 2026-09-03 (locked or blind) and any back-filled day as a scored day",
+  "other models on the back-fill: (s3), (s3c) and the benchmarks are not re-fitted",
+  "a stage design other than the declared one (for example the settlement terms fitted on back-filled rows as zero-size days), the market holiday table extended to 2014, the posting date of any series but those admitted",
+  "any verdict under protocol v1"
+ ],
+ "variants": {
+  "(s3c-ann-net)": "control, unchanged from #1288 / #1319 / #1314: no new fit",
+  "(s3c-ann-net+bf)": "scored arm: (s3c-ann-net) with the admitted 2014-18 back-filled history in every training frame, the settlement and market-holiday terms not fitted on back-filled rows"
+ }
+}
