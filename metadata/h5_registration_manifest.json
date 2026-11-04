@@ -1296,6 +1296,7 @@
   }
  ],
  "not_arms": {
+  "metadata/confirmation_size_power_1392.json": "#1392's size and power study of the proposed confirmation test, run on the candidate's own origin losses; a power study of a test design, not an arm on the way to the candidate, which it leaves unchanged",
   "metadata/aligned_pairs_931.json": "#931's scratch measurement of the gbm_funding line's pair construction, declared before any score with nothing published; a precursor of #1027, not an arm on the way to the candidate",
   "metadata/s3c_flagnet_prospective_draft_1344.json": "#1344's draft prospective test of (s3c-ann-flagnet), not registered; a draft for her review, not an arm on the way to the candidate",
   "metadata/h5_registration_manifest.json": "this manifest, which names the candidate in every row; it is the inventory, not an arm in it",
