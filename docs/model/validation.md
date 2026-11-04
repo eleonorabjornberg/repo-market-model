@@ -314,6 +314,7 @@ only when she makes them herself on GitHub (`docs/decisions/drafts/owner-attesta
 | `docs/decisions/calendar-columns.md` | Decision: the calendar columns | Status: decided and declared; the columns build. |
 | `docs/decisions/fomc-calendar.md` | Decision (draft): the FOMC meeting calendar as columns read at the target day | Status: DRAFT for Eleonora's review (#1038). |
 | `docs/decisions/fomc-point-in-time.md` | Decision: what a cancelled FOMC meeting contributes, and when it stops | Status: decided, and prospective. |
+| `docs/decisions/h5-confirmation-design.md` | Decision (draft): the H5 confirmation design | Status: a draft for Eleonora, not in force. |
 | `docs/decisions/interval-side-balance.md` | Decision: which side the intervals miss on, and what the asymmetric variant corrects | Status: measured and published. |
 | `docs/decisions/iorb-availability.md` | Decision: IORB and IOER for a date are public before that date | Status: decided and declared. |
 | `docs/decisions/judge-rulings-10-october.md` | Decision: the judge's rules, as amended by the rulings of 10 October 2026 | Status: DRAFT, for Eleonora to review and merge. |
