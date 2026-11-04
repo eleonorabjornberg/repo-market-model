@@ -212,6 +212,13 @@
     },
     {
       "kind": "decisions",
+      "issue": 1446,
+      "comment_id": 6640804851,
+      "phrase": "GO #1446",
+      "what": "mark nine merged amendments in force in information-set.md, weekly-carry.md and DATA_QUALITY_DECISIONS.md, status lines only (PR #1447)"
+    },
+    {
+      "kind": "decisions",
       "issue": 1445,
       "comment_id": 6640905697,
       "phrase": "GO #1445",
