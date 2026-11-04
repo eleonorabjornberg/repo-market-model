@@ -19,6 +19,13 @@ quantiles of `scoring_protocol.GRID` at leads h = 1..5, made at the decision ins
 anchor to the target, `h + lag` rows (`anchor_lag`), where B1 counts `h`; `b1_calendar.b1_calendar_anchor_forecast` is B1'*. Whether
 they replace B1 and B1' is Eleonora's.
 
+**B1'*-cap and B2*-cap (#1421, development tier; her ruling of 3 November 2026).** The candidate is capped at the Standing Repo Facility line on
+target days at full allotment, so the confirmatory baselines carry the same cap: `capped_forecast` clips each quantile of a baseline at the line the
+candidate reads (`s3c_candidate.cap_line`: the register entries public at the decision instant, margin 0 bp) and reads the probabilities under the same
+rule (b) (`capped_exceedance`, `capped_law` rule `open_tail`). `b1_calendar_anchor_capped_forecast` is B1'*-cap. B2* is #1420's and is not on main yet:
+`b2_capped_forecast` caps B2 as it stands, the stand-in the size-and-power study (#1399) also used, and wraps B2* when that merges. The uncapped
+versions are reported beside the capped ones; nothing here changes B1, B2 or B3.
+
 **What is read, and when.** The decision for lead h on decision row `t` is the forecast of row
 `t + h` under `InformationRule(horizon=h)`, so every lead of one decision day shares one
 decision instant and one anchor: the latest row whose spread was public at it. Both guards of
@@ -41,7 +48,7 @@ Stdlib only.
 from __future__ import annotations
 
 import json
-from datetime import date, time
+from datetime import date, datetime, time
 from pathlib import Path
 from typing import Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
@@ -372,6 +379,87 @@ def b4_forecast(
     reserves = b4.ReserveTable(panel, registry=registry, decision_time=decision_time) if reserves is None else reserves
     estimates = b4.refit(panel, decision_index, table, reserves, registry=registry, decision_time=decision_time)
     return b4.forecast(panel, decision_index, estimates, table, reserves, registry=registry, decision_time=decision_time)
+
+
+def capped_forecast(
+    forecast: Mapping[int, Sequence[float]],
+    panel: Sequence[DailyObservation],
+    decision_index: int,
+    *,
+    register,
+    decision_time: time,
+) -> Dict[int, List[float]]:
+    """`forecast` (a baseline's 23 quantiles per lead) with every quantile clipped at the SRF line, as the candidate (s3c) reads it (#1421).
+
+    The line for lead h is `s3c_candidate.cap_line` on the target `panel[decision_index + h]`, from the register entries announced at or before the decision
+    instant (`decision_time` on the decision day, `panel[decision_index]`) and effective by the target: the candidate's cap, margin 0 bp, at full allotment
+    only. Where the target has no line the lead is copied unchanged. The clip is monotone, so the levels stay ordered. Fits nothing.
+
+    Raises:
+        ProtocolError: a lead has no target row in the panel.
+        LookAheadError: a register entry announced after the decision instant is read (`policy_events.require_announced`).
+    """
+
+    from . import s3c_candidate  # s3c_candidate imports nothing from here; the import is lazy to keep this module's imports as they were
+
+    as_of = datetime.combine(panel[decision_index].date, decision_time)
+    out = {}
+    for h, quantiles in forecast.items():
+        if decision_index + h >= len(panel):
+            raise ProtocolError(f"lead {h} from {panel[decision_index].date} has no row in the panel")
+        out[h] = s3c_candidate.capped_quantiles(quantiles, register, as_of, panel[decision_index + h].date)
+    return out
+
+
+def capped_exceedance(
+    forecast: Mapping[int, Sequence[float]],
+    panel: Sequence[DailyObservation],
+    decision_index: int,
+    h: int,
+    tau: float,
+    *,
+    register,
+    decision_time: time,
+) -> float:
+    """P(spread > tau) at lead `h` of a baseline's UNCAPPED `forecast` under the candidate's law: the cap and rule (b), `capped_law` `open_tail` (#1421).
+
+    Where the target has no line the law is the status-quo law of the uncapped vector, which is what rule (b) gives with no cap.
+    """
+
+    from . import s3c_candidate
+
+    as_of = datetime.combine(panel[decision_index].date, decision_time)
+    return s3c_candidate.candidate_exceedance(forecast[h], register, as_of, panel[decision_index + h].date, tau)
+
+
+def b1_calendar_anchor_capped_forecast(
+    panel: Sequence[DailyObservation],
+    decision_index: int,
+    *,
+    registry: Mapping[str, Mapping[str, object]],
+    decision_time: time,
+    splits: SplitDeclaration,
+    register,
+) -> Dict[int, List[float]]:
+    """B1'*-cap (#1421): B1'* (`b1_calendar_anchor_forecast`) clipped at the SRF line of the candidate, `capped_forecast`."""
+
+    raw = b1_calendar_anchor_forecast(panel, decision_index, registry=registry, decision_time=decision_time, splits=splits)
+    return capped_forecast(raw, panel, decision_index, register=register, decision_time=decision_time)
+
+
+def b2_capped_forecast(
+    panel: Sequence[DailyObservation],
+    decision_index: int,
+    *,
+    registry: Mapping[str, Mapping[str, object]],
+    decision_time: time,
+    splits: SplitDeclaration,
+    register,
+) -> Dict[int, List[float]]:
+    """B2*-cap (#1421), with B2 standing in for B2* until #1420 merges: `b2_forecast` clipped at the SRF line of the candidate, `capped_forecast`."""
+
+    raw = b2_forecast(panel, decision_index, registry=registry, decision_time=decision_time, splits=splits)
+    return capped_forecast(raw, panel, decision_index, register=register, decision_time=decision_time)
 
 
 def forecasts(
