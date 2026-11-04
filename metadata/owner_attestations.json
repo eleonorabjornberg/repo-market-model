@@ -209,6 +209,13 @@
       "comment_id": 6636726650,
       "phrase": "GO #1438",
       "what": "replace the daily-decision-message skill with decision-cards (.claude/skills/decision-cards, with report cards and Mac pastes on the page), and point the 5 pm routine file, its README, the directive-orchestrator skill and CLAUDE.md's skill list at it (PR #1439)"
+    },
+    {
+      "kind": "decisions",
+      "issue": 1393,
+      "comment_id": 6640870433,
+      "phrase": "GO #1393",
+      "what": "the H5 confirmation-design decision record, docs/decisions/h5-confirmation-design.md (PR #1394)"
     }
   ],
   "rule": "docs/decisions/drafts/owner-attestation.md",
