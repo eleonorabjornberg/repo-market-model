@@ -379,6 +379,66 @@ class CarryBoundTests(unittest.TestCase):
         self.assertTrue(any(bounded[d] is None and legacy[d] is not None for d in panel_days))
 
 
+class DecisionDayBoundTests(unittest.TestCase):
+    """The weekly-carry bound also runs from the decision day (#1341; `docs/decisions/weekly-carry.md`, "Weekly state terms", her ruling on #1339,
+    option (a)): a weekly state is unknown once its newest public week is older than `MAX_CARRY_DAYS` days plus the source's declared release lag,
+    that is once the decision day is more than `MAX_CARRY_DAYS` days after the day that week was released. A snapshot that stops short of the decision
+    day therefore reads as an unknown state, not as the last print carried for ever.
+
+    Recorded mutation (applied to the tree, confirmed by grep, the named tests run, and reverted): in `s3c_pd.latest_defined_week`,
+    `if max_carry_days is not None and public and (decision_day - release_instant(public[-1]).date()).days > max_carry_days:` replaced with
+    `... > max_carry_days + 7:`, so a snapshot a week too short is still read. `test_the_day_after_the_bound_reads_no_state` and
+    `test_decision_states_of_a_short_snapshot_are_unknown_past_the_bound` failed with `AssertionError` (`datetime.date(2024, 12, 11) is not None` and `0.3499... is not None`).
+    """
+
+    FIRST = date(2024, 1, 3)
+    N = 50
+
+    def levels(self):
+        return weekly([100.0 + (i % 7) * 3.0 + i * 0.5 for i in range(self.N)], first=self.FIRST)
+
+    def last(self):
+        return wednesdays(self.FIRST, self.N)[-1]
+
+    def released(self):
+        return pd.release_instant(self.last()).date()
+
+    def test_the_day_the_bound_runs_out_still_reads_the_state(self):
+        day = self.released() + timedelta(days=pd.MAX_CARRY_DAYS)
+        self.assertEqual(pd.latest_defined_week(self.levels(), day), self.last())
+        self.assertIsNotNone(pd.state_at(self.levels(), day))
+
+    def test_the_day_after_the_bound_reads_no_state(self):
+        day = self.released() + timedelta(days=pd.MAX_CARRY_DAYS + 1)
+        self.assertEqual(pd.latest_public_week(self.levels(), day), self.last())  # the week is public; it is only too old
+        self.assertIsNone(pd.latest_defined_week(self.levels(), day))
+        self.assertIsNone(pd.state_at(self.levels(), day))
+
+    def test_the_unbounded_read_of_the_published_record_is_unchanged(self):
+        day = self.released() + timedelta(days=60)
+        self.assertEqual(pd.latest_defined_week(self.levels(), day, max_carry_days=None), self.last())
+        self.assertIsNotNone(pd.state_at(self.levels(), day, max_carry_days=None))
+
+    def test_decision_states_of_a_short_snapshot_are_unknown_past_the_bound(self):
+        inside = self.released() + timedelta(days=pd.MAX_CARRY_DAYS)
+        outside = inside + timedelta(days=1)
+        bounded = pd.decision_states(self.levels(), [inside, outside])
+        legacy = pd.decision_states(self.levels(), [inside, outside], max_carry_days=None)
+        self.assertIsNotNone(bounded[inside])
+        self.assertIsNone(bounded[outside])
+        self.assertEqual(bounded[inside], legacy[inside])
+        self.assertIsNotNone(legacy[outside])
+
+    def test_a_snapshot_that_keeps_up_is_unaffected(self):
+        levels = self.levels()
+        weeks = wednesdays(self.FIRST, self.N)
+        for week in weeks[20:]:
+            for offset in range(0, 7):
+                day = pd.release_instant(week).date() + timedelta(days=offset)
+                self.assertEqual(pd.latest_defined_week(levels, day, max_carry_days=None) is None,
+                                 pd.latest_defined_week(levels, day) is None, day)
+
+
 class SourceEntryTests(unittest.TestCase):
     """The study's source declaration points at the measurement registry's entry of the same id (#1329) and agrees with it on the release."""
 

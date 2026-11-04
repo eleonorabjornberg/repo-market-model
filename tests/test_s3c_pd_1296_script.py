@@ -23,10 +23,11 @@ import json
 import sys
 import tempfile
 import unittest
-from datetime import date, timedelta
+from datetime import date, time, timedelta
 from pathlib import Path
 
 from repo_model import s3c_pd as cc
+from repo_model.decision_instant import DECISION_TIME
 from repo_model import scoring_protocol as sp
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -231,7 +232,7 @@ class GroupTests(unittest.TestCase):
                          {x: date(2025, 12, 1) for x in frame.days}, ())
         expected = []
         for d in frame.days:
-            week = cc.latest_defined_week(levels, d)
+            week = cc.latest_defined_week(levels, d, decision_time=script.k.DECISION_TIME, max_carry_days=None)
             expected.append(st.stdev([levels[w] for w in levels if 0 < (week - w).days <= 7 * cc.TRAILING_WEEKS and levels[w] is not None]))
         out = script.fitted_effect(frame, walk, levels)["standard_unit_usd_bn"]
         self.assertEqual(out["decision_days"], len(frame.days))
@@ -349,6 +350,43 @@ class CommittedRecordTests(unittest.TestCase):
         text = self.PAGE.read_text(encoding="utf-8")
         for word in ("http://", "https://", "et al", "arXiv"):
             self.assertNotIn(word, text)
+
+
+class OneInstantTests(unittest.TestCase):
+    """The script reads the weekly state at the walk's own instant (#1335, her ruling of 1 November 2026, option (a); #1341).
+
+    The walk is given `k.DECISION_TIME` (16:00 unless `RMM_DECISION_TIME` says 18:00); the states, the skipped-weeks use table and the standard-unit table
+    each read the weekly state, and a read that left `decision_time` out took the `src/` default (18:00), a second instant in one run. Every call of the
+    state term's readers in this script must pass `decision_time=k.DECISION_TIME`.
+
+    Recorded mutation (applied to the tree, confirmed by grep, the named test run, and reverted): in `s3c_pd_1296.score`, `decision_time=k.DECISION_TIME`
+    removed from `states = s3c_pd.decision_states(...)`. `test_every_read_of_the_state_term_names_the_walks_instant` failed with `AssertionError`
+    (the call on line 353 names no `decision_time`).
+    """
+
+    READERS = ("decision_states", "state_at", "latest_defined_week", "latest_public_week", "public_weeks", "skipped_weeks", "read_level")
+
+    def test_every_read_of_the_state_term_names_the_walks_instant(self):
+        import ast
+        tree = ast.parse((ROOT / "scripts" / "s3c_pd_1296.py").read_text(encoding="utf-8"))
+        calls = [n for n in ast.walk(tree) if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute) and n.func.attr in self.READERS
+                 and isinstance(n.func.value, ast.Name) and n.func.value.id == "s3c_pd"]
+        self.assertGreaterEqual(len(calls), 3)
+        for call in calls:
+            named = {kw.arg: ast.unparse(kw.value) for kw in call.keywords}
+            self.assertEqual(named.get("decision_time"), "k.DECISION_TIME", f"line {call.lineno}: {ast.unparse(call)}")
+
+    def test_the_states_are_those_of_the_walks_instant(self):
+        # a week released at 16:30 is unreadable at 16:00 and readable at 18:00 on its release day
+        levels = {date(2025, 1, 1) + timedelta(days=7 * i): 100.0 + i % 5 + i * 0.1 for i in range(60)}
+        week = max(levels)
+        day = cc.release_instant(week).date()
+        at_16 = cc.state_at(levels, day, decision_time=time(16, 0), max_carry_days=None)
+        at_18 = cc.state_at(levels, day, decision_time=time(18, 0), max_carry_days=None)
+        self.assertNotEqual(at_16, at_18)
+        # the walk's own instant is the repo's decision instant when RMM_DECISION_TIME is unset (18:00 since #1312, 16:00 before it)
+        self.assertEqual(script.k.DECISION_TIME, DECISION_TIME)
+        self.assertEqual(cc.state_at(levels, day, decision_time=script.k.DECISION_TIME, max_carry_days=None), at_18)
 
 
 if __name__ == "__main__":

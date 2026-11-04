@@ -1299,10 +1299,12 @@
   "metadata/aligned_pairs_931.json": "#931's scratch measurement of the gbm_funding line's pair construction, declared before any score with nothing published; a precursor of #1027, not an arm on the way to the candidate",
   "metadata/s3c_flagnet_prospective_draft_1344.json": "#1344's draft prospective test of (s3c-ann-flagnet), not registered; a draft for her review, not an arm on the way to the candidate",
   "metadata/h5_registration_manifest.json": "this manifest, which names the candidate in every row; it is the inventory, not an arm in it",
+  "metadata/b2_star_1420.json": "#1420's declaration of B2*, a benchmark (calendar climatology with frozen pools, lookback and fallback) scored against the candidate, which is unchanged; a benchmark design, not an arm on the way to the candidate. Not yet merged: a side_check row follows the merge, as B4's did",
   "metadata/net_settlement.json": "the availability declaration of the net settlement input (#1273); a declared input of the candidate's sizing, not a study or an arm",
   "metadata/owner_attestations.json": "the register of her GO attestations; it cites the candidate where she froze or ruled on it, not an arm",
   "metadata/settlement_announcement_dating.json": "the dating of the auction announcements (#1288) that the candidate's sizing reads; a data declaration, not an arm",
   "metadata/s3c_uncapped_1361.json": "#1361's development study of the candidate without the Standing Repo Facility cap, declared before any score; a secondary result reported beside the candidate, which does not change, not an arm on the way to it",
- "metadata/sources.json": "the source registry; it lists the inputs the candidate reads, not an arm"
+  "metadata/capped_baselines_1421.json": "#1421's development study of the simple baselines with the candidate's SRF cap (B1'*-cap, B2-cap as the stand-in for B2*-cap), scored against the candidate; it changes no candidate and adds no arm on the way to it, and the capped baselines are the confirmatory benchmarks by her ruling of 3 November 2026",
+  "metadata/sources.json": "the source registry; it lists the inputs the candidate reads, not an arm"
  }
 }
