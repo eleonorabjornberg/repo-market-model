@@ -56,7 +56,7 @@ this file.
 
 ## The 5 pm message ("Daily decision message")
 
-Follow the `daily-decision-message` skill.
+Follow the `decision-cards` skill (its section "In repo-market-model: the 5 pm docket").
 
 ## The other orchestrator
 

@@ -1,0 +1,223 @@
+<title>__TITLE__</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: one column docket of decision cards, grouped by track, sticky progress header with group filters. */
+:root {
+  --bg: #f3f5f7;
+  --surface: #ffffff;
+  --ink: #17202a;
+  --muted: #5b6876;
+  --line: #d9dee4;
+  --accent: #1f5f8b;
+  --accent-soft: #e3eef6;
+  --rec: #2f7a4f;
+  --rec-soft: #e4f2ea;
+  --warn: #9a5b12;
+  --warn-soft: #f8eedf;
+  --font-body: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11161c; --surface: #19212a; --ink: #e6ebf0; --muted: #98a5b3; --line: #2c3742;
+    --accent: #7db6e0; --accent-soft: #1d3446; --rec: #7fcb9c; --rec-soft: #1b3326;
+    --warn: #e2b071; --warn-soft: #3a2c19; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11161c; --surface: #19212a; --ink: #e6ebf0; --muted: #98a5b3; --line: #2c3742;
+  --accent: #7db6e0; --accent-soft: #1d3446; --rec: #7fcb9c; --rec-soft: #1b3326;
+  --warn: #e2b071; --warn-soft: #3a2c19; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.5; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.wrap { max-width: 760px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 48px; }
+header.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); padding-block: 12px; border-bottom: 1px solid var(--line); display: grid; gap: 10px; }
+h1 { font-size: 22px; margin: 0; text-wrap: balance; }
+.sub { color: var(--muted); margin: 0; font-size: 13.5px; }
+.progress { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.bar { flex: 1; height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
+.bar > i { display: block; height: 100%; background: var(--accent); width: 0; transition: width .3s; }
+.filters { display: flex; flex-wrap: wrap; gap: 6px; }
+.filters button { font: 500 13px var(--font-body); border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 4px 11px; cursor: pointer; }
+.filters button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.notice { font-size: 13px; padding: 8px 12px; border-radius: 8px; background: var(--warn-soft); color: var(--warn); }
+section.group { display: grid; gap: 12px; margin-top: 22px; }
+section.group > h2 { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0; }
+article.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: grid; gap: 10px; min-width: 0; }
+article.card.decided { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+.head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.tag { font: 500 11.5px var(--font-mono); color: var(--accent); background: var(--accent-soft); border-radius: 4px; padding: 2px 6px; }
+.state { margin-left: auto; font-size: 12px; font-weight: 600; color: var(--muted); }
+.decided .state { color: var(--accent); }
+h3 { margin: 0; font-size: 16.5px; line-height: 1.35; text-wrap: balance; }
+.ctx { margin: 0; color: var(--muted); font-size: 14px; }
+.ctx code, .where code { font: 12.5px var(--font-mono); }
+.flag { font-size: 13px; color: var(--warn); background: var(--warn-soft); border-radius: 6px; padding: 6px 10px; margin: 0; }
+.opts { display: grid; gap: 6px; }
+.opt { text-align: left; font: inherit; font-size: 14px; color: var(--ink); background: transparent; border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; cursor: pointer; display: flex; gap: 10px; align-items: flex-start; }
+.opt:hover { border-color: var(--accent); }
+.opt:focus-visible, .filters button:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.opt .k { font: 500 12px var(--font-mono); color: var(--muted); min-width: 1.6em; padding-top: 2px; }
+.opt .t { flex: 1; min-width: 0; }
+.opt .rec { font-size: 11px; font-weight: 600; color: var(--rec); background: var(--rec-soft); border-radius: 4px; padding: 1px 6px; white-space: nowrap; }
+.opt[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.opt[aria-pressed="true"] .k { color: var(--accent); }
+.where { font-size: 12.5px; color: var(--muted); }
+textarea { width: 100%; min-height: 40px; resize: vertical; font: 14px var(--font-body); color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+.saved { font-size: 12px; color: var(--muted); min-height: 1em; }
+footer { margin-top: 28px; font-size: 12.5px; color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { .bar > i { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>__HEADING__</h1>
+      <p class="sub">__SUBTITLE__</p>
+    </div>
+    <div class="progress"><span id="count">0 of 0 decided</span><div class="bar"><i id="barfill"></i></div></div>
+    <div class="filters" id="filters" role="group" aria-label="Filter by group"></div>
+    <p class="notice" id="notice" hidden></p>
+  </header>
+  <main id="list"></main>
+  <footer>__FOOTER__</footer>
+</div>
+
+<script>
+const DECISIONS = __DECISIONS__;
+
+const GROUPS = __GROUPS__;
+const answers = {};          // id -> {choice, note}
+let filter = "All";
+let db = null;
+const listEl = document.getElementById("list");
+
+function el(tag, attrs, ...kids) {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (k === "class") n.className = v; else if (k.startsWith("on")) n.addEventListener(k.slice(2), v); else n.setAttribute(k, v);
+  }
+  for (const c of kids) if (c != null) n.append(c);
+  return n;
+}
+
+function render() {
+  listEl.replaceChildren();
+  for (const g of GROUPS) {
+    if (filter !== "All" && filter !== g) continue;
+    const items = DECISIONS.filter(d => d.group === g);
+    const sec = el("section", { class: "group" }, el("h2", {}, g));
+    for (const d of items) sec.append(card(d));
+    listEl.append(sec);
+  }
+  const n = DECISIONS.filter(d => answers[d.id]?.choice).length;
+  document.getElementById("count").textContent = `${n} of ${DECISIONS.length} decided`;
+  document.getElementById("barfill").style.width = `${(100 * n / DECISIONS.length).toFixed(1)}%`;
+}
+
+function card(d) {
+  const a = answers[d.id] || {};
+  const c = el("article", { class: "card" + (a.choice ? " decided" : ""), id: "card-" + d.id });
+  c.append(el("div", { class: "head" }, el("span", { class: "tag" }, d.tag), el("span", { class: "state" }, a.choice ? "Decided" : "Open")));
+  c.append(el("h3", {}, d.title));
+  if (d.ctx) c.append(el("p", { class: "ctx" }, d.ctx));
+  if (d.blocks) c.append(el("p", { class: "ctx" }, d.blocks));
+  if (d.flag) c.append(el("p", { class: "flag" }, d.flag));
+  const opts = el("div", { class: "opts", role: "group", "aria-label": "Options" });
+  for (const [k, label, rec] of d.opts) {
+    const b = el("button", { class: "opt", type: "button", "aria-pressed": String(a.choice === k), onclick: () => choose(d.id, k) },
+      el("span", { class: "k" }, k.length <= 3 ? `(${k})` : "•"), el("span", { class: "t" }, label), rec ? el("span", { class: "rec" }, "Rec") : null);
+    opts.append(b);
+  }
+  c.append(opts);
+  const ta = el("textarea", { id: "note-" + d.id, placeholder: "Note (optional)", "aria-label": "Note for " + d.tag });
+  ta.value = a.note || "";
+  const saved = el("div", { class: "saved", id: "saved-" + d.id });
+  let t;
+  ta.addEventListener("input", () => { clearTimeout(t); t = setTimeout(() => saveNote(d.id, ta.value), 900); });
+  ta.addEventListener("blur", () => { clearTimeout(t); saveNote(d.id, ta.value); });
+  c.append(ta, saved, el("div", { class: "where" }, "Details: ", el("code", {}, d.where)));
+  return c;
+}
+
+const pending = {};
+async function write(id) {
+  const a = answers[id];
+  try { localStorage.setItem("docket:" + id, JSON.stringify(a)); } catch (e) {}
+  const s = document.getElementById("saved-" + id);
+  if (!db) { if (s) s.textContent = "Kept on this device only"; return; }
+  if (pending[id]) { pending[id].again = true; return; }
+  pending[id] = { again: false };
+  try {
+    do {
+      pending[id].again = false;
+      await db.doc("answers/" + id).set({ choice: a.choice || null, note: a.note || "", at: new Date().toISOString() });
+    } while (pending[id].again);
+    const s2 = document.getElementById("saved-" + id); if (s2) s2.textContent = "Saved";
+  } catch (e) {
+    const s2 = document.getElementById("saved-" + id); if (s2) s2.textContent = "Not saved: " + (e?.message || "the store refused the write") + ". Try again.";
+  } finally { delete pending[id]; }
+}
+
+function choose(id, k) {
+  const a = answers[id] || (answers[id] = {});
+  a.choice = a.choice === k ? null : k;
+  render();
+  write(id);
+}
+function saveNote(id, v) {
+  const a = answers[id] || (answers[id] = {});
+  if ((a.note || "") === v) return;
+  a.note = v; write(id);
+}
+
+// Filters
+const fwrap = document.getElementById("filters");
+for (const g of ["All", ...GROUPS]) {
+  fwrap.append(el("button", { type: "button", "aria-pressed": String(g === filter), onclick: (ev) => {
+    filter = g; for (const b of fwrap.children) b.setAttribute("aria-pressed", String(b.textContent === g)); render();
+  } }, g));
+}
+
+// Local fallback first, then the shared store
+for (const d of DECISIONS) {
+  try { const v = localStorage.getItem("docket:" + d.id); if (v) answers[d.id] = JSON.parse(v); } catch (e) {}
+}
+render();
+
+(async () => {
+  const notice = document.getElementById("notice");
+  const timer = setTimeout(() => { notice.textContent = "Still connecting to the saved answers…"; notice.hidden = false; }, 10000);
+  try {
+    db = window.claude ? await window.claude.use("db") : null;
+  } catch (e) { db = null; }
+  if (!db) {
+    clearTimeout(timer);
+    notice.textContent = "Answers can't be saved for Claude in this view. Your choices stay on this device only.";
+    notice.hidden = false;
+    return;
+  }
+  db.collection("answers").onSnapshot((snap) => {
+    clearTimeout(timer); notice.hidden = true;
+    let changed = false;
+    for (const doc of snap.docs) {
+      const v = doc.data(); if (!v) continue;
+      const cur = answers[doc.id] || {};
+      if (pending[doc.id]) continue;
+      if (cur.choice !== v.choice || (cur.note || "") !== (v.note || "")) {
+        answers[doc.id] = { choice: v.choice || null, note: v.note || "" }; changed = true;
+      }
+    }
+    const active = document.activeElement;
+    if (changed && !(active && active.tagName === "TEXTAREA")) render();
+  }, (e) => {
+    clearTimeout(timer);
+    notice.textContent = "Lost the connection to saved answers. Reload the page to reconnect.";
+    notice.hidden = false;
+  });
+})();
+</script>
