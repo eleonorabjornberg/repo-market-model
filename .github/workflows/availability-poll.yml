@@ -9,6 +9,10 @@ name: availability-poll
 # `polls/<ET date>/<fetch time>-<source>.json` with the fetch time, HTTP status, latest date present and a content
 # hash. The files are added to the add-only `availability-polls` branch in one commit, checked before the push.
 #
+# A run after 18:30 ET on a business day is a catch-up (#1441, finding #1435): it records the first latest date it sees
+# for a source with no in-window record that day, marked `catch_up`, with its true fetch time. A business day with no
+# in-window record must be listed in `metadata/availability_missed_days.json`; the last step fails on one that is not.
+#
 # The cron covers 16:00-18:30 ET in both zones: 20:00-23:50 UTC. The script is a no-op outside its window, so the
 # hour that falls outside it (before 16:00 or after 18:30 ET) costs a few seconds. GitHub delays scheduled runs under
 # load; a delayed poll records its true fetch time, and a poll that never ran leaves a gap the result page counts.
@@ -74,3 +78,8 @@ jobs:
           fi
           git push --quiet origin HEAD:refs/heads/availability-polls
           python3 -B ../main/scripts/availability_poll.py verify --dir .
+
+      - name: Flag a business day with no in-window poll
+        if: always()
+        run: |
+          python3 -B main/scripts/availability_poll.py missing --dir polls --list main/metadata/availability_missed_days.json
