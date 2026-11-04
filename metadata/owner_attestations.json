@@ -223,6 +223,13 @@
       "comment_id": 6640870433,
       "phrase": "GO #1393",
       "what": "the H5 confirmation-design decision record, docs/decisions/h5-confirmation-design.md (PR #1394)"
+    },
+    {
+      "kind": "decisions",
+      "issue": 1445,
+      "comment_id": 6640905697,
+      "phrase": "GO #1445",
+      "what": "scoring-protocol draft amendment 5: the H9 Holm pooling rule for near-identical targets (PR #1450)"
     }
   ],
   "rule": "docs/decisions/drafts/owner-attestation.md",
