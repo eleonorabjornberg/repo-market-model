@@ -1,8 +1,9 @@
-"""The model documentation and validation report (`docs/model/validation.md`, #119; rewritten for H5's candidate, #841).
+"""The model documentation and validation report (`docs/model/validation.md`, #119; rewritten for (s3c-ann-net), #1442).
 
 The page keeps the model-risk structure Eleonora ruled on #119: purpose and use, data, methodology, assumptions and
 limitations, performance by regime, outcomes analysis, monitoring (and, last, governance). It documents one model,
-`gbm_funding`, H5's candidate, and replaces the phase 2 content. Its prose states no figure. Every figure sits inside a
+(s3c-ann-net), H5's frozen candidate (`docs/research/h5-candidate.json`), and replaces the `gbm_funding` report, which stays in
+git history (#841's rewrite; the phase 2 records in `docs/runs/` are untouched). Its prose states no figure. Every figure sits inside a
 block `scripts/emit_results.py` writes from `docs/runs/`, the metadata files or the declared sources of
 `docs/model/external_sources.json`, and `tests/test_generated_results.py` refuses a stale block.
 
@@ -15,6 +16,10 @@ What is held here, beyond that:
   data, not a verdict" (scoring protocol v1), and no performance figure is rendered for it;
 * nothing the report cites scores a day of a locked tier (`docs/decisions/lockbox.md`);
 * the phase 2 records in `docs/runs/` are not edited by this rewrite;
+* **a known-limits section** lists each limit the rulings of 2 and 3 November 2026 on #1187 and #1316 accept or keep
+  visible (2020, FOMC target days, the upper tail against (a), lead 1 and the loss to (s3c) and to the plain flag arm,
+  quarter-end band coverage, the SRF cap's dependence on full allotment, the 2018-19 regime, the 15 October tax-date
+  label), each linked to the issue and the evidence page that show it, and a page that does not exist fails the test;
 * the use-limitation statement is the candidate's (`docs/model/candidate.json`) and says what the model must not be used for;
 * the ruled wording of 2 October 2026 (the claim sentence with its three links, the fork, the futures exclusion) and
   the clearing-mandate limitation are present, and a page that was not fetched is marked so;
@@ -23,9 +28,9 @@ What is held here, beyond that:
 Recorded mutation for the digit guard (`test_no_digit_stands_outside_a_generated_block`): a digit typed into the
 prose of `docs/model/validation.md` (a hand-typed "5 bp" in the purpose section) fails it with `AssertionError`.
 
-Recorded mutation for the lockbox guard (`test_the_development_evidence_scores_no_locked_day`): the candidate
-declaration's `last_target_day` set to the first locked day in `metadata/spread_distribution_634.json` fails it with
-`AssertionError`.
+Recorded mutation for the lockbox guard (`test_the_development_evidence_scores_no_locked_day`): `limits.last_day` in
+`metadata/s3c_announced_settlement_1288.json` set to the first day of the blind tier (the first tier not opened in
+`metadata/lockbox.json`) fails it with `AssertionError`.
 """
 
 import importlib.util
@@ -60,6 +65,7 @@ BLOCKS = (
     "validation-controls",
     "validation-assumptions",
     "validation-limitations",
+    "validation-known-limits",
     "validation-clearing",
     "validation-performance",
     "validation-outcomes",
@@ -72,6 +78,14 @@ def _emit_results():
     spec = importlib.util.spec_from_file_location("emit_results_for_validation", ROOT / "scripts/emit_results.py")
     module = importlib.util.module_from_spec(spec)
     sys.modules["emit_results_for_validation"] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def _validation_report():
+    spec = importlib.util.spec_from_file_location("validation_report_for_test", ROOT / "scripts/validation_report.py")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules["validation_report_for_test"] = module
     spec.loader.exec_module(module)
     return module
 
@@ -112,11 +126,14 @@ class StructureTests(unittest.TestCase):
 
     def test_the_page_documents_the_candidate_and_not_the_phase_2_models(self):
         text = _text()
-        self.assertIn("gbm_funding", text)
+        self.assertIn("(s3c-ann-net)", text)
+        self.assertNotIn("The candidate is `gbm_funding`", text)
+        self.assertNotIn("Model documentation and validation report: `gbm_funding`", text)
         for gone in ("validation-distribution", "validation-pressure", "validation-final-test",
                      "validation-calibration", "validation-lag", "validation-desk"):
             self.assertNotIn("generated: %s " % gone, text, gone)
-        for gone in ("Challengers against persistence", "The primary cell", "conformal_pid_nested"):
+        for gone in ("Challengers against persistence", "The primary cell", "conformal_pid_nested",
+                     "gradient-boosted quantile model of the SOFR"):
             self.assertNotIn(gone, text, gone)
 
     def test_the_deliverables_of_the_step_are_each_covered(self):
@@ -130,30 +147,38 @@ class CandidateTests(unittest.TestCase):
     def setUp(self):
         self.candidate = json.loads((ROOT / "docs/model/candidate.json").read_text(encoding="utf-8"))
         self.declaration = json.loads((ROOT / self.candidate["declaration"]).read_text(encoding="utf-8"))
+        self.protocol = json.loads((ROOT / self.candidate["protocol_declaration"]).read_text(encoding="utf-8"))
         self.block = _blocks(_text())["validation-candidate"]
 
     def test_the_candidate_is_the_declared_control_of_the_measurement_that_scored_it(self):
-        self.assertEqual(self.candidate["candidate"], "gbm_funding")
-        self.assertIn(self.candidate["declaration_control"], self.declaration["controls"])
-        self.assertIn(self.declaration["controls"]["gbm_funding"], self.block)
+        record = json.loads((ROOT / "docs/research/h5-candidate.json").read_text(encoding="utf-8"))
+        self.assertEqual(self.candidate["candidate"], record["candidate"])
+        self.assertEqual(self.candidate["candidate"], "sc_s3c_ann_net")
+        names = {c["name"]: c for c in self.declaration["candidates"]}
+        self.assertIn(self.candidate["declaration_candidate"], names)
+        self.assertIn(names[self.candidate["declaration_candidate"]]["definition"], self.block)
+        self.assertIn(record["description"], self.block)
 
     def test_the_block_states_the_declared_inputs_horizons_and_levels_it_reads(self):
-        for column in self.declaration["inputs"]["base"]["columns"]:
-            self.assertIn("`%s`" % column, self.block)
-        self.assertIn("%d" % len(self.declaration["protocol"]["grid"]), self.block)
-        self.assertIn("minimum history", self.block.lower())
-        self.assertIn(self.declaration["scoring"]["last_target_day"], self.block)
+        record = json.loads((ROOT / "docs/research/h5-candidate.json").read_text(encoding="utf-8"))
+        self.assertIn("%d levels" % len(self.protocol["protocol"]["grid"]), self.block)
+        self.assertIn("refit every 21 decision days", self.block)
+        self.assertIn(self.candidate["development_last_target_day"], self.block)
+        self.assertIn(record["cap"]["rule"][1:], self.block)
+        self.assertIn(record["sizing"]["rule"][1:], self.block)
+        self.assertIn(record["ruling"], self.block)
 
     def test_the_block_says_the_quantiles_are_not_recalibrated_and_nothing_is_registered(self):
         text = self.block.lower()
-        self.assertIn("uncalibrated", text)
+        self.assertIn("not recalibrated", text)
         self.assertIn("not registered", text)
 
 
 class NoFigureTypedTests(unittest.TestCase):
     #: What prose may carry digits for: issue and pull-request references, the numbering of a heading, and the names
     #: of the hypotheses (H5) and of the benchmarks (B1, B2), which are labels and not figures.
-    ALLOWED = (r"(?:PR )?#\d+", r"^#{1,6} \d+\.", r"\(#\d+(?:, #\d+)*\)", r"\bH\d{1,2}\b", r"\bB[123]\b")
+    ALLOWED = (r"(?:PR )?#\d+", r"^#{1,6} \d+\.", r"\(#\d+(?:, #\d+)*\)", r"\bH\d{1,2}\b", r"\bB[123]\b",
+               r"\(s3[a-z]*(?:-[a-z]+)*\)")
 
     def test_no_digit_stands_outside_a_generated_block(self):
         prose = _prose(_text())
@@ -187,6 +212,7 @@ class PerformanceTests(unittest.TestCase):
         for row in self.candidate["evidence"]:
             self.assertIn(row["issue"], self.block)
             self.assertIn("`%s`" % row["page"], self.block)
+            self.assertNotIn("gbm_funding", row["what"])
             self.assertTrue((ROOT / row["page"]).exists(), row["page"])
             self.assertTrue((ROOT / row["script"]).exists(), row["script"])
 
@@ -206,9 +232,13 @@ class PerformanceTests(unittest.TestCase):
     def test_the_development_evidence_scores_no_locked_day(self):
         """Recorded mutation: the declaration's `last_target_day` set to the first locked day fails this with AssertionError."""
 
-        declaration = json.loads((ROOT / "metadata/spread_distribution_634.json").read_text(encoding="utf-8"))
-        locked = json.loads((ROOT / "metadata/lockbox.json").read_text(encoding="utf-8"))["tiers"][0]["start"]
-        self.assertLess(declaration["scoring"]["last_target_day"], locked)
+        candidate = json.loads((ROOT / "docs/model/candidate.json").read_text(encoding="utf-8"))
+        declaration = json.loads((ROOT / candidate["declaration"]).read_text(encoding="utf-8"))
+        tiers = json.loads((ROOT / "metadata/lockbox.json").read_text(encoding="utf-8"))["tiers"]
+        self.assertLess(candidate["development_last_target_day"], tiers[0]["start"])
+        self.assertIn(candidate["development_last_target_day"], declaration["frame"]["windows"])
+        first_closed = next(t["start"] for t in tiers if not t["opened"])
+        self.assertLess(declaration["limits"]["last_day"], first_closed)
 
     def test_the_phase_2_records_are_still_in_docs_runs(self):
         """The rewrite replaces the report's content, not the records: the phase 2 files stay where they are."""
@@ -216,6 +246,61 @@ class PerformanceTests(unittest.TestCase):
         for name in ("persistence_funding.json", "backtest_gbm_conformal_pid_nested_funding.json",
                      "final_test_near_blind.json", "pressure_model_v1_h1.json"):
             self.assertTrue((ROOT / "docs/runs" / name).exists(), name)
+
+
+class KnownLimitsTests(unittest.TestCase):
+    """The known-limits section of the rewrite (#1442): each limit is linked to the evidence that shows it."""
+
+    REQUIRED = ("2020", "fomc-days", "upper-tail-against-a", "lead-1", "net-against-flag", "quarter-end-coverage",
+                "srf-cap-full-allotment", "regime-2018-19", "tax-date-label")
+
+    def setUp(self):
+        self.candidate = json.loads((ROOT / "docs/model/candidate.json").read_text(encoding="utf-8"))
+        self.limits = self.candidate["known_limits"]
+        self.block = _blocks(_text())["validation-known-limits"]
+
+    def test_every_limit_the_directive_names_is_listed(self):
+        self.assertEqual([l["id"] for l in self.limits], list(self.REQUIRED))
+
+    def test_each_limit_is_linked_to_an_issue_and_to_a_page_that_exists(self):
+        for limit in self.limits:
+            self.assertTrue(limit["sources"], limit["id"])
+            for source in limit["sources"]:
+                self.assertRegex(source["issue"], r"^#\d+$")
+                self.assertIn(source["issue"], self.block)
+                if source.get("page"):
+                    self.assertTrue((ROOT / source["page"]).exists(), source["page"])
+                    self.assertIn("`%s`" % source["page"], self.block)
+                else:
+                    self.assertTrue(source.get("why_no_page"), "%s names no page and no reason" % limit["id"])
+            self.assertIn(limit["limit"], self.block)
+
+    def test_the_rulings_that_accept_or_keep_a_limit_are_cited(self):
+        text = self.block
+        for needle in ("2 November 2026", "3 November 2026", "#1187", "#1316", "#1378", "#1402", "#1223", "#1004"):
+            self.assertIn(needle, text, needle)
+
+    def test_a_limit_is_development_data_and_gives_no_verdict_and_no_figure_is_typed(self):
+        self.assertIn(self.candidate["evidence_label"], self.block)
+        body = re.sub(r"#\d+|`[^`]*`|\d{4}-\d{2}(?:-\d{2})?|\d{1,2} (?:October|November) 2026", "", self.block)
+        self.assertNotRegex(body, r"\d+\.\d+|%|\[[+-]|\bd [+-]\d")
+
+    def test_the_use_limitation_points_to_the_known_limits(self):
+        self.assertIn("known limits", self.candidate["use_limitation"].lower())
+
+    def test_a_missing_page_is_refused(self):
+        """A page that does not exist stops the generator with ReportError (no silent link)."""
+
+        module = _validation_report()
+        broken = json.loads(json.dumps(self.candidate))
+        broken["known_limits"][0]["sources"][0]["page"] = "docs/research/no-such-page-result.md"
+        original = module._candidate
+        module._candidate = lambda: broken
+        try:
+            with self.assertRaises(module.ReportError):
+                module.known_limits_block(None)
+        finally:
+            module._candidate = original
 
 
 class AssumptionsAndLimitationsTests(unittest.TestCase):
@@ -311,10 +396,13 @@ class LockboxTests(unittest.TestCase):
         tiers = json.loads((ROOT / "metadata/lockbox.json").read_text(encoding="utf-8"))["tiers"]
         for tier in tiers:
             self.assertIn(tier["start"], block)
-        declaration = json.loads((ROOT / "metadata/spread_distribution_634.json").read_text(encoding="utf-8"))
+        candidate = json.loads((ROOT / "docs/model/candidate.json").read_text(encoding="utf-8"))
+        declaration = json.loads((ROOT / candidate["declaration"]).read_text(encoding="utf-8"))
         flat = block.replace("**", "")
-        self.assertIn(declaration["scoring"]["last_target_day"], flat)
-        self.assertIn("scores only days before %s" % tiers[0]["start"], flat)
+        self.assertIn("decides only on days to %s" % candidate["development_last_target_day"], flat)
+        self.assertIn(declaration["limits"]["last_day"], flat)
+        first_closed = next(t["start"] for t in tiers if not t["opened"])
+        self.assertIn("No day from %s is scored" % first_closed, flat)
 
 
 class MonitoringTests(unittest.TestCase):

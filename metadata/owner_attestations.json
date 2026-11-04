@@ -202,6 +202,13 @@
       "comment_id": 6622416649,
       "phrase": "GO #1369",
       "what": "the live-pin v4 bump decision record (docs/decisions/live-pin-v4-bump.md); her GO of 4 November 2026 (#1369)"
+    },
+    {
+      "kind": "claude-files",
+      "issue": 1438,
+      "comment_id": 6636726650,
+      "phrase": "GO #1438",
+      "what": "replace the daily-decision-message skill with decision-cards (.claude/skills/decision-cards, with report cards and Mac pastes on the page), and point the 5 pm routine file, its README, the directive-orchestrator skill and CLAUDE.md's skill list at it (PR #1439)"
     }
   ],
   "rule": "docs/decisions/drafts/owner-attestation.md",

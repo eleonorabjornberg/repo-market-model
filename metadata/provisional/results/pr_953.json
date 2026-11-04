@@ -1,0 +1,15 @@
+{
+  "order": 345,
+  "directive": 929,
+  "pull_request": 953,
+  "hypothesis": "H1",
+  "result": "Each leg of \"Supported\" calibrated in its own orientation on post-2020-04 history",
+  "declarations": [],
+  "model": "`gbm_funding` as a series (the walks, read-only, `--walks`) in the size of each leg; the calibrated values come from B1 and B2 stand-ins and are not provisional",
+  "pairing": "one_step",
+  "class": "series",
+  "on_the_page": [
+    "2026-10-19-model-00953-H1-step4"
+  ],
+  "concluded": "Leg values 2.438 / 4.727 against B1 and 1.701 / 2.682 against B2; the sizes reported for `gbm_funding` (4.5% and 0.1% at 250 days) rest on the one-step walks and are provisional."
+}
