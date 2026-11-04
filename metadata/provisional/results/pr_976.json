@@ -1,0 +1,17 @@
+{
+  "order": 165,
+  "directive": 960,
+  "pull_request": 976,
+  "hypothesis": "H5",
+  "result": "B1' and `spread_mr_ctx` on 1,855 days; the `gbm_funding` arms of `scripts/b1_calendar_960.py`",
+  "declarations": [
+    "metadata/b1_calendar_960.json"
+  ],
+  "model": "`gbm_funding` as a series (the walks, read-only, `--walks`) beside B1' and `spread_mr_ctx`; B1' reads the reporting day type of the target and is not provisional",
+  "pairing": "one_step",
+  "class": "series",
+  "on_the_page": [
+    "2026-10-19-model-00976-H5-step5"
+  ],
+  "concluded": "B1' over B1 is +15.8% pooled; the page's `gbm_funding` arms (quoted by #997, row 17) rest on the one-step walks, so they are provisional until those are re-run."
+}
