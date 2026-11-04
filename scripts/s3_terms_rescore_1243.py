@@ -16,7 +16,7 @@ came with it; where a stage carries more than one change that can reach the scor
     python3 scripts/s3_terms_rescore_1243.py build --score NEW.json --stage LABEL=COMMIT=CHANGES=stage_C.json ... \\
         --old docs/research/s3-terms-1196/result.json --base-sha SHA --output docs/research/s3-terms-1243/result.json
     python3 scripts/s3_terms_rescore_1243.py page --score docs/research/s3-terms-1243/result.json \\
-        --output docs/research/s3-terms-1243-result.md
+        --domain docs/research/day-type-domain-1266/result.json --output docs/research/s3-terms-1243-result.md
 
 with PUB.csv the published panel built as in the docstring of `scripts/s3_terms_1196.py` (digest `4ddc3882…`). Each score takes about
 40 minutes on 4 cores. Stdlib only.
@@ -34,6 +34,9 @@ from typing import Dict, List, Optional, Sequence, Tuple
 REPO = Path(__file__).resolve().parents[1]
 OLD_RESULT = REPO / "docs" / "research" / "s3-terms-1196" / "result.json"
 OLD_PAGE = "docs/research/s3-terms-1196-result.md"
+#: The day-type record whose studentized domain rows the page shows beside the current ones (#1454): scored on the same panel, its
+#: current rows equal this record's to the last digit (#1266), and the page refuses it otherwise.
+DOMAIN_RECORD = REPO / "docs" / "research" / "day-type-domain-1266" / "result.json"
 RANK = {"loss": 0, "undecided": 1, "gain": 2}
 NO_READING = "no reading"
 Stage = Tuple[str, str, str, dict]
@@ -237,11 +240,18 @@ def superseded_note(base_sha: str, pr: int, old_base: str) -> str:
             "see docs/research/s3-terms-1243-result.md. 26 October 2026.")
 
 
-def page_text(r: dict) -> str:
-    """The page for a `result.json` of this script: #1196's page of the new score, retitled, then the section on what changed."""
+def page_text(r: dict, domain: Optional[dict] = None) -> str:
+    """The page for a `result.json` of this script: #1196's page of the new score, retitled, then the section on what changed.
+
+    With `domain`, a day-type record scored on the same days (`day_type_domain_1266.py`), the day-type rows show its studentized
+    domain interval beside the current one (#1454); without it the page is as it was.
+    """
 
     flat = dict(r["against_1196"], base_sha=r["base_sha"])
-    return retitle(_load("s3_terms_1196").render(r)).rstrip("\n") + "\n\n" + "\n".join(section(flat)) + "\n"
+    terms = _load("s3_terms_1196")
+    if domain is not None:
+        r = dict(r, domain_vs=terms.domain_rows_of(r, domain), domain_source=DOMAIN_RECORD.relative_to(REPO).as_posix())
+    return retitle(terms.render(r)).rstrip("\n") + "\n\n" + "\n".join(section(flat)) + "\n"
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
@@ -257,6 +267,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     b.add_argument("--output", required=True)
     g = sub.add_parser("page", help="write the result page from result.json")
     g.add_argument("--score", required=True)
+    g.add_argument("--domain", default=None, help="a day-type record (day_type_domain_1266.py score) for the studentized domain rows")
     g.add_argument("--output", required=True)
     args = parser.parse_args(argv)
     if args.command == "build":
@@ -274,7 +285,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         return 0
     r = json.loads(Path(args.score).read_text(encoding="utf-8"))
     Path(args.output).parent.mkdir(parents=True, exist_ok=True)
-    Path(args.output).write_text(page_text(r), encoding="utf-8")
+    domain = None if args.domain is None else json.loads(Path(args.domain).read_text(encoding="utf-8"))
+    Path(args.output).write_text(page_text(r, domain), encoding="utf-8")
     return 0
 
 
