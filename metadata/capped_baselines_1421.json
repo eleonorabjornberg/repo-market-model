@@ -1,0 +1,63 @@
+{
+ "status": "declared by the pull request that closes #1421 before any figure was computed; a development study, never a verdict. Nothing is registered or published, no record in docs/runs/ is edited, no declaration already merged changes, the candidate is not changed or tuned, no day after 2026-09-03 is read and no lockbox day is scored. Amendments made after a figure was computed are listed in `amendments` (none at the time of writing).",
+ "issue": 1421,
+ "hypothesis": "H5 (primary goal): the SOFR - IORB spread distribution in bp. Step 3, registration design (benchmarks): the simple baselines carry the same Standing Repo Facility cap as the candidate, so that part of the candidate's gain is not a mechanical truncation at the full-allotment line",
+ "ruling": "Eleonora, 3 November 2026, chat, relayed on #1421: queue the two points of the pre-registration design review not yet covered. Second ruling the same day (comment 6616594072 on #1421): the capped baselines (B1'*-cap and B2*-cap, with the same SRF cap and probability rule (b) as the candidate) are the confirmatory benchmarks; the uncapped versions are reported beside them. #1394's revision after #1399 names the capped versions in rules 3 and 4. The question of which version is confirmatory is therefore ruled, not open",
+ "decision_instant": "18:00 America/New_York on the decision day (repo_model.decision_instant.DECISION_TIME, amended on 29 October 2026, #1312). The walks are made at that instant (RMM_DECISION_TIME=18:00, the panel built with --decision-time 18:00:00), as #1314, #1388 and #1389 were; the candidate's capped vector must equal the 1314 record's grid CRPS to 1e-9 or no record is written",
+ "candidate": {
+  "name": "sc_s3c_ann_net",
+  "label": "(s3c-ann-net)",
+  "definition": "h5-candidate.json, walked by the code of scripts/s3c_announced_settlement_1288.py unchanged, with the cap and rule (b) of #1415 (repo_model.s3c_candidate): every quantile clipped at the SRF line (margin 0 bp) on target days at full allotment, probabilities from capped_law rule 'open_tail'"
+ },
+ "models": {
+  "B1p_star": "B1'* (#1388): repo_model.b1_calendar.b1_calendar_anchor_forecast, uncapped",
+  "B1p_star_cap": "B1'*-cap: B1'* with every quantile clipped at the line the candidate reads (repo_model.protocol_benchmarks.b1_calendar_anchor_capped_forecast), probabilities under rule (b)",
+  "B2": "B2 (calendar climatology of scoring protocol v1, with the thin-pool record in force), uncapped. Stands in for B2* (#1420), which is not on main; the size-and-power study (#1399) used B2 as the same stand-in. When #1420 merges, B2*-cap wraps B2* and this study is re-run by a later directive",
+  "B2_cap": "B2*-cap with B2 as the stand-in: B2 clipped at the line the candidate reads (repo_model.protocol_benchmarks.b2_capped_forecast), probabilities under rule (b)"
+ },
+ "cap": {
+  "line": "repo_model.s3c_candidate.cap_line on the target day of each cell: the Standing Repo Facility minimum bid less IORB (repo_model.srf_line.srf_line_bps) from metadata/policy_events.json, read from the entries announced at or before the decision instant and effective by the target; None (no cap) unless the entry in force states no aggregate operation limit (full allotment). The line a baseline is capped at is exactly the candidate's, cell for cell: the study refuses to write a record if a baseline's line differs from the candidate's on any cell",
+  "margin_bp": 0.0,
+  "rule": "q'_p = min(q_p, line) for every level p on a cell with a line; the cell is unchanged otherwise. Monotone, fits nothing, tunes nothing",
+  "probabilities": "P(> tau) of every model, capped or not, is capped_law.exceedance(uncapped quantiles, line, tau, rule 'open_tail'): rule (b), as the candidate reads it. Where a cell has no line, or the model is uncapped, no cap is applied and the law is the status-quo law of the quantile vector (what rule (b) gives with no cap). Whole basis points, the event strict (data.exceeds_bp)",
+  "information_set": "the availability declaration of metadata/srf_cap_1241.json holds unchanged; the instant is the 18:00 decision instant, and tests/test_capped_baselines_1421.py perturbs a policy entry announced after it"
+ },
+ "windows": {
+  "development": "decision days whose five targets fall on or before 2025-12-31 (window 'development' of scripts/s3c_announced_settlement_1288.py). It is the window that decides what this study reads; the cells at full allotment in it are the targets from 2025-12-11",
+  "2026": "decision days whose five targets fall from 2026-01-02 to 2026-09-03 (window '2026', the near-blind tier open since GO #151), where full allotment applies on every target; shown apart. The days have been seen by earlier studies"
+ },
+ "measures": {
+  "scores": "per cell (decision day, lead 1 to 5) and per model: grid CRPS (23 levels; primary, averaged over h = 1..5), upper-tail twCRPS (key secondary) and the Brier score of P(> +5 bp). The grid CRPS and the twCRPS read the model's quantile vector, which is the capped vector for a capped model",
+  "groups": "pooled (all cells); the cells at full allotment (target days with a line); by regime and by pressure-day type of the target day (turn_days.reporting_day_type). A pooled figure alone is not a result",
+  "comparisons": "paired, studentized stationary bootstrap (scoring protocol v1), read on the bound on mean d (her ruling on #1009), seed 1421, mean block sp.BLOCK_LENGTH, two-sided 90% interval, on decision-day means over the group's cells: (1) the candidate against each of the four baselines (positive favours the candidate); (2) each capped baseline against its uncapped version (positive favours the cap: the part of a gain the cap alone buys). A group of fewer than 20 decision days is not tested; a group the two score alike on every day is `identical`. The reading is `gain` when the interval excludes zero on the positive side, `loss` when on the negative side, `undecided` otherwise",
+  "share_explained": "for each baseline and each metric in the pooled and full-allotment groups: share = (mean uncapped baseline - mean capped baseline) / (mean uncapped baseline - mean candidate), the part of the candidate's gain over the uncapped baseline that the cap alone buys. It is reported only where the candidate's gain over the uncapped baseline is positive and its interval (comparison 1) excludes zero; otherwise it is `not defined`. Its interval is the 90% percentile interval of the share over the stationary bootstrap resamples of the decision days (block as above, seed 1421, 2000 resamples), taken only on resamples whose candidate gain is positive, with the number dropped listed. A share above 1 means the cap alone gains more than the candidate does over the uncapped baseline",
+  "reproduction": "the candidate's mean grid CRPS, B2's and the uncapped B1'*'s pooled means equal the 1314 record (candidate, B2) and the 1388 result (B1'*) to 1e-9 in both windows, or no record is written"
+ },
+ "reading_rules": [
+  "Development data, not a verdict. The development window decides what this page reads; the 2026 days are shown apart and have been seen.",
+  "A gain or loss is read from the interval on mean d excluding zero; a point estimate alone is not read. A pooled figure is never read without the full-allotment, regime and pressure-day-type groups beside it.",
+  "The capped baselines are the confirmatory benchmarks (her ruling of 3 November 2026); the uncapped versions are reported beside them. This study does not reopen that.",
+  "Lens C's caveat is stated on the page: the lag-10 HAC standard error is understated about 2x after 2020, so an interval that excludes zero is narrower than it should be.",
+  "B2 stands in for B2* (#1420 not merged). The page says so beside every B2 figure it quotes."
+ ],
+ "questions": [
+  "None for her on which version is confirmatory (ruled). Whether B2*-cap replaces the stand-in in the confirmation design follows #1420 and is a later directive's re-run."
+ ],
+ "seed": 1421,
+ "long_run": "one walk of (s3c-ann-net) per window, minutes each, and the paired tests a minute or two each: a cloud run, under the two-hour line of `long-run`",
+ "limits": {
+  "last_day": "2026-09-03",
+  "gbm_funding_declaration": "unchanged",
+  "preregistration": "scripts/final_test_preregistration.py is not touched",
+  "allow_list": "repo_model.one_step_guard.ONE_STEP_ALLOW_LIST is not changed",
+  "sources": "metadata/sources.json is not changed; no declaration already merged is changed",
+  "producer": "nothing fits through a guarded fitter here: the baselines are empirical quantiles and the cap is a transform, so no provisional-register entry is needed"
+ },
+ "amendments": [],
+ "variants": {
+  "B1p_star": "B1'* as it stands (#1388): no new fit",
+  "B1p_star_cap": "B1'* clipped at the candidate's line: a transform; nothing is fitted or tuned",
+  "B2": "B2 as it stands, the stand-in for B2*: no new fit",
+  "B2_cap": "B2 clipped at the candidate's line: a transform; nothing is fitted or tuned"
+ }
+}

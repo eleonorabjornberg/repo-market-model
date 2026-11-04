@@ -222,6 +222,76 @@ class LookAheadTests(unittest.TestCase):
         self.assertEqual(len(again.calls), 1, "a pending onset is not attributed, so it is still open")
 
 
+class RefusedAtCloseTests(unittest.TestCase):
+    """Finding #1386 (her ruling of 2 November 2026, option 1): a refusal outlives the window.
+
+    Mutation (#1401), applied in a disposable copy: in `live_h10.run_day`, `if onset.isoformat() in refused:` ->
+    `if False:` makes `test_an_onset_refused_until_its_window_closes_keeps_its_refusal` fail with `AssertionError:
+    'not attributable' != 'refused at window close'`.
+    """
+
+    def setUp(self):
+        self.pin = live_h10.load_pin()
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.out = Path(self.tmp.name)
+
+    def _record(self, day):
+        return json.loads((self.out / "h10" / f"{day}.json").read_text(encoding="utf-8"))
+
+    def _refuse(self, onset, days):
+        def refuse(o, r):
+            raise LookAheadError("attribution: scored day 2026-09-04 is in the locked blind tier")
+
+        for day in days:
+            fake = Fake(onsets=[onset], behaviour=refuse)
+            live_h10.run_day(day, Path("p"), self.out, fake.backend(), self.pin)
+
+    def test_an_onset_refused_until_its_window_closes_keeps_its_refusal(self):
+        # The window of 22 October closes after 5 November: 6 November is the last day it is pending, 9 November is late.
+        onset = date(2026, 10, 22)
+        self._refuse(onset, [date(2026, 10, 23), date(2026, 11, 6)])
+        self.assertEqual(self._record("2026-11-06")["rows"][0]["status"], "pending")
+        fake = Fake(onsets=[onset])
+        self.assertEqual(live_h10.run_day(date(2026, 11, 9), Path("p"), self.out, fake.backend(), self.pin), 0)
+        self.assertEqual(fake.calls, [], "a closed window is not attributed")
+        row = self._record("2026-11-09")["rows"][0]
+        self.assertEqual(row["status"], "refused at window close")
+        self.assertEqual(row["refusal"]["type"], "LookAheadError")
+        self.assertIn("locked blind tier", row["refusal"]["error"])
+        self.assertIn("registered method refused", row["reason"])
+        self.assertNotIn("first panel day this job saw", row["reason"])
+        self.assertEqual((row["counted"], row["under_bar"], row["beats_null"]), (False, False, False))
+        self.assertEqual(row["label"], "prospective")
+        self.assertEqual(row["onset"], "2026-10-22")
+        self.assertEqual(self._record("2026-11-09")["status"], "ok", "the day is not pending: the onset is final")
+
+    def test_a_final_row_is_reported_once(self):
+        onset = date(2026, 10, 22)
+        self._refuse(onset, [date(2026, 11, 6)])
+        live_h10.run_day(date(2026, 11, 9), Path("p"), self.out, Fake(onsets=[onset]).backend(), self.pin)
+        later = Fake(onsets=[onset])
+        live_h10.run_day(date(2026, 11, 10), Path("p"), self.out, later.backend(), self.pin)
+        self.assertEqual(later.calls, [])
+        self.assertEqual(self._record("2026-11-10")["rows"], [])
+
+    def test_the_seen_late_reason_is_written_only_for_a_first_sight_after_the_window(self):
+        onset = date(2026, 10, 22)
+        live_h10.run_day(date(2026, 11, 9), Path("p"), self.out, Fake(onsets=[onset]).backend(), self.pin)
+        row = self._record("2026-11-09")["rows"][0]
+        self.assertEqual(row["status"], "not attributable")
+        self.assertIn("first panel day this job saw the onset", row["reason"])
+        self.assertNotIn("refusal", row)
+
+    def test_another_onsets_refusal_does_not_leak_into_a_late_one(self):
+        self._refuse(date(2026, 10, 22), [date(2026, 11, 6)])
+        fake = Fake(onsets=[date(2026, 10, 22), date(2026, 10, 23)])
+        live_h10.run_day(date(2026, 11, 10), Path("p"), self.out, fake.backend(), self.pin)
+        rows = {r["onset"]: r for r in self._record("2026-11-10")["rows"]}
+        self.assertEqual(rows["2026-10-22"]["status"], "refused at window close")
+        self.assertEqual(rows["2026-10-23"]["status"], "not attributable")
+
+
 class DayTests(unittest.TestCase):
     def setUp(self):
         self.pin = live_h10.load_pin()

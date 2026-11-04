@@ -1,7 +1,7 @@
 """Live record (#215): log the published pressure model's forecast, frozen, each decision day.
 
 Eleonora's decision of 3 October 2026 (#215). Every business day, after the
-16:00 ET decision instant, `.github/workflows/live-log.yml` runs this script at
+18:00 ET decision instant (16:00 until #1368), `.github/workflows/live-log.yml` runs this script at
 a pinned code SHA. It fetches the day's sources with the repository's own
 fetchers, builds the as-of panel, runs every declared model (`MODELS`: the
 published pressure model v1 now) and its baselines for horizons 1-5, and writes
@@ -30,14 +30,17 @@ the decision day ends at the day before it, the last SOFR published by then.
 `extend_panel` appends placeholder rows for the decision day and the next
 decision days, carrying only what is known in advance: the calendar columns
 (`data.CALENDAR_COLUMN_RULES`) and the Treasury settlements the auction snapshot
-lists (`treasury_auctions`' `scheduled_availability`); every other cell is
+lists (`treasury_auctions`' `scheduled_availability`); the decision day's row
+also carries its own bill rates, `tbill_4w` and `tbill_13w`, public at 16:30 and so
+before the 18:00 instant (`DECISION_ROW_COLUMNS`, #1403); every other cell is
 empty, and the spread is the last real row's, so that a row exists. The
 forecast loop (`forecast_run`) is `baseline.rolling_exceedance_backtest`'s,
 walked through the target day; it computes no metric and scores no day, which
 is why it does not consult the lockbox: `docs/decisions/lockbox.md` lets a model
 "be trained on, and forecast, the days its as-of information set allows".
 `require_reads_on_real_rows` refuses a forecast that would read anything but
-the calendar or a scheduled settlement off a placeholder (`LookAheadError`).
+the calendar or a scheduled settlement off a placeholder, and on the decision row the bill rates only
+(`LookAheadError`).
 A placeholder's label is fed to the online calibration after its own band, as
 in a backtest; every calibration and recalibration step reads only labels at or
 before the forecast's anchor, so no placeholder label reaches the target's
@@ -100,7 +103,7 @@ v1 = _script("pressure_model_v1")
 #: published distribution and as-of persistence exactly as `compare` does.
 final_test = _script("final_test_preregistration")
 
-from repo_model import field_flags, onset, pressure, prospective_log  # noqa: E402
+from repo_model import decision_instant, field_flags, onset, pressure, prospective_log  # noqa: E402
 from repo_model.asof import (  # noqa: E402
     KIND_OBSERVED,
     InformationRule,
@@ -131,7 +134,7 @@ from repo_model.baseline import (  # noqa: E402
     persistence_logistic_exceedance,
     twcrps_weights,
 )
-from repo_model.contract import QUANTILE_LEVELS  # noqa: E402
+from repo_model.contract import FEATURE_FIELDS, QUANTILE_LEVELS  # noqa: E402
 from repo_model.data import (  # noqa: E402
     CALENDAR_COLUMN_RULES,
     SETTLEMENT_ZERO_COLUMNS,
@@ -173,7 +176,12 @@ PROTOCOL_VERSIONS = (RECORD_VERSION_V3, RECORD_VERSION_V4)
 #: after it; the live record logs no day on or before it.
 PANEL_END = date(2026, 9, 3)
 HORIZONS = v1.HORIZONS
-DECISION = v1.DECISION
+#: The decision instant in force (`repo_model.decision_instant`, 18:00 since the amendment of 29 October 2026, #1312, #1368).
+#: Not `v1.DECISION`: the published model's own module is frozen at the 16:00 it was published at, and the live record
+#: is made at the instant in force. A record declares the instant it was made at (`decision_instant`).
+DECISION = decision_instant.DECISION_TIME
+#: 16:00, the instant every record made before the amendment declares. For readers of such a file only.
+LEGACY_DECISION = decision_instant.LEGACY_DECISION_TIME
 MINIMUM_HISTORY = v1.MINIMUM_HISTORY
 REFIT_EVERY = v1.REFIT_EVERY
 CALENDAR_FEATURES = v1.CALENDAR_FEATURES
@@ -267,6 +275,13 @@ SETTLEMENT_SERIES = {
 CALENDAR_COLUMNS = tuple(column for column in BUILD_COLUMNS if column in CALENDAR_COLUMN_RULES)
 #: What a placeholder row carries: what is known before the day.
 PLACEHOLDER_COLUMNS = CALENDAR_COLUMNS + tuple(SETTLEMENT_SERIES)
+#: What the decision row also carries at the 18:00 instant (#1403; her ruling of 2 November 2026 on #1384, question 1,
+#: option 1): the decision day's own bill rates. `treasury_bill_rates` is declared available at 16:30 New York on its
+#: own day (`metadata/sources.json`, `release_lag`), before the instant, so the as-of rule serves v1's `tbill_4w` and
+#: `tbill_13w` from the decision day's row and not the day before's. `require_decision_row_declared` checks the
+#: declaration; `decision_row_values` reads the cells from the point-in-time panel. No other observed read is admitted
+#: on the decision row, and none on a target row.
+DECISION_ROW_COLUMNS = ("tbill_4w", "tbill_13w")
 
 RECORD_KEYS = (
     "record_version", "decision_day", "decision_instant", "code", "packages", "inputs",
@@ -281,6 +296,31 @@ BASELINE_NAMES = {
 
 
 # -- the calendar -------------------------------------------------------------
+
+
+def instant_of(day: date) -> datetime:
+    """`day`'s decision instant in force, New York time (aware): what a record made for `day` declares."""
+
+    return datetime.combine(day, DECISION, tzinfo=EASTERN)
+
+
+def declared_decision_time(record: dict) -> time:
+    """The wall-clock decision time (New York) a record declares in its `decision_instant`.
+
+    A record made at 16:00 is a record of that instant (the amendment of 29 October 2026): a reader takes this, not
+    `DECISION`, so it never reads a 16:00 file at 18:00.
+
+    Raises:
+        ValueError: the record declares no decision instant, or one without a time zone.
+    """
+
+    text = record.get("decision_instant")
+    if not isinstance(text, str):
+        raise ValueError("the record declares no decision_instant")
+    moment = datetime.fromisoformat(text)
+    if moment.tzinfo is None:
+        raise ValueError(f"decision_instant {text!r} has no time zone")
+    return moment.astimezone(EASTERN).timetz().replace(tzinfo=None)
 
 
 def is_decision_day(day: date) -> bool:
@@ -571,7 +611,7 @@ def fetch(raw_root: Path, day: date) -> None:
 def build(raw_root: Path, panel: Path, cutoff: datetime) -> None:
     argv = [
         "build", "--raw-root", str(raw_root), "--output", str(panel),
-        "--build-cutoff", cutoff.isoformat(), "--decision-time", "16:00:00",
+        "--build-cutoff", cutoff.isoformat(), "--decision-time", decision_instant.DECISION_TIME_SECONDS_TEXT,
     ]
     for column in BUILD_COLUMNS:
         argv += ["--column", column]
@@ -685,6 +725,8 @@ def extend_panel(real_rows, decision_day: date, horizon: int, pit_path: Path, au
     block = json.loads(REGISTRY.read_text(encoding="utf-8"))["treasury_auctions"]["scheduled_availability"]
     check_settlement_schedule(auctions, [row.date for row in real] + days, block)
     settled = _settlements(pit_path, days)
+    require_decision_row_declared(json.loads(REGISTRY.read_text(encoding="utf-8")))
+    decision_values = decision_row_values(pit_path, decision_day, instant_of(decision_day))
     last = real[-1].values
     extended = list(real)
     for day in days:
@@ -692,15 +734,74 @@ def extend_panel(real_rows, decision_day: date, horizon: int, pit_path: Path, au
         for column in CALENDAR_COLUMNS:
             values[column] = CALENDAR_COLUMN_RULES[column](day)
         values.update(settled[day])
+        if day == decision_day:
+            values.update(decision_values)
         extended.append(DailyObservation(date=day, values=values))
     return extended, targets
+
+
+def require_decision_row_declared(registry: dict, instant: time = None) -> None:
+    """Check the availability declaration behind `DECISION_ROW_COLUMNS` against the instant in force.
+
+    Each column's source must be public on the decision day itself (`release_lag.days == 0`, a business-day lag of
+    none) at a time at or before `instant` (default `DECISION`).
+
+    Raises:
+        ValueError: a source is declared available on a later day or after the instant.
+    """
+
+    instant = DECISION if instant is None else instant
+    for column in DECISION_ROW_COLUMNS:
+        source = FEATURE_FIELDS[column][0][0]
+        lag = registry[source]["release_lag"]
+        if int(lag["days"]) != 0 or time.fromisoformat(lag["available_time"]) > instant:
+            raise ValueError(
+                f"{column} ({source}) is declared available {lag['days']} day(s) after its date at "
+                f"{lag['available_time']}: it is not public at {instant.isoformat()} on the decision day, "
+                "so the decision row cannot carry it"
+            )
+
+
+def decision_row_values(pit_path: Path, decision_day: date, instant: datetime) -> dict:
+    """The decision day's own `DECISION_ROW_COLUMNS` from the point-in-time panel, as public at `instant`.
+
+    The latest vintage per column whose `available_at` is at or before `instant`: a later vintage is never read.
+
+    Raises:
+        ValueError: a column has no value for the decision day public at the instant.
+    """
+
+    series = {
+        column: FEATURE_FIELDS[column][0][1] for column in DECISION_ROW_COLUMNS
+    }
+    latest = {}
+    for row in load_point_in_time_panel(Path(pit_path)):
+        if row.ref_date != decision_day or row.series_id not in series.values():
+            continue
+        if row.available_at <= instant and (
+            row.series_id not in latest or row.available_at >= latest[row.series_id].available_at
+        ):
+            latest[row.series_id] = row
+    values = {}
+    for column, series_id in series.items():
+        if series_id not in latest:
+            raise ValueError(
+                f"{column} ({series_id}) has no value for {decision_day} public by {instant.isoformat()}: "
+                "the decision row carries the day's own bill rates and a run does not go on without them"
+            )
+        values[column] = float(latest[series_id].value)
+    return values
 
 
 def require_reads_on_real_rows(rows, rule: InformationRule, index: int, last_real: int) -> None:
     """Refuse a forecast of `rows[index]` that reads a placeholder's unknown cell.
 
     A read on a row after `last_real` (a placeholder) is admissible only for a
-    column the placeholder carries, the calendar or a scheduled settlement.
+    column the placeholder carries, the calendar or a scheduled settlement. The
+    decision row (the one after `last_real`) also admits an observed read of
+    `DECISION_ROW_COLUMNS`, the day's own bill rates, when the row carries the
+    cell (#1403); no other observed read, and no read of those columns on a
+    later row.
 
     Raises:
         LookAheadError: if an observed read, or any read of another column,
@@ -712,6 +813,13 @@ def require_reads_on_real_rows(rows, rule: InformationRule, index: int, last_rea
     # The spread is an observed read at the anchor, so an anchor on a
     # placeholder is caught here too.
     for read in info.reads:
+        if (
+            read.row == last_real + 1
+            and read.kind == KIND_OBSERVED
+            and read.feature in DECISION_ROW_COLUMNS
+            and rows[read.row].values.get(read.feature) is not None
+        ):
+            continue
         if read.row > last_real and (
             read.kind == KIND_OBSERVED or read.feature not in PLACEHOLDER_COLUMNS
         ):
@@ -1242,7 +1350,7 @@ def run_command(args) -> int:
     if record_path(out_dir, day).exists():
         raise ValueError(f"{record_path(out_dir, day)} exists: a day is logged once")
     started = datetime.now(timezone.utc)
-    instant = datetime.combine(day, DECISION, tzinfo=EASTERN)
+    instant = instant_of(day)
     if not args.dry_run:
         now = started.astimezone(EASTERN)
         if now.date() != day or now < instant:

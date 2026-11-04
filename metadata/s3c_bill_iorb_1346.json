@@ -1,0 +1,79 @@
+{
+ "status": "declared by the pull request that closes #1346 before any score was computed; a development study, never a verdict. (s3c-ann-net) stays the H5 candidate named in docs/research/h5-candidate.json and (s3c) stays the model it was built on: nothing here changes either. Nothing is registered or published: no record in docs/runs/ is edited, the live record and its pin do not change, no declaration already merged changes (metadata/s3c_flagnet_gross_1321.json, metadata/s3c_announced_settlement_1288.json, metadata/s3c_ann_net_1800_1314.json, metadata/settlement_announcement_dating.json, metadata/net_settlement.json, metadata/sources.json and docs/decisions/information-set.md included), docs/research/h5-candidate.json and scripts/final_test_preregistration.py do not change, no day after 2026-09-03 is scored and no lockbox day is scored. Amendments made after a number was computed are listed in `amendments`; there are none.",
+ "issue": 1346,
+ "ledger": "item 97",
+ "ruling": "Eleonora, 1 November 2026, chat, relayed on #1346: queue #1336 now. One development arm on (s3c-ann-net) that reads the 4-week bill rate less IORB; read the previous business day's bill rate only, so the arm does not rest on #1334's unmeasured same-day availability; commit the declaration first; report paired against (s3c-ann-net) and (s3c) on grid CRPS, twCRPS and Brier P(> +5 bp), by lead, regime and pressure-day type, with the 2026 days separately, at 18:00; development data, never a verdict; the candidate does not change.",
+ "hypothesis": "H5 (primary goal): the SOFR - IORB spread distribution in bp. Step 3, one arm on the candidate (s3c-ann-net). Development tier",
+ "target": "spread_bps at the scored day, in basis points, as a 23-quantile distribution at each lead h = 1..5 (scoring_protocol.GRID)",
+ "why": "(s3c-ann-net) reads calendar days and the announced settlement size but nothing about the price of cash in the neighbouring market. The 4-week Treasury bill rate less IORB is the bill market's price of cash at the same horizon as the overnight repo market; when it is high relative to IORB, cash is dear in bills and may be dear in repo too. The arm asks whether that one level carries information about the spread beyond what (s3c-ann-net) already reads. It is a single arm, no variant: the tenor, the previous-day rule and the unit are fixed here.",
+ "decision_instant": "18:00 America/New_York on the decision day (repo_model.decision_instant.DECISION_TIME, amended on 29 October 2026, #1312). Every walk of this study, the references included, is made at that instant. The arm's one new input is read from the panel row before the decision day, which is public by 16:30 of that earlier day on the declaration in force and, under the reading #1334 asks to measure (a release of day D that carries day D-1's rates), by 16:30 of the decision day: both before 18:00, so the arm does not depend on whether day D's own rate is public by 18:00",
+ "candidates": [
+  {
+   "name": "sc_s3c_ann_net_bill",
+   "label": "(s3c-ann-net-bill)",
+   "definition": "(s3c-ann-net) with one more term in the fit, `bill_less_iorb`: the 4-week bill rate less IORB, in units of 10 bp, of the previous business day. For a forecast made on decision day D (panel row d) the term is (tbill_4w - iorb) x 100 / 10 read from panel row d - 1, the same figure at every lead h = 1..5 (the target row is d + h, so a training pair with target row T reads row T - h - 1). tbill_4w is the coupon-equivalent 4-week bill rate in percent (contract.py: treasury_bill_rates, tbill_4w_coupon_equivalent) and iorb the panel's IORB in percent, both of the same row. The term is an extra term of the fit (spread_mr_state_calendar extra terms), entering after the two net settlement terms when at least three training pairs carry a non-zero value; it enters the Huber fit with the ridge of 5 like every other term, in the model's standardised units (the raw residual of a pair divided by the scale at the pair's origin), so its effect in bp is the fitted coefficient times the scale at the anchor, per 10 bp of the bill-IORB gap. Everything else is (s3c-ann-net)'s: the announced settlement terms read at leads 2 to 5 and sized by net settlement, the other calendar terms, the Huber fit (k = 1.345), the direct pairs and the pool of standardised residuals; the SRF cap at the line from full allotment, margin 0 bp, is applied to its quantiles exactly as to (s3)'s (repo_model.s3c_candidate, unchanged).",
+   "module": "repo_model.s3c_bill_iorb (BILL_ARM = s3c_announced.ANN_NET_ARM renamed with extra = (bill_less_iorb,); BillLessIorbTable serves the term through the `iorb` argument of spread_mr_state_calendar.walk, alongside the net table through `sizes`); spread_mr_state_calendar gains the name of the term in its extra terms and changes no existing arm",
+   "units": "bill_less_iorb: 10 bp (a bill rate 25 bp above IORB reads +2.5); effect reported in bp per 10 bp of the gap, and the mean shift it makes in bp on the scored days"
+  }
+ ],
+ "new_read": {
+  "what": "the 4-week bill rate less IORB of the previous business day (`bill_less_iorb`)",
+  "availability": "the decision on day D reads panel row d - 1 only, for both columns. The panel rows are business days. metadata/sources.json declares treasury_bill_rates public at 16:30 on the day it is dated; asof.InformationRule at the 16:00 decision of the published records already reads row d - 1 of tbill_4w and of iorb, and at 18:00 it would read row d (the same-day rate that #1334 asks to measure). The arm reads row d - 1 at both instants, so no figure of the arm rests on the same-day posting time of Treasury's page. It also reads no rate that the declaration or the finding of #1334 dates later than 16:30 of the decision day",
+  "leakage_boundary": "repo_model.s3c_bill_iorb.BillLessIorbTable.read re-derives the source row of the figure it serves and compares it with the previous business day of the decision: a figure read from the decision day's own row or later raises LookAheadError, one read from an older row than the previous business day raises StaleReadError. tests/test_s3c_bill_iorb.py holds the leakage test with one recorded mutation (the source row taken from the decision day instead of the day before; LookAheadError) and a test that the source row equals the row asof.InformationRule reads for tbill_4w and iorb at the 16:00 decision, so the arm is valid at that instant too",
+  "caveat": "The series is the one #1334 questions: Treasury's own export, whose posting time no source states. The arm is not exposed to that question for the decision day, but it is exposed to the reading that the rate dated D - 1 was posted later than 16:30 of D, which no source suggests",
+  "not_read_elsewhere": "no published declaration, record or live path reads the term; tbill_4w and tbill_13w stay inputs of dynamic_logit as they are"
+ },
+ "references": [
+  {"name": "sc_s3c_ann_net", "label": "(s3c-ann-net)", "role": "the H5 candidate, re-run at 18:00 in the same walk as the arm; the first reference, and the one the arm differs from by the single term"},
+  {"name": "sc_s3c", "label": "(s3c)", "role": "the model (s3c-ann-net) was built on, re-run at 18:00 in the same run (the frame of #1255)"}
+ ],
+ "pairs": "direct: the term is a function of the decision, read at the target row of each pair as the decision `lead` rows before could read it, with training_pairs = 'direct' (spread_mr_state_calendar.fit_state_terms is guarded by one_step_guard with no allow-list entry; repo_model.one_step_guard.ONE_STEP_ALLOW_LIST is not changed). A training pair reads the figure of its own decision (target - lead), so a training figure and a forecast figure are the same function of the same panel rows; the provisional-register row is metadata/provisional/cleared/s3c_bill_iorb_1346.json",
+ "frame": {
+  "windows": "the two windows of #1255, loaded as #1321 loads them: the development window (decision days whose five targets fall on or before 2025-12-31; scripts/srf_cap_1241.py build_frame) and the 2026 development days (decision days whose five targets fall from 2026-01-02 to 2026-09-03, the near-blind tier open since GO #151; scripts/s3_2026_check_1222.py build_frame). The 2026 days are reported on their own, as a window",
+  "walk": "(s3) is #1145's walk (refit every 21 decision days, direct pairs); every walk of this study starts on the same first decision day and runs over the same decision days as #1255's, so the arm and the references are compared on the same days. The study refuses to write a record unless every scored decision day has a forecast of every model",
+  "guards": "a scored decision day or target day passes lockbox.require_unlocked through spread_mean_reversion_686.require_scored_days with the last day of the window; the blind tier (from 2026-09-04) and every lockbox day are refused; the term reads only rows of the panel, which ends at the last unlocked day"
+ },
+ "arms": [
+  {"name": "sc_s3c", "role": "(s3c); reference", "margin_bp": 0.0},
+  {"name": "sc_s3c_ann_net", "role": "(s3c-ann-net), the H5 candidate; reference", "margin_bp": 0.0},
+  {"name": "sc_s3c_ann_net_bill", "role": "(s3c-ann-net-bill), the arm", "margin_bp": 0.0}
+ ],
+ "models": ["sc_s3c", "sc_s3c_ann_net", "sc_s3c_ann_net_bill"],
+ "primary": {
+  "metric": "grid CRPS (23 levels) averaged over leads h = 1..5",
+  "key_secondary": "upper-tail twCRPS (weight 1{z > 0 bp})",
+  "pressure_probability": "the Brier score of P(spread > +5 bp), the probability read off the 23 quantiles as 1 - F(floor(tau) + 0.5), F linear between them (spread_mean_reversion.exceedance), the event strict and on whole basis points (data.exceeds_bp)",
+  "calibration": "the coverage of the central 90% band (q5 to q95, closed) of every model, pooled and by regime; a rate, reported as a mean and not tested",
+  "comparisons": "the arm against (s3c-ann-net) and against (s3c), paired; the benchmarks B1, B1' and B2 are not part of this directive's comparisons and are not re-scored here"
+ },
+ "scoring": {
+  "scorer": "repo_model.scoring_protocol (#655), the development tier: no verdict, no registration",
+  "test": "scoring_protocol.paired_tests, the studentized stationary bootstrap (ruling 1), mean block 10 business days, 10,000 draws, seed 1346, two-sided 90% interval (the lower end is the one-sided 95% bound); the skill interval and the studentized interval on mean d are reported for every tested row; where the studentized bound cannot be computed the unstudentized percentile interval of mean d is given beside it, with no reading taken from it",
+  "reading": "a reading is taken from the mean-d bound (her ruling on #1009): the arm is read better than a reference when the lower end of the 90% interval of mean d is above zero, worse when the upper end is below zero, otherwise undecided. Lens C's caveat (the lag-10 HAC standard error is understated about 2x after 2020) is stated on the page",
+  "splits": "pooled; by lead; by regime (the declared regimes, 2018-19 and 2020 on their own among them); by pressure-day type of the target day (turn_days.reporting_day_type, the record in force). The 2026 development days are the second window and carry the same splits. The intervals of a group of target days keep the current method (the group's days, scattered, resampled in date order as if consecutive), which #1221 questions and #1228 will decide",
+  "identical_groups": "a group in which the arm's score equals the reference's on every day is listed as identical and not tested against it; a group of fewer than 20 days is listed and not tested",
+  "seed": 1346
+ },
+ "fitted_effect": {
+  "what": "the fitted effect of bill_less_iorb in bp per 10 bp of the gap, by lead and regime of the target day: the mean over the scored decision days of the refit the forecast used times the scale at the anchor in bp, with the share of days on which the term was in the fit, and the mean absolute shift it made on the scored days",
+  "interval": "the 90% stationary-bootstrap percentile interval over decision days (block 10, 2000 replications, seed 1346) of each mean; an interval over days that share refits, not a sampling interval for a coefficient; a regime with fewer than 20 decision days is shown without one",
+  "range_of_the_term": "the minimum, maximum, mean and standard deviation of the term over the panel rows each window's decisions read are written to result.json and quoted on the page, since the Huber fit does not protect against a few extreme values of a regressor"
+ },
+ "reading_rules": [
+  "A figure is a check on days that were already seen. Nothing here is a verdict, nothing is registered and no choice is made on it; (s3c-ann-net) stays the H5 candidate until she rules.",
+  "A gain or loss is read from the 90% interval of mean d excluding zero; otherwise undecided. A point estimate alone is not read.",
+  "A pooled figure is never read without the lead, regime and pressure-day-type splits beside it.",
+  "If the arm should replace (s3c-ann-net), that goes to her as a marked question with numbered options and a default that changes no claim; the candidate does not change in this directive.",
+  "The series is Treasury's own export; its posting time is the subject of #1334 and is not measured here."
+ ],
+ "limits": {
+  "last_day": "2026-09-03",
+  "named_candidate": "unchanged; docs/research/h5-candidate.json is not changed",
+  "preregistration": "scripts/final_test_preregistration.py is not touched; test_final_test_freeze and test_live_score_freeze are run before the push",
+  "allow_list": "repo_model.one_step_guard.ONE_STEP_ALLOW_LIST is not changed",
+  "sources": "metadata/sources.json, metadata/settlement_announcement_dating.json, metadata/net_settlement.json and docs/decisions/information-set.md are not changed; no declaration already merged and no page already merged is changed; docs/runs/ is not touched; spread_mr_calendar, s3c_net and s3c_announced are not edited; spread_mr_state_calendar gains the name of the extra term and changes no existing arm's figures",
+  "one_arm": "one arm, one tenor (4 weeks), one lag (the previous business day), one unit (10 bp); no variant is tried and none is added after a score"
+ },
+ "long_run": "cloud first: one walk of the two arms and the references per window (minutes each) and the paired tests of one arm against two references on about twenty groups and three metrics per window. If the measured time on a subset says the full run exceeds about two hours, the run goes to the Mac as a `needs-mac:` comment",
+ "amendments": []
+}

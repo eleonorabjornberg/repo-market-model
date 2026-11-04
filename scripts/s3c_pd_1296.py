@@ -170,7 +170,7 @@ def term_use(frame, walk: s3c_pd.PdWalk, s3c, s3pd, levels=None) -> dict:
     out["decision_days"] = len(frame.days)
     out["days_with_state"] = sum(1 for d in frame.days if walk.values[d] is not None)
     if levels is not None:
-        skipped = [s3c_pd.skipped_weeks(levels, d) for d in frame.days if walk.values[d] is not None]
+        skipped = [s3c_pd.skipped_weeks(levels, d, decision_time=k.DECISION_TIME) for d in frame.days if walk.values[d] is not None]
         out["skipped_weeks"] = ({"decision_days": len(skipped), "mean": statistics.fmean(skipped), "max": max(skipped),
                                  "older_than_4_weeks": sum(1 for x in skipped if x > 4)} if skipped else None)
     return out
@@ -203,7 +203,7 @@ def fitted_effect(frame, walk: s3c_pd.PdWalk, levels) -> dict:
                    for h, v in sorted(coefficients.items())}
     units = []
     for d in frame.days:
-        week = s3c_pd.latest_defined_week(levels, d, max_carry_days=UNBOUNDED_CARRY)
+        week = s3c_pd.latest_defined_week(levels, d, decision_time=k.DECISION_TIME, max_carry_days=UNBOUNDED_CARRY)
         if week is None:
             continue
         trailing = [levels[w] for w in levels if 0 < (week - w).days <= 7 * s3c_pd.TRAILING_WEEKS and levels[w] is not None]
@@ -350,7 +350,7 @@ def score(args) -> int:
     register = policy_events.load_register()
     table = cal.TermTable(panel, announced_iorb.load_announcements(c.IORB_TABLE), decision_time=c.DECISION_TIME)
     levels = s3c_pd.load_levels(SNAPSHOT)
-    states = s3c_pd.decision_states(levels, [row.date for row in panel], max_carry_days=UNBOUNDED_CARRY)
+    states = s3c_pd.decision_states(levels, [row.date for row in panel], decision_time=k.DECISION_TIME, max_carry_days=UNBOUNDED_CARRY)
     s686.require_scored_days(candidate_days(panel, LAST_DAY, args.first), LAST_DAY)
     walk = s3c_pd.walk(panel, candidate_days(panel, LAST_DAY, args.first), table, states, registry=registry, decision_time=k.DECISION_TIME, splits=splits)
     result: dict = {

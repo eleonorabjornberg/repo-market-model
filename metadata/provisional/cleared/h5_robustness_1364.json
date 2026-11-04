@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/h5_robustness_1364.json",
+  "script": "scripts/h5_robustness_1364.py",
+  "pairing": "direct",
+  "why": "A fixed robustness set on (s3c-ann-net): the length of its training history and its refit cadence. Every arm is the candidate's own walk, run by the code of scripts/s3c_announced_settlement_1288.py (spread_mr_state_calendar.walk with training_pairs = direct, guarded by one_step_guard with no allow-list entry), with only spread_mean_reversion.TRAIN_YEARS or the refit cadence changed for the walk of that arm; the calendar and scheduled columns are read at the target day, the settlement terms from the announced auctions at the decision instant; no gradient-boosted fit is called, and the outcomes enter only the scores, so it is not provisional"
+}

@@ -1,0 +1,37 @@
+{
+ "status": "declared by the pull request that closes #1389 before any figure was computed; a development study, never a verdict. Nothing is registered or published, no record in docs/runs/ is edited, no declaration already merged changes, the candidate is not changed or tuned, no day after 2026-09-03 is read and no lockbox day is scored. Amendments made after a figure was computed are listed in `amendments` (none at the time of writing).",
+ "issue": 1389,
+ "hypothesis": "H5 (primary goal), registration design (forecast object): one coherent rule for the SRF cap, the tail completion and the probabilities, so that the candidate's quantiles, its probabilities and any randomized PIT describe one distribution",
+ "ruling": "Eleonora, 2 November 2026, chat, relayed on #1389, after the second outside review (a pre-registration design review of sc_s3c_ann_net at 95d21b1f); part of the H5 registration priority on #46",
+ "decision_instant": "18:00 America/New_York on the decision day (repo_model.decision_instant.DECISION_TIME, amended on 29 October 2026, #1312). The walks are made at that instant (RMM_DECISION_TIME=18:00, the panel built with --decision-time 18:00:00), as #1314 and #1366 did; the capped vector the walk emits must equal the 1314 record's grid CRPS to 1e-9 or no record is written",
+ "candidate": {
+  "name": "sc_s3c_ann_net",
+  "label": "(s3c-ann-net)",
+  "definition": "h5-candidate.json, walked by the code of scripts/s3c_announced_settlement_1288.py unchanged. The walk is read before its cap (the uncapped quantiles of every cell) and after it (the candidate as run)"
+ },
+ "rules": {
+  "status_quo": "the candidate as run: spread_mean_reversion.exceedance on the capped vector (the published reading; the flag off)",
+  "atom_at_line": "(a) a bounded law with an atom at the line: the uncapped law clipped at the line (repo_model.capped_law, rule 'atom_at_line'). Order: calibrate, cap, read the probabilities and the PIT from the clipped law",
+  "open_tail": "(b) capped percentiles with an explicitly unbounded completion (repo_model.capped_law, rule 'open_tail'): the law of the capped vector alone, an atom at the line of the mass between the first capped level and q99, the last 1% running on above the line at the slope of the last open segment. Order: calibrate, cap the percentiles, complete the capped percentiles"
+ },
+ "windows": {
+  "development": "decision days whose five targets fall on or before 2025-12-31 (window 'development' of scripts/s3c_announced_settlement_1288.py); decides nothing here",
+  "2026": "decision days whose five targets fall from 2026-01-02 to 2026-09-03 (window '2026', the near-blind tier open since GO #151); shown apart"
+ },
+ "measures": {
+  "scores": "per cell (decision day, lead 1 to 5) and per rule: grid CRPS (primary) and upper-tail twCRPS (key secondary), which read the quantile vector and so are the same under every rule (checked, not assumed: the study refuses to write a record otherwise); the Brier score of P(> +5 bp) and of P(> +10 bp), the event strict and on whole basis points (data.exceeds_bp); the Brier score of P(> line) on cells with a line (full allotment), and the line exceedances: the number of cells whose outcome is above the line against the sum of the rules' P(> line)",
+  "groups": "pooled (all cells); the cells at full allotment (target days with a line); the cells where the cap binds (the uncapped q99 is above the line); by regime and by pressure-day type of the target day; and the cells by the number of upper levels the cap reaches (0, 1, 2 to 3, 4 or more)",
+  "intervals": "each Brier difference (status quo less the rule, positive favours the rule) is a paired test on decision-day means over the group's cells, scoring protocol v1's studentized stationary bootstrap read on the bound on mean d (her ruling on #1009), seed 1389; a group of fewer than 20 decision days is not tested; a group the rules score alike on every day is `identical`",
+  "binding_cases": "for each count of binding levels: the cells, the mean P(> +10 bp) under each rule and the share of outcomes above +10 bp, to show the cases the design note walks through",
+  "pit": "the share of cells whose randomized PIT (v drawn from random.Random(1389) per cell) falls in each decile, per rule, on the cells at full allotment: shown, not tested"
+ },
+ "judgement": "The study asks Eleonora which rule the registration freezes (numbered options, a default) and adopts neither. It sets no threshold. The default names the rule that follows from #1361's result, which is recorded as it stood when the page was written",
+ "seed": 1389,
+ "long_run": "one walk of (s3c-ann-net) per window, minutes each, and paired tests of about a minute each: a cloud run",
+ "amendments": [],
+ "variants": {
+  "status_quo": "the candidate as run: no new fit",
+  "atom_at_line": "a reading of the same uncapped quantiles; nothing is fitted or tuned",
+  "open_tail": "a reading of the same capped quantiles; nothing is fitted or tuned"
+ }
+}

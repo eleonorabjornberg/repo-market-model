@@ -1,0 +1,87 @@
+{
+ "status": "declared by the pull request that closes #1344 before any table of it was computed; a diagnosis of development evidence, never a verdict. Nothing is registered or published: no record in docs/runs/ is edited, no arm, declaration, candidate or decision record changes (metadata/s3c_flagnet_gross_1321.json, metadata/s3c_ann_net_diagnosis_1319.json, docs/research/h5-candidate.json and every record already merged stay as they are), no lockbox day is scored and no day after 2026-09-03 is scored. The draft prospective declaration (metadata/s3c_flagnet_prospective_draft_1344.json) is drafted, not registered. Before this declaration was committed the walks of #1321 were rebuilt once on a subset only to see that they load; no table was read. Amendments made after a number was computed are listed in `amendments`.",
+ "issue": 1344,
+ "diagnosis_of": "#1321's record (docs/research/s3c-flagnet-gross-1321/result.json), arm (s3c-ann-flagnet) against (s3c-ann-net) and (s3c-ann)",
+ "ruling": "Eleonora, 1 November 2026, chat, relayed on #1344 (ledger item 95): on #1326 question 1, test and diagnose the better arm, (s3c-ann-flagnet). Question 2 of #1326 (the announcement dating in published declarations) keeps its default: off.",
+ "hypothesis": "H5 (primary goal): the SOFR - IORB spread distribution in bp. Step 3, the arm (s3c-ann-flagnet) beside the candidate (s3c-ann-net). Development tier",
+ "target": "spread_bps at the scored day, in basis points, as a 23-quantile distribution at each lead h = 1..5 (scoring_protocol.GRID)",
+ "record_read": "#1321's frames, walks and forecasts are rebuilt as merged: scripts/s3c_flagnet_gross_1321.py `build` is called for both windows, at the 18:00 decision instant (`decision_instant_pinned`), with no change and no new arm. The study refuses to write unless every pooled, lead and regime mean of (s3c), (s3c-ann), (s3c-ann-net) and (s3c-ann-flagnet), on all three scores, equals the record's to 1e-9, and unless the fitted-shift table equals the record's. The panel is the published panel built at --decision-time 18:00:00 (digest 4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999, verified against metadata/funding_panel_manifest.json).",
+ "windows": {
+  "development": "decision days whose five targets fall on or before 2025-12-31 (#1255's first window). Every reading is taken from this window.",
+  "2026": "decision days whose five targets fall from 2026-01-02 to 2026-09-03 (the near-blind tier open since GO #151). Reported separately and decides nothing; tables 1 and 2 only. No new score on the 2026 days: these are the cells #1321 already scored, split further."
+ },
+ "arms": {
+  "arm": "sc_s3c_ann_flagnet, (s3c-ann-flagnet)",
+  "references": "sc_s3c_ann_net (the candidate), sc_s3c_ann (the flag), sc_s3c (the H5 candidate until she rules). The comparison the question is about is the arm against (s3c-ann-net); the others are read for the 2020 loss only"
+ },
+ "unit": "A diagnostic difference d is score(arm) - score(reference), so a positive mean d is a loss for the arm; every table says which way it points. Scores are grid CRPS, upper-tail twCRPS and the Brier score of P(> +5 bp) (docs/decisions/pressure-probability.md), as in #1321. Percentages are skill, 1 - mean(arm)/mean(reference).",
+ "intervals": "the 90% interval of the stationary block bootstrap (mean block 10, 2000 replications, seed 1344, resampling in date order) over the units of the group, repo_model.metrics.stationary_bootstrap_intervals. It is a diagnostic interval on mean d, not scoring protocol v1's studentized test (the studentized figures are #1321's and are quoted from its record); no row is a verdict; a group of fewer than 20 units is listed and given no interval. A reading is taken from the interval excluding zero; otherwise undecided. The intervals of a group of target days keep the current method (the group's days resampled in date order as if consecutive), which #1221 questions.",
+ "tables": {
+  "1_where_the_gain_sits": {
+   "what": "Why (s3c-ann-flagnet) gains on Brier P(> +5 bp) against (s3c-ann-net) (+5.3% [+2.7, +8.3] on the development window) and where the grid CRPS and upper-tail twCRPS differences sit.",
+   "cells": "each lead h = 1..5, one cell per decision day and lead. Grain: the target day (the leads of a target averaged) for the regime, month, state and day-type rows, the decision day for the lead rows; the two are named on the page",
+   "groups": [
+    "by settlement-day type of the target day (the panel's gross settlement above zero): a coupon settlement day, a bill settlement day with a cash management bill, a bill settlement day without one, neither settles",
+    "by leg: coupon only, bill only, both legs, neither",
+    "by regime of the target day (2018-19, 2020, 2021-23, 2024, 2025-26), by calendar month of the target day (January to December) and by year-month inside 2020",
+    "by the scarcity state of the decision day (#1145's state, as read at the decision instant: 0 abundant, 1 to 2, 3 scarce, no state)",
+    "by realised event: the cells whose target spread exceeded +5 bp (strict, whole basis points) and the others: the arm's and the reference's mean predicted probability, the observed frequency and the Brier difference summed over each set",
+    "by lead"
+   ],
+   "report": "mean d with interval for each score; the group's cells and units; the group's share of the total of d over all cells (share of the difference)"
+  },
+  "2_the_2020_loss": {
+   "what": "Why (s3c-ann-flagnet) loses to (s3c-ann-net) in 2020 (grid CRPS -3.2% [-7.4, -1.1] in #1321) and whether the loss sits on the immediate-release cash management bill days.",
+   "cells": "cells whose target day is in the 2020 regime. Grain: the target day (the five leads averaged)",
+   "tables": [
+    "2a: the 2020 difference by month of the target day, March to June against the rest, and by the scarcity state of the decision day",
+    "2b: the 2020 difference by settlement-day type (as table 1) and by leg",
+    "2c: the 2020 cells whose target day has an auction with no stated release time ('For Immediate Release', metadata/announcement_release_times_1301.json, #1301) settling on it, cash management bill or not: the difference in them, their share of the total 2020 difference, and the 2020 difference with them left out. The same for (s3c-ann) as the reference, to see whether the loss is the net term's",
+    "2d: the same 2020 split for (s3c-ann-net) against (s3c-ann), as #1320 read it, so the two losses can be read side by side"
+   ]
+  },
+  "3_shift_against_premium": {
+   "what": "The fitted settlement shift against the realised settlement-day premium, by regime, for (s3c-ann), (s3c-ann-net) and (s3c-ann-flagnet): scripts/s3c_flagnet_gross_1321.py `shift_cells` and `shift_against_premium` are called as merged (leads 2 to 5, and lead 1 on its own), and the table is checked against the record's. Added here, on the same cells: the fitted shift of (s3c-ann-flagnet) split into the part its two flags carry and the part its two nets carry (the standardised shift of the flags with the nets set to zero, and of the nets with the flags set to zero, times the scale at the anchor), mean on the settlement-day target cells, by regime, with no interval (the parts are means of a fitted quantity, not an estimate)."
+  },
+  "4_reproduction": "every pooled, lead and regime mean of the four models read and of the three scores equals #1321's record; the fitted-shift table equals the record's; the lead-1 cell of (s3c-ann) equals (s3c)'s; refused otherwise."
+ },
+ "hypotheses": {
+  "H-f": {
+   "claim": "The Brier gain of (s3c-ann-flagnet) against (s3c-ann-net) sits on settlement-day targets and on the cells where the spread exceeded +5 bp: adding the flag back restores the settlement shift the net shrank (#1320), which matters when the spread is high.",
+   "reading": "supported when on the settlement-day target cells the interval of mean d (Brier) lies below zero and on the neither-settles cells it does not lie below zero, and the Brier difference summed over the event cells is a gain on its interval; not supported when the neither-settles cells show a gain on their interval and the settlement-day cells do not; otherwise undecided."
+  },
+  "H-g": {
+   "claim": "The 2020 loss of (s3c-ann-flagnet) against (s3c-ann-net) is an over-shift: the flagnet's fitted settlement shift on 2020 settlement-day targets exceeds the realised settlement-day premium, so its forecast is too high on those days.",
+   "reading": "supported when, at leads 2 to 5, the 2020 fitted shift's interval lies above the upper end of the premium's interval and the settlement-day bias (error on settlement-day targets less that on the others) of (s3c-ann-flagnet) has an interval below zero, and the 2020 loss on grid CRPS on the settlement-day target cells is a loss on its interval; not supported when the shift's interval does not lie above the premium's or the bias interval contains zero; otherwise undecided."
+  },
+  "H-h": {
+   "claim": "The 2020 loss sits on the immediate-release cash management bill days (the announcement of such a bill states no release time, so its 12:00 dating is unverified, Lens E item G).",
+   "reading": "supported when the 2020 loss on grid CRPS is a loss on its interval with those days in and is not a loss (undecided or a gain) with them left out; not supported when it stays a loss on its interval with them left out; not read when the 2020 difference is not a loss on its interval with them in; otherwise undecided. The same rule is applied with (s3c-ann) as the reference, to say whether the loss belongs to the net term."
+  }
+ },
+ "power": {
+  "what": "The power of the prospective comparison drafted in metadata/s3c_flagnet_prospective_draft_1344.json, read off the development window's daily difference d = score((s3c-ann-net)) - score((s3c-ann-flagnet)) (positive favours the arm) on grid CRPS averaged over h = 1..5 (primary) and upper-tail twCRPS (key secondary), one number per decision day.",
+  "series": "the decision days from 2020-04-03 (where every confirmation day falls: scoring-protocol.md, draft amendment 2, #886) to the last development day, so the heavy-tailed pre-2020 days do not set the variance",
+  "method": "repo_model.scoring_protocol: the critical value of each look is calibrate_critical_value on the centred series at nominal_levels() (looks 125 and 250; look 60 checks futility only) with windows of the look's length drawn by window_t_statistics (circular blocks of 10, 20,000 windows, seed 1344); power at a true effect delta is the share of windows of the series centred and shifted by delta whose studentized mean (Newey-West lag 10) exceeds the look's value. Looks are not combined (the share that crosses at each look on its own), a lower bound on the share that crosses at either. The effects are the arm's observed development mean d, and a skill of 0.5%, 1% and 3% of the mean score of (s3c-ann-net). A true effect of zero is run as a size check. The days-needed figure is the analytic ((z(alpha) + z(0.8)) * sigma_LR / delta) squared, with sigma_LR the Newey-West long-run standard deviation of the series",
+  "multiplicity": "the same run is repeated with alpha divided by the size of the family (1, 2 and 3), the cost of Holm's first step when the arm is one of the secondaries and the key secondary metric is tested beside (scoring-protocol.md section 8)",
+  "reading": "descriptive: development data, an estimate of what the prospective comparison can show, not a threshold. No minimum power is set here; that is hers"
+ },
+ "reading_rules": [
+  "A figure is a check on days that were already seen. Nothing here is a verdict, nothing is registered and no choice is made on it; (s3c-ann-net) stays the candidate of avenue #1318 and (s3c) the H5 candidate until she rules.",
+  "A gain or loss is read from the 90% interval of mean d excluding zero; otherwise undecided. A point estimate alone is not read.",
+  "A pooled figure is never read without the regime, lead and settlement-day-type splits beside it.",
+  "The bill leg and the net bill are read with Lens E's caveat on the announcement time of a cash management bill.",
+  "Whether to register the arm beside the candidate goes to her as a marked question with numbered options and a default that changes no claim."
+ ],
+ "limits": {
+  "last_day": "2026-09-03",
+  "no_new_arm_no_new_fit": "the walks are #1321's; nothing is fitted that #1321 did not fit",
+  "named_candidate": "unchanged; docs/research/h5-candidate.json is not changed",
+  "preregistration": "scripts/final_test_preregistration.py is not touched; test_final_test_freeze and test_live_score_freeze are run before the push",
+  "allow_list": "repo_model.one_step_guard.ONE_STEP_ALLOW_LIST is not changed",
+  "decisions": "no file under docs/decisions/, metadata/registrations/ or docs/registrations/ is added: the draft prospective declaration lives in metadata/ and docs/research/ and is registered only by her GO #1344",
+  "provisional_register": "the study calls no gradient-boosted fitter; the walks it rebuilds are #1321's, whose cleared row is metadata/provisional/cleared/s3c_flagnet_gross_1321.json"
+ },
+ "long_run": "cloud first: #1321's full run took about 27 minutes; this study rebuilds its two walks per window once and runs bootstraps over cells. If the measured time on a subset says the full run exceeds about two hours, the run goes to the Mac as a `needs-mac:` comment",
+ "amendments": []
+}
