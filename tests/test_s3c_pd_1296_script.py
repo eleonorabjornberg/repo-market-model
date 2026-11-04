@@ -27,6 +27,7 @@ from datetime import date, time, timedelta
 from pathlib import Path
 
 from repo_model import s3c_pd as cc
+from repo_model.decision_instant import DECISION_TIME
 from repo_model import scoring_protocol as sp
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -383,7 +384,9 @@ class OneInstantTests(unittest.TestCase):
         at_16 = cc.state_at(levels, day, decision_time=time(16, 0), max_carry_days=None)
         at_18 = cc.state_at(levels, day, decision_time=time(18, 0), max_carry_days=None)
         self.assertNotEqual(at_16, at_18)
-        self.assertEqual(script.k.DECISION_TIME, time(16, 0))  # unset RMM_DECISION_TIME: the walk's own instant is 16:00
+        # the walk's own instant is the repo's decision instant when RMM_DECISION_TIME is unset (18:00 since #1312, 16:00 before it)
+        self.assertEqual(script.k.DECISION_TIME, DECISION_TIME)
+        self.assertEqual(cc.state_at(levels, day, decision_time=script.k.DECISION_TIME, max_carry_days=None), at_18)
 
 
 if __name__ == "__main__":
