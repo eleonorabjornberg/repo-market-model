@@ -71,13 +71,13 @@ class LabelTests(unittest.TestCase):
                 self.assertEqual(arm.flag("tax_date", lead, row), expected, (lead, day))
                 self.assertEqual(base.flag("tax_date", lead, row), 0)
                 for term in cal.TERMS:
-                    if term.name != "tax_date":
+                    if term.name != "tax_date" and not term.name.startswith("settlement"):  # the settlement terms are the announced ones
                         self.assertEqual(arm.flag(term.name, lead, row), base.flag(term.name, lead, row), (term.name, lead, day))
 
     def test_a_published_flag_is_kept(self):
-        april = date(2025, 10, 8)
-        arm = table(panel(tax=(april,)))
-        self.assertEqual(arm.flag("tax_date", 1, DAYS.index(april)), 1)
+        earlier = date(2025, 10, 8)
+        arm = table(panel(tax=(earlier,)))
+        self.assertEqual(arm.flag("tax_date", 1, DAYS.index(earlier)), 1)
         self.assertEqual(arm.flag("tax_date", 1, DAYS.index(date(2025, 10, 15))), 1)
 
     def test_the_label_is_read_at_the_target_row_not_one_row_off(self):
