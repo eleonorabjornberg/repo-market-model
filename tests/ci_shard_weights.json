@@ -101,7 +101,6 @@
  "test_interior_diagnosis": 0.1,
  "test_iorb_every_day_579": 0.1,
  "test_judge_readings": 0.1,
- "test_judge_rulings_rescore": 2.1,
  "test_kinked_626": 0.1,
  "test_latent_factor_scoring": 0.1,
  "test_live_final_groups": 2.8,
