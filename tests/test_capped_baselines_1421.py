@@ -1,7 +1,7 @@
 """B1'*-cap and B2*-cap, the simple baselines with the candidate's Standing Repo Facility cap (#1421; H5, registration design).
 
-`protocol_benchmarks.capped_forecast`, `capped_exceedance`, `b1_calendar_anchor_capped_forecast` and `b2_capped_forecast` (B2 standing in for B2*,
-#1420 not being on main), and the arithmetic of `scripts/capped_baselines_1421.py` (the cells, the decision-day series, the share of the candidate's gain
+`protocol_benchmarks.capped_forecast`, `capped_exceedance`, `b1_calendar_anchor_capped_forecast` (and `b2_capped_forecast`, B2 standing in for B2*, until #1440 replaced it
+with `b2_star_capped_forecast`; its tests moved to `tests/test_capped_baselines_b2star_1434.py`), and the arithmetic of `scripts/capped_baselines_1421.py` (the cells, the decision-day series, the share of the candidate's gain
 the cap alone explains). Her ruling of 3 November 2026: the capped baselines are the confirmatory ones, the uncapped versions are reported beside them.
 
 What these tests pin: the cap is the candidate's own (`s3c_candidate.cap_line`, margin 0 bp, full allotment only); a baseline before full allotment is
@@ -101,19 +101,16 @@ class CapTests(unittest.TestCase):
             got = pb.b1_calendar_anchor_capped_forecast(self.panel, t, register=REGISTER, **self.settings)
             self.assertEqual(got, want)
 
-    def test_b2_cap_is_b2_clipped_and_b2_before_full_allotment(self):
+    def test_b2_cap_of_1421_is_b2_clipped(self):
+        """The study of #1421 builds its B2-cap from `b2_forecast` and `capped_forecast`; the stand-in function is gone (#1440)."""
+
         for t in (self.early, self.late):
             raw = pb.b2_forecast(self.panel, t, **self.settings)
-            got = pb.b2_capped_forecast(self.panel, t, register=REGISTER, **self.settings)
-            self.assertEqual(got, pb.capped_forecast(raw, self.panel, t, register=REGISTER, decision_time=DECISION))
+            got = pb.capped_forecast(raw, self.panel, t, register=REGISTER, decision_time=DECISION)
+            for h in sp.HORIZONS:
+                self.assertTrue(all(c <= r for c, r in zip(got[h], raw[h])))
         raw = pb.b2_forecast(self.panel, self.early, **self.settings)
-        self.assertEqual(pb.b2_capped_forecast(self.panel, self.early, register=REGISTER, **self.settings), raw)
-
-    def test_the_cap_only_lowers_a_quantile(self):
-        raw = pb.b2_forecast(self.panel, self.late, **self.settings)
-        got = pb.b2_capped_forecast(self.panel, self.late, register=REGISTER, **self.settings)
-        for h in sp.HORIZONS:
-            self.assertTrue(all(c <= r for c, r in zip(got[h], raw[h])))
+        self.assertEqual(pb.capped_forecast(raw, self.panel, self.early, register=REGISTER, decision_time=DECISION), raw)
 
     def test_a_lead_past_the_panel_is_refused(self):
         with self.assertRaises(sp.ProtocolError):

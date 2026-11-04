@@ -1,69 +1,303 @@
 {
-  "about": "The subject of the model documentation and validation report (docs/model/validation.md, #119; rewritten for H5's candidate by step 6 of docs/research/hypotheses/H5.md, #841). scripts/validation_report.py renders the report's candidate, performance, limitations and monitoring blocks from this file and from metadata/spread_distribution_634.json. Nothing here is a result: every development result is cited by its issue and its page, and no figure is typed. A figure enters the report only through a record in docs/runs/, and publishing one is Eleonora's decision (docs/decisions/publish-rule.md).",
-  "status": "Drafted by the pull request that closes #841 for Eleonora's review. The use-limitation statement below is a proposal: she decides what the project claims. docs/use-limitation.md, which the phase 2 report read, is not changed.",
-  "candidate": "gbm_funding",
-  "declaration": "metadata/spread_distribution_634.json",
-  "declaration_control": "gbm_funding",
-  "use_limitation": "A development-stage research forecast of the SOFR − IORB spread distribution in bp. It is not registered, it has no prospective day, and nothing it has scored is a verdict. It is not a stress-warning system and not a basis for VaR, limits, liquidity or capital, or desk sizing. Its quantiles are not recalibrated; its behaviour on quarter-ends, tax dates, in 2021-23 and in the upper tail is reported in the development pages and is not settled; and it has little history in the current scarce-reserve regime. It needs revalidation at each confirmation checkpoint and after a material policy or regime change.",
+  "about": "The subject of the model documentation and validation report (docs/model/validation.md, #119; rewritten for H5's frozen candidate (s3c-ann-net) by #1442, after #841's rewrite for gbm_funding). scripts/validation_report.py renders the report's candidate, performance, limitations, known-limits and monitoring blocks from this file, from docs/research/h5-candidate.json and from the declaration of the measurement that scored the candidate. Nothing here is a result: every development result is cited by its issue and its page, and no figure is typed. A figure enters the report only through a record in docs/runs/, and publishing one is Eleonora's decision (docs/decisions/publish-rule.md). The gbm_funding report stays in git history.",
+  "status": "Drafted by the pull request that closes #1442 for Eleonora's review. The use-limitation statement and the wording of each known limit are proposals: she decides what the project claims. docs/use-limitation.md, which the phase 2 report read, is not changed.",
+  "candidate": "sc_s3c_ann_net",
+  "label": "(s3c-ann-net)",
+  "candidate_record": "docs/research/h5-candidate.json",
+  "declaration": "metadata/s3c_announced_settlement_1288.json",
+  "declaration_candidate": "sc_s3c_ann_net",
+  "protocol_declaration": "metadata/spread_distribution_634.json",
+  "development_last_target_day": "2025-12-31",
+  "use_limitation": "A development-stage research forecast of the SOFR − IORB spread distribution in bp, the frozen H5 candidate (s3c-ann-net). It is not registered, it has no prospective day, and nothing it has scored is a verdict. It is not a stress-warning system and not a basis for VaR, limits, liquidity or capital, or desk sizing. Its quantiles are not recalibrated. Its known limits (2020, FOMC target days, the upper tail, lead 1, the plain flag arm, the central bands at quarter-end and on other calendar days, the SRF cap's dependence on full allotment, the 2018-19 regime and the 15 October tax-date label) are listed under known limits, with the evidence for each, and are not settled. It needs revalidation at each confirmation checkpoint and after a material policy or regime change.",
   "evidence_label": "development data, not a verdict",
   "evidence": [
     {
-      "what": "The phase 2 gbm re-scored under scoring protocol v1, with the inputs built since phase 2, against as-of persistence (B1) and the second benchmark (B2)",
-      "issue": "#634",
-      "page": "docs/pivot/spread-distribution-protocol-result.md",
-      "script": "scripts/spread_distribution_634.py",
-      "split": "pooled, by regime, by pressure-day type of the target day, and the upper tail"
+      "what": "The candidate re-run at the 18:00 decision instant against (s3c), (s3c-ann) and the benchmarks, with the three splits of #1320 (lead 1, 2020, net against flag)",
+      "issue": "#1314",
+      "page": "docs/research/s3c-ann-net-1800-1314-result.md",
+      "script": "scripts/s3c_ann_net_1800_1314.py",
+      "split": "pooled, by lead, by regime, by pressure-day type, by settlement-day type, 2026 days apart"
     },
     {
-      "what": "The candidate against H2's ceiling: is more model work worthwhile, and the ruling to stop model work and go to the validation report",
-      "issue": "#758",
-      "page": "docs/pivot/h5-step4-result.md",
-      "script": "scripts/h5_step4_758.py",
-      "split": "pooled, by regime, by pressure-day type, and the upper tail"
+      "what": "The adoption record: (s3c-ann-net) against (s3c), the flag arm and the benchmarks, with the announced settlement terms at leads 2 to 5",
+      "issue": "#1288",
+      "page": "docs/research/s3c-announced-settlement-1288-result.md",
+      "script": "scripts/s3c_announced_settlement_1288.py",
+      "split": "pooled, by lead, by regime, by pressure-day type, by calendar target-day type, by target month"
     },
     {
-      "what": "Why the models lose in 2021-23, and what the upper tail does",
-      "issue": "#707",
-      "page": "docs/pivot/h5-step3-diagnoses-result.md",
-      "script": "scripts/h5_step3_707.py",
-      "split": "the 2021-23 regime and the upper tail"
+      "what": "Why the candidate loses at lead 1, in 2020 and to the flag arm: a diagnosis of #1288's record",
+      "issue": "#1319",
+      "page": "docs/research/s3c-ann-net-diagnosis-1319-result.md",
+      "script": "scripts/s3c_ann_net_diagnosis_1319.py",
+      "split": "lead 1 by settlement-day type, 2020 by period, net against flag by lead and by regime"
     },
     {
-      "what": "The splits the headline pages lacked, and the decision day 2019-09-18 reported with and without",
-      "issue": "#805",
-      "page": "docs/pivot/h5-splits-805-result.md",
-      "script": "scripts/h5_splits_805.py",
-      "split": "by regime and by pressure-day type, each with and without the day"
+      "what": "The SRF cap on (s3): the candidate's base, with the cap from full allotment (#1255)",
+      "issue": "#1255",
+      "page": "docs/research/s3c-candidate-1255-result.md",
+      "script": "scripts/s3c_candidate_1255.py",
+      "split": "pooled, by regime, by pressure-day type, by target month"
     },
     {
-      "what": "The back-fill of 2014-18 history tested against the candidate (H4 step 3)",
-      "issue": "#726",
-      "page": "docs/pivot/backfill-h5-726-result.md",
-      "script": "scripts/backfill_h5_726.py",
-      "split": "2018-19 and overall"
+      "what": "(s3) of #1145 against (a), read on the studentized bound of mean d (the corrected reading)",
+      "issue": "#1194",
+      "page": "docs/research/state-calendar-1145-mean-d-1194-result.md",
+      "script": "scripts/state_calendar_1145.py",
+      "split": "pooled, by regime, by pressure-day type, by calendar target-day type"
+    },
+    {
+      "what": "The candidate's calibration by period and day type, and whether its misses cluster in time",
+      "issue": "#1363",
+      "page": "docs/research/candidate-calibration-1363-result.md",
+      "script": "scripts/candidate_calibration_1363.py",
+      "split": "pooled, by lead, by regime, by day type of the target"
+    },
+    {
+      "what": "The candidate without the SRF cap, as a secondary result",
+      "issue": "#1361",
+      "page": "docs/research/s3c-uncapped-1361-result.md",
+      "script": "scripts/s3c_uncapped_1361.py",
+      "split": "development window and 2026 days apart, by group"
+    },
+    {
+      "what": "The simple baselines given the candidate's cap (the confirmatory benchmarks of her ruling of 3 November 2026 on #1421)",
+      "issue": "#1421",
+      "page": "docs/research/capped-baselines-1421-result.md",
+      "script": "scripts/capped_baselines_1421.py",
+      "split": "pooled, by regime, by pressure-day type, 2026 days apart"
+    },
+    {
+      "what": "A residual scale by type of target day beside the candidate (not adopted; goes to the known limits)",
+      "issue": "#1402",
+      "page": "docs/research/day-type-scale-1402-result.md",
+      "script": "scripts/day_type_scale_1402.py",
+      "split": "by pressure-day type of the target day"
     }
   ],
   "assumptions": [
     "The outcome is the published panel's spread in bp on the target day. It is not re-derived from first-published vintages (scoring protocol v1, section 11; the question is open on #634).",
-    "The model is fitted on one-step pairs and read, by the as-of rule, at each lead. Whether a model trained on the pairing it is read at does better is the measurement of #449; it is open (see the open questions).",
-    "A forecast reads exactly what was public at its decision instant, per field (docs/decisions/information-set.md). The decision instant is 16:00 on the decision day.",
-    "The candidate was chosen among the variants scored in development by the protocol score alone, and the variant count is recorded in docs/research/progress.json. A candidate chosen on the days that scored it carries a selection effect that no development interval removes.",
+    "The model is fitted on direct pairs: it reads the calendar and the settlement terms at the target day, as the calendar-first ruling of 20 October 2026 requires, so the one-step guard needs no allow-list entry for it (docs/pivot/one-step-guard-947.md).",
+    "A forecast reads exactly what was public at its decision instant, per field (docs/decisions/information-set.md). The decision instant is the one constant of repo_model.decision_instant, 18:00 New York time since the amendment of 29 October 2026 (#1312); the 16:00 records of the development pages are records of that earlier instant, and the 18:00 re-run (#1314) scores the candidate identically.",
+    "The announced settlement terms are read from the auction announcement (12:00 New York time on the announcement date, docs/decisions/information-set.md, rule 2) and sized by the net settlement of the target day as announced at the decision instant; a class announced only in part reads zero until fully announced.",
+    "The candidate was chosen among the variants scored in development by the protocol score, and the variant count is recorded in docs/research/progress.json. The 2026 days were seen by several earlier studies before the candidate was named, so a gain read on them carries a selection effect that no development interval removes; they are shown apart and decide nothing.",
     "The regimes were drawn after the fact (metadata/evaluation_splits.json). No split is a pass requirement of the protocol."
   ],
   "limitations": [
     "Development data only. Scoring protocol v1 (#640) takes a verdict from prospective confirmation days alone, so nothing in this report supports, kills or registers the candidate.",
-    "Nothing is registered and the candidate is not in the live record. The confirmation design is decided on #733; no registration happens before it.",
-    "The quantiles come from an uncalibrated gradient-boosted fit at the protocol's grid of levels. Interval coverage and per-regime reliability are measured on the pages cited, and the model has no calibration layer to correct what they find (#753, #785, #786).",
-    "The regimes after 2020 carry the evidence that matters and the history there is short. The 2021-23 regime, where every phase 2 gbm lost to persistence, and the quarter-end and tax-date types are the splits to read first (#707, #805).",
-    "One decision day, 2019-09-18, moves the pooled comparison with the benchmark; the pages report it with and without that day (#798, #805).",
-    "The ceiling it was compared with (H2's cross-fitted fit) is not an upper bound, so \"no headroom\" means that this ceiling shows no better forecast, not that none exists (#758).",
+    "Nothing is registered and the candidate is not in the live record. The confirmation design is a draft decision record awaiting Eleonora (#1394); no registration happens before she decides it, and registration is her own action.",
+    "The quantiles are not recalibrated: no calibration layer corrects them. Interval coverage by period and day type, and whether the misses cluster in time, are measured on the pages cited (#1363, #1366), and the known limits below say where the bands fail.",
+    "The regimes after 2020 carry the evidence that matters and the history there is short; the 2018-19 regime has the least history before the candidate's terms exist (the known limits below).",
+    "The pooled gain over (s3c) is not a result on its own: the adoption records gave only the pooled figure, and the splits where the candidate loses are the known limits below (#1316).",
     "The Treasury clearing mandate will change the composition of SOFR after the panel ends; the drift is not in any development day (the clearing block below).",
-    "The scarcity state is not a model input (Eleonora's ruling on #157). The as-of scarcity-state split of protocol section 7 was not run (#758)."
+    "The scarcity state is not a model input (Eleonora's ruling on #157); the candidate's net sizing holds it at its maximum. The as-of scarcity-state split of protocol section 7 was not run (#758)."
+  ],
+  "known_limits": [
+    {
+      "id": "2020",
+      "title": "2020",
+      "limit": "In 2020 (March to June above all) the candidate is worse than (s3c), the candidate it replaced, on grid CRPS and on upper-tail twCRPS, read on the studentized bound of mean d. The loss belongs to the announced settlement terms as a whole: the plain flag arm loses more, and the dating of the immediate-release cash management bills is not ruled out as its cause for the net arm. No arm of the freeze set is adopted, so the loss stands.",
+      "status": "Accepted as a known limit (her rulings of 2 November 2026 and 3 November 2026 on #1187 and #1316): no further fix is sought before registration.",
+      "sources": [
+        {
+          "issue": "#1316",
+          "page": "docs/research/s3c-ann-net-1800-1314-result.md",
+          "note": "the 2020 row against (s3c), re-asked at the 18:00 instant"
+        },
+        {
+          "issue": "#1319",
+          "page": "docs/research/s3c-ann-net-diagnosis-1319-result.md",
+          "note": "why: period, fitted shift against realised premium, the dating"
+        },
+        {
+          "issue": "#1344",
+          "page": "docs/research/s3c-flagnet-diagnosis-1344-result.md",
+          "note": "the later arm that carries flag and net together; not adopted"
+        }
+      ]
+    },
+    {
+      "id": "fomc-days",
+      "title": "FOMC target days",
+      "limit": "On FOMC target days the upper-tail twCRPS of (s3), the candidate's base, is worse than that of (a), the scaled mean reversion it replaced, read as ruled on the mean-d bound. The candidate's own rows on those days against (s3c) are undecided. The loss is carried to the candidate as a known limit; it is not measured for the candidate against (a) on these days.",
+      "status": "Accepted as a known limit (her rulings of 2 November 2026 and 3 November 2026 on #1187): what still loses after the arms, the FOMC target days among it, is written in here.",
+      "sources": [
+        {
+          "issue": "#1187",
+          "page": "docs/research/state-calendar-1145-mean-d-1194-result.md",
+          "note": "(s3) against (a) on the ruled bound, the corrected pages"
+        },
+        {
+          "issue": "#1288",
+          "page": "docs/research/s3c-announced-settlement-1288-result.md",
+          "note": "the candidate's FOMC-day rows against (s3c)"
+        }
+      ]
+    },
+    {
+      "id": "upper-tail-against-a",
+      "title": "The upper tail against (a)",
+      "limit": "Read as ruled, (s3) is worse than (a) on upper-tail twCRPS in 2020 and on FOMC target days; the page that made (s3) the candidate read the skill interval and showed these as undecided. An upper-tail gain at quarter-end that the skill reading counted is undecided on the ruled bound. The candidate stays, and the upper-tail losses are an open question before any registration that this report carries as a limit.",
+      "status": "Her ruling of 24 October 2026 on #1187 (option 2: the pages are corrected, the losses are an open question before registration), carried here by her ruling of 2 November 2026.",
+      "sources": [
+        {
+          "issue": "#1187",
+          "page": "docs/research/state-calendar-1145-mean-d-1194-result.md",
+          "note": "the corrected reading of #1145"
+        },
+        {
+          "issue": "#1172",
+          "page": "docs/research/s3-decomposition-1172-result.md",
+          "note": "the same intervals from the decomposition of (s3)"
+        }
+      ]
+    },
+    {
+      "id": "lead-1",
+      "title": "Lead 1",
+      "limit": "At lead 1 nothing is announced early, so the candidate's difference from (s3c) there comes from the net sizing alone, and the candidate is worse than (s3c) on the Brier score of the pressure-day probability and on upper-tail twCRPS. The loss is not on the days with the largest maturing share, where netting was thought to matter; it sits on the days with the smallest maturing share and on days with no settlement at all, and the net arm gives a lower probability on the days the spread went above +5 bp.",
+      "status": "Kept visible as a known limit (her ruling of 2 November 2026 on #1316, confirmed on 3 November 2026).",
+      "sources": [
+        {
+          "issue": "#1316",
+          "page": "docs/research/s3c-ann-net-1800-1314-result.md",
+          "note": "lead 1 by settlement-day type, net-to-gross class and maturing share, re-asked at the 18:00 instant"
+        },
+        {
+          "issue": "#1319",
+          "page": "docs/research/s3c-ann-net-diagnosis-1319-result.md",
+          "note": "where the lead-1 loss sits"
+        }
+      ]
+    },
+    {
+      "id": "net-against-flag",
+      "title": "The plain flag arm (s3c-ann)",
+      "limit": "Against (s3c-ann), the plain flag arm that sizes nothing, the candidate's net sizing is worse on the Brier score of the pressure-day probability at every lead on the development window, worse on all three scores in 2018-19, and undecided on pooled grid CRPS. The net arm was preferred to the flag on the 2026 days, which earlier studies had already seen. The arm that carries both (s3c-ann-flagnet) was diagnosed and not adopted.",
+      "status": "Kept visible as a known limit (her rulings of 2 November 2026 and 3 November 2026 on #1316); the candidate is frozen as it is.",
+      "sources": [
+        {
+          "issue": "#1316",
+          "page": "docs/research/s3c-ann-net-1800-1314-result.md",
+          "note": "net against flag, by lead and by regime, re-asked at the 18:00 instant"
+        },
+        {
+          "issue": "#1319",
+          "page": "docs/research/s3c-ann-net-diagnosis-1319-result.md",
+          "note": "why the net sizing buys less than the flag when pressure is large and settlement-driven"
+        },
+        {
+          "issue": "#1344",
+          "page": "docs/research/s3c-flagnet-diagnosis-1344-result.md",
+          "note": "where the flag-and-net arm gains and loses"
+        }
+      ]
+    },
+    {
+      "id": "quarter-end-coverage",
+      "title": "Quarter-end band coverage",
+      "limit": "On quarter-end target days the central bands cover far less than their nominal level, the 50 per cent band even more than the 90 per cent band. The central 90 per cent band is also under-covered pooled on the development window, in the IORB window, at month-end, after month-end and on coupon settlement days, and the 50 per cent band on tax dates and FOMC days; the 90 per cent band is over-covered on ordinary days. The misses cluster in time: every one of the candidate's hit sequences reads as serially dependent. A residual scale by type of target day (not adopted) did not fix this: its typed arm is worse than the candidate on pooled grid CRPS on the development window.",
+      "status": "A known limit by her ruling of 2 November 2026 on #1363 (evidence for the known limits) and on avenue #1387 (option 1: #1402 goes to the known limits and does not reopen the candidate).",
+      "sources": [
+        {
+          "issue": "#1378",
+          "page": "docs/research/candidate-calibration-1363-result.md",
+          "note": "the pull request that closes #1363: coverage by period and day type, and clustering"
+        },
+        {
+          "issue": "#1402",
+          "page": "docs/research/day-type-scale-1402-result.md",
+          "note": "the typed residual scale arm, by type of target day"
+        }
+      ]
+    },
+    {
+      "id": "srf-cap-full-allotment",
+      "title": "The SRF cap depends on full allotment",
+      "limit": "The cap clips every quantile at the Standing Repo Facility line only on target days at full allotment (the standing_repo entry in force, public at the decision instant, states no aggregate operation limit); on every other day the candidate is (s3). Almost all of the cap's evidence is therefore on the 2026 days that earlier studies had seen, and before full allotment it did not help. If the facility re-imposes an aggregate limit, the cap stops by rule. With the cap the probability of an exceedance above the line is close to zero by construction at full allotment. The version without the cap is reported as a secondary result, and the baselines are given the same cap.",
+      "status": "Kept in the freeze (her ruling of 2 November 2026: (s3c-ann-net) as it is, SRF cap kept, the uncapped version reported beside it).",
+      "sources": [
+        {
+          "issue": "#1241",
+          "page": "docs/research/srf-cap-1241-result.md",
+          "note": "the cap before full allotment"
+        },
+        {
+          "issue": "#1252",
+          "page": "docs/research/srf-cap-2026-1252-result.md",
+          "note": "the cap since full allotment"
+        },
+        {
+          "issue": "#1265",
+          "page": "docs/research/s3c-turn-cap-1265-result.md",
+          "note": "what the cap says about the tail"
+        },
+        {
+          "issue": "#1361",
+          "page": "docs/research/s3c-uncapped-1361-result.md",
+          "note": "the candidate without the cap"
+        },
+        {
+          "issue": "#1421",
+          "page": "docs/research/capped-baselines-1421-result.md",
+          "note": "the baselines with the same cap"
+        }
+      ]
+    },
+    {
+      "id": "regime-2018-19",
+      "title": "The 2018-19 regime",
+      "limit": "The 2018-19 regime has the shortest history and the candidate is weakest against the simpler arm there: the net arm is worse than the flag arm on all three scores, and the central 50 per cent band is under-covered. The quarter-end term is missing from every refit before 23 January 2019. Training on the admitted back-filled 2014-18 history is not yet measured, so this limit is open until that measurement lands, and this report is updated then.",
+      "status": "Open: the measurement of #1223 (scratch measurement #1444) has not landed; no ruling is needed to state the limit.",
+      "sources": [
+        {
+          "issue": "#1223",
+          "why_no_page": "the avenue is open and its measurement has not landed, so there is no page yet"
+        },
+        {
+          "issue": "#1444",
+          "why_no_page": "the scratch measurement of #1223 is queued, so there is no page yet"
+        },
+        {
+          "issue": "#1319",
+          "page": "docs/research/s3c-ann-net-diagnosis-1319-result.md",
+          "note": "net against flag in 2018-19"
+        },
+        {
+          "issue": "#1363",
+          "page": "docs/research/candidate-calibration-1363-result.md",
+          "note": "the 50 per cent band by regime"
+        }
+      ]
+    },
+    {
+      "id": "tax-date-label",
+      "title": "The 15 October tax-date label",
+      "limit": "The candidate reads no 15 October tax-date label. The gain that argued for it was measured on the days that prompted the label and its mean-d interval covers zero; the label was not adopted for now, and was deferred to be tested again with a model that reads calendar days at the target day. Tax-date target days are among the day types whose central bands are under-covered.",
+      "status": "Open: her ruling on #1004 is pending; this report states the candidate without the label and changes when she rules.",
+      "sources": [
+        {
+          "issue": "#1004",
+          "page": "docs/research/tax-date-october-965-mean-d-1021-result.md",
+          "note": "the label's gain read on the mean-d bound"
+        },
+        {
+          "issue": "#965",
+          "page": "docs/research/tax-date-october-965-result.md",
+          "note": "the measurement that proposed the label"
+        },
+        {
+          "issue": "#1363",
+          "page": "docs/research/candidate-calibration-1363-result.md",
+          "note": "coverage on tax dates"
+        }
+      ]
+    }
   ],
   "open_questions": [
-    "Whether the declared candidate stays the one-step gbm_funding or becomes the direct-pairs twin: #449, measured on the pull request that closes it. The report follows the candidate that is in force when it is read.",
     "Whether any development figure should be published as a record in docs/runs/ so that this report can state it. Publishing is Eleonora's (docs/decisions/publish-rule.md). Until she does, the report cites each result by its issue and states none.",
-    "The wording of the use-limitation statement above, which this pull request proposes."
+    "The wording of the use-limitation statement and of each known limit above, which this pull request proposes.",
+    "Her ruling on #1004, the 15 October tax-date label, and the measurement of #1223, the 2018-19 regime: the report states both as open and is updated when each lands."
   ],
   "monitoring": {
     "live_record": "The live record (#215) logs the published model at the pinned commit (metadata/live_pin.json), not the candidate. The candidate has no logged day. A registered candidate joins the live record only by Eleonora's attested approval and a change of the live pin, which are hers alone (docs/decisions/drafts/owner-attestation.md).",

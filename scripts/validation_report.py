@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
-"""The generated blocks of the model documentation and validation report (#119; rewritten for H5's candidate, #841).
+"""The generated blocks of the model documentation and validation report (#119; rewritten for (s3c-ann-net), #1442).
 
 `docs/model/validation.md` is written by hand in the model-risk structure Eleonora ruled on #119 (purpose and use,
 data, methodology, assumptions and limitations, performance by regime, outcomes analysis, monitoring), then governance.
-It documents one model, `gbm_funding`, H5's candidate (`docs/research/hypotheses/H5.md`, step 6), and replaces the
-phase 2 content: the phase 2 version stays in git history and its records stay untouched in `docs/runs/`.
+It documents one model, (s3c-ann-net), H5's frozen candidate (`docs/research/h5-candidate.json`;
+`docs/research/hypotheses/H5.md`, step 6), and replaces the `gbm_funding` report of #841 and the phase 2 content: both
+stay in git history and the records stay untouched in `docs/runs/`. Its known-limits block lists each limit Eleonora
+accepted or kept visible (her rulings of 2 and 3 November 2026 on #1187 and #1316), each linked to the issue and the page
+that show it; a page that does not exist raises `ReportError`.
 **Its prose states no figure.** Every figure, date and count sits in a block this module renders, and
 `scripts/emit_results.py` writes the blocks into the page between `<!-- generated: NAME -->` markers and refuses a stale
 page with `--check`, exactly as it does for the README.
@@ -12,8 +15,9 @@ page with `--check`, exactly as it does for the README.
 The blocks read one of four things, and nothing is typed here:
 
 * a record in `docs/runs/` (the results, by way of the section functions of `emit_results.py`);
-* a metadata or declaration file (`metadata/spread_distribution_634.json`, the declaration of the measurement that
-  scored the candidate; `metadata/lockbox.json`, `metadata/sources.json`, `metadata/funding_panel_manifest.json`,
+* a metadata or declaration file (`metadata/s3c_announced_settlement_1288.json`, the declaration of the measurement that
+  scored the candidate; `metadata/spread_distribution_634.json`, the protocol's grid and benchmarks;
+  `docs/research/h5-candidate.json`, the candidate's own record; `metadata/lockbox.json`, `metadata/sources.json`, `metadata/funding_panel_manifest.json`,
   `metadata/evaluation_splits.json`, the decision records);
 * the code's own declarations (`scripts/live_score.py`);
 * `docs/model/candidate.json`, `docs/model/external_sources.json` and `docs/model/controls.json`, which carry the
@@ -66,7 +70,29 @@ def _candidate():
 
 
 def _declaration(candidate=None):
+    """The declaration of the measurement that scored the candidate (#1288)."""
+
     return _json(ROOT / (candidate or _candidate())["declaration"])
+
+
+def _protocol(candidate=None):
+    """The declaration that carries the protocol's grid, horizons and benchmarks (#634)."""
+
+    return _json(ROOT / (candidate or _candidate())["protocol_declaration"])
+
+
+def _record(candidate=None):
+    """`docs/research/h5-candidate.json`, the candidate's own record."""
+
+    return _json(ROOT / (candidate or _candidate())["candidate_record"])
+
+
+def _declared_candidate(candidate, declaration):
+    for entry in declaration["candidates"]:
+        if entry["name"] == candidate["declaration_candidate"]:
+            return entry
+    raise ReportError("the declaration %s has no candidate %r" % (candidate["declaration"],
+                                                                   candidate["declaration_candidate"]))
 
 
 def _bullets(items):
@@ -79,7 +105,7 @@ def _bullets(items):
 
 def use_limitation_block(emit):
     return ["**Use limitation.** " + _candidate()["use_limitation"], "",
-            "(A proposal of the pull request that closes #841, for Eleonora's review; `docs/use-limitation.md`, the "
+            "(A proposal of the pull request that closes #1442, for Eleonora's review; `docs/use-limitation.md`, the "
             "phase 2 statement, is unchanged.)"]
 
 
@@ -88,17 +114,19 @@ def use_block(emit):
 
     candidate = _candidate()
     declaration = _declaration(candidate)
-    horizons = declaration["horizons"]
+    protocol = _protocol(candidate)
+    horizons = protocol["horizons"]
     lines = [
-        "**What it forecasts.** The candidate is `%s`. It forecasts the distribution of the spread of SOFR minus the administered reserve rate (IOER before 29 July 2021, IORB after; written SOFR − IORB) in "
+        "**What it forecasts.** The candidate is %s, H5's frozen candidate. It forecasts the distribution of the spread of SOFR minus the administered reserve rate (IOER before 29 July 2021, IORB after; written SOFR − IORB) in "
         "basis points, as %d quantiles of the spread on each of the next %d to %d business days after the decision "
         "day. The primary score is %s (scoring protocol v1, `docs/decisions/scoring-protocol.md`)."
-        % (candidate["candidate"], len(declaration["protocol"]["grid"]), horizons[0], horizons[-1],
-           declaration["metrics"]["primary"]),
+        % (candidate["label"], len(protocol["protocol"]["grid"]), horizons[0], horizons[-1],
+           declaration["primary"]["metric"]),
         "",
         "**Hypothesis.** H5, the primary goal of the project (`docs/research/hypotheses/H5.md`): a registered "
         "distribution forecast of the spread beats as-of persistence and calendar climatology on this score by at "
-        "least the minimum margin of the protocol, on prospective days. This report is H5's step 6.",
+        "least the minimum margin of the protocol, on prospective days. This report is H5's step 6, rewritten for the "
+        "frozen candidate.",
         "",
         "**What it must not be used for.** It is not a stress-warning system and not a basis for VaR, limits, "
         "liquidity or capital, or desk sizing: \"warns of stress\" is never claimed. Its users are researchers and "
@@ -108,33 +136,48 @@ def use_block(emit):
 
 
 def candidate_block(emit):
-    """The candidate as the declaration of the measurement that scored it states it."""
+    """The candidate as its own record and the declaration of the measurement that scored it state it."""
 
     candidate = _candidate()
     declaration = _declaration(candidate)
-    control = declaration["controls"][candidate["declaration_control"]]
-    base = declaration["inputs"]["base"]
-    scoring = declaration["scoring"]
+    protocol = _protocol(candidate)
+    record = _record(candidate)
+    entry = _declared_candidate(candidate, declaration)
+    walk = declaration["frame"]["walk"].split(";")[0]
+    from repo_model import decision_instant
     lines = [
-        "**The model.** `%s`: %s" % (candidate["candidate"], control),
+        "**The model.** %s" % record["description"],
         "",
-        "**Inputs.** %s: %s. %s" % ("The published funding declaration's features",
-                                    ", ".join("`%s`" % c for c in base["columns"]), base["reading"] + "."),
+        "**What it is, as the declaration states it.** %s" % entry["definition"],
         "",
-        "**Levels and horizons.** The protocol's grid of %d levels, at horizons %s business days, read at each "
-        "lead by the as-of rule (`asof.InformationRule(horizon=h)`)."
-        % (len(declaration["protocol"]["grid"]), ", ".join(str(h) for h in declaration["horizons"])),
+        "**The cap.** %s (%s; declared in `%s`)." % (record["cap"]["rule"][0].upper() + record["cap"]["rule"][1:],
+                                                      record["cap"]["line"], record["cap"]["declaration"]),
         "",
-        "**Fitting.** A walk-forward fit, minimum history %d scored days, refitted every %d scored days, "
-        "decision time %s. A decision day is scored when every one of its target days is on or before %s and has a "
-        "published outcome." % (scoring["minimum_history"], scoring["refit_every"], scoring["decision_time"],
-                                scoring["last_target_day"]),
+        "**The sizing of the settlement terms.** %s (`%s`; declared in `%s`)." % (
+            record["sizing"]["rule"][0].upper() + record["sizing"]["rule"][1:], record["sizing"]["module"],
+            record["sizing"]["declaration"]),
         "",
-        "**Status.** Uncalibrated: no recalibration layer corrects its quantiles. Not registered: it is a "
-        "candidate of the development steps of H5 and no confirmation day has scored it.",
+        "**Inputs.** The target's own history and the calendar columns at the target day, on direct pairs "
+        "(`training_pairs=\"direct\"`); the two settlement terms from the auction announcement, public from %s (%s); "
+        "the SRF line and the standing_repo entry in force, as public at the decision instant. Nothing it reads is "
+        "later than the decision instant (`docs/decisions/information-set.md`)."
+        % (record["dating"]["instant"], record["dating"]["in_force"]),
         "",
-        "**Declaration.** `%s`, declared by the pull request that closes #%s before any score was computed."
-        % (candidate["declaration"], declaration["issue"]),
+        "**Levels and horizons.** The protocol's grid of %d levels, at horizons %s business days."
+        % (len(protocol["protocol"]["grid"]), ", ".join(str(h) for h in protocol["horizons"])),
+        "",
+        "**Fitting.** A walk-forward fit; the declaration states the walk as \"%s\". The decision instant is %s %s. "
+        "The development window is the decision days whose five targets are on or before %s; the 2026 days are shown "
+        "apart and decide nothing."
+        % (walk, decision_instant.DECISION_TIME_TEXT, decision_instant.DECISION_TIMEZONE,
+           candidate["development_last_target_day"]),
+        "",
+        "**Status.** Not recalibrated: no recalibration layer corrects its quantiles. Frozen as the H5 candidate "
+        "(%s, %s: %s) and not registered: no confirmation day has scored it." % (
+            record["label"], record["date"], record["ruling"]),
+        "",
+        "**Declaration.** `%s`, declared by the pull request that closes #%s before any score was computed; the "
+        "candidate's record is `%s`." % (candidate["declaration"], declaration["issue"], candidate["candidate_record"]),
     ]
     return lines
 
@@ -205,28 +248,38 @@ def _lag(lag):
                              lag.get("basis", "n/a").replace("_", " "))
 
 
-def _lockbox_scope(first_locked, last_target):
-    if not last_target < first_locked:
-        raise ReportError("the development evidence scores %s, which is not before the first locked day %s"
-                          % (last_target, first_locked))
-    return ("**The development evidence in this report scores only days before %s** (the last target day of the "
-            "measurement's declaration is %s). The phase 2 records in `docs/runs/` scored other windows, each "
-            "stated in its record; this report states none of their figures, and `docs/decisions/lockbox.md` "
-            "records which of them are history and not a holdout." % (first_locked, last_target))
+def _lockbox_scope(first_tier, first_closed, development_last, last_day):
+    if not development_last < first_tier:
+        raise ReportError("the development window ends %s, which is not before the first tier %s"
+                          % (development_last, first_tier))
+    return ("**The development evidence in this report decides only on days to %s** (the development window of the "
+            "declaration). The 2026 days up to %s are shown apart and decide nothing: they sit in the near-blind tier "
+            "opened once on Eleonora's ruling and were seen by earlier studies. No day from %s is scored. The phase 2 "
+            "records in `docs/runs/` scored other windows, each stated in its record; this report states none of their "
+            "figures, and `docs/decisions/lockbox.md` records which of them are history and not a holdout."
+            % (development_last, last_day, first_closed))
 
 
 def lockbox_block(emit):
     declaration = _json(ROOT / "metadata/lockbox.json")
-    first_locked = declaration["tiers"][0]["start"]
-    last_target = _declaration()["scoring"]["last_target_day"]
+    candidate = _candidate()
+    tiers = declaration["tiers"]
+    first_closed = next((t["start"] for t in tiers if not t["opened"]), None)
+    if first_closed is None:
+        raise ReportError("every lockbox tier is open: the report's scope needs a closed tier to name")
+    last_day = _declaration(candidate)["limits"]["last_day"]
+    if not last_day < first_closed:
+        raise ReportError("the candidate's evidence scores %s, which is not before the first closed day %s"
+                          % (last_day, first_closed))
     lines = [
-        "**The lockbox** (`docs/decisions/lockbox.md`, `metadata/lockbox.json`). A comparison scores only days "
-        "before the first locked day. %s" % _lockbox_scope(first_locked, last_target),
+        "**The lockbox** (`docs/decisions/lockbox.md`, `metadata/lockbox.json`). A comparison scores only days in a "
+        "tier that is open. %s" % _lockbox_scope(tiers[0]["start"], first_closed,
+                                                 candidate["development_last_target_day"], last_day),
         "",
         "| Tier | Days | Opened |",
         "|---|---|---|",
     ]
-    for tier in declaration["tiers"]:
+    for tier in tiers:
         span = "%s to %s" % (tier["start"], tier["end"]) if tier["end"] else "from %s, every day after the tier "\
             "before" % tier["start"]
         opened = ("opened %s, once, on Eleonora's ruling (%s)" % (tier["opened"]["date"], tier["opened"]["ruling"])
@@ -281,6 +334,41 @@ def limitations_block(emit):
     return lines
 
 
+def known_limits_block(emit):
+    """Each known limit of the candidate, with its status and the issue and page that show it (#1442).
+
+    Nothing is computed here and no figure is rendered: the pages carry the figures, as development data. A source
+    names a page that exists or says why there is none yet; anything else raises `ReportError`.
+    """
+
+    candidate = _candidate()
+    label = candidate["evidence_label"]
+    lines = [
+        "**Every limit below is %s** (scoring protocol v1, #640). Each is read on the studentized bound of mean d "
+        "(her ruling on #1009) and is linked to the issue and the page that carry its figures; this report states "
+        "none, and publishing one as a record is Eleonora's decision (`docs/decisions/publish-rule.md`). The limits "
+        "of 2020, of the FOMC target days and of lead 1 are accepted as known limits by her rulings of 2 and 3 "
+        "November 2026; the use limitation above stays." % label,
+        "",
+    ]
+    for limit in candidate["known_limits"]:
+        lines.append("- **%s.** %s" % (limit["title"], limit["limit"]))
+        lines.append("  - *Status.* %s" % limit["status"])
+        for source in limit["sources"]:
+            if source.get("page"):
+                if not (ROOT / source["page"]).exists():
+                    raise ReportError("known limit %r cites %s, which does not exist" % (limit["id"], source["page"]))
+                where = "`%s`" % source["page"]
+            elif source.get("why_no_page"):
+                where = "no page yet: %s" % source["why_no_page"]
+            else:
+                raise ReportError("known limit %r cites %s with neither a page nor a reason" % (limit["id"],
+                                                                                                 source["issue"]))
+            note = ": %s" % source["note"] if source.get("note") else ""
+            lines.append("  - *Evidence.* %s, %s%s" % (source["issue"], where, note))
+    return lines
+
+
 # --------------------------------------------------------------------------
 # performance by regime, and outcomes
 
@@ -294,6 +382,7 @@ def performance_block(emit):
 
     candidate = _candidate()
     declaration = _declaration(candidate)
+    protocol = _protocol(candidate)
     splits = _json(ROOT / "metadata/evaluation_splits.json")
     regimes = [r["label"] for r in splits["regimes"] if r["label"] != "2027"]
     day_types = [t.replace("_", "-") for t in splits["day_types"]["precedence"]]
@@ -303,13 +392,18 @@ def performance_block(emit):
         "this report states no figure for it: each result is cited by its issue and its page, which carry the "
         "figures, and publishing one as a record is Eleonora's decision (`docs/decisions/publish-rule.md`)." % label,
         "",
-        "**How it is scored** (the declaration `%s`, written before any score)." % candidate["declaration"],
+        "**How it is scored** (the declaration `%s`, written before any score; the protocol's grid and benchmarks "
+        "from `%s`)." % (candidate["declaration"], candidate["protocol_declaration"]),
         "",
-        "- **Score.** %s; key secondary, %s." % (declaration["metrics"]["primary"], declaration["metrics"]["key_secondary"]),
-        "- **Benchmarks.** B1, %s; B2, %s." % (declaration["benchmarks"]["B1"], declaration["benchmarks"]["B2"]),
+        "- **Score.** %s; key secondary, %s; the Brier score of the pressure-day probability beside them."
+        % (declaration["primary"]["metric"], declaration["primary"]["key_secondary"]),
+        "- **Benchmarks.** B1, %s; B2, %s; B1' is the calendar-aware persistence of #960, reported beside B1. The "
+        "baselines given the candidate's own cap are the confirmatory benchmarks (her ruling of 3 November 2026 on "
+        "#1421), the uncapped versions beside them." % (protocol["benchmarks"]["B1"], protocol["benchmarks"]["B2"]),
         "- **Pairing.** Each day's difference is the benchmark's score minus the candidate's, so a positive value "
-        "favours the candidate: %s." % declaration["protocol"]["difference"],
-        "- **Interval.** %s." % declaration["protocol"]["interval"],
+        "favours the candidate: %s." % protocol["protocol"]["difference"],
+        "- **Interval.** %s." % declaration["scoring"]["test"].split(";")[0],
+        "- **Reading.** %s." % declaration["scoring"]["reading"].split(". Lens")[0],
         "- **Regimes** (of the decision day, drawn after the fact): %s." % ", ".join(regimes),
         "- **Pressure-day types** (of the target day): %s." % ", ".join(day_types),
         "",
@@ -324,8 +418,8 @@ def performance_block(emit):
             row["what"], row["issue"], row["page"], row["script"], row["split"], label))
     lines.extend([
         "",
-        "Read the regimes after 2020 and the quarter-end and tax-date types first: the phase 2 models were weakest "
-        "there, and the pages above say how the candidate stands in each. A pooled figure alone is not a result."])
+        "Read the known limits first (section 4): they are the splits where the candidate loses or its bands fail, "
+        "and the pages above say how it stands in each. A pooled figure alone is not a result."])
     return lines
 
 
@@ -444,6 +538,7 @@ BLOCKS = {
     "validation-controls": controls_block,
     "validation-assumptions": assumptions_block,
     "validation-limitations": limitations_block,
+    "validation-known-limits": known_limits_block,
     "validation-clearing": clearing_block,
     "validation-performance": performance_block,
     "validation-outcomes": outcomes_block,

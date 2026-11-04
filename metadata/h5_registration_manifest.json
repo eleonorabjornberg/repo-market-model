@@ -29,7 +29,10 @@
   "B2": "protocol_benchmarks B2: climatology by pressure-day type",
   "B3": "the incumbent published distribution, scored on its own five levels",
   "B1_star": "B1* (#1388): B1 with the change window anchor-to-target",
-  "B1_prime_star": "B1'* (#1388): B1' with the change window anchor-to-target"
+  "B1_prime_star": "B1'* (#1388): B1' with the change window anchor-to-target",
+  "B1_prime_star_cap": "B1'*-cap (#1421, #1422; confirmatory by her ruling of 3 November 2026): B1'* clipped at the candidate's Standing Repo Facility line on target days at full allotment, probabilities under rule (b); protocol_benchmarks.b1_calendar_anchor_capped_forecast",
+  "B2_star": "B2* (#1420, merged in #1423): B2's day types with a two-year lookback, a minimum pool of 10 and a hard fallback chain, frozen in metadata/b2_star_1420.json; protocol_benchmarks.b2_star_forecast. Development tier: whether it replaces B2 in the registered comparison is hers",
+  "B2_star_cap": "B2*-cap (#1440, the finding of #1434; confirmatory by her ruling of 3 November 2026): B2* clipped at the candidate's Standing Repo Facility line on target days at full allotment, probabilities under rule (b); protocol_benchmarks.b2_star_capped_forecast. #1422 scored a stand-in (plain B2 capped) under this name, in error; docs/research/capped-baselines-b2star-1434-result.md is the study with B2* in it"
  },
  "choices": [
   {
@@ -1295,6 +1298,20 @@
    "log": "docs/research/log/2026-11-02-model-01400-H5-step3.md"
   },
   {
+   "id": "b2_star",
+   "label": "B2*: the calendar climatology with frozen pools, a two-year lookback, a minimum pool and a declared fallback",
+   "issue": 1420,
+   "pr": 1423,
+   "merged": "2026-11-04",
+   "role": "side_check",
+   "parent": "ann_net_1800",
+   "change": "A benchmark beside B2, not a candidate arm: B2's day types, a two-year lookback, a minimum pool of 10, a hard fallback chain, none searched; the candidate is scored against it",
+   "outcome": "On the development window the candidate is read better than B2* and than B2 on grid CRPS, upper-tail twCRPS and the Brier score of P(> +5 bp); B2* is read worse than B2 on pooled grid CRPS. On the 2026 days B2* has lower upper-tail twCRPS and Brier means than the candidate (undecided). The candidate is unchanged; B2*-cap, the confirmatory form, is scored in capped-baselines-b2star-1434",
+   "declaration": "metadata/b2_star_1420.json",
+   "page": "docs/research/b2-star-1420-result.md",
+   "log": "docs/research/log/2026-11-03-model-01420-H5-step4.md"
+  },
+  {
    "id": "h9_nested_1800",
    "label": "H9 nested test on the candidate at 18:00 (BGCR dispersion, SOFR dispersion, ON RRP change as targets)",
    "issue": 1345,
@@ -1314,12 +1331,13 @@
   "metadata/aligned_pairs_931.json": "#931's scratch measurement of the gbm_funding line's pair construction, declared before any score with nothing published; a precursor of #1027, not an arm on the way to the candidate",
   "metadata/s3c_flagnet_prospective_draft_1344.json": "#1344's draft prospective test of (s3c-ann-flagnet), not registered; a draft for her review, not an arm on the way to the candidate",
   "metadata/h5_registration_manifest.json": "this manifest, which names the candidate in every row; it is the inventory, not an arm in it",
-  "metadata/b2_star_1420.json": "#1420's declaration of B2*, a benchmark (calendar climatology with frozen pools, lookback and fallback) scored against the candidate, which is unchanged; a benchmark design, not an arm on the way to the candidate. Not yet merged: a side_check row follows the merge, as B4's did",
   "metadata/net_settlement.json": "the availability declaration of the net settlement input (#1273); a declared input of the candidate's sizing, not a study or an arm",
   "metadata/owner_attestations.json": "the register of her GO attestations; it cites the candidate where she froze or ruled on it, not an arm",
   "metadata/settlement_announcement_dating.json": "the dating of the auction announcements (#1288) that the candidate's sizing reads; a data declaration, not an arm",
   "metadata/s3c_uncapped_1361.json": "#1361's development study of the candidate without the Standing Repo Facility cap, declared before any score; a secondary result reported beside the candidate, which does not change, not an arm on the way to it",
-  "metadata/capped_baselines_1421.json": "#1421's development study of the simple baselines with the candidate's SRF cap (B1'*-cap, B2-cap as the stand-in for B2*-cap), scored against the candidate; it changes no candidate and adds no arm on the way to it, and the capped baselines are the confirmatory benchmarks by her ruling of 3 November 2026",
+  "metadata/s3c_ann_net_backfill_1444.json": "#1444's scratch measurement of the candidate trained on the admitted 2014-18 back-filled history (H4 step 3, her ruling of 26 October 2026), declared before any score; a scratch reading that adopts nothing and leaves the candidate unchanged (information-set.md, back-fill amendment, item 3), not an arm on the way to it",
+  "metadata/capped_baselines_1421.json": "#1421's development study of the simple baselines with the candidate's SRF cap (B1'*-cap, and B2-cap with plain B2 standing in for B2*, in error: B2* was on main), scored against the candidate; it changes no candidate and adds no arm on the way to it, and the capped baselines are the confirmatory benchmarks by her ruling of 3 November 2026. Its B2-cap rows are superseded by metadata/capped_baselines_b2star_1434.json; the page is left as it is",
+  "metadata/capped_baselines_b2star_1434.json": "#1440's re-run of #1421's study with B2*-cap proper (B2* clipped at the candidate's line) in place of the plain-B2 stand-in, scored against the candidate; it changes no candidate and adds no arm on the way to it. B2* and B2*-cap are named in `references`; nothing is adopted",
   "metadata/sources.json": "the source registry; it lists the inputs the candidate reads, not an arm"
  }
 }

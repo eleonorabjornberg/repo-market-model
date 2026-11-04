@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/s3c_ann_net_backfill_1444.json",
+  "script": "scripts/s3c_ann_net_backfill_1444.py",
+  "pairing": "direct",
+  "why": "(s3c-ann-net) trained on the admitted 2014-18 back-filled history, a scratch measurement. The fit is (s3)'s estimation routine, spread_mr_state_calendar.fit_state_terms called with training_pairs = direct (guarded by one_step_guard with no allow-list entry) in a two-stage refit, and no gradient-boosted fit is called, so the study is not provisional; the calendar columns it reads (quarter_end, tax_date) and the announced settlement terms are read at the target day, the settlement and market-holiday terms are not fitted on back-filled rows, and no outcome is an input"
+}
