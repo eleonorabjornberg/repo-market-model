@@ -10,7 +10,7 @@ its schedule are not touched.
 What is held here (the registered code itself runs only in the workflow, in a clean checkout of liquidity at the
 registered commit and of the parent at its pin; these tests inject the backend):
 
-* **the pin** (`PinTests`): `metadata/live_h10_pin.json` holds the values of liquidity's registration of 22 October 2026
+* **the pin** (`PinTests`): `metadata/live_h10_pin.json` holds the values of liquidity's registration of 3 November 2026
   on repo-market-liquidity#23;
 * **the digest** (`DigestTests`): a row whose `method_digest` is not the registered one, or whose `parent_commit` is not
   the registered parent, or that was made with the parent override or from a dirty parent, is refused: nothing is written
@@ -54,9 +54,9 @@ from repo_model.splits import LookAheadError
 
 ROOT = Path(__file__).resolve().parents[1]
 
-LIQUIDITY_COMMIT = "783848316995d4f2d425abea0c6bd0be3e157c26"
-PARENT_COMMIT = "08ff67e27bc3d7e357491cf8e1da59793702b3fb"
-DIGEST = "43bf1303164c3c085b33ccf762268b721a5bddc9d7a4dcf68524c67ea33d15bb"
+LIQUIDITY_COMMIT = "b4737219c8d443041bbc406cc97dfb584cbbcc2d"
+PARENT_COMMIT = "2032de4a7d7802289bc5a78dfc02599752bc7c5c"
+DIGEST = "54b5f151c757b1cff5d3ebe6e8ce202bd41cafc4d8104effb00f3da4617c8770"
 
 BOT = {
     "GIT_AUTHOR_NAME": "github-actions[bot]",
@@ -79,6 +79,17 @@ live_h10 = _load()
 DAYS = [date(2026, 10, d) for d in (14, 15, 16, 19, 20, 21, 22, 23, 26, 27, 28, 29, 30)] + [
     date(2026, 11, d) for d in (2, 3, 4, 5, 6, 9, 10, 11, 12)
 ]
+
+
+def fixture_pin():
+    """The real pin, with `registered_on` moved back to 2026-10-22.
+
+    The day fixtures below (onsets from 14 October, days to 12 November) were laid out around the first registration.
+    `run_day` drops onsets before `registered_on`, so the second registration (3 November) would empty most of them. The
+    digest, parents and commits stay the manifest's; `PinTests` checks the real `registered_on`.
+    """
+
+    return {**live_h10.load_pin(), "registered_on": "2026-10-22"}
 
 
 def good_row(onset, report, **over):
@@ -124,7 +135,7 @@ class PinTests(unittest.TestCase):
         self.assertEqual(pin["liquidity_commit"], LIQUIDITY_COMMIT)
         self.assertEqual(pin["parent_commit"], PARENT_COMMIT)
         self.assertEqual(pin["method_digest"], DIGEST)
-        self.assertEqual(pin["registered_on"], "2026-10-22")
+        self.assertEqual(pin["registered_on"], "2026-11-03")
         self.assertEqual(pin["report_days"], 10)
         self.assertEqual(live_h10.load_pin(), pin)
 
@@ -137,7 +148,7 @@ class PinTests(unittest.TestCase):
 
 class DigestTests(unittest.TestCase):
     def setUp(self):
-        self.pin = live_h10.load_pin()
+        self.pin = fixture_pin()
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.out = Path(self.tmp.name)
@@ -187,7 +198,7 @@ class DigestTests(unittest.TestCase):
 
 class LookAheadTests(unittest.TestCase):
     def setUp(self):
-        self.pin = live_h10.load_pin()
+        self.pin = fixture_pin()
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.out = Path(self.tmp.name)
@@ -231,7 +242,7 @@ class RefusedAtCloseTests(unittest.TestCase):
     """
 
     def setUp(self):
-        self.pin = live_h10.load_pin()
+        self.pin = fixture_pin()
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.out = Path(self.tmp.name)
@@ -294,7 +305,7 @@ class RefusedAtCloseTests(unittest.TestCase):
 
 class DayTests(unittest.TestCase):
     def setUp(self):
-        self.pin = live_h10.load_pin()
+        self.pin = fixture_pin()
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.out = Path(self.tmp.name)
