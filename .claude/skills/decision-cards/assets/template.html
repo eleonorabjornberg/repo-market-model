@@ -67,6 +67,11 @@ h3 { margin: 0; font-size: 16.5px; line-height: 1.35; text-wrap: balance; }
 .opt[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
 .opt[aria-pressed="true"] .k { color: var(--accent); }
 .where { font-size: 12.5px; color: var(--muted); }
+article.card.report { background: color-mix(in srgb, var(--surface) 70%, var(--bg)); }
+.lines { margin: 0; padding-left: 18px; color: var(--ink); font-size: 14px; display: grid; gap: 4px; }
+.code { position: relative; min-width: 0; }
+.code pre { margin: 0; font: 12px/1.5 var(--font-mono); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; overflow-x: auto; white-space: pre; max-height: 320px; }
+.code button { position: absolute; top: 6px; right: 6px; font: 600 12px var(--font-body); border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 6px; padding: 3px 9px; cursor: pointer; }
 textarea { width: 100%; min-height: 40px; resize: vertical; font: 14px var(--font-body); color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
 .saved { font-size: 12px; color: var(--muted); min-height: 1em; }
 footer { margin-top: 28px; font-size: 12.5px; color: var(--muted); }
@@ -114,19 +119,22 @@ function render() {
     for (const d of items) sec.append(card(d));
     listEl.append(sec);
   }
-  const n = DECISIONS.filter(d => answers[d.id]?.choice).length;
-  document.getElementById("count").textContent = `${n} of ${DECISIONS.length} decided`;
-  document.getElementById("barfill").style.width = `${(100 * n / DECISIONS.length).toFixed(1)}%`;
+  const open = DECISIONS.filter(d => d.kind !== "report");
+  const n = open.filter(d => answers[d.id]?.choice).length;
+  document.getElementById("count").textContent = `${n} of ${open.length} decided`;
+  document.getElementById("barfill").style.width = open.length ? `${(100 * n / open.length).toFixed(1)}%` : "100%";
 }
 
 function card(d) {
   const a = answers[d.id] || {};
+  if (d.kind === "report") return report(d);
   const c = el("article", { class: "card" + (a.choice ? " decided" : ""), id: "card-" + d.id });
   c.append(el("div", { class: "head" }, el("span", { class: "tag" }, d.tag), el("span", { class: "state" }, a.choice ? "Decided" : "Open")));
   c.append(el("h3", {}, d.title));
   if (d.ctx) c.append(el("p", { class: "ctx" }, d.ctx));
   if (d.blocks) c.append(el("p", { class: "ctx" }, d.blocks));
   if (d.flag) c.append(el("p", { class: "flag" }, d.flag));
+  if (d.code) c.append(codeBlock(d.code));
   const opts = el("div", { class: "opts", role: "group", "aria-label": "Options" });
   for (const [k, label, rec] of d.opts) {
     const b = el("button", { class: "opt", type: "button", "aria-pressed": String(a.choice === k), onclick: () => choose(d.id, k) },
@@ -142,6 +150,29 @@ function card(d) {
   ta.addEventListener("blur", () => { clearTimeout(t); saveNote(d.id, ta.value); });
   c.append(ta, saved, el("div", { class: "where" }, "Details: ", el("code", {}, d.where)));
   return c;
+}
+
+// A report card: status to read, no options, not counted as a decision.
+function report(d) {
+  const c = el("article", { class: "card report", id: "card-" + d.id });
+  c.append(el("div", { class: "head" }, el("span", { class: "tag" }, d.tag), el("span", { class: "state" }, "For reading")));
+  c.append(el("h3", {}, d.title));
+  if (d.ctx) c.append(el("p", { class: "ctx" }, d.ctx));
+  if (d.lines && d.lines.length) { const ul = el("ul", { class: "lines" }); for (const t of d.lines) ul.append(el("li", {}, t)); c.append(ul); }
+  if (d.flag) c.append(el("p", { class: "flag" }, d.flag));
+  if (d.code) c.append(codeBlock(d.code));
+  if (d.where) c.append(el("div", { class: "where" }, "Details: ", el("code", {}, d.where)));
+  return c;
+}
+
+function codeBlock(text) {
+  const btn = el("button", { type: "button" }, "Copy");
+  btn.addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(text); btn.textContent = "Copied"; }
+    catch (e) { btn.textContent = "Select and copy"; }
+    setTimeout(() => { btn.textContent = "Copy"; }, 2000);
+  });
+  return el("div", { class: "code" }, el("pre", {}, text), btn);
 }
 
 const pending = {};

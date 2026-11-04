@@ -15,11 +15,18 @@ spec.json:
      "ctx": "one or two sentences", "blocks": "what it blocks (optional)",
      "flag": "warning (optional)",
      "opts": [["a", "Option A", true], ["b", "Option B"]],   # true = recommended
-     "where": "file with the full options"}
+     "where": "file with the full options"},
+    {"id": "mac-1392", "group": "Mac runs", "tag": "#1399", "title": "...",
+     "ctx": "...", "code": "cd ~/clone && ...",        # paste, shown with a Copy button
+     "opts": [["ran", "Started it"], ["later", "Later"]], "where": "..."},
+    {"id": "scoreboard", "group": "Status", "kind": "report", "tag": "H5",
+     "title": "...", "ctx": "...", "lines": ["...", "..."], "where": "..."}
   ]
 }
+A card with "kind": "report" is for reading: no options, no answer, not
+counted in the progress bar. "code" (any card) is shown as a copyable block.
 Text is inserted as text (no HTML). Checks ids are unique, every group is
-listed, and every card has at least two options.
+listed, and every decision card has at least two options.
 """
 import html
 import json
@@ -44,7 +51,12 @@ def main(spec_path, out_path):
     for d in decisions:
         if d["group"] not in groups:
             sys.exit(f"{d['id']}: group {d['group']!r} not in groups")
-        if len(d.get("opts", [])) < 2:
+        if d.get("kind", "decision") not in ("decision", "report"):
+            sys.exit(f"{d['id']}: kind must be 'decision' or 'report'")
+        if d.get("kind") == "report":
+            if d.get("opts"):
+                sys.exit(f"{d['id']}: a report card takes no options")
+        elif len(d.get("opts", [])) < 2:
             sys.exit(f"{d['id']}: needs at least two options")
     page = TEMPLATE.read_text()
     subs = {

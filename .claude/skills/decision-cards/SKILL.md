@@ -70,23 +70,28 @@ arrived). Every `needs-eleonora` issue and PR in both repositories, open items o
 recommendation against the five-lens reports.
 
 **Cards.**
-- Groups: `H5 registration`, `H9 / liquidity`, `Data and housekeeping`, and `GitHub actions` for what needs her at a
-  computer (merges, a `GO` comment, a Mac run). Use the issue or PR number as `tag` and its link as `where`.
+- Groups, in this order: `Status`, `Mac runs`, `H5 registration`, `H9 / liquidity`, `Data and housekeeping`, and
+  `GitHub actions` for what needs her at a computer (merges, a `GO` comment). Use the issue or PR number as `tag` and its link as `where`.
 - Each decision states its default in `ctx` ("Default: (a)."): the option that applies if she has not answered by the
   next docket. The default never changes what the project claims (`docs/decisions/workflow.md`, "Fewer round trips").
 - An action only she can take has the options `Done` and `Later`. A `GO` card says which comment to post and where; the
   card records her answer, never the `GO` itself: a binding approval is only her own GitHub comment, and a session never
   posts one.
 
-**Alongside the link**, in one short chat message (cards carry decisions, not reports):
-1. **Scoreboard.** H5 (primary): spread-distribution CRPS skill against as-of persistence, marked "development, not a
-   verdict" unless from protocol confirmation days; H9 (secondary): status. A figure from a provisional
-   (calendar-blind) model says so.
-2. **Tonight's Mac runs.** Every `needs-mac` directive in either repository whose script is ready and has not pushed:
-   its full paste from the PR's `needs-mac:` comment (the `long-run` skill's format), in order, with expected hours and
-   which can run side by side; and any earlier Mac run whose results commit landed or never ran.
-3. **Progress per hypothesis**, per the manuals in `docs/research/hypotheses/`.
-4. **On business days, the live-log status** (#225).
+**Status and Mac runs go on the page too** (Eleonora, 4 November 2026), ahead of the decisions:
+- Group `Status`, cards with `"kind": "report"` (for reading; no options, not counted as decisions):
+  1. **Scoreboard.** H5 (primary): spread-distribution CRPS skill against as-of persistence, marked "development, not
+     a verdict" unless from protocol confirmation days; H9 (secondary): status. A figure from a provisional
+     (calendar-blind) model says so.
+  2. **Progress per hypothesis**, per the manuals in `docs/research/hypotheses/`, one `lines` entry per hypothesis.
+  3. **On business days, the live-log status** (#225).
+  4. **Earlier Mac runs:** any whose results commit landed, or that never ran.
+- Group `Mac runs`, one decision card per `needs-mac` directive in either repository whose script is ready and has not
+  pushed, in the order to run them: `ctx` gives the expected hours and what can run side by side; `code` holds the full
+  paste from the PR's `needs-mac:` comment (the `long-run` skill's format), shown with a Copy button; options
+  `Started it` and `Later`. A paste carries no secret.
+
+The chat message beside the link is one line.
 
 **Publish.** In the orchestrating session, republish the same file path each day to keep one URL; from another session,
 pass the URL recorded in #1044. Use new ids for a new item and the same id for one carried over. Record the URL in the
