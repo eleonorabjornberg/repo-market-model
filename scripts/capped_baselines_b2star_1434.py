@@ -505,6 +505,12 @@ def share_table(w: Mapping[str, object]) -> List[str]:
     return out
 
 
+def _ordered(r: dict):
+    """The windows in the order of `WINDOWS` (the development window first), not the sorted order of the score file."""
+
+    return [(name, r["windows"][name]) for name in WINDOWS if name in r["windows"]]
+
+
 def render(r: dict) -> str:
     L: List[str] = []
     add = L.append
@@ -531,7 +537,7 @@ def render(r: dict) -> str:
         "that of B1'* #1388's result, that of B2* #1420's result, and the candidate, B1'* and B1'*-cap #1422's result, to 1e-9 in both windows (the study refuses to "
         "write otherwise).")
     add("")
-    for name, w in r["windows"].items():
+    for name, w in _ordered(r):
         add(f"## {WINDOW_TITLES[name]}")
         add("")
         b = w["cells_where_the_cap_binds_at_q99"]
@@ -604,7 +610,7 @@ def against_b2star_cap(r: dict) -> str:
     """The plain statement of the issue: the candidate against B2*-cap, on twCRPS and Brier, pooled, in each window: the means, the paired difference and its reading."""
 
     parts = []
-    for name, w in r["windows"].items():
+    for name, w in _ordered(r):
         g = w["groups"]["pooled"]["all cells"]["metrics"]
         sentences = []
         for metric in ("upper_tail_twcrps", "brier_gt5"):
@@ -622,7 +628,7 @@ def conclusions(r: dict) -> List[str]:
 
     out: List[str] = []
     dev = r["windows"].get("development")
-    for name, w in r["windows"].items():
+    for name, w in _ordered(r):
         g = w["groups"]["pooled"]["all cells"]["metrics"]
         parts = []
         for metric in METRICS:
