@@ -171,6 +171,11 @@ PATTERN_RELEASE_TIMES = ("13:29", "13:30")
 PATTERN_BAND_MIN = 90_000_000
 PATTERN_BAND_MAX = 130_000_000
 PATTERN_SIDE_LINE_MAX = 10_000_000
+#: The split rule (#1456, Eleonora's ruling of 4 November 2026, option (a) on finding #916): a standing repo
+#: (`Repo`) operation that accepted more than nothing and at most this amount in total, split equally across the
+#: lines that accepted anything (at least two), is a Desk test trade (`_is_split_test_trade`). The $10 mn / $0 / $10 mn
+#: operations are the case. One bound, no date.
+SPLIT_TEST_TOTAL_MAX = 35_000_000
 #: The OFR's Short-term Funding Monitor, repo collection (#187): one
 #: unmodified `timeseries` response per series mnemonic, saved by
 #: `fetch_ofr_stfm_repo` and read by `_ofr_stfm_rows`. Off in every published
@@ -2161,10 +2166,43 @@ def _is_afternoon_test_trade(operation: Mapping[str, object]) -> bool:
     return not both_stated or low == high
 
 
-def _effective_taken(operation: Mapping[str, object], accepted):
-    """The amount an operation accepted that counts as take-up: zero for a test trade (#802, #938)."""
+def _is_split_test_trade(operation: Mapping[str, object]) -> bool:
+    """Whether the operation is a Desk test trade split equally across its accepted lines (#1456, ruling on #916).
 
-    return 0 if _is_afternoon_test_trade(operation) else _effective_accepted(accepted)
+    True for a `Repo` operation whose `totalAmtAccepted` is above zero and at most `SPLIT_TEST_TOTAL_MAX`
+    and whose `details` hold at least two lines that accepted anything, all of the same amount, summing to the
+    total (the $10 mn / $0 / $10 mn operation: two accepted lines of $10 mn). It reads only the operation's own
+    fields. An operation with no list of `details` is not one.
+
+    Raises `ValueError` on a candidate (total within the bound) whose detail line has no numeric `amtAccepted`.
+    """
+
+    if operation.get("operationType") != "Repo":
+        return False
+    total = operation.get("totalAmtAccepted")
+    if isinstance(total, bool) or not isinstance(total, (int, float)) or not 0 < total <= SPLIT_TEST_TOTAL_MAX:
+        return False
+    details = operation.get("details")
+    if not isinstance(details, list):
+        return False
+    amounts = []
+    for line in details:
+        amount = line.get("amtAccepted") if isinstance(line, dict) else None
+        if isinstance(amount, bool) or not isinstance(amount, (int, float)):
+            raise ValueError(
+                f"New York Fed repo operation {operation.get('operationId')!r} has a detail line with no numeric amtAccepted ({amount!r})"
+            )
+        if amount > 0:
+            amounts.append(amount)
+    return len(amounts) >= 2 and len(set(amounts)) == 1 and sum(amounts) == total
+
+
+def _effective_taken(operation: Mapping[str, object], accepted):
+    """The amount an operation accepted that counts as take-up: zero for a test trade (#802, #938, #1456)."""
+
+    if _is_afternoon_test_trade(operation) or _is_split_test_trade(operation):
+        return 0
+    return _effective_accepted(accepted)
 
 
 def _is_small_value_exercise(operation: Mapping[str, object]) -> bool:
