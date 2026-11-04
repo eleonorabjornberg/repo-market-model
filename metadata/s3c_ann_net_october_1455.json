@@ -1,0 +1,45 @@
+{
+ "status": "declared by the pull request that closes #1455 before any score was computed. A development study, never a verdict. Nothing is registered, published or adopted: no record in docs/runs/ is edited, the live record and its pin do not change, docs/research/h5-candidate.json does not change, the frozen candidate (s3c-ann-net) does not change, and the 15 October label is a data meaning that stays hers (#1004, #965).",
+ "issue": 1455,
+ "ruling": "Eleonora, 4 November 2026, decision docket, option (a) on finding #1004, relayed by the orchestrating session: test the 15 October tax_date label as a development arm on (s3c-ann-net) and record the result under known limits. Her earlier ruling of 20 October 2026 (corrected the same day): the label is deferred, not rejected, and is revisited only on a reading that leaves out the 2019 and 2025 days that prompted it, or on the 2026 development days.",
+ "hypothesis": "H5 (primary goal), registration groundwork: the known-limits list. Development tier.",
+ "why": "The 15 October label of #965 / #979 was tested only in B2 and the calendar ranker, on the days that prompted it (2019-10-15, 2019-10-16 and 2025-10-15), and never on a learned model that reads calendar days at the target day: the H5 candidate read no calendar input when #979 was written (correction of 20 October on #1004). (s3c-ann-net) reads tax_date at the target day on direct pairs, so the label can be tested in it as one more day on which its tax_date term is 1.",
+ "arms": {
+  "control": "(s3c-ann-net) as it is in #1288 / #1319 / #1314: the published panel from 2018-04-03, the walk of scripts/s3c_announced_settlement_1288.py unchanged, read at the 18:00 decision instant.",
+  "arm": "(s3c-ann-net+oct): the same model, the same decision days, the same refit days, the same cap at the SRF line, with the published tax_date flag OR-ed with tax_date_october.october_window(day) (15 October rolled forward off weekends and DC holidays, and the two market days after it; #965) in the term table the fit and the forecast read. Only the table's tax_date flag changes."
+ },
+ "label": {
+  "definition": "repo_model.tax_date_october.october_window, a function of the date and the pinned market holiday table alone (metadata/market_holidays.json, which covers 2018 on), so it is known ahead of its date as a calendar column is. The flag is read at the target row, the same as the published tax_date (spread_mr_calendar.TERMS: span (0,), not scheduled).",
+  "what_changes": "the tax_date entry of the term table (`_flags[('tax_date', lead)]`) at every lead. A guard (`require_only_october`) refuses an arm whose flags differ from the published ones anywhere but on October-window days, or that clears a published flag.",
+  "what_does_not_change": "the published panel and its tax_date column; the turn-day labels that decide which days are ordinary for the level (turn_days, the splits' reporting_day_type); the pressure-day and target-day-type groups; the settlement terms; the cap. The level of the model therefore still counts an October-window day as an ordinary day, as the control does: the arm tests the label as a fitted term only, one change at a time. A level that also skips those days is a different arm and is not run."
+ },
+ "pairs": "direct, as in #1288: the fit is spread_mr_state_calendar.fit_state_terms through spread_mr_state_calendar.walk with training_pairs='direct' (its default), decorated with one_step_guard.guard_one_step_fit. No allow-list entry is used or added. No gradient-boosted fitter is called, so there is no provisional-register producer row; the declaration is entered in the register as read at the target day on direct pairs (metadata/provisional/cleared/), as the other (s3c-ann-net) studies are.",
+ "frame": "the frames, decision days, refit days, seeds and draws of #1288 (seed 1288, scoring_protocol.DRAWS, block scoring_protocol.BLOCK_LENGTH); the two windows of #1288, the development window (targets to 2025-12-31) and the 2026 development days (targets 2026-01-02 to 2026-09-03). The arm walks the control's decision days; a different refit-day set refuses the run. No day after 2026-09-03 is read or scored (exploration.require_exploratory_window; the frames refuse a locked day).",
+ "scoring": {
+  "protocol": "scoring protocol v1: grid CRPS averaged over h = 1 to 5 (primary), upper-tail twCRPS (key secondary), at 18:00, on the same scored days as the control.",
+  "comparisons": "(s3c-ann-net+oct) against (s3c-ann-net), and each against B1'* (b1_calendar.b1_calendar_anchor_forecast), paired by decision day, the studentized stationary bootstrap of scoring_protocol.paired_tests through scripts/spread_mr_variants_761.py run_pairs as #1288 and #1444 run it; d = the reference's score less the arm's (positive favours the arm).",
+  "splits": "pooled; by lead; by regime of metadata/evaluation_splits.json; by pressure-day type; by target-day type; and the October tax windows, named: all October-window targets; the October-window targets of every year but 2019 and 2025 (the reading that leaves the motivating days out, the only one that can speak to the label); the October-window targets of 2019 and 2025 (the days that prompted it, reported to show where the move sits); and, for the second window, the 2026 development days, where the arm has seen the 2025 October window in training and no October-window day is scored.",
+  "october_windows": "the October window of a year is the group of target days tax_date_october.october_window holds; a group of fewer than the study's minimum days is reported as too small with its size and not tested.",
+  "terms": "per refit and lead, the tax_date term of each arm: whether it entered, its effect (scale units) and its flagged-pair count; the first refit at which each October window entered the arm's training frame."
+ },
+ "reading_rules": {
+  "gain": "the studentized 90% interval of d (control less arm) on the grid CRPS lies wholly above zero",
+  "cost": "the studentized 90% interval of d (control less arm) lies wholly below zero",
+  "otherwise": "undecided",
+  "label_reading": "the label is read as tested and supported, tested and not supported, or tested and undecided, on the October-window targets of the years but 2019 and 2025, and on the 2026 development days; a reading on the motivating years is circular and is not one. 'supported' is a gain there on grid CRPS or on upper-tail twCRPS with no cost on the other; 'not supported' is a cost on either, or an identical score; anything else is undecided.",
+  "scope": "development data never gives a verdict; the result goes to the validation report's known limits as tested and not adopted, or as a known limit, and changes nothing the project claims. Any adoption is her decision."
+ },
+ "variant_count": "one new arm, (s3c-ann-net+oct); (s3c-ann-net) is the control re-run, not a new variant.",
+ "expected_run": "two walks of about six minutes (the control, #1314's figure) and the arm's walk on each window, and the paired tests a few minutes more: a cloud run, under two hours.",
+ "not_checked": [
+  "any day after 2026-09-03 (locked or blind)",
+  "a level that also skips the October-window days (the turn-day labels are the control's)",
+  "other models with the label: (s3), (s3c), B2 and the ranker are not re-run (#965 did those)",
+  "a window other than 15 October plus two market days",
+  "any verdict under protocol v1"
+ ],
+ "variants": {
+  "(s3c-ann-net)": "control, unchanged from #1288 / #1319 / #1314: no new fit",
+  "(s3c-ann-net+oct)": "scored arm: (s3c-ann-net) with the 15 October window added to its tax_date term"
+ }
+}
