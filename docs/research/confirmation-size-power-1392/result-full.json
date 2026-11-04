@@ -1,0 +1,2562 @@
+{
+ "M": 500,
+ "baselines": [
+  "B1p*",
+  "B2"
+ ],
+ "cells": [
+  {
+   "count": 500,
+   "effects": [
+    0.0,
+    0.0
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "main",
+   "key": "main/block/n250/ell50/0-0",
+   "main": {
+    "fail": 174,
+    "inconclusive": 322,
+    "pass": 4
+   },
+   "n": 250,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.03,
+    0.03
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "main",
+   "key": "main/block/n250/ell50/0.03-0.03",
+   "main": {
+    "fail": 133,
+    "inconclusive": 364,
+    "pass": 3
+   },
+   "n": 250,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.05,
+    0.05
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "main",
+   "key": "main/block/n250/ell50/0.05-0.05",
+   "main": {
+    "fail": 96,
+    "inconclusive": 399,
+    "pass": 5
+   },
+   "n": 250,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "main",
+   "key": "main/block/n250/ell50/0.1-0.1",
+   "main": {
+    "fail": 56,
+    "inconclusive": 424,
+    "pass": 20
+   },
+   "n": 250,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.03,
+    0.03
+   ],
+   "ell": 20,
+   "flag_effect": null,
+   "group": "sensitivity",
+   "key": "sensitivity/block/n250/ell20/0.03-0.03",
+   "main": {
+    "fail": 106,
+    "inconclusive": 391,
+    "pass": 3
+   },
+   "n": 250,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.05,
+    0.05
+   ],
+   "ell": 20,
+   "flag_effect": null,
+   "group": "sensitivity",
+   "key": "sensitivity/block/n250/ell20/0.05-0.05",
+   "main": {
+    "fail": 91,
+    "inconclusive": 403,
+    "pass": 6
+   },
+   "n": 250,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 20,
+   "flag_effect": null,
+   "group": "sensitivity",
+   "key": "sensitivity/block/n250/ell20/0.1-0.1",
+   "main": {
+    "fail": 43,
+    "inconclusive": 447,
+    "pass": 10
+   },
+   "n": 250,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.03,
+    0.03
+   ],
+   "ell": 100,
+   "flag_effect": null,
+   "group": "sensitivity",
+   "key": "sensitivity/block/n250/ell100/0.03-0.03",
+   "main": {
+    "fail": 163,
+    "inconclusive": 322,
+    "pass": 15
+   },
+   "n": 250,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.05,
+    0.05
+   ],
+   "ell": 100,
+   "flag_effect": null,
+   "group": "sensitivity",
+   "key": "sensitivity/block/n250/ell100/0.05-0.05",
+   "main": {
+    "fail": 121,
+    "inconclusive": 367,
+    "pass": 12
+   },
+   "n": 250,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 100,
+   "flag_effect": null,
+   "group": "sensitivity",
+   "key": "sensitivity/block/n250/ell100/0.1-0.1",
+   "main": {
+    "fail": 71,
+    "inconclusive": 398,
+    "pass": 31
+   },
+   "n": 250,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    null,
+    null
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "observed",
+   "key": "observed/block/n250/ell50/observed-observed",
+   "main": {
+    "fail": 5,
+    "inconclusive": 359,
+    "pass": 136
+   },
+   "n": 250,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.03,
+    null
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "binding_observed",
+   "key": "binding_observed/block/n250/ell50/0.03-observed",
+   "main": {
+    "fail": 67,
+    "inconclusive": 408,
+    "pass": 25
+   },
+   "n": 250,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.05,
+    null
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "binding_observed",
+   "key": "binding_observed/block/n250/ell50/0.05-observed",
+   "main": {
+    "fail": 37,
+    "inconclusive": 425,
+    "pass": 38
+   },
+   "n": 250,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    null
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "binding_observed",
+   "key": "binding_observed/block/n250/ell50/0.1-observed",
+   "main": {
+    "fail": 8,
+    "inconclusive": 412,
+    "pass": 80
+   },
+   "n": 250,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.03,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "binding",
+   "key": "binding/block/n250/ell50/0.03-0.1",
+   "main": {
+    "fail": 95,
+    "inconclusive": 401,
+    "pass": 4
+   },
+   "n": 250,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    0.03
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "binding",
+   "key": "binding/block/n250/ell50/0.1-0.03",
+   "main": {
+    "fail": 97,
+    "inconclusive": 395,
+    "pass": 8
+   },
+   "n": 250,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": 0.0,
+   "gated": {
+    "reject": 101
+   },
+   "group": "gated",
+   "joint": {
+    "pass_and_reject": 4
+   },
+   "key": "gated/block/n250/ell50/0.1-0.1_b0",
+   "main": {
+    "fail": 62,
+    "inconclusive": 419,
+    "pass": 19
+   },
+   "n": 250,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": 0.01,
+   "gated": {
+    "reject": 203
+   },
+   "group": "gated",
+   "joint": {
+    "pass_and_reject": 11
+   },
+   "key": "gated/block/n250/ell50/0.1-0.1_b0.01",
+   "main": {
+    "fail": 51,
+    "inconclusive": 423,
+    "pass": 26
+   },
+   "n": 250,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": 0.02,
+   "gated": {
+    "reject": 298
+   },
+   "group": "gated",
+   "joint": {
+    "pass_and_reject": 12
+   },
+   "key": "gated/block/n250/ell50/0.1-0.1_b0.02",
+   "main": {
+    "fail": 52,
+    "inconclusive": 432,
+    "pass": 16
+   },
+   "n": 250,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": 0.03,
+   "gated": {
+    "reject": 357
+   },
+   "group": "gated",
+   "joint": {
+    "pass_and_reject": 13
+   },
+   "key": "gated/block/n250/ell50/0.1-0.1_b0.03",
+   "main": {
+    "fail": 62,
+    "inconclusive": 421,
+    "pass": 17
+   },
+   "n": 250,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.0,
+    0.0
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "main",
+   "key": "main/block/n500/ell50/0-0",
+   "main": {
+    "fail": 167,
+    "inconclusive": 333,
+    "pass": 0
+   },
+   "n": 500,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.03,
+    0.03
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "main",
+   "key": "main/block/n500/ell50/0.03-0.03",
+   "main": {
+    "fail": 105,
+    "inconclusive": 392,
+    "pass": 3
+   },
+   "n": 500,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.05,
+    0.05
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "main",
+   "key": "main/block/n500/ell50/0.05-0.05",
+   "main": {
+    "fail": 58,
+    "inconclusive": 437,
+    "pass": 5
+   },
+   "n": 500,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "main",
+   "key": "main/block/n500/ell50/0.1-0.1",
+   "main": {
+    "fail": 36,
+    "inconclusive": 431,
+    "pass": 33
+   },
+   "n": 500,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.03,
+    0.03
+   ],
+   "ell": 20,
+   "flag_effect": null,
+   "group": "sensitivity",
+   "key": "sensitivity/block/n500/ell20/0.03-0.03",
+   "main": {
+    "fail": 93,
+    "inconclusive": 406,
+    "pass": 1
+   },
+   "n": 500,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.05,
+    0.05
+   ],
+   "ell": 20,
+   "flag_effect": null,
+   "group": "sensitivity",
+   "key": "sensitivity/block/n500/ell20/0.05-0.05",
+   "main": {
+    "fail": 68,
+    "inconclusive": 423,
+    "pass": 9
+   },
+   "n": 500,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 20,
+   "flag_effect": null,
+   "group": "sensitivity",
+   "key": "sensitivity/block/n500/ell20/0.1-0.1",
+   "main": {
+    "fail": 23,
+    "inconclusive": 454,
+    "pass": 23
+   },
+   "n": 500,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.03,
+    0.03
+   ],
+   "ell": 100,
+   "flag_effect": null,
+   "group": "sensitivity",
+   "key": "sensitivity/block/n500/ell100/0.03-0.03",
+   "main": {
+    "fail": 121,
+    "inconclusive": 368,
+    "pass": 11
+   },
+   "n": 500,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.05,
+    0.05
+   ],
+   "ell": 100,
+   "flag_effect": null,
+   "group": "sensitivity",
+   "key": "sensitivity/block/n500/ell100/0.05-0.05",
+   "main": {
+    "fail": 81,
+    "inconclusive": 401,
+    "pass": 18
+   },
+   "n": 500,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 100,
+   "flag_effect": null,
+   "group": "sensitivity",
+   "key": "sensitivity/block/n500/ell100/0.1-0.1",
+   "main": {
+    "fail": 41,
+    "inconclusive": 414,
+    "pass": 45
+   },
+   "n": 500,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    null,
+    null
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "observed",
+   "key": "observed/block/n500/ell50/observed-observed",
+   "main": {
+    "fail": 0,
+    "inconclusive": 221,
+    "pass": 279
+   },
+   "n": 500,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.03,
+    null
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "binding_observed",
+   "key": "binding_observed/block/n500/ell50/0.03-observed",
+   "main": {
+    "fail": 55,
+    "inconclusive": 414,
+    "pass": 31
+   },
+   "n": 500,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.05,
+    null
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "binding_observed",
+   "key": "binding_observed/block/n500/ell50/0.05-observed",
+   "main": {
+    "fail": 34,
+    "inconclusive": 409,
+    "pass": 57
+   },
+   "n": 500,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    null
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "binding_observed",
+   "key": "binding_observed/block/n500/ell50/0.1-observed",
+   "main": {
+    "fail": 3,
+    "inconclusive": 324,
+    "pass": 173
+   },
+   "n": 500,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.03,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "binding",
+   "key": "binding/block/n500/ell50/0.03-0.1",
+   "main": {
+    "fail": 90,
+    "inconclusive": 397,
+    "pass": 13
+   },
+   "n": 500,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    0.03
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "binding",
+   "key": "binding/block/n500/ell50/0.1-0.03",
+   "main": {
+    "fail": 63,
+    "inconclusive": 417,
+    "pass": 20
+   },
+   "n": 500,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": 0.0,
+   "gated": {
+    "reject": 75
+   },
+   "group": "gated",
+   "joint": {
+    "pass_and_reject": 3
+   },
+   "key": "gated/block/n500/ell50/0.1-0.1_b0",
+   "main": {
+    "fail": 37,
+    "inconclusive": 430,
+    "pass": 33
+   },
+   "n": 500,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": 0.01,
+   "gated": {
+    "reject": 209
+   },
+   "group": "gated",
+   "joint": {
+    "pass_and_reject": 12
+   },
+   "key": "gated/block/n500/ell50/0.1-0.1_b0.01",
+   "main": {
+    "fail": 33,
+    "inconclusive": 439,
+    "pass": 28
+   },
+   "n": 500,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": 0.02,
+   "gated": {
+    "reject": 330
+   },
+   "group": "gated",
+   "joint": {
+    "pass_and_reject": 22
+   },
+   "key": "gated/block/n500/ell50/0.1-0.1_b0.02",
+   "main": {
+    "fail": 32,
+    "inconclusive": 438,
+    "pass": 30
+   },
+   "n": 500,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": 0.03,
+   "gated": {
+    "reject": 430
+   },
+   "group": "gated",
+   "joint": {
+    "pass_and_reject": 32
+   },
+   "key": "gated/block/n500/ell50/0.1-0.1_b0.03",
+   "main": {
+    "fail": 30,
+    "inconclusive": 435,
+    "pass": 35
+   },
+   "n": 500,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.0,
+    0.0
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "main",
+   "key": "main/block/n750/ell50/0-0",
+   "main": {
+    "fail": 145,
+    "inconclusive": 353,
+    "pass": 2
+   },
+   "n": 750,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.03,
+    0.03
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "main",
+   "key": "main/block/n750/ell50/0.03-0.03",
+   "main": {
+    "fail": 86,
+    "inconclusive": 413,
+    "pass": 1
+   },
+   "n": 750,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.05,
+    0.05
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "main",
+   "key": "main/block/n750/ell50/0.05-0.05",
+   "main": {
+    "fail": 55,
+    "inconclusive": 436,
+    "pass": 9
+   },
+   "n": 750,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "main",
+   "key": "main/block/n750/ell50/0.1-0.1",
+   "main": {
+    "fail": 29,
+    "inconclusive": 430,
+    "pass": 41
+   },
+   "n": 750,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.03,
+    0.03
+   ],
+   "ell": 20,
+   "flag_effect": null,
+   "group": "sensitivity",
+   "key": "sensitivity/block/n750/ell20/0.03-0.03",
+   "main": {
+    "fail": 89,
+    "inconclusive": 409,
+    "pass": 2
+   },
+   "n": 750,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.05,
+    0.05
+   ],
+   "ell": 20,
+   "flag_effect": null,
+   "group": "sensitivity",
+   "key": "sensitivity/block/n750/ell20/0.05-0.05",
+   "main": {
+    "fail": 56,
+    "inconclusive": 440,
+    "pass": 4
+   },
+   "n": 750,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 20,
+   "flag_effect": null,
+   "group": "sensitivity",
+   "key": "sensitivity/block/n750/ell20/0.1-0.1",
+   "main": {
+    "fail": 24,
+    "inconclusive": 440,
+    "pass": 36
+   },
+   "n": 750,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.03,
+    0.03
+   ],
+   "ell": 100,
+   "flag_effect": null,
+   "group": "sensitivity",
+   "key": "sensitivity/block/n750/ell100/0.03-0.03",
+   "main": {
+    "fail": 85,
+    "inconclusive": 407,
+    "pass": 8
+   },
+   "n": 750,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.05,
+    0.05
+   ],
+   "ell": 100,
+   "flag_effect": null,
+   "group": "sensitivity",
+   "key": "sensitivity/block/n750/ell100/0.05-0.05",
+   "main": {
+    "fail": 70,
+    "inconclusive": 411,
+    "pass": 19
+   },
+   "n": 750,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 100,
+   "flag_effect": null,
+   "group": "sensitivity",
+   "key": "sensitivity/block/n750/ell100/0.1-0.1",
+   "main": {
+    "fail": 18,
+    "inconclusive": 430,
+    "pass": 52
+   },
+   "n": 750,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    null,
+    null
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "observed",
+   "key": "observed/block/n750/ell50/observed-observed",
+   "main": {
+    "fail": 0,
+    "inconclusive": 144,
+    "pass": 356
+   },
+   "n": 750,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.03,
+    null
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "binding_observed",
+   "key": "binding_observed/block/n750/ell50/0.03-observed",
+   "main": {
+    "fail": 46,
+    "inconclusive": 411,
+    "pass": 43
+   },
+   "n": 750,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.05,
+    null
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "binding_observed",
+   "key": "binding_observed/block/n750/ell50/0.05-observed",
+   "main": {
+    "fail": 23,
+    "inconclusive": 428,
+    "pass": 49
+   },
+   "n": 750,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    null
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "binding_observed",
+   "key": "binding_observed/block/n750/ell50/0.1-observed",
+   "main": {
+    "fail": 0,
+    "inconclusive": 291,
+    "pass": 209
+   },
+   "n": 750,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.03,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "binding",
+   "key": "binding/block/n750/ell50/0.03-0.1",
+   "main": {
+    "fail": 64,
+    "inconclusive": 428,
+    "pass": 8
+   },
+   "n": 750,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    0.03
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "binding",
+   "key": "binding/block/n750/ell50/0.1-0.03",
+   "main": {
+    "fail": 55,
+    "inconclusive": 424,
+    "pass": 21
+   },
+   "n": 750,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": 0.0,
+   "gated": {
+    "reject": 66
+   },
+   "group": "gated",
+   "joint": {
+    "pass_and_reject": 7
+   },
+   "key": "gated/block/n750/ell50/0.1-0.1_b0",
+   "main": {
+    "fail": 20,
+    "inconclusive": 424,
+    "pass": 56
+   },
+   "n": 750,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": 0.01,
+   "gated": {
+    "reject": 238
+   },
+   "group": "gated",
+   "joint": {
+    "pass_and_reject": 24
+   },
+   "key": "gated/block/n750/ell50/0.1-0.1_b0.01",
+   "main": {
+    "fail": 26,
+    "inconclusive": 430,
+    "pass": 44
+   },
+   "n": 750,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": 0.02,
+   "gated": {
+    "reject": 359
+   },
+   "group": "gated",
+   "joint": {
+    "pass_and_reject": 39
+   },
+   "key": "gated/block/n750/ell50/0.1-0.1_b0.02",
+   "main": {
+    "fail": 23,
+    "inconclusive": 426,
+    "pass": 51
+   },
+   "n": 750,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": 0.03,
+   "gated": {
+    "reject": 460
+   },
+   "group": "gated",
+   "joint": {
+    "pass_and_reject": 44
+   },
+   "key": "gated/block/n750/ell50/0.1-0.1_b0.03",
+   "main": {
+    "fail": 25,
+    "inconclusive": 425,
+    "pass": 50
+   },
+   "n": 750,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "extension",
+   "key": "extension/block/n1000/ell50/0.1-0.1",
+   "main": {
+    "fail": 19,
+    "inconclusive": 431,
+    "pass": 50
+   },
+   "n": 1000,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "extension",
+   "key": "extension/block/n1500/ell50/0.1-0.1",
+   "main": {
+    "fail": 8,
+    "inconclusive": 420,
+    "pass": 72
+   },
+   "n": 1500,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    null
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "extension_observed",
+   "key": "extension_observed/block/n1000/ell50/0.1-observed",
+   "main": {
+    "fail": 0,
+    "inconclusive": 218,
+    "pass": 282
+   },
+   "n": 1000,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    null
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "extension_observed",
+   "key": "extension_observed/block/n1500/ell50/0.1-observed",
+   "main": {
+    "fail": 0,
+    "inconclusive": 160,
+    "pass": 340
+   },
+   "n": 1500,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    null
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "extension_observed",
+   "key": "extension_observed/block/n2500/ell50/0.1-observed",
+   "main": {
+    "fail": 0,
+    "inconclusive": 71,
+    "pass": 429
+   },
+   "n": 2500,
+   "scheme": "block"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.0,
+    0.0
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "main",
+   "key": "main/regime/n250/ell50/0-0",
+   "main": {
+    "fail": 140,
+    "inconclusive": 358,
+    "pass": 2
+   },
+   "n": 250,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.03,
+    0.03
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "main",
+   "key": "main/regime/n250/ell50/0.03-0.03",
+   "main": {
+    "fail": 108,
+    "inconclusive": 385,
+    "pass": 7
+   },
+   "n": 250,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.05,
+    0.05
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "main",
+   "key": "main/regime/n250/ell50/0.05-0.05",
+   "main": {
+    "fail": 92,
+    "inconclusive": 397,
+    "pass": 11
+   },
+   "n": 250,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "main",
+   "key": "main/regime/n250/ell50/0.1-0.1",
+   "main": {
+    "fail": 60,
+    "inconclusive": 408,
+    "pass": 32
+   },
+   "n": 250,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.03,
+    0.03
+   ],
+   "ell": 20,
+   "flag_effect": null,
+   "group": "sensitivity",
+   "key": "sensitivity/regime/n250/ell20/0.03-0.03",
+   "main": {
+    "fail": 97,
+    "inconclusive": 394,
+    "pass": 9
+   },
+   "n": 250,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.05,
+    0.05
+   ],
+   "ell": 20,
+   "flag_effect": null,
+   "group": "sensitivity",
+   "key": "sensitivity/regime/n250/ell20/0.05-0.05",
+   "main": {
+    "fail": 102,
+    "inconclusive": 390,
+    "pass": 8
+   },
+   "n": 250,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 20,
+   "flag_effect": null,
+   "group": "sensitivity",
+   "key": "sensitivity/regime/n250/ell20/0.1-0.1",
+   "main": {
+    "fail": 59,
+    "inconclusive": 420,
+    "pass": 21
+   },
+   "n": 250,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.03,
+    0.03
+   ],
+   "ell": 100,
+   "flag_effect": null,
+   "group": "sensitivity",
+   "key": "sensitivity/regime/n250/ell100/0.03-0.03",
+   "main": {
+    "fail": 129,
+    "inconclusive": 360,
+    "pass": 11
+   },
+   "n": 250,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.05,
+    0.05
+   ],
+   "ell": 100,
+   "flag_effect": null,
+   "group": "sensitivity",
+   "key": "sensitivity/regime/n250/ell100/0.05-0.05",
+   "main": {
+    "fail": 118,
+    "inconclusive": 363,
+    "pass": 19
+   },
+   "n": 250,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 100,
+   "flag_effect": null,
+   "group": "sensitivity",
+   "key": "sensitivity/regime/n250/ell100/0.1-0.1",
+   "main": {
+    "fail": 83,
+    "inconclusive": 378,
+    "pass": 39
+   },
+   "n": 250,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    null,
+    null
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "observed",
+   "key": "observed/regime/n250/ell50/observed-observed",
+   "main": {
+    "fail": 3,
+    "inconclusive": 349,
+    "pass": 148
+   },
+   "n": 250,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.03,
+    null
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "binding_observed",
+   "key": "binding_observed/regime/n250/ell50/0.03-observed",
+   "main": {
+    "fail": 47,
+    "inconclusive": 399,
+    "pass": 54
+   },
+   "n": 250,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.05,
+    null
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "binding_observed",
+   "key": "binding_observed/regime/n250/ell50/0.05-observed",
+   "main": {
+    "fail": 25,
+    "inconclusive": 426,
+    "pass": 49
+   },
+   "n": 250,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    null
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "binding_observed",
+   "key": "binding_observed/regime/n250/ell50/0.1-observed",
+   "main": {
+    "fail": 3,
+    "inconclusive": 399,
+    "pass": 98
+   },
+   "n": 250,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.03,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "binding",
+   "key": "binding/regime/n250/ell50/0.03-0.1",
+   "main": {
+    "fail": 82,
+    "inconclusive": 401,
+    "pass": 17
+   },
+   "n": 250,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    0.03
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "binding",
+   "key": "binding/regime/n250/ell50/0.1-0.03",
+   "main": {
+    "fail": 86,
+    "inconclusive": 398,
+    "pass": 16
+   },
+   "n": 250,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": 0.0,
+   "gated": {
+    "reject": 56
+   },
+   "group": "gated",
+   "joint": {
+    "pass_and_reject": 0
+   },
+   "key": "gated/regime/n250/ell50/0.1-0.1_b0",
+   "main": {
+    "fail": 78,
+    "inconclusive": 400,
+    "pass": 22
+   },
+   "n": 250,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": 0.01,
+   "gated": {
+    "reject": 229
+   },
+   "group": "gated",
+   "joint": {
+    "pass_and_reject": 2
+   },
+   "key": "gated/regime/n250/ell50/0.1-0.1_b0.01",
+   "main": {
+    "fail": 88,
+    "inconclusive": 385,
+    "pass": 27
+   },
+   "n": 250,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": 0.02,
+   "gated": {
+    "reject": 465
+   },
+   "group": "gated",
+   "joint": {
+    "pass_and_reject": 17
+   },
+   "key": "gated/regime/n250/ell50/0.1-0.1_b0.02",
+   "main": {
+    "fail": 80,
+    "inconclusive": 399,
+    "pass": 21
+   },
+   "n": 250,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": 0.03,
+   "gated": {
+    "reject": 500
+   },
+   "group": "gated",
+   "joint": {
+    "pass_and_reject": 25
+   },
+   "key": "gated/regime/n250/ell50/0.1-0.1_b0.03",
+   "main": {
+    "fail": 72,
+    "inconclusive": 403,
+    "pass": 25
+   },
+   "n": 250,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.0,
+    0.0
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "main",
+   "key": "main/regime/n500/ell50/0-0",
+   "main": {
+    "fail": 142,
+    "inconclusive": 356,
+    "pass": 2
+   },
+   "n": 500,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.03,
+    0.03
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "main",
+   "key": "main/regime/n500/ell50/0.03-0.03",
+   "main": {
+    "fail": 71,
+    "inconclusive": 425,
+    "pass": 4
+   },
+   "n": 500,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.05,
+    0.05
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "main",
+   "key": "main/regime/n500/ell50/0.05-0.05",
+   "main": {
+    "fail": 60,
+    "inconclusive": 427,
+    "pass": 13
+   },
+   "n": 500,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "main",
+   "key": "main/regime/n500/ell50/0.1-0.1",
+   "main": {
+    "fail": 32,
+    "inconclusive": 451,
+    "pass": 17
+   },
+   "n": 500,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.03,
+    0.03
+   ],
+   "ell": 20,
+   "flag_effect": null,
+   "group": "sensitivity",
+   "key": "sensitivity/regime/n500/ell20/0.03-0.03",
+   "main": {
+    "fail": 77,
+    "inconclusive": 419,
+    "pass": 4
+   },
+   "n": 500,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.05,
+    0.05
+   ],
+   "ell": 20,
+   "flag_effect": null,
+   "group": "sensitivity",
+   "key": "sensitivity/regime/n500/ell20/0.05-0.05",
+   "main": {
+    "fail": 64,
+    "inconclusive": 430,
+    "pass": 6
+   },
+   "n": 500,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 20,
+   "flag_effect": null,
+   "group": "sensitivity",
+   "key": "sensitivity/regime/n500/ell20/0.1-0.1",
+   "main": {
+    "fail": 40,
+    "inconclusive": 431,
+    "pass": 29
+   },
+   "n": 500,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.03,
+    0.03
+   ],
+   "ell": 100,
+   "flag_effect": null,
+   "group": "sensitivity",
+   "key": "sensitivity/regime/n500/ell100/0.03-0.03",
+   "main": {
+    "fail": 95,
+    "inconclusive": 397,
+    "pass": 8
+   },
+   "n": 500,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.05,
+    0.05
+   ],
+   "ell": 100,
+   "flag_effect": null,
+   "group": "sensitivity",
+   "key": "sensitivity/regime/n500/ell100/0.05-0.05",
+   "main": {
+    "fail": 76,
+    "inconclusive": 407,
+    "pass": 17
+   },
+   "n": 500,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 100,
+   "flag_effect": null,
+   "group": "sensitivity",
+   "key": "sensitivity/regime/n500/ell100/0.1-0.1",
+   "main": {
+    "fail": 37,
+    "inconclusive": 431,
+    "pass": 32
+   },
+   "n": 500,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    null,
+    null
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "observed",
+   "key": "observed/regime/n500/ell50/observed-observed",
+   "main": {
+    "fail": 0,
+    "inconclusive": 157,
+    "pass": 343
+   },
+   "n": 500,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.03,
+    null
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "binding_observed",
+   "key": "binding_observed/regime/n500/ell50/0.03-observed",
+   "main": {
+    "fail": 42,
+    "inconclusive": 426,
+    "pass": 32
+   },
+   "n": 500,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.05,
+    null
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "binding_observed",
+   "key": "binding_observed/regime/n500/ell50/0.05-observed",
+   "main": {
+    "fail": 8,
+    "inconclusive": 449,
+    "pass": 43
+   },
+   "n": 500,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    null
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "binding_observed",
+   "key": "binding_observed/regime/n500/ell50/0.1-observed",
+   "main": {
+    "fail": 3,
+    "inconclusive": 339,
+    "pass": 158
+   },
+   "n": 500,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.03,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "binding",
+   "key": "binding/regime/n500/ell50/0.03-0.1",
+   "main": {
+    "fail": 62,
+    "inconclusive": 422,
+    "pass": 16
+   },
+   "n": 500,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    0.03
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "binding",
+   "key": "binding/regime/n500/ell50/0.1-0.03",
+   "main": {
+    "fail": 62,
+    "inconclusive": 426,
+    "pass": 12
+   },
+   "n": 500,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": 0.0,
+   "gated": {
+    "reject": 32
+   },
+   "group": "gated",
+   "joint": {
+    "pass_and_reject": 0
+   },
+   "key": "gated/regime/n500/ell50/0.1-0.1_b0",
+   "main": {
+    "fail": 33,
+    "inconclusive": 428,
+    "pass": 39
+   },
+   "n": 500,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": 0.01,
+   "gated": {
+    "reject": 344
+   },
+   "group": "gated",
+   "joint": {
+    "pass_and_reject": 14
+   },
+   "key": "gated/regime/n500/ell50/0.1-0.1_b0.01",
+   "main": {
+    "fail": 37,
+    "inconclusive": 425,
+    "pass": 38
+   },
+   "n": 500,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": 0.02,
+   "gated": {
+    "reject": 497
+   },
+   "group": "gated",
+   "joint": {
+    "pass_and_reject": 28
+   },
+   "key": "gated/regime/n500/ell50/0.1-0.1_b0.02",
+   "main": {
+    "fail": 45,
+    "inconclusive": 426,
+    "pass": 29
+   },
+   "n": 500,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": 0.03,
+   "gated": {
+    "reject": 500
+   },
+   "group": "gated",
+   "joint": {
+    "pass_and_reject": 43
+   },
+   "key": "gated/regime/n500/ell50/0.1-0.1_b0.03",
+   "main": {
+    "fail": 39,
+    "inconclusive": 418,
+    "pass": 43
+   },
+   "n": 500,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.0,
+    0.0
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "main",
+   "key": "main/regime/n750/ell50/0-0",
+   "main": {
+    "fail": 124,
+    "inconclusive": 376,
+    "pass": 0
+   },
+   "n": 750,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.03,
+    0.03
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "main",
+   "key": "main/regime/n750/ell50/0.03-0.03",
+   "main": {
+    "fail": 72,
+    "inconclusive": 422,
+    "pass": 6
+   },
+   "n": 750,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.05,
+    0.05
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "main",
+   "key": "main/regime/n750/ell50/0.05-0.05",
+   "main": {
+    "fail": 39,
+    "inconclusive": 451,
+    "pass": 10
+   },
+   "n": 750,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "main",
+   "key": "main/regime/n750/ell50/0.1-0.1",
+   "main": {
+    "fail": 17,
+    "inconclusive": 453,
+    "pass": 30
+   },
+   "n": 750,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.03,
+    0.03
+   ],
+   "ell": 20,
+   "flag_effect": null,
+   "group": "sensitivity",
+   "key": "sensitivity/regime/n750/ell20/0.03-0.03",
+   "main": {
+    "fail": 50,
+    "inconclusive": 448,
+    "pass": 2
+   },
+   "n": 750,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.05,
+    0.05
+   ],
+   "ell": 20,
+   "flag_effect": null,
+   "group": "sensitivity",
+   "key": "sensitivity/regime/n750/ell20/0.05-0.05",
+   "main": {
+    "fail": 47,
+    "inconclusive": 450,
+    "pass": 3
+   },
+   "n": 750,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 20,
+   "flag_effect": null,
+   "group": "sensitivity",
+   "key": "sensitivity/regime/n750/ell20/0.1-0.1",
+   "main": {
+    "fail": 25,
+    "inconclusive": 449,
+    "pass": 26
+   },
+   "n": 750,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.03,
+    0.03
+   ],
+   "ell": 100,
+   "flag_effect": null,
+   "group": "sensitivity",
+   "key": "sensitivity/regime/n750/ell100/0.03-0.03",
+   "main": {
+    "fail": 86,
+    "inconclusive": 405,
+    "pass": 9
+   },
+   "n": 750,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.05,
+    0.05
+   ],
+   "ell": 100,
+   "flag_effect": null,
+   "group": "sensitivity",
+   "key": "sensitivity/regime/n750/ell100/0.05-0.05",
+   "main": {
+    "fail": 48,
+    "inconclusive": 445,
+    "pass": 7
+   },
+   "n": 750,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 100,
+   "flag_effect": null,
+   "group": "sensitivity",
+   "key": "sensitivity/regime/n750/ell100/0.1-0.1",
+   "main": {
+    "fail": 27,
+    "inconclusive": 429,
+    "pass": 44
+   },
+   "n": 750,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    null,
+    null
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "observed",
+   "key": "observed/regime/n750/ell50/observed-observed",
+   "main": {
+    "fail": 0,
+    "inconclusive": 45,
+    "pass": 455
+   },
+   "n": 750,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.03,
+    null
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "binding_observed",
+   "key": "binding_observed/regime/n750/ell50/0.03-observed",
+   "main": {
+    "fail": 40,
+    "inconclusive": 433,
+    "pass": 27
+   },
+   "n": 750,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.05,
+    null
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "binding_observed",
+   "key": "binding_observed/regime/n750/ell50/0.05-observed",
+   "main": {
+    "fail": 15,
+    "inconclusive": 429,
+    "pass": 56
+   },
+   "n": 750,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    null
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "binding_observed",
+   "key": "binding_observed/regime/n750/ell50/0.1-observed",
+   "main": {
+    "fail": 0,
+    "inconclusive": 307,
+    "pass": 193
+   },
+   "n": 750,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.03,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "binding",
+   "key": "binding/regime/n750/ell50/0.03-0.1",
+   "main": {
+    "fail": 46,
+    "inconclusive": 443,
+    "pass": 11
+   },
+   "n": 750,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    0.03
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "binding",
+   "key": "binding/regime/n750/ell50/0.1-0.03",
+   "main": {
+    "fail": 51,
+    "inconclusive": 437,
+    "pass": 12
+   },
+   "n": 750,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": 0.0,
+   "gated": {
+    "reject": 36
+   },
+   "group": "gated",
+   "joint": {
+    "pass_and_reject": 0
+   },
+   "key": "gated/regime/n750/ell50/0.1-0.1_b0",
+   "main": {
+    "fail": 22,
+    "inconclusive": 438,
+    "pass": 40
+   },
+   "n": 750,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": 0.01,
+   "gated": {
+    "reject": 410
+   },
+   "group": "gated",
+   "joint": {
+    "pass_and_reject": 15
+   },
+   "key": "gated/regime/n750/ell50/0.1-0.1_b0.01",
+   "main": {
+    "fail": 27,
+    "inconclusive": 442,
+    "pass": 31
+   },
+   "n": 750,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": 0.02,
+   "gated": {
+    "reject": 500
+   },
+   "group": "gated",
+   "joint": {
+    "pass_and_reject": 31
+   },
+   "key": "gated/regime/n750/ell50/0.1-0.1_b0.02",
+   "main": {
+    "fail": 24,
+    "inconclusive": 445,
+    "pass": 31
+   },
+   "n": 750,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": 0.03,
+   "gated": {
+    "reject": 500
+   },
+   "group": "gated",
+   "joint": {
+    "pass_and_reject": 40
+   },
+   "key": "gated/regime/n750/ell50/0.1-0.1_b0.03",
+   "main": {
+    "fail": 22,
+    "inconclusive": 438,
+    "pass": 40
+   },
+   "n": 750,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "extension",
+   "key": "extension/regime/n1000/ell50/0.1-0.1",
+   "main": {
+    "fail": 20,
+    "inconclusive": 450,
+    "pass": 30
+   },
+   "n": 1000,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    0.1
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "extension",
+   "key": "extension/regime/n1500/ell50/0.1-0.1",
+   "main": {
+    "fail": 8,
+    "inconclusive": 432,
+    "pass": 60
+   },
+   "n": 1500,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    null
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "extension_observed",
+   "key": "extension_observed/regime/n1000/ell50/0.1-observed",
+   "main": {
+    "fail": 1,
+    "inconclusive": 235,
+    "pass": 264
+   },
+   "n": 1000,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    null
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "extension_observed",
+   "key": "extension_observed/regime/n1500/ell50/0.1-observed",
+   "main": {
+    "fail": 0,
+    "inconclusive": 168,
+    "pass": 332
+   },
+   "n": 1500,
+   "scheme": "regime"
+  },
+  {
+   "count": 500,
+   "effects": [
+    0.1,
+    null
+   ],
+   "ell": 50,
+   "flag_effect": null,
+   "group": "extension_observed",
+   "key": "extension_observed/regime/n2500/ell50/0.1-observed",
+   "main": {
+    "fail": 0,
+    "inconclusive": 65,
+    "pass": 435
+   },
+   "n": 2500,
+   "scheme": "regime"
+  }
+ ],
+ "chain": {
+  "labels": [
+   "2018-19",
+   "2020",
+   "2021-23",
+   "2024",
+   "2025-26"
+  ],
+  "matrix": {
+   "2018-19": {
+    "2018-19": 0.9972375690607734,
+    "2020": 0.0027624309392265192,
+    "2021-23": 0.0,
+    "2024": 0.0,
+    "2025-26": 0.0
+   },
+   "2020": {
+    "2018-19": 0.0,
+    "2020": 0.9960159362549801,
+    "2021-23": 0.00398406374501992,
+    "2024": 0.0,
+    "2025-26": 0.0
+   },
+   "2021-23": {
+    "2018-19": 0.0,
+    "2020": 0.0,
+    "2021-23": 0.9986631016042781,
+    "2024": 0.001336898395721925,
+    "2025-26": 0.0
+   },
+   "2024": {
+    "2018-19": 0.0,
+    "2020": 0.0,
+    "2021-23": 0.0,
+    "2024": 0.996,
+    "2025-26": 0.004
+   },
+   "2025-26": {
+    "2018-19": 0.0,
+    "2020": 0.0,
+    "2021-23": 0.0,
+    "2024": 0.0,
+    "2025-26": 1.0
+   }
+  },
+  "stationary": {
+   "2018-19": 1.968733168207408e-07,
+   "2020": 4.4464091283411756e-07,
+   "2021-23": 0.001348248569981378,
+   "2024": 0.0006761190195273762,
+   "2025-26": 0.9979749908962616
+  }
+ },
+ "declaration": "metadata/confirmation_size_power_1392.json",
+ "first_origin": "2018-07-19",
+ "issue": 1392,
+ "label": "development, not a verdict",
+ "last_origin": "2026-08-27",
+ "mode": "full",
+ "pool_means": {
+  "B1": 2.278323675634956,
+  "B1p*": 1.8447853906586318,
+  "B2": 2.4850345591907033,
+  "candidate": 1.6066645125798438,
+  "flag": 1.6113769177094324
+ },
+ "pool_origins": 2020,
+ "reps": 499,
+ "seed": 1392
+}
