@@ -8,9 +8,23 @@ quantiles of `scoring_protocol.GRID` at leads h = 1..5, made at the decision ins
   that horizon's own h-day changes over the trailing two years.
 - **B2, calendar climatology.** The empirical distribution of the spread over the trailing
   year, on days of the same type as the target (quarter-end, month-end, tax date, ordinary).
+- **B4, a plain quantile regression (#1360)** on the last spread, the as-of reserve balances and the calendar terms at the target day: `b4_forecast`.
+  Added at Eleonora's ruling of 2 November 2026 beside the benchmarks of §4; whether it joins the decision rule is hers (a marked question), and until
+  she rules it is reported beside them.
 - **B3, the incumbent.** The best registered model; initially the published v1 funding
   declaration. Scored on its own five levels against the candidate's same five, as a
   secondary comparison (`b3_forecast`; ruling of 13 October 2026, PR #660).
+
+**B1* (#1388, development tier, not a benchmark of the protocol).** `b1_anchor_forecast` counts the change from the last public
+anchor to the target, `h + lag` rows (`anchor_lag`), where B1 counts `h`; `b1_calendar.b1_calendar_anchor_forecast` is B1'*. Whether
+they replace B1 and B1' is Eleonora's.
+
+**B1'*-cap and B2*-cap (#1421, development tier; her ruling of 3 November 2026).** The candidate is capped at the Standing Repo Facility line on
+target days at full allotment, so the confirmatory baselines carry the same cap: `capped_forecast` clips each quantile of a baseline at the line the
+candidate reads (`s3c_candidate.cap_line`: the register entries public at the decision instant, margin 0 bp) and reads the probabilities under the same
+rule (b) (`capped_exceedance`, `capped_law` rule `open_tail`). `b1_calendar_anchor_capped_forecast` is B1'*-cap. B2* is #1420's and is not on main yet:
+`b2_capped_forecast` caps B2 as it stands, the stand-in the size-and-power study (#1399) also used, and wraps B2* when that merges. The uncapped
+versions are reported beside the capped ones; nothing here changes B1, B2 or B3.
 
 **What is read, and when.** The decision for lead h on decision row `t` is the forecast of row
 `t + h` under `InformationRule(horizon=h)`, so every lead of one decision day shares one
@@ -34,9 +48,9 @@ Stdlib only.
 from __future__ import annotations
 
 import json
-from datetime import date, time
+from datetime import date, datetime, time
 from pathlib import Path
-from typing import Dict, Iterable, List, Mapping, Sequence, Tuple
+from typing import Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
 from . import turn_days
 from .asof import InformationRule
@@ -58,6 +72,10 @@ LOCKBOX_READS = {
 #: §4: B1's trailing window and B2's, in years before the decision day.
 B1_YEARS = 2
 B2_YEARS = 1
+
+#: B2* (#1420, development tier; `metadata/b2_star_1420.json`): B2's day types and fallback chain with a two-year lookback and a minimum pool of 10.
+B2STAR_YEARS = 2
+B2STAR_POOL_MIN = 10
 
 ROOT = Path(__file__).resolve().parents[2]
 #: §4: "initially, the published v1 funding declaration". Its record, and the daily
@@ -156,6 +174,63 @@ def _window_start(panel: Sequence[DailyObservation], decision_index: int, years:
     raise ProtocolError(f"no row after {start}")
 
 
+def anchor_lag(
+    panel: Sequence[DailyObservation],
+    decision_index: int,
+    registry: Mapping[str, Mapping[str, object]],
+    decision_time: time,
+) -> int:
+    """The lag of the decision on row `decision_index`, in panel rows: the decision row less the anchor row (#1388).
+
+    The anchor is the last public row, so on an ordinary day it is the row before the decision day (a lag of 1) and the
+    elapsed horizon from the anchor to the target row `decision_index + h` is `h + lag`. B1* and B1'* count the change
+    over that span; B1 and B1' count `h`.
+    """
+
+    return decision_index - _anchor(panel, decision_index, registry, decision_time)
+
+
+def b1_anchor_forecast(
+    panel: Sequence[DailyObservation],
+    decision_index: int,
+    *,
+    registry: Mapping[str, Mapping[str, object]],
+    decision_time: time,
+) -> Dict[int, List[float]]:
+    """B1*: B1 with the change window anchor-to-target (#1388; development tier, `metadata/b1_anchor_horizon_1388.json`).
+
+    The last public spread plus the trailing two years' changes over `h + lag` rows, `spread[s] - spread[s - h - lag]` for every
+    row `s` in the window up to the anchor, where `lag` is `anchor_lag`. Everything else is B1's: the window, the centre and the
+    guard. It is not a benchmark of the protocol; whether it replaces B1 is Eleonora's.
+
+    Mutation record: see `tests/test_b1_anchor_horizon_1388.py`.
+    """
+
+    anchor = _anchor(panel, decision_index, registry, decision_time)
+    lag = decision_index - anchor
+    dates = [row.date for row in panel]
+    first = _window_start(panel, decision_index, B1_YEARS)
+    last = panel[anchor].spread_bps
+    out = {}
+    for h in HORIZONS:
+        span = h + lag
+        ends = [s for s in range(max(first, span), anchor + 1)]
+        if not ends:
+            raise ProtocolError(f"B1* has no {span}-day change before {dates[anchor]}")
+        _require_public(ends, anchor, dates, f"B1* for {dates[decision_index]}, lead {h}")
+        changes = sorted(panel[s].spread_bps - panel[s - span].spread_bps for s in ends)
+        out[h] = empirical_quantiles(changes, last)
+    return out
+
+
+def b1_calendar_anchor_forecast(panel: Sequence[DailyObservation], decision_index: int, **settings) -> Dict[int, List[float]]:
+    """B1'*: `b1_calendar.b1_calendar_anchor_forecast`, reachable from here beside B1* (#1388)."""
+
+    from . import b1_calendar  # b1_calendar imports this module
+
+    return b1_calendar.b1_calendar_anchor_forecast(panel, decision_index, **settings)
+
+
 def b1_forecast(
     panel: Sequence[DailyObservation],
     decision_index: int,
@@ -243,6 +318,148 @@ def b2_forecast_no_minimum(
         sample = sorted(panel[s].spread_bps for s in rows)
         out[h] = empirical_quantiles(sample)
     return out
+
+
+def b2_star_forecast(
+    panel: Sequence[DailyObservation],
+    decision_index: int,
+    *,
+    registry: Mapping[str, Mapping[str, object]],
+    decision_time: time,
+    splits: SplitDeclaration,
+    used: Optional[Dict[int, Tuple[str, int]]] = None,
+) -> Dict[int, List[float]]:
+    """B2* (#1420): the calendar climatology with its pools, lookback and fallback frozen in `metadata/b2_star_1420.json`.
+
+    The pools are the day types of the record in force (`turn_days`); the lookback is `B2STAR_YEARS` (two) calendar years before the decision
+    day, clipped at the start of the panel; a type with fewer than `B2STAR_POOL_MIN` (10) rows in it reads the next step of its chain
+    (`b2_pool.CHAINS`, hard fallback, no shrinkage), else every day of the window. At the same decision instant and under the same guards as B2
+    (`_anchor`, `_require_public`). `used`, when given, is filled with `{lead: (pool, rows)}`. A development-tier benchmark: whether it enters
+    the protocol's decision rule is Eleonora's, and B2 (`b2_forecast`) is unchanged.
+    """
+
+    from . import b2_pool  # b2_pool imports this module
+
+    return b2_pool.b2_fallback_forecast(
+        panel, decision_index, registry=registry, decision_time=decision_time, splits=splits,
+        pool_min=B2STAR_POOL_MIN, years=B2STAR_YEARS, used=used,
+    )
+
+
+def b4_forecast(
+    panel: Sequence[DailyObservation],
+    decision_index: int,
+    *,
+    registry: Mapping[str, Mapping[str, object]],
+    decision_time: time,
+    splits: Optional[SplitDeclaration] = None,
+    table=None,
+    reserves=None,
+) -> Dict[int, List[float]]:
+    """B4, the plain quantile regression of #1360, for the decision on row `decision_index`: the 23 quantiles at each lead h = 1..5.
+
+    A linear quantile regression per lead and level on the last observed spread, the as-of reserve balances and the calendar terms read at the target day,
+    on direct pairs of the expanding window, refitted at this decision (`repo_model.b4_quantile_regression`; `metadata/b4_quantile_regression_1360.json`). The
+    walk of the study refits every 21 decision days instead, as the candidate does. `table` (a `spread_mr_calendar.TermTable`) and `reserves` (a
+    `b4_quantile_regression.ReserveTable`) are built here when not given; a caller that scores many days builds them once. `splits` is accepted so that B4 is
+    called as B2 is, and is not read.
+
+    Whether B4 is a benchmark of the protocol's decision rule, or is reported beside it, is not decided here (the marked question of the pull request that
+    closes #1360): this function only makes the forecast available to the registration and the live record.
+
+    Raises:
+        InsufficientHistory: fewer than `b4_quantile_regression.MIN_PAIRS` training pairs at some lead.
+        LookAheadError: a row after the anchor, or a reserve value after the decision, is read.
+    """
+
+    from . import b4_quantile_regression as b4  # b4 imports this module
+    from . import spread_mr_calendar as cal
+
+    table = cal.TermTable(panel, (), decision_time=decision_time) if table is None else table
+    reserves = b4.ReserveTable(panel, registry=registry, decision_time=decision_time) if reserves is None else reserves
+    estimates = b4.refit(panel, decision_index, table, reserves, registry=registry, decision_time=decision_time)
+    return b4.forecast(panel, decision_index, estimates, table, reserves, registry=registry, decision_time=decision_time)
+
+
+def capped_forecast(
+    forecast: Mapping[int, Sequence[float]],
+    panel: Sequence[DailyObservation],
+    decision_index: int,
+    *,
+    register,
+    decision_time: time,
+) -> Dict[int, List[float]]:
+    """`forecast` (a baseline's 23 quantiles per lead) with every quantile clipped at the SRF line, as the candidate (s3c) reads it (#1421).
+
+    The line for lead h is `s3c_candidate.cap_line` on the target `panel[decision_index + h]`, from the register entries announced at or before the decision
+    instant (`decision_time` on the decision day, `panel[decision_index]`) and effective by the target: the candidate's cap, margin 0 bp, at full allotment
+    only. Where the target has no line the lead is copied unchanged. The clip is monotone, so the levels stay ordered. Fits nothing.
+
+    Raises:
+        ProtocolError: a lead has no target row in the panel.
+        LookAheadError: a register entry announced after the decision instant is read (`policy_events.require_announced`).
+    """
+
+    from . import s3c_candidate  # s3c_candidate imports nothing from here; the import is lazy to keep this module's imports as they were
+
+    as_of = datetime.combine(panel[decision_index].date, decision_time)
+    out = {}
+    for h, quantiles in forecast.items():
+        if decision_index + h >= len(panel):
+            raise ProtocolError(f"lead {h} from {panel[decision_index].date} has no row in the panel")
+        out[h] = s3c_candidate.capped_quantiles(quantiles, register, as_of, panel[decision_index + h].date)
+    return out
+
+
+def capped_exceedance(
+    forecast: Mapping[int, Sequence[float]],
+    panel: Sequence[DailyObservation],
+    decision_index: int,
+    h: int,
+    tau: float,
+    *,
+    register,
+    decision_time: time,
+) -> float:
+    """P(spread > tau) at lead `h` of a baseline's UNCAPPED `forecast` under the candidate's law: the cap and rule (b), `capped_law` `open_tail` (#1421).
+
+    Where the target has no line the law is the status-quo law of the uncapped vector, which is what rule (b) gives with no cap.
+    """
+
+    from . import s3c_candidate
+
+    as_of = datetime.combine(panel[decision_index].date, decision_time)
+    return s3c_candidate.candidate_exceedance(forecast[h], register, as_of, panel[decision_index + h].date, tau)
+
+
+def b1_calendar_anchor_capped_forecast(
+    panel: Sequence[DailyObservation],
+    decision_index: int,
+    *,
+    registry: Mapping[str, Mapping[str, object]],
+    decision_time: time,
+    splits: SplitDeclaration,
+    register,
+) -> Dict[int, List[float]]:
+    """B1'*-cap (#1421): B1'* (`b1_calendar_anchor_forecast`) clipped at the SRF line of the candidate, `capped_forecast`."""
+
+    raw = b1_calendar_anchor_forecast(panel, decision_index, registry=registry, decision_time=decision_time, splits=splits)
+    return capped_forecast(raw, panel, decision_index, register=register, decision_time=decision_time)
+
+
+def b2_capped_forecast(
+    panel: Sequence[DailyObservation],
+    decision_index: int,
+    *,
+    registry: Mapping[str, Mapping[str, object]],
+    decision_time: time,
+    splits: SplitDeclaration,
+    register,
+) -> Dict[int, List[float]]:
+    """B2*-cap (#1421), with B2 standing in for B2* until #1420 merges: `b2_forecast` clipped at the SRF line of the candidate, `capped_forecast`."""
+
+    raw = b2_forecast(panel, decision_index, registry=registry, decision_time=decision_time, splits=splits)
+    return capped_forecast(raw, panel, decision_index, register=register, decision_time=decision_time)
 
 
 def forecasts(

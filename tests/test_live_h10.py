@@ -10,7 +10,7 @@ its schedule are not touched.
 What is held here (the registered code itself runs only in the workflow, in a clean checkout of liquidity at the
 registered commit and of the parent at its pin; these tests inject the backend):
 
-* **the pin** (`PinTests`): `metadata/live_h10_pin.json` holds the values of liquidity's registration of 22 October 2026
+* **the pin** (`PinTests`): `metadata/live_h10_pin.json` holds the values of liquidity's registration of 3 November 2026
   on repo-market-liquidity#23;
 * **the digest** (`DigestTests`): a row whose `method_digest` is not the registered one, or whose `parent_commit` is not
   the registered parent, or that was made with the parent override or from a dirty parent, is refused: nothing is written
@@ -54,9 +54,9 @@ from repo_model.splits import LookAheadError
 
 ROOT = Path(__file__).resolve().parents[1]
 
-LIQUIDITY_COMMIT = "783848316995d4f2d425abea0c6bd0be3e157c26"
-PARENT_COMMIT = "08ff67e27bc3d7e357491cf8e1da59793702b3fb"
-DIGEST = "43bf1303164c3c085b33ccf762268b721a5bddc9d7a4dcf68524c67ea33d15bb"
+LIQUIDITY_COMMIT = "b4737219c8d443041bbc406cc97dfb584cbbcc2d"
+PARENT_COMMIT = "2032de4a7d7802289bc5a78dfc02599752bc7c5c"
+DIGEST = "54b5f151c757b1cff5d3ebe6e8ce202bd41cafc4d8104effb00f3da4617c8770"
 
 BOT = {
     "GIT_AUTHOR_NAME": "github-actions[bot]",
@@ -79,6 +79,17 @@ live_h10 = _load()
 DAYS = [date(2026, 10, d) for d in (14, 15, 16, 19, 20, 21, 22, 23, 26, 27, 28, 29, 30)] + [
     date(2026, 11, d) for d in (2, 3, 4, 5, 6, 9, 10, 11, 12)
 ]
+
+
+def fixture_pin():
+    """The real pin, with `registered_on` moved back to 2026-10-22.
+
+    The day fixtures below (onsets from 14 October, days to 12 November) were laid out around the first registration.
+    `run_day` drops onsets before `registered_on`, so the second registration (3 November) would empty most of them. The
+    digest, parents and commits stay the manifest's; `PinTests` checks the real `registered_on`.
+    """
+
+    return {**live_h10.load_pin(), "registered_on": "2026-10-22"}
 
 
 def good_row(onset, report, **over):
@@ -124,7 +135,7 @@ class PinTests(unittest.TestCase):
         self.assertEqual(pin["liquidity_commit"], LIQUIDITY_COMMIT)
         self.assertEqual(pin["parent_commit"], PARENT_COMMIT)
         self.assertEqual(pin["method_digest"], DIGEST)
-        self.assertEqual(pin["registered_on"], "2026-10-22")
+        self.assertEqual(pin["registered_on"], "2026-11-03")
         self.assertEqual(pin["report_days"], 10)
         self.assertEqual(live_h10.load_pin(), pin)
 
@@ -137,7 +148,7 @@ class PinTests(unittest.TestCase):
 
 class DigestTests(unittest.TestCase):
     def setUp(self):
-        self.pin = live_h10.load_pin()
+        self.pin = fixture_pin()
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.out = Path(self.tmp.name)
@@ -187,7 +198,7 @@ class DigestTests(unittest.TestCase):
 
 class LookAheadTests(unittest.TestCase):
     def setUp(self):
-        self.pin = live_h10.load_pin()
+        self.pin = fixture_pin()
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.out = Path(self.tmp.name)
@@ -222,9 +233,79 @@ class LookAheadTests(unittest.TestCase):
         self.assertEqual(len(again.calls), 1, "a pending onset is not attributed, so it is still open")
 
 
+class RefusedAtCloseTests(unittest.TestCase):
+    """Finding #1386 (her ruling of 2 November 2026, option 1): a refusal outlives the window.
+
+    Mutation (#1401), applied in a disposable copy: in `live_h10.run_day`, `if onset.isoformat() in refused:` ->
+    `if False:` makes `test_an_onset_refused_until_its_window_closes_keeps_its_refusal` fail with `AssertionError:
+    'not attributable' != 'refused at window close'`.
+    """
+
+    def setUp(self):
+        self.pin = fixture_pin()
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.out = Path(self.tmp.name)
+
+    def _record(self, day):
+        return json.loads((self.out / "h10" / f"{day}.json").read_text(encoding="utf-8"))
+
+    def _refuse(self, onset, days):
+        def refuse(o, r):
+            raise LookAheadError("attribution: scored day 2026-09-04 is in the locked blind tier")
+
+        for day in days:
+            fake = Fake(onsets=[onset], behaviour=refuse)
+            live_h10.run_day(day, Path("p"), self.out, fake.backend(), self.pin)
+
+    def test_an_onset_refused_until_its_window_closes_keeps_its_refusal(self):
+        # The window of 22 October closes after 5 November: 6 November is the last day it is pending, 9 November is late.
+        onset = date(2026, 10, 22)
+        self._refuse(onset, [date(2026, 10, 23), date(2026, 11, 6)])
+        self.assertEqual(self._record("2026-11-06")["rows"][0]["status"], "pending")
+        fake = Fake(onsets=[onset])
+        self.assertEqual(live_h10.run_day(date(2026, 11, 9), Path("p"), self.out, fake.backend(), self.pin), 0)
+        self.assertEqual(fake.calls, [], "a closed window is not attributed")
+        row = self._record("2026-11-09")["rows"][0]
+        self.assertEqual(row["status"], "refused at window close")
+        self.assertEqual(row["refusal"]["type"], "LookAheadError")
+        self.assertIn("locked blind tier", row["refusal"]["error"])
+        self.assertIn("registered method refused", row["reason"])
+        self.assertNotIn("first panel day this job saw", row["reason"])
+        self.assertEqual((row["counted"], row["under_bar"], row["beats_null"]), (False, False, False))
+        self.assertEqual(row["label"], "prospective")
+        self.assertEqual(row["onset"], "2026-10-22")
+        self.assertEqual(self._record("2026-11-09")["status"], "ok", "the day is not pending: the onset is final")
+
+    def test_a_final_row_is_reported_once(self):
+        onset = date(2026, 10, 22)
+        self._refuse(onset, [date(2026, 11, 6)])
+        live_h10.run_day(date(2026, 11, 9), Path("p"), self.out, Fake(onsets=[onset]).backend(), self.pin)
+        later = Fake(onsets=[onset])
+        live_h10.run_day(date(2026, 11, 10), Path("p"), self.out, later.backend(), self.pin)
+        self.assertEqual(later.calls, [])
+        self.assertEqual(self._record("2026-11-10")["rows"], [])
+
+    def test_the_seen_late_reason_is_written_only_for_a_first_sight_after_the_window(self):
+        onset = date(2026, 10, 22)
+        live_h10.run_day(date(2026, 11, 9), Path("p"), self.out, Fake(onsets=[onset]).backend(), self.pin)
+        row = self._record("2026-11-09")["rows"][0]
+        self.assertEqual(row["status"], "not attributable")
+        self.assertIn("first panel day this job saw the onset", row["reason"])
+        self.assertNotIn("refusal", row)
+
+    def test_another_onsets_refusal_does_not_leak_into_a_late_one(self):
+        self._refuse(date(2026, 10, 22), [date(2026, 11, 6)])
+        fake = Fake(onsets=[date(2026, 10, 22), date(2026, 10, 23)])
+        live_h10.run_day(date(2026, 11, 10), Path("p"), self.out, fake.backend(), self.pin)
+        rows = {r["onset"]: r for r in self._record("2026-11-10")["rows"]}
+        self.assertEqual(rows["2026-10-22"]["status"], "refused at window close")
+        self.assertEqual(rows["2026-10-23"]["status"], "not attributable")
+
+
 class DayTests(unittest.TestCase):
     def setUp(self):
-        self.pin = live_h10.load_pin()
+        self.pin = fixture_pin()
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.out = Path(self.tmp.name)

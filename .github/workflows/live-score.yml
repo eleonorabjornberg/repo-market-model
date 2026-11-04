@@ -123,7 +123,7 @@ jobs:
           day=$(ls live-raw/raw | grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' | awk -v d="$SCORE_DATE" '$0 <= d' | tail -1)
           test -n "$day"
           echo "RAW_DAY=$day" >> "$GITHUB_ENV"
-          "$PY" -B main/scripts/live_raw.py build-panel --archive-dir live-raw --day "$day" --panel panel.csv
+          "$PY" -B main/scripts/live_raw.py build-panel --archive-dir live-raw --day "$day" --panel panel.csv --live-dir live-log
 
       - name: Reconstruct the blind gap (first scoring date only)
         id: gap

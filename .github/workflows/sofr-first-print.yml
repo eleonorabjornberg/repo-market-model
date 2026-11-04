@@ -11,23 +11,30 @@ name: sofr-first-print
 # commit, checked before the push; a day already on the branch is never fetched or overwritten. A fetch that ends at
 # or after 14:30 ET is refused (`LookAheadError`) and the run goes red: that day is not back-filled.
 #
-# Slots (UTC), each a no-op when it runs before 08:00 ET or when the day is already captured: 12:20 and 13:20 are
-# 08:20 ET in EDT and EST respectively (the other is an hour early or late), and three fallbacks cover GitHub's
-# scheduling delay. 14:30 ET is 18:30 UTC in EDT and 19:30 UTC in EST, after the last slot.
+# Slots (UTC), each a no-op when it runs before 08:00 ET or when the day is already captured. 08:00-14:30 ET is
+# 12:00-18:30 UTC in EDT and 13:00-19:30 UTC in EST, so 13:00-18:30 UTC is safe in both. On 2 November 2026 GitHub
+# started none of the five slots (12:20 to 15:20) before 21:44 UTC, and delays of several hours were the rule on the
+# days before (docs/research/sofr-first-print-slots-1404.md). A late start costs the day only when every slot of the
+# window is late, so a slot is placed every 30 minutes from 12:10 to 19:10 UTC (a start that is late is refused, never
+# taken). The 21:30 UTC slot is the evening check: by then every day published that morning is kept or lost.
+#
+# After every slot, whether the capture succeeded or was refused, `sofr_first_print.py missing` fails the run and names
+# each business day that is past its 14:30 ET revision instant with no file on `sofr-first-prints` and no entry in
+# `metadata/sofr_missed_first_prints.json`, and comments once per day on #225 (#1404). A lost day is added to that list
+# by a pull request; it is never back-filled, and the 14:30 ET refusal is unchanged.
 #
 # The branch is not yet protected by a ruleset like `live-log`; adding one is Eleonora's (see the pull request).
 
 on:
   schedule:
-    - cron: "20 12 * * 1-5"
-    - cron: "20 13 * * 1-5"
-    - cron: "50 13 * * 1-5"
-    - cron: "20 14 * * 1-5"
-    - cron: "20 15 * * 1-5"
+    - cron: "10,40 12-18 * * 1-5"
+    - cron: "10 19 * * 1-5"
+    - cron: "30 21 * * 1-5"
   workflow_dispatch:
 
 permissions:
   contents: write
+  issues: write
 
 concurrency:
   group: sofr-first-print
@@ -81,3 +88,16 @@ jobs:
           fi
           git push --quiet origin HEAD:refs/heads/sofr-first-prints
           python3 -B ../main/scripts/sofr_first_print.py verify --dir .
+
+      - name: Flag a business day with no first print
+        if: always()
+        run: |
+          set +e
+          python3 -B main/scripts/sofr_first_print.py missing --dir prints --list main/metadata/sofr_missed_first_prints.json --days-out missed.txt
+          status=$?
+          for day in $(cat missed.txt 2>/dev/null); do
+            if ! gh api "repos/${REPO}/issues/225/comments?per_page=100" --paginate -q '.[].body' | grep -qF "SOFR first print missed: ${day}"; then
+              gh api "repos/${REPO}/issues/225/comments" -f body="SOFR first print missed: ${day}. No file on sofr-first-prints, and its 14:30 ET revision instant has passed; it is never back-filled. List it with its reason in metadata/sofr_missed_first_prints.json ($GITHUB_SERVER_URL/$REPO/actions/runs/$GITHUB_RUN_ID)." >/dev/null
+            fi
+          done
+          exit $status

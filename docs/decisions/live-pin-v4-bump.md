@@ -43,8 +43,8 @@ nothing, and a run that starts before 18:00 ET ends green with nothing written (
 
 | | Day | Decided |
 |---|---|---|
-| the last 16:00 day | the last business day whose record the 16:00 pin writes before the pin follow-up merges | by the pin follow-up, which names it |
-| the first 18:00 day | the first business day whose run reads the new pin | by the pin follow-up, which names it |
+| the last 16:00 day | the last business day whose record the 16:00 pin writes before the pin follow-up merges | the pull request of the pin follow-up (#1369) names it in its description; it is the business day before the first 18:00 day, or the same day if the follow-up merges after that day's live-log run |
+| the first 18:00 day | the first business day whose run reads the new pin | the pull request of the pin follow-up (#1369) names it in its description, by option 1 below, once it is merged (no calendar date is typed here before it has happened) |
 
 **Marked question for Eleonora (numbered options; default 1).** I have not typed a calendar date in this record: a date written
 before it has happened is refused by `tests/test_docs_freshness.py`, and the right date depends on when the two pull requests
@@ -58,7 +58,7 @@ merge. Which day does the new record start?
 
 | id | SHA | Decided |
 |---|---|---|
-| the next transition after `protocol-block` (id: `decision-instant-1800`) | **not yet known:** the merge commit of the pull request that makes the live code read 18:00 (see "Not yet in this record") | Eleonora, `GO #1313` (comment id to be cited), date to be filled in by the follow-up |
+| the next transition after `protocol-block` (id: `decision-instant-1800`) | `2eba843b35e197ed92cac968aa45aaf514a35e2a` (the merge commit of #1384, which closes #1368 and makes the live code read the 18:00 instant) | Eleonora, `GO #1313` (comment 6534020982) for this record; the pin follow-up (#1369) carries its own `live-pin` approval |
 
 The bump is never retroactive: each day's file already carries the SHA it was made with. The transition is added to
 `metadata/live_pin.json`, naming that merge commit, in a follow-up that carries Eleonora's own approval (kind `live-pin`). Until

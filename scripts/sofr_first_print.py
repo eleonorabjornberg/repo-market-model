@@ -3,6 +3,7 @@
 
     PYTHONPATH=src python3 scripts/sofr_first_print.py capture --out-dir DIR
     PYTHONPATH=src python3 scripts/sofr_first_print.py verify --dir DIR
+    PYTHONPATH=src python3 scripts/sofr_first_print.py missing --dir DIR --list FILE [--days-out FILE]
 
 The New York Fed publishes SOFR at about 08:00 ET on the next business day and may revise it at about 14:30 ET
 (`repo_model.sofr_first_print`). `.github/workflows/sofr-first-print.yml` runs `capture` in the morning, after
@@ -15,6 +16,11 @@ fetched, the retrieval time, its SHA-256, the publication and revision instants 
 * A day already captured is never fetched again or overwritten: exit 0.
 * A fetch that ends at or after the revision instant, or a row already marked revised, is a `LookAheadError`:
   nothing is written and the exit code is 1. The day is lost as a first print and is not back-filled.
+
+* `missing` (#1404) names every business day whose revision instant has passed, that has no file under DIR and that is not
+  on the tracked list of lost days (`metadata/sofr_missed_first_prints.json`): exit 3, one line per day on stderr and,
+  with `--days-out`, one date per line in that file. The workflow runs it after every slot and comments on #225. A
+  list that contradicts the branch is exit 2. Nothing is back-filled.
 
 The live record (`scripts/live_record.py`) runs after the 16:00 ET decision, hours after a revision could have
 replaced the print, so it cannot keep first prints itself; its pinned code is untouched.
@@ -84,6 +90,25 @@ def verify(directory: Path) -> int:
     return 0
 
 
+def missing(directory: Path, listed: Path, now: datetime, days_out=None) -> int:
+    """Exit 3 and name each due business day that has no first print and is not on the tracked list."""
+
+    lost = fp.unflagged_misses(fp.captured_days(directory), now, fp.read_missed(listed))
+    if days_out is not None:
+        Path(days_out).write_text("".join(f"{day.isoformat()}\n" for day in lost), encoding="utf-8")
+    if not lost:
+        print("no unlisted business day without a first print")
+        return 0
+    for day in lost:
+        print(
+            f"MISSED first print: {day.isoformat()} has no file under sofr/ and its revision instant "
+            f"{fp.revision_instant(day).isoformat()} ET has passed; it is never back-filled. "
+            f"List it with its reason in {fp.MISSED_LIST.relative_to(REPO)}.",
+            file=sys.stderr,
+        )
+    return 3
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = parser.add_subparsers(dest="command", required=True)
@@ -92,10 +117,18 @@ def main(argv=None) -> int:
     cap.add_argument("--now", help="an aware ISO instant, for a test; defaults to the clock")
     ver = sub.add_parser("verify")
     ver.add_argument("--dir", type=Path, required=True)
+    mis = sub.add_parser("missing")
+    mis.add_argument("--dir", type=Path, required=True)
+    mis.add_argument("--list", type=Path, default=fp.MISSED_LIST, help="the tracked list of lost days")
+    mis.add_argument("--now", help="an aware ISO instant, for a test; defaults to the clock")
+    mis.add_argument("--days-out", type=Path, help="write the unlisted dates here, one per line")
     args = parser.parse_args(argv)
     try:
         if args.command == "verify":
             return verify(args.dir)
+        if args.command == "missing":
+            now = datetime.fromisoformat(args.now) if args.now else datetime.now(timezone.utc)
+            return missing(args.dir, args.list, now, args.days_out)
         now = datetime.fromisoformat(args.now) if args.now else datetime.now(timezone.utc)
         capture(args.out_dir, now)
         return 0

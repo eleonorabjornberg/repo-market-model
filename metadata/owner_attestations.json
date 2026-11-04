@@ -174,6 +174,34 @@
       "comment_id": 6534020982,
       "phrase": "GO #1313",
       "what": "the live-pin v4 bump decision record and the live-log workflow move to the 18:00 decision instant (step 2 of 3): close the 16:00 live record and open the 18:00 one; her 29 October 2026 ruling (ledger item 77), GO on 30 October 2026"
+    },
+    {
+      "kind": "live-model",
+      "issue": 1401,
+      "comment_id": 6615141512,
+      "phrase": "GO #1401",
+      "what": "the live job's H10 onset step: an onset refused on every day its window was open is finalised as 'refused at window close' (counted: false) instead of 'not attributable' (scripts/live_h10.py); her GO of 3 November 2026 (finding #1386, option 1)"
+    },
+    {
+      "kind": "decisions",
+      "issue": 1341,
+      "comment_id": 6616568667,
+      "phrase": "GO #1341",
+      "what": "the weekly-carry decision record: the 13-day bound also runs from the decision day (#1339 option (a), #1335 option (a)); her 1 November 2026 rulings (ledger items 91 and 92)"
+    },
+    {
+      "kind": "live-pin",
+      "issue": 1369,
+      "comment_id": 6622415551,
+      "phrase": "GO #1369",
+      "what": "move the live pin to the 18:00 code (metadata/live_pin.json, live-pin v4); her GO of 4 November 2026 (#1369)"
+    },
+    {
+      "kind": "decisions",
+      "issue": 1369,
+      "comment_id": 6622416649,
+      "phrase": "GO #1369",
+      "what": "the live-pin v4 bump decision record (docs/decisions/live-pin-v4-bump.md); her GO of 4 November 2026 (#1369)"
     }
   ],
   "rule": "docs/decisions/drafts/owner-attestation.md",

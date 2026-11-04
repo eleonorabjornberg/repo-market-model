@@ -217,7 +217,7 @@ class FitWithCmbTermsTests(unittest.TestCase):
         self.assertEqual(sc.IORB_EXTRAS, ("iorb_signed", "iorb_technical"))
         self.assertEqual(sc.SIZE_EXTRAS, ("net_coupon", "net_bill", "gross_coupon"))
         self.assertEqual(sc.CMB_EXTRAS, ("cmb_flag", "cmb_size"))
-        self.assertEqual(sc.EXTRA_TERMS, sc.IORB_EXTRAS + sc.SIZE_EXTRAS + sc.CMB_EXTRAS + sc.OPS_EXTRAS)  # #1349 adds the take-up extras
+        self.assertEqual(sc.EXTRA_TERMS, sc.IORB_EXTRAS + sc.SIZE_EXTRAS + sc.CMB_EXTRAS + sc.OPS_EXTRAS + sc.MISSING_EXTRAS + sc.PRICE_EXTRAS + (sc.H9_FORECAST,))  # #1349 adds the take-up extras, #1390 the missingness flag, #1345 the H9 forecast
 
 
 class ArmTests(unittest.TestCase):

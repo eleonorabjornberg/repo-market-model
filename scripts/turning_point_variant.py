@@ -193,7 +193,7 @@ def calendar_command(args) -> int:
     registry = json.loads(live_record.REGISTRY.read_text(encoding="utf-8"))
     sides, _parsed = live_record._compare_sides(1)
     features = tuple(sides["published"][2])
-    rule = live_record.InformationRule(registry, features, decision_time=live_record.DECISION, horizon=1)
+    rule = live_record.InformationRule(registry, features, decision_time=live_record.LEGACY_DECISION, horizon=1)
     splits = load_split_declaration(SPLITS)
     dates = [row.date for row in rows]
     flags = {}

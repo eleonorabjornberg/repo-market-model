@@ -1,0 +1,76 @@
+name: availability-poll
+
+# When do Treasury's daily bill rates, and the FR 2004, first appear? (#1343, Eleonora's ruling of 1 November 2026 on
+# #1334, option (a); ledger item 94.) The declarations say 16:30 ET on the day (`metadata/sources.json`), and the
+# decision instant is 18:00 ET (#1312). Nothing has measured it. This is a measurement only: no declaration changes.
+#
+# Every ten minutes `scripts/availability_poll.py capture` decides from the ET clock whether to poll (business days,
+# 16:00 to 18:30 ET inclusive; Thursdays add the FR 2004 release page) and writes one file per poll:
+# `polls/<ET date>/<fetch time>-<source>.json` with the fetch time, HTTP status, latest date present and a content
+# hash. The files are added to the add-only `availability-polls` branch in one commit, checked before the push.
+#
+# The cron covers 16:00-18:30 ET in both zones: 20:00-23:50 UTC. The script is a no-op outside its window, so the
+# hour that falls outside it (before 16:00 or after 18:30 ET) costs a few seconds. GitHub delays scheduled runs under
+# load; a delayed poll records its true fetch time, and a poll that never ran leaves a gap the result page counts.
+# The branch is not protected by a ruleset; adding one is Eleonora's.
+
+on:
+  schedule:
+    - cron: "*/10 20-23 * * 1-5"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: availability-poll
+  cancel-in-progress: false
+
+jobs:
+  poll:
+    name: poll the two sources
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      PYTHONDONTWRITEBYTECODE: "1"
+    steps:
+      - name: Check out main
+        run: git clone --quiet "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" main
+
+      - name: Python at the declared version
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.11"
+          check-latest: false
+
+      - name: Poll and keep the records on availability-polls
+        run: |
+          set -euo pipefail
+          url="https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git"
+          if git ls-remote --exit-code --heads "$url" availability-polls >/dev/null; then
+            git clone --quiet --branch availability-polls --single-branch "$url" polls
+          else
+            git init --quiet -b availability-polls polls
+            git -C polls remote add origin "$url"
+          fi
+          export PYTHONPATH=main/src
+          python3 -B main/scripts/availability_poll.py capture --out-dir polls
+          cd polls
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "nothing new to keep."
+            exit 0
+          fi
+          base=$(git rev-parse --verify -q HEAD || true)
+          git add polls
+          git -c user.name="github-actions[bot]" \
+            -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit --quiet -m "availability polls $(date -u +%FT%TZ)"
+          # Add-only: nothing already on the branch is modified, renamed or deleted.
+          if [ -n "$base" ] && git diff --name-status "$base" HEAD | grep -v '^A'; then
+            echo "the commit changes a file already on the branch" >&2
+            exit 1
+          fi
+          git push --quiet origin HEAD:refs/heads/availability-polls
+          python3 -B ../main/scripts/availability_poll.py verify --dir .

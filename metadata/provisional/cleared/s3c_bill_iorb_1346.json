@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/s3c_bill_iorb_1346.json",
+  "script": "scripts/s3c_bill_iorb_1346.py",
+  "pairing": "direct",
+  "why": "(s3c-ann-net-bill): (s3c-ann-net) with the 4-week bill rate less IORB of the previous business day as one more term. The fit is (s3)'s estimation routine, spread_mr_state_calendar.walk with training_pairs = direct (guarded by one_step_guard with no allow-list entry), and no gradient-boosted fit is called, so the study is not provisional; the settlement terms are read as in (s3c-ann-net) (scheduled fields of the target row, here read at every lead from the announced auctions, each figure counting an auction only when it was announced at or before the decision instant), the other terms are calendar columns read at the target day, and the new term is read from the panel row before the decision day (repo_model.s3c_bill_iorb.BillLessIorbTable, leakage-tested, equal to the row asof.InformationRule reads for tbill_4w and iorb at the 16:00 decision); no outcome is an input"
+}
