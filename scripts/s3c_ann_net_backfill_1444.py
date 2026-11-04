@@ -14,6 +14,9 @@ back-filled rows (2014-08-22 to 2018-03-29) before the published rows in every t
   `post_month_end_window`: the pinned holiday table starts on 2018-01-01) are fitted on the pairs whose target row is a published row only (stage 1, the
   arm's own fit); the three terms the back-filled rows carry are then fitted on every pair, on the residual net of the stage-1 effects of the four others
   (stage 2). The forecast reads both sets of effects and the stage-2 pool;
+* the pressure-day types of the back-filled days (`back_filled_turn_days`): the model's level is the median of the last ordinary spreads, and a day is ordinary
+  unless it is a turn day or a tax date, which needs the month's last business day; the pinned market holiday table starts on 2018-01-01, so before it a month's
+  business days are the panel's own days (the rule of `scripts/backfill_history.py` for `quarter_end`);
 * the guards of the back-fill rule, on every refit and every scored decision (`require_backfill_guards`, `require_published_targets`,
   `require_backfilled_admitted` of `scripts/backfill_h5_726.py`);
 * the walk (`walk_extended`: `spread_mr_state_calendar.walk` with that refit), the paired scores against the control and B1'*, the split by regime (2018-19,
@@ -27,7 +30,7 @@ hours):
         --build-cutoff 2026-09-08T21:31:42+00:00 --decision-time 18:00:00
     PYTHONPATH=src python3 -m repo_model.cli verify-panel PUB.csv --manifest metadata/funding_panel_manifest.json
     PYTHONPATH=src python3 scripts/backfill_history.py panel --output EXT.csv --scratch SCRATCH.csv
-    PYTHONPATH=src python3 scripts/s3c_ann_net_backfill_1444.py panel --extended EXT.csv --output EST.csv
+    PYTHONPATH=src python3 scripts/s3c_ann_net_backfill_1444.py panel --extended EXT.csv --published PUB.csv --output EST.csv
     PYTHONPATH=src python3 scripts/s3c_ann_net_backfill_1444.py score --panel PUB.csv --extended EST.csv \\
         --output docs/research/s3c-ann-net-backfill-1444/result.json
     PYTHONPATH=src python3 scripts/s3c_ann_net_backfill_1444.py page \\
@@ -40,6 +43,7 @@ is used or added. No gradient-boosted fitter is called.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import csv
 import dataclasses
 import importlib.util
@@ -70,8 +74,8 @@ def _load(name: str, alias: Optional[str] = None):
 
 
 from repo_model import announced_iorb, backfill, b1_calendar, metrics, policy_events, s3c_announced, s3c_net  # noqa: E402
-from repo_model import protocol_benchmarks as pb, scoring_protocol as sp, spread_mean_reversion as smr, spread_mr_fhs as fhs  # noqa: E402
-from repo_model import spread_mr_calendar as cal, spread_mr_state_calendar as sc  # noqa: E402
+from repo_model import data, protocol_benchmarks as pb, scoring_protocol as sp, spread_mean_reversion as smr, spread_mr_fhs as fhs  # noqa: E402
+from repo_model import spread_mr_calendar as cal, spread_mr_state_calendar as sc, turn_days  # noqa: E402
 from repo_model.baseline import ScoredFold, panel_sha256  # noqa: E402
 from repo_model.data import DailyObservation, load_daily_panel  # noqa: E402
 from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
@@ -198,6 +202,50 @@ def require_same_published(published: Sequence[DailyObservation], extended: Sequ
             if (a is None) != (b is None) or (a is not None and abs(a - b) > 1e-9):
                 raise ValueError(f"{mine.date} {name}: published {a!r} != extended {b!r}")
     return prefix
+
+
+# -- the pressure-day types of the back-filled days ----------------------------------------------------------------------
+
+
+@contextlib.contextmanager
+def back_filled_turn_days(dates: Sequence[date]):
+    """Serve `turn_days.turn_days_of_month` for the months the pinned market holiday table does not cover (it starts on 2018-01-01) from the panel's own days.
+
+    The model's level is the median of the last ordinary spreads, and a row is ordinary unless it is a turn day or a tax date (`turn_days.reporting_day_type`),
+    so the fit cannot read a back-filled row without knowing its month's last business day. The scratch panel of #430 has the same gap for `quarter_end` and
+    closes it the same way (`scripts/backfill_history.py`): the business days of a back-filled month are the days the New York Fed's workbook has a rate for. A
+    month the table covers is served by the table, unchanged. The table itself is not extended: that is a data decision of hers.
+
+    Raises:
+        ValueError: (inside the block) a month with no panel day before 2018, or no panel day after its last.
+    """
+
+    first = data.market_holidays().first
+    by_month: Dict[Tuple[int, int], List[date]] = {}
+    for day in dates:
+        by_month.setdefault((day.year, day.month), []).append(day)
+    ordered = sorted(dates)
+    original = turn_days.turn_days_of_month
+
+    def served(year: int, month: int) -> Tuple[date, date]:
+        if date(year, month, 1) >= first:
+            return original(year, month)
+        days = by_month.get((year, month))
+        if not days and date(year, month, 1) < ordered[0]:
+            return date.min, date.min  # a month before the panel starts: its turn days fall on no panel day
+        if not days:
+            raise ValueError(f"no panel day in {year}-{month:02d}: its turn days cannot be read from the panel's own days")
+        last = max(days)
+        later = next((d for d in ordered if d > last), None)
+        if later is None:
+            raise ValueError(f"no panel day after {last}: the turn day after the month's last business day cannot be read")
+        return last, later
+
+    turn_days.turn_days_of_month = served
+    try:
+        yield
+    finally:
+        turn_days.turn_days_of_month = original
 
 
 # -- the extended term table ---------------------------------------------------------------------------------------------
@@ -465,9 +513,10 @@ def run_window(window: str, ctx: dict, args) -> dict:
     control_raw = control_walk.forecasts[NET_ARM.name]
     first = min(control_raw)
     days = [d for d in m1288.candidate_days(frame, window, None) if d >= first]
-    walked = walk_extended(
-        extended, days, ctx["terms"], ctx["states"], NET_ARM, registry=ctx["registry"], decision_time=k.DECISION_TIME, splits=ctx["splits"], sizes=ctx["sizes"],
-        posting=ctx["posting"], admitted=ctx["admitted"], reads=ctx["reads"])
+    with back_filled_turn_days([row.date for row in extended]):
+        walked = walk_extended(
+            extended, days, ctx["terms"], ctx["states"], NET_ARM, registry=ctx["registry"], decision_time=k.DECISION_TIME, splits=ctx["splits"],
+            sizes=ctx["sizes"], posting=ctx["posting"], admitted=ctx["admitted"], reads=ctx["reads"])
     refit_days = sorted(control_walk.fits)
     require_same_refits(refit_days, sorted(walked.estimates))
     for d in frame.days:
@@ -570,13 +619,52 @@ def run_window(window: str, ctx: dict, args) -> dict:
 # -- the commands --------------------------------------------------------------------------------------------------------
 
 
+def build_extended(scratch_rows: Sequence[Mapping[str, str]], published_rows: Sequence[Mapping[str, str]], fields: Sequence[str]) -> List[Dict[str, str]]:
+    """The extended panel as CSV rows: the scratch panel's back-filled rows (every cell but the admitted series and the calendar columns already blank), then every
+    row of the published panel. The scratch panel's own published rows end at 2025-12-31 (#726); where it has them they must equal the published panel's in `fields`.
+
+    Raises:
+        ValueError: a published day of the scratch panel is missing from the published panel, or a field differs.
+    """
+
+    first = backfill.FIRST_PUBLISHED.isoformat()
+    published = {row["date"]: row for row in published_rows}
+    out: List[Dict[str, str]] = []
+    for row in scratch_rows:
+        if row["date"] < first:
+            out.append({name: row.get(name, "") for name in published_rows[0]})
+            continue
+        there = published.get(row["date"])
+        if there is None:
+            raise ValueError(f"{row['date']} is in the scratch panel and not in the published panel")
+        for name in fields:
+            a, b = row.get(name, ""), there.get(name, "")
+            if a != b and not (a and b and abs(float(a) - float(b)) <= 1e-9):
+                raise ValueError(f"{row['date']} {name}: scratch {a!r} != published {b!r}")
+    out.extend(dict(row) for row in published_rows)
+    return out
+
+
 def panel_command(args) -> int:
-    """Blank every cell of a back-filled row but the admitted series and the calendar columns, as #726 does, and write the panel."""
+    """Blank every cell of a back-filled row but the admitted series and the calendar columns, as #726 does, then put the published panel after them."""
 
     require_unlocked([LAST_DAY], where="s3c_ann_net_backfill_1444")
     admitted = backfill.load_admitted_series(POSTING)
-    blanked = b726.established_panel(args.extended, args.output, admitted)
-    print(json.dumps({"back_filled_rows": blanked, "output": str(args.output)}))
+    blanked_path = Path(args.output).with_suffix(".blanked.csv")
+    blanked = b726.established_panel(args.extended, blanked_path, admitted)
+    with blanked_path.open(newline="", encoding="utf-8") as handle:
+        scratch = list(csv.DictReader(handle))
+    with Path(args.published).open(newline="", encoding="utf-8") as handle:
+        reader = csv.DictReader(handle)
+        names = list(reader.fieldnames or [])
+        published = list(reader)
+    rows = build_extended(scratch, published, READ_FIELDS)
+    with Path(args.output).open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=names, lineterminator="\n")
+        writer.writeheader()
+        writer.writerows(rows)
+    blanked_path.unlink()
+    print(json.dumps({"back_filled_rows": blanked, "rows": len(rows), "output": str(args.output)}))
     return 0
 
 
@@ -740,7 +828,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = parser.add_subparsers(dest="command", required=True)
     p = sub.add_parser("panel")
-    p.add_argument("--extended", type=Path, required=True)
+    p.add_argument("--extended", type=Path, required=True, help="the scratch panel of scripts/backfill_history.py panel")
+    p.add_argument("--published", type=Path, required=True, help="the published panel (PUB.csv)")
     p.add_argument("--output", type=Path, required=True)
     s = sub.add_parser("score")
     s.add_argument("--panel", type=Path, required=True)

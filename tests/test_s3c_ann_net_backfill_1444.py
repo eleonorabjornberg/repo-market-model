@@ -179,6 +179,60 @@ class BackfillGuardTests(unittest.TestCase):
         script.require_backfill_guards(days, 2, days[2], None, {}, self.READS, where="test")
 
 
+class BuildExtendedTests(unittest.TestCase):
+    PUBLISHED = [{"date": "2018-04-03", "sofr": "1.83", "iorb": "1.75"}, {"date": "2018-04-04", "sofr": "1.74", "iorb": "1.75"},
+                 {"date": "2026-01-02", "sofr": "3.7", "iorb": "3.65"}]
+
+    def scratch(self, sofr="1.83"):
+        return [{"date": "2018-03-29", "sofr": "1.8", "iorb": "1.75", "extra": "x"}, {"date": "2018-04-03", "sofr": sofr, "iorb": "1.75"}]
+
+    def test_the_back_filled_rows_come_first_and_every_published_row_follows(self):
+        rows = script.build_extended(self.scratch(), self.PUBLISHED, ("sofr", "iorb"))
+        self.assertEqual([r["date"] for r in rows], ["2018-03-29", "2018-04-03", "2018-04-04", "2026-01-02"])
+        self.assertEqual(set(rows[0]), set(self.PUBLISHED[0]))
+
+    def test_a_published_day_that_differs_is_refused(self):
+        with self.assertRaises(ValueError):
+            script.build_extended(self.scratch("1.84"), self.PUBLISHED, ("sofr", "iorb"))
+
+
+class BackFilledTurnDayTests(unittest.TestCase):
+    DAYS = [date(2014, 9, 29), date(2014, 9, 30), date(2014, 10, 1), date(2014, 10, 2), date(2014, 10, 31), date(2014, 11, 3)]
+
+    def test_a_month_before_the_holiday_table_reads_its_turn_days_from_the_panel_days(self):
+        from repo_model import turn_days
+        with script.back_filled_turn_days(self.DAYS):
+            self.assertEqual(turn_days.turn_days_of_month(2014, 9), (date(2014, 9, 30), date(2014, 10, 1)))
+            self.assertEqual(turn_days.turn_label(date(2014, 10, 1)), turn_days.QUARTER_END_TURN)
+            self.assertIsNone(turn_days.turn_label(date(2014, 10, 2)))
+
+    def test_a_month_the_table_covers_is_the_tables(self):
+        from repo_model import turn_days
+        before = turn_days.turn_days_of_month(2019, 3)
+        with script.back_filled_turn_days(self.DAYS):
+            self.assertEqual(turn_days.turn_days_of_month(2019, 3), before)
+
+    def test_the_table_reading_is_restored(self):
+        from repo_model import turn_days
+        original = turn_days.turn_days_of_month
+        with script.back_filled_turn_days(self.DAYS):
+            pass
+        self.assertIs(turn_days.turn_days_of_month, original)
+        with self.assertRaises(ValueError):
+            turn_days.turn_days_of_month(2014, 9)
+
+    def test_a_month_before_the_panel_starts_has_no_turn_day_on_it(self):
+        from repo_model import turn_days
+        with script.back_filled_turn_days(self.DAYS):
+            self.assertEqual(turn_days.turn_days_of_month(2014, 7), (date.min, date.min))
+
+    def test_a_month_with_no_panel_day_is_refused(self):
+        from repo_model import turn_days
+        with script.back_filled_turn_days(self.DAYS):
+            with self.assertRaises(ValueError):
+                turn_days.turn_days_of_month(2014, 12)
+
+
 class InstantTests(unittest.TestCase):
     def test_the_declared_instant_is_eighteen_hundred(self):
         self.assertEqual(script.INSTANT_TIME, time(18, 0))
