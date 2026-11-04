@@ -1299,6 +1299,7 @@
   "metadata/aligned_pairs_931.json": "#931's scratch measurement of the gbm_funding line's pair construction, declared before any score with nothing published; a precursor of #1027, not an arm on the way to the candidate",
   "metadata/s3c_flagnet_prospective_draft_1344.json": "#1344's draft prospective test of (s3c-ann-flagnet), not registered; a draft for her review, not an arm on the way to the candidate",
   "metadata/h5_registration_manifest.json": "this manifest, which names the candidate in every row; it is the inventory, not an arm in it",
+  "metadata/b2_star_1420.json": "#1420's declaration of B2*, a benchmark (calendar climatology with frozen pools, lookback and fallback) scored against the candidate, which is unchanged; a benchmark design, not an arm on the way to the candidate. Not yet merged: a side_check row follows the merge, as B4's did",
   "metadata/net_settlement.json": "the availability declaration of the net settlement input (#1273); a declared input of the candidate's sizing, not a study or an arm",
   "metadata/owner_attestations.json": "the register of her GO attestations; it cites the candidate where she froze or ruled on it, not an arm",
   "metadata/settlement_announcement_dating.json": "the dating of the auction announcements (#1288) that the candidate's sizing reads; a data declaration, not an arm",

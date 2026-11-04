@@ -1,0 +1,70 @@
+{
+ "status": "declared by the pull request that closes #1420 before any score was computed; a development study, never a verdict. B2* is a benchmark design for the confirmation (#1393, #1394 name it mandatory; the size-and-power study #1392, #1399 used B2 as a stand-in). Nothing is registered or published: no record in docs/runs/ is edited, the live record and its pin do not change, the candidate (s3c-ann-net) does not change, no decision record changes, and scoring-protocol.md is not edited. The numbers below are fixed here with no search: B2* is scored once. They are a proposal for Eleonora to confirm or replace (a marked question in the pull request, default: as declared)",
+ "issue": 1420,
+ "hypothesis": "H5 (primary goal): the SOFR - IORB spread distribution in bp. Registration design (benchmarks), step 4 to 5. Development tier",
+ "ruling": "Eleonora, 3 November 2026, chat, relayed on #1420: queue the two points of the pre-registration design review not yet covered; give the declaration a variants block (#803)",
+ "target": "spread_bps at the scored day, in basis points, as a 23-quantile distribution at each lead h = 1..5 (scoring_protocol.GRID)",
+ "why": "B2's calendar pools are thin on rare day types (the quarter-end turn, the year-end), so its tail and Brier figures can rest on tiny pools. B2 in force (b2_pool, #1155, minimum 4, lookback one year) already falls back for the year-end alone, to a pool of about six rows. The review asks that the confirmation not be against a deliberately weak benchmark: pool definitions, lookback and fallback fixed and stated",
+ "decision_instant": "18:00 America/New_York on the decision day (repo_model.decision_instant.DECISION_TIME, #1312). The candidate and every benchmark are walked at that instant, on the same decision days and the same information (asof InformationRule, protocol_benchmarks._anchor, _require_public)",
+ "b2_star": {
+  "name": "B2*",
+  "function": "repo_model.protocol_benchmarks.b2_star_forecast (built on repo_model.b2_pool.b2_fallback_forecast with a lookback argument)",
+  "pools": "the day types of docs/decisions/month-end-turn.md (turn_days.reporting_day_type), read from each row's own date and tax_date column: year_end, quarter_end_turn, turn, tax_date, ordinary. A target is forecast from rows of its own type",
+  "lookback": "two calendar years back from the decision day (protocol_benchmarks.B2STAR_YEARS = 2; B2 in force reads one), counted as B1 counts its window (the first row strictly after the decision day less two years) and clipped at the start of the panel. Rows are those up to the as-of anchor, the last public row; every row read is checked by _require_public",
+  "minimum_pool": "10 rows (protocol_benchmarks.B2STAR_POOL_MIN = 10; B2 in force: 4). A type with fewer rows in the lookback reads the next step of its chain",
+  "fallback_chain": "year_end -> quarter_end_turn -> turn -> all days; quarter_end_turn -> turn -> all days; turn -> all days; tax_date -> all days; ordinary -> all days (b2_pool.CHAINS, the chain of the record in force). A step replaces the pool, it does not add to it. No shrinkage is used: the fallback is hard",
+  "quantiles": "empirical_quantiles of the pool's spreads, linearly interpolated, as B2",
+  "why_these_numbers": "A two-year window doubles the rows of every pool without changing what is pooled (a year-end pool of about four, a quarter-end-turn pool of about twelve, a turn pool of about thirty); 10 is the minimum that Eleonora's #1155 default draft named, and with two years it lets the quarter-end turn keep its own pool (which the one-year minimum of 10 did not: #1155 measured that it hurt the quarter-end turn). The year-end has about four rows and reads the quarter-end-turn rows. These are stated, not searched: no other lookback or minimum is scored, and the choice is a marked question for Eleonora",
+  "unchanged": "the day types, the chain, the quantile rule and the anchor are the record in force's (docs/decisions/b2-thin-pool.md, b2_pool.CHAINS); only the lookback and the minimum differ from B2"
+ },
+ "references": [
+  {"name": "sc_s3c_ann_net", "label": "(s3c-ann-net)", "role": "the H5 candidate; re-walked at 18:00 in the same run with #1288's and #1356's machinery, unchanged"},
+  {"name": "B1", "label": "B1", "role": "protocol benchmark B1, the deciding benchmark"},
+  {"name": "B1_prime", "label": "B1'", "role": "reported beside B1 (#960)"},
+  {"name": "B2", "label": "B2", "role": "protocol benchmark B2 as in force (minimum pool 4, one year, #1155)"}
+ ],
+ "models": ["B1", "B1_prime", "B2", "B2_star", "sc_s3c_ann_net"],
+ "frame": {
+  "windows": "the two windows of #1255, loaded as #1255 loads them: the development window (decision days whose five targets fall on or before 2025-12-31), which decides, and the 2026 development days (targets 2026-01-02 to 2026-09-03), shown apart and deciding nothing. No locked day and no day after 2026-09-03 is scored; the frames' own guards refuse them",
+  "days": "B2* is forecast on exactly the decision days of the frame, so every model is compared on the same days; a frame day on which B2* is undefined is refused (not dropped)",
+  "reproduction": "(s3c-ann-net), B1, B1' and B2 are walked as scripts/s3c_ann_net_cmb_1356.py walks them; their pooled means in this run must agree with docs/research/s3c-ann-net-cmb-1356/result.json to 1e-9 or the study stops"
+ },
+ "primary": {
+  "metric": "grid CRPS (23 levels) averaged over leads h = 1..5",
+  "key_secondary": "upper-tail twCRPS (weight 1{z > 0 bp})",
+  "pressure_probability": "the Brier score of P(spread > +5 bp), read off the 23 quantiles as in docs/decisions/pressure-probability.md, reported beside",
+  "absolute_losses": "the mean score of every model is shown beside every skill ratio, pooled and in each split",
+  "calibration": "the coverage of the central 90% band (q5 to q95, closed), pooled and by split; a rate, reported as a mean and not tested"
+ },
+ "scoring": {
+  "scorer": "repo_model.scoring_protocol (#655), the development tier: no verdict, no registration",
+  "test": "scoring_protocol.paired_tests, the studentized stationary bootstrap (ruling 1), mean block 10 business days, 10,000 draws, seed 1420, two-sided 90% interval (the lower end is the one-sided 95% bound); the skill interval and the studentized interval on mean d are reported for every tested row, as #1360 reports them",
+  "comparisons": "the candidate against B1, B1', B2 and B2*; B2* against B2 (does the declared design differ from the one in force). d = score of the reference less score of the candidate, so positive favours the candidate of the row",
+  "splits": "pooled; by lead; by regime; by pressure-day type; by calendar day type of the target (as #1360); a group with fewer than the frame's minimum days is listed and not tested",
+  "fallback_firing": "for B2 and for B2*, on every scored (decision day, lead) cell: the target's type, the pool used and its rows, counted by type; the share of cells of each type on its own pool and on each fallback pool; the range of pool rows by type",
+  "reading": "a reading is taken from the mean-d bound (her ruling on #1009), as #1360"
+ },
+ "reading_rules": [
+  "A figure is a check on days that were already seen. Nothing here is a verdict, nothing is registered, and the candidate stays (s3c-ann-net).",
+  "A pooled figure is never read without the lead, regime and day-type splits beside it.",
+  "Where B2* beats the candidate in a split, the page says so plainly.",
+  "The choice of B2*'s lookback and minimum is Eleonora's, as a marked question with numbered options and a default that changes no claim."
+ ],
+ "variants": {
+  "sc_s3c_ann_net": "the H5 candidate (s3c-ann-net), re-walked at 18:00, unchanged",
+  "B1": "protocol benchmark B1, persistence, the deciding benchmark",
+  "B1_prime": "B1', calendar-aware persistence",
+  "B2": "protocol benchmark B2 as in force (one year, minimum pool 4); a reference, not a variant of this study",
+  "B2_star": "the one new arm: B2 with the day-type pools of the record in force, a two-year lookback, a minimum pool of 10 and the declared hard fallback chain; scored once"
+ },
+ "seed": 1420,
+ "limits": {
+  "last_day": "2026-09-03",
+  "candidate": "unchanged; no candidate arm, term or walk is edited",
+  "allow_list": "repo_model.one_step_guard.ONE_STEP_ALLOW_LIST is not changed",
+  "sources": "metadata/sources.json, docs/decisions/information-set.md, docs/decisions/scoring-protocol.md and docs/decisions/b2-thin-pool.md are not changed; the decision rule is not changed; docs/runs/ is not touched",
+  "register": "no gradient-boosted fitter is called; the declaration reads calendar columns at the target day on direct pairs and has a cleared row (metadata/provisional/cleared/b2_star_1420.json)"
+ },
+ "long_run": "cloud first. The candidate's walk and the benchmarks are the runs of #1356; B2* adds forecasts and no fit. Measured on a subset before the full run; if the full run is expected to exceed about two hours it goes to the Mac as a `needs-mac:` comment with the exact commands",
+ "amendments": []
+}

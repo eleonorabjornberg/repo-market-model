@@ -66,6 +66,10 @@ LOCKBOX_READS = {
 B1_YEARS = 2
 B2_YEARS = 1
 
+#: B2* (#1420, development tier; `metadata/b2_star_1420.json`): B2's day types and fallback chain with a two-year lookback and a minimum pool of 10.
+B2STAR_YEARS = 2
+B2STAR_POOL_MIN = 10
+
 ROOT = Path(__file__).resolve().parents[2]
 #: §4: "initially, the published v1 funding declaration". Its record, and the daily
 #: forecasts of it that `docs/runs/published_distribution_daily_h*.json` reproduce.
@@ -307,6 +311,32 @@ def b2_forecast_no_minimum(
         sample = sorted(panel[s].spread_bps for s in rows)
         out[h] = empirical_quantiles(sample)
     return out
+
+
+def b2_star_forecast(
+    panel: Sequence[DailyObservation],
+    decision_index: int,
+    *,
+    registry: Mapping[str, Mapping[str, object]],
+    decision_time: time,
+    splits: SplitDeclaration,
+    used: Optional[Dict[int, Tuple[str, int]]] = None,
+) -> Dict[int, List[float]]:
+    """B2* (#1420): the calendar climatology with its pools, lookback and fallback frozen in `metadata/b2_star_1420.json`.
+
+    The pools are the day types of the record in force (`turn_days`); the lookback is `B2STAR_YEARS` (two) calendar years before the decision
+    day, clipped at the start of the panel; a type with fewer than `B2STAR_POOL_MIN` (10) rows in it reads the next step of its chain
+    (`b2_pool.CHAINS`, hard fallback, no shrinkage), else every day of the window. At the same decision instant and under the same guards as B2
+    (`_anchor`, `_require_public`). `used`, when given, is filled with `{lead: (pool, rows)}`. A development-tier benchmark: whether it enters
+    the protocol's decision rule is Eleonora's, and B2 (`b2_forecast`) is unchanged.
+    """
+
+    from . import b2_pool  # b2_pool imports this module
+
+    return b2_pool.b2_fallback_forecast(
+        panel, decision_index, registry=registry, decision_time=decision_time, splits=splits,
+        pool_min=B2STAR_POOL_MIN, years=B2STAR_YEARS, used=used,
+    )
 
 
 def b4_forecast(

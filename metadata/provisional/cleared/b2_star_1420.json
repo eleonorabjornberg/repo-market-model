@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/b2_star_1420.json",
+  "script": "scripts/b2_star_1420.py",
+  "pairing": "direct",
+  "why": "benchmarks only (B2*, a calendar climatology with a lookback, a minimum pool and a fallback chain; the candidate is walked unchanged as #1356 walks it): no gradient-boosted fitter is called; every target's type is read from its own date and calendar columns, so the calendar is read at the target day"
+}
