@@ -1043,6 +1043,20 @@
    "no_page_because": "a guard and a draft decision text; no result page"
   },
   {
+   "id": "s3c_pd_bounded_1342",
+   "label": "(s3c-pd), bounded: the primary dealers' level under the weekly-carry bound, at 18:00",
+   "issue": 1342,
+   "pr": 1431,
+   "merged": "2026-11-04",
+   "role": "tried_not_adopted",
+   "parent": "s3c_pd",
+   "change": "No tuned setting: the variant carry_bounded_v2 of s3c_pd_1329, the same state term read with the 13-day weekly-carry bound and the decision-day check of #1341, at the 18:00 decision instant",
+   "outcome": "Grid CRPS against (s3c) d -0.021 [-0.047, -0.005] on the development window and d -0.062 [-0.149, -0.013] on the 2026 days, both losses; against (s3c-ann-net) also losses on both. The loss against (s3c) shows on the fresh-state days of the development window too, so it is not only the days the bound removed. Not adopted; development data, not a verdict",
+   "declaration": "metadata/s3c_pd_bounded_1342.json",
+   "page": "docs/research/s3c-pd-bounded-1342-result.md",
+   "log": "docs/research/log/2026-11-04-model-01342-H5-step3.md"
+  },
+  {
    "id": "ann_net_1800",
    "label": "(s3c-ann-net) re-made at the 18:00 decision instant, with B3 and the 16:00 side paired",
    "issue": 1314,
