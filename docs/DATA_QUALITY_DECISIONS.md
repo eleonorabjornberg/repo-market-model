@@ -792,7 +792,7 @@ change read the $1-7 mn trades as take-up. #727's gains attributed to #662 are r
 
 ## A Fed repo operation is no take-up only if it is a test trade
 
-*Draft for Eleonora's review (PR for #802); in force once she has merged it.* Decided by Eleonora on 15 October 2026 (ruling on #802, option (b); data meaning is hers, #735). It narrows the
+*In force since her merge of PR #826 on 17 October 2026.* Decided by Eleonora on 15 October 2026 (ruling on #802, option (b); data meaning is hers, #735). It narrows the
 $0.1 bn floor above, which also zeroed about 40 days of $8-97 mn take-up that carry no test note, several in the days before onsets.
 
 **The rule.** A Fed repo operation counts as no take-up only if it is a test trade:
@@ -815,7 +815,7 @@ borrow. If the Desk publishes a test note, the note should be read first.
 
 ## A Fed repo operation marked as a Desk test is no take-up
 
-*Draft for Eleonora's review (PR for #933); in force once she has merged it.* Decided by Eleonora on 19 October 2026 (ruling on #916; data meaning is hers, #735).
+*In force since her merge of PR #942 on 20 October 2026.* Decided by Eleonora on 19 October 2026 (ruling on #916; data meaning is hers, #735).
 
 **The rule.** A `Repo` operation is a Desk test (a small-value exercise) if any of these holds, and it is then dropped before the test-trade rule above is read:
 
@@ -833,9 +833,9 @@ It is judged per operation, in every era, by `ingest._is_small_value_exercise`. 
 
 **Consequence for earlier evidence.** `docs/pivot/test-trade-802-result.md` (which lists 2024-09-24 at $57 mn as take-up) and #908's `srf_total_accepted` counts stand as published records; the figures are published anew in `docs/pivot/desk-test-marks-933-result.md`.
 
-## DRAFT for Eleonora: the recurring ~$0.1 bn afternoon repo operation
+## The recurring ~$0.1 bn afternoon repo operation
 
-*Draft for Eleonora's review (PR for #872, updated by the PR for #938 to state option (C)); not in force until she has merged it. Her merge is her own GitHub action: a relayed ruling does not authorise it.* Ruling of 17 October 2026 on #860 (relayed): the recurring ~$0.1 bn calm-day operation is a test trade and is not take-up. Data meaning is hers (#735).
+*In force since her merge of PR #884 on 19 October 2026 (#872), with option (C) stated by her merge of PR #1107 on 22 October 2026 (#938). This heading read "DRAFT for Eleonora: ..." until #1446.* Ruling of 17 October 2026 on #860 (relayed): the recurring ~$0.1 bn calm-day operation is a test trade and is not take-up. Data meaning is hers (#735).
 
 **What the evidence shows** (`docs/pivot/repo-test-trades-872-result.md`). The tracked snapshots hold 40 Repo operations with $0.09 to $0.13 bn accepted. Five are Desk-announced morning small value exercises, each already dropped by its `note`. The other 35 (31 released at 13:30, 2 at 13:29, 2 at 08:15) carry no note and no public statement; 27 of 35 are one line at one rate. No field in the snapshot separates them from a real borrow of the same size except the amount and the time of day.
 

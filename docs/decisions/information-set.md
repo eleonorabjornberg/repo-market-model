@@ -3,8 +3,8 @@
 **Status: decided and implemented** (#27; the guards are `repo_model.asof`). Every record scored
 under the previous rule was re-scored or archived.
 
-> **Proposed in #267, for Eleonora to review:** the corrected wording of rule 1 below (the H.4.1
-> read lag). A decision is in force only once she merges it.
+> **In force (#267):** the corrected wording of rule 1 below (the H.4.1 read lag), since her merge of PR #296 on
+> 6 October 2026.
 >
 > **In force (#541, #1299):** the wording of rule 1's H.4.1 sentence and of rule 2's Treasury-settlement
 > bullet records her ruling of 10 October 2026 (relayed on #541): a settlement is dated from the auction
@@ -19,18 +19,17 @@ under the previous rule was re-scored or archived.
 > the panel day before a settlement, days = 1), so every published record and the live record read a settlement at
 > h = 1 only, where the announcement dating gives the same column. Only the development arms of the H5 candidate
 > (`repo_model.settlement_dating`, `repo_model.s3c_announced`) read the announcement dating at h = 2 to 5.
-> **Proposed in #1327, for Eleonora to review:** this paragraph and the "no clock time" sentence in rule 2 below
-> are corrected to #1301's check (`metadata/announcement_release_times_1301.json`). It is **not in force** until she
-> merges it, with her own `GO #1327`.
+> **In force (#1327):** this paragraph and the "no clock time" sentence in rule 2 below are corrected to #1301's
+> check (`metadata/announcement_release_times_1301.json`), since her merge of PR #1330 on 1 November 2026, with her own
+> `GO #1327`.
 >
-> **Proposed in #586, for Eleonora to review:** the amendment at the end of this record, which records her
-> ruling of 11 October 2026 on #571 (relayed by the orchestrating session): the reserve-scarcity state reads each
-> of its legs at its own latest public row. It was drafted by the pull request that closes #586 and is **not in
-> force** until she merges it.
+> **In force (#586):** the amendment at the end of this record, which records her ruling of 11 October 2026 on
+> #571 (relayed by the orchestrating session): the reserve-scarcity state reads each of its legs at its own latest
+> public row. It is in force since her merge of PR #599 on 12 October 2026.
 
-> **Proposed in #1312, for Eleonora to review:** the amendment at the end of this record, "The decision instant is 18:00 New
-> York time", which records her ruling of 29 October 2026 (chat, relayed on #1312; ledger item 77). It was drafted by the
-> pull request that closes #1312 and is **not in force** until she has merged it, with her own `GO #1312`.
+> **In force (#1312):** the amendment at the end of this record, "The decision instant is 18:00 New York time", which
+> records her ruling of 29 October 2026 (chat, relayed on #1312; ledger item 77). It is in force since her merge of PR
+> #1315 on 30 October 2026, with her own `GO #1312`.
 
 ## The rule
 
@@ -147,7 +146,7 @@ are in `docs/pivot/backfilled-history-result.md`.
 
 ## Amendment: the scarcity state reads each leg at its own latest public row (#571, #586)
 
-**Proposed, for Eleonora to review. Not in force until she has merged it.** Eleonora ruled on 11 October 2026
+**In force since her merge of PR #599 on 12 October 2026.** Eleonora ruled on 11 October 2026
 (#571; the ruling was relayed by the orchestrating session) that the reserve-scarcity state
 (`repo_model.scarcity`, #115) may be assembled from more than one row.
 
@@ -174,9 +173,8 @@ are in `docs/pivot/backfilled-history-result.md`.
 
 ## Amendment: the decision instant is 18:00 New York time (#1312)
 
-**Drafted by the pull request that closes #1312, for Eleonora to review.** In force only once she has merged it, and the pull
-request is binding only with her own `GO #1312` on that issue (a comment by her, not through an app), cited in
-`metadata/owner_attestations.json`. It records her ruling of 29 October 2026 (chat, relayed; ledger item 77): **move the
+**In force since her merge of PR #1315 on 30 October 2026, with her own `GO #1312`** (cited in
+`metadata/owner_attestations.json`). It records her ruling of 29 October 2026 (chat, relayed; ledger item 77): **move the
 decision instant from 16:00 to 18:00 America/New_York.** This is step 1 of 3. Step 2 (the new live record and its pin) and step 3
 (the re-runs of the results that matter) are separate directives; this pull request does neither.
 
