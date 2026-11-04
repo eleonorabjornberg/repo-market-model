@@ -68,8 +68,7 @@ build and not of the registry.
 
 ## Weekly state terms
 
-*Drafted for Eleonora's review on the pull request of #1329, from her ruling of 30 October 2026 on finding #1303. It is in force once she
-merges it.*
+*From her ruling of 30 October 2026 on finding #1303. In force since her merge of PR #1332 on 31 October 2026, with her own `GO #1329`.*
 
 The bound applies to a weekly series wherever it is read, not only to a panel column. A weekly state term read by any model arm (a level or a
 z-score of one that a forecast reads at its decision instant, as `repo_model.s3c_pd` reads the primary dealers' financing level) carries its last
@@ -80,8 +79,7 @@ published record of #1296, made before this paragraph and with no bound, stands 
 
 ### The bound also runs from the decision day
 
-*Drafted for Eleonora's review on the pull request of #1341, from her ruling of 1 November 2026 on #1339, option (a). It is in force once she
-merges it.*
+*From her ruling of 1 November 2026 on #1339, option (a). In force since her merge of PR #1351 on 4 November 2026, with her own `GO #1341`.*
 
 The bound above is measured from the latest public week, so a snapshot that stops short of the decision day would carry its last print indefinitely:
 the latest public week is then the last week there is, however old. A second check is measured from the decision day. A weekly state is unknown once
