@@ -261,7 +261,6 @@
  "test_use_limitation": 0.1,
  "test_validation_report": 0.1,
  "test_visual": 369.8,
- "test_vote_2_of_3": 0.1,
  "test_weighted_miss": 13.7,
  "test_whole_bp_labels": 0.1,
  "test_window_onset": 0.1,
