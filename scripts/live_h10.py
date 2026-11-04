@@ -12,7 +12,11 @@ Each business day, after the day's H5 record is written, `run` does this on the 
 2. attributes every onset from the registration date on that has no row yet, with
    `repo_liquidity.h10_live.attribute_onset(rows, rule, onset, report)` and `h10_apply.real_rule()`, reporting it on the
    last panel day, so an onset is reported as soon as it is flagged (plan Q7: within `report_days` panel days). An onset
-   whose window closed without a row stays in the record as a "not attributable" miss, in the denominator;
+   whose window closed without a row stays in the record as a "not attributable" miss, in the denominator (the reason
+   says the job saw it late, written only when its first sight of the onset was after the window); an onset the
+   registered method refused on every day until its window closed becomes final with the status "refused at window
+   close", keeps its refusal (type and message) and a reason that says the method refused it, and is a miss as well
+   (finding #1386);
 3. checks every row against the registered values in `metadata/live_h10_pin.json` (the method digest, the parent
    commit, no parent override, a clean parent). A row that differs is refused: nothing is written and the job fails;
 4. writes `h10/<day>.json`, labelled prospective, to the add-only `live-h10` branch. An onset the registered method
@@ -54,6 +58,7 @@ H10_DIR = "h10"
 LABEL = "prospective"
 HYPOTHESIS = "H10"
 PENDING = "pending"
+REFUSED_AT_CLOSE = "refused at window close"
 
 BOT_NAME = "github-actions[bot]"
 BOT_EMAIL = "41898282+github-actions[bot]@users.noreply.github.com"
@@ -159,6 +164,31 @@ def _reported_onsets(out_dir: Path) -> set:
     return reported
 
 
+def _pending_rows(out_dir: Path) -> dict:
+    """The latest pending row of each onset the registered method has refused so far (days read in order)."""
+
+    pending = {}
+    for path in sorted((Path(out_dir) / H10_DIR).glob("*.json")):
+        for row in json.loads(path.read_text(encoding="utf-8")).get("rows", []):
+            if row.get("status") == PENDING:
+                pending[row["onset"]] = row
+    return pending
+
+
+def _refused_at_close_row(onset: date, report: date, pin: dict, last_pending: dict) -> dict:
+    """The final row of an onset refused on every day until its window closed (finding #1386, her ruling of
+    2 November 2026): it keeps the refusal and a reason that says the registered method refused it. It is a miss in
+    the denominator, as any onset whose window closed without an attribution."""
+
+    return {
+        "onset": onset.isoformat(), "report_day": report.isoformat(), "status": REFUSED_AT_CLOSE,
+        "reason": f"the registered method refused this onset on every day its report window was open "
+                  f"({pin['report_days']} panel days); the window has closed and it is not attributed (#1324, #1386)",
+        "refusal": dict(last_pending["refusal"]),
+        "under_bar": False, "beats_null": False, "counted": False,
+    }
+
+
 def _miss_row(onset: date, report: date, pin: dict) -> dict:
     return {
         "onset": onset.isoformat(), "report_day": report.isoformat(), "status": "not attributable",
@@ -197,13 +227,17 @@ def run_day(day: date, panel: Path, out_dir: Path, backend: Backend, pin: dict) 
     registered_on = date.fromisoformat(pin["registered_on"])
     in_scope = [d for d in backend.onset_days(rows) if d >= registered_on]
     reported = _reported_onsets(out_dir)
+    refused = _pending_rows(out_dir)
     todo = [d for d in in_scope if d.isoformat() not in reported]
 
     made: List[dict] = []
     for onset in todo:
         deadline = report_deadline(dates, onset, pin["report_days"])
         if dates.index(report) - dates.index(onset) > pin["report_days"]:
-            row = _miss_row(onset, report, pin)
+            if onset.isoformat() in refused:
+                row = _refused_at_close_row(onset, report, pin, refused[onset.isoformat()])
+            else:
+                row = _miss_row(onset, report, pin)
         else:
             try:
                 with backend.rule() as rule:
