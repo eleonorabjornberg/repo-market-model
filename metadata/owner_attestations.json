@@ -188,6 +188,20 @@
       "comment_id": 6616568667,
       "phrase": "GO #1341",
       "what": "the weekly-carry decision record: the 13-day bound also runs from the decision day (#1339 option (a), #1335 option (a)); her 1 November 2026 rulings (ledger items 91 and 92)"
+    },
+    {
+      "kind": "live-pin",
+      "issue": 1369,
+      "comment_id": 6622415551,
+      "phrase": "GO #1369",
+      "what": "move the live pin to the 18:00 code (metadata/live_pin.json, live-pin v4); her GO of 4 November 2026 (#1369)"
+    },
+    {
+      "kind": "decisions",
+      "issue": 1369,
+      "comment_id": 6622416649,
+      "phrase": "GO #1369",
+      "what": "the live-pin v4 bump decision record (docs/decisions/live-pin-v4-bump.md); her GO of 4 November 2026 (#1369)"
     }
   ],
   "rule": "docs/decisions/drafts/owner-attestation.md",
