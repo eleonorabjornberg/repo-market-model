@@ -209,6 +209,13 @@
       "comment_id": 6636726650,
       "phrase": "GO #1438",
       "what": "replace the daily-decision-message skill with decision-cards (.claude/skills/decision-cards, with report cards and Mac pastes on the page), and point the 5 pm routine file, its README, the directive-orchestrator skill and CLAUDE.md's skill list at it (PR #1439)"
+    },
+    {
+      "kind": "decisions",
+      "issue": 1446,
+      "comment_id": 6640804851,
+      "phrase": "GO #1446",
+      "what": "mark nine merged amendments in force in information-set.md, weekly-carry.md and DATA_QUALITY_DECISIONS.md, status lines only (PR #1447)"
     }
   ],
   "rule": "docs/decisions/drafts/owner-attestation.md",
