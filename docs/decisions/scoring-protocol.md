@@ -301,6 +301,29 @@ needs walks and runs on her Mac under the long-run rule if she wants it. The siz
 rule is unmeasured until the follow-up runs.
 
 
+## Draft amendment 5: near-identical targets are one Holm member (#1445)
+
+**Status: a fifth draft, by the pull request that closes #1445, for Eleonora to review and merge. Nothing here is in force
+until she merges it** (§13: this record is merged by her, not under delegated review). It records her ruling of 21 October 2026
+on #971, relayed by the orchestrating session; merging it is her own GitHub action, and a relayed ruling does not authorise it.
+Until she merges it, §8 stands as written. It changes no score, no critical value and no verdict.
+
+**The sentence it would add to §8, after "H9 applies Holm across its targets."**
+
+> Near-identical targets count as one member of H9's Holm family. Two targets are near-identical when the pooled rank
+> correlation of their levels, over all scored development days, has magnitude 0.8 or more; a target that is near-identical to a
+> family member is pooled with it and adds no test. The family and any pooling are stated in the registration.
+
+**Why.** §8 says only "Holm across targets". TGCR − IORB and BGCR − IORB are not in the present family, so nothing is pooled
+today: step 2 (#706, `metadata/richer_targets_706.json`) dropped them by its declared rule (rank correlation 0.8 or more with
+SOFR − IORB) before the family {`bgcr_dispersion_bps`, `on_rrp_change_bn`, `sofr_dispersion_bps`} was formed. The rule is for
+any future target. The working text is in `docs/research/hypotheses/H9.md`.
+
+**What she decides.** Whether to merge the sentence as drafted. Two questions it leaves to her, with defaults: whether the 0.8
+cut applies between family members as well (BGCR dispersion against SOFR dispersion is 0.84 on level Spearman; default: no,
+they stay two members), and how a pooled group yields one p-value for Holm (default: the member ranked highest under step 2's
+rule represents it).
+
 ---
 
 **Draft scoring protocol, v1 (orchestrating session, 12 Oct 2026, for Eleonora's decision). Designed from first principles; current rules are kept only where they survive scrutiny.**
