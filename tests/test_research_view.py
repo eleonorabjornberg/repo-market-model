@@ -413,6 +413,20 @@ class CandidateStandings(unittest.TestCase):
             (Path(tmp) / rel).parent.mkdir(parents=True, exist_ok=True)
             (Path(tmp) / rel).write_bytes((ROOT / rel).read_bytes())
 
+    def test_the_page_says_post_2020_intervals_are_about_twice_too_narrow_under_the_standings(self):
+        """#1458 (her ruling of 4 November 2026 on #1112): one plain sentence under the standings, with a link.
+
+        Recorded mutation: in `scripts/research_view.py`, `candidate_standings_html`, delete the
+        `INTERVAL_CAVEAT` paragraph from the returned string; this test fails with AssertionError (the sentence is
+        not on the page).
+        """
+        block = self.block()
+        self.assertIn(research_view.esc(research_view.INTERVAL_CAVEAT_TEXT), block)
+        self.assertGreater(block.find(research_view.esc(research_view.INTERVAL_CAVEAT_TEXT)), block.rfind("</table>"),
+                           "the sentence is not under the standings")
+        self.assertIn(research_view.BLOB + research_view.INTERVAL_CAVEAT_PAGE, block)
+        self.assertTrue((ROOT / research_view.INTERVAL_CAVEAT_PAGE).is_file())
+
     def test_the_record_names_the_ruled_candidate_and_its_evidence(self):
         rec = self.record()
         self.assertEqual(rec["scores"]["model"], "sc_s3_robust")
@@ -531,7 +545,7 @@ class CandidateStandings(unittest.TestCase):
                 walk(group)
         text = re.sub(r"<code>.*?</code>|<a [^>]*>|<th scope=\"row\">.*?</th>", " ", self.block())
         text = re.sub(r"<[^>]+>", " ", text)
-        text = re.sub(r"#\d+|\d{4}-\d{2}(?:-\d{2})?|B1(?:&prime;)?|B2|mad20|f0\.5|v1|(?<![\d.])\d+%", " ", text)
+        text = re.sub(r"#\d+|\d{4}-\d{2}(?:-\d{2})?|B1(?:&prime;)?|B2|mad20|f0\.5|v1|[Pp]ost-2020|(?<![\d.])\d+%", " ", text)
         text = text.replace("\u2212", "-").replace("&minus;", "-")
         found = re.findall(r"(?<![\w.])[+-]?\d+(?:\.\d+)?", text)
         self.assertTrue(found)
