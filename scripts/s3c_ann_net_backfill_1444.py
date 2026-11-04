@@ -120,6 +120,8 @@ READ_FIELDS = ("sofr", "iorb", "quarter_end", "tax_date", "days_to_month_end", "
 H2_2018 = (date(2018, 7, 1), date(2018, 12, 31))
 NAMED_TARGETS = (date(2018, 9, 28), date(2018, 12, 31))
 HEADLINE_REGIME = "2018-19"
+#: Two scores that differ by no more than this on every day of a group are one score (#1314's tolerance): a difference of rounding-level size is not a reading.
+TOLERANCE = 1e-9
 
 
 # -- the guards ----------------------------------------------------------------------------------------------------------
@@ -457,6 +459,12 @@ def reading(row: Optional[Mapping[str, object]]) -> str:
 _STATE: Dict = {}
 
 
+def alike(a: Mapping[date, float], b: Mapping[date, float], days: Sequence[date], tolerance: float = TOLERANCE) -> bool:
+    """Whether two daily score series agree within `tolerance` on every one of `days`."""
+
+    return all(abs(a[d] - b[d]) <= tolerance for d in days)
+
+
 def _task(job):
     split, label, grain, metric, members = job
     series = _STATE["series"][(grain, metric)]
@@ -466,7 +474,7 @@ def _task(job):
     for name, (reference, candidate) in {
         "arm_vs_control": (CONTROL, ARM), "arm_vs_B1star": (REFERENCE, ARM), "control_vs_B1star": (REFERENCE, CONTROL),
     }.items():
-        if all(series[candidate][d] == series[reference][d] for d in days):
+        if alike(series[candidate], series[reference], days):
             out[name] = {"identical": True, "days": len(days)}
             continue
         row = s761.run_pairs({reference: series[reference]}, series[candidate], days, seed=SEED, draws=_STATE["draws"], mean_d_fallback=True)[reference]
@@ -494,8 +502,11 @@ def mean_move(series_arm: Mapping[date, float], series_control: Mapping[date, fl
 # -- one window ----------------------------------------------------------------------------------------------------------
 
 
-def estimate_record(est: sc.StateEstimate) -> dict:
-    return {"terms": list(est.terms), "flagged": dict(est.flagged), "effect": dict(est.effect), "pairs": est.pairs}
+def estimate_record(est: sc.StateEstimate, prefix: int = 0) -> dict:
+    """What a refit kept for a lead: the terms that entered, the flagged-pair counts, the effects (scale units), the pairs, and how many of them have a back-filled target."""
+
+    return {"terms": list(est.terms), "flagged": dict(est.flagged), "effect": dict(est.effect), "pairs": est.pairs,
+            "back_filled_pairs": sum(1 for t in est.targets if t < prefix)}
 
 
 def refit_of(day: date, refit_days: Sequence[date]) -> date:
@@ -597,10 +608,11 @@ def run_window(window: str, ctx: dict, args) -> dict:
                           "quarter_end_flagged": est.flagged.get("quarter_end")}
             named.append(row)
     refits = {
-        r.isoformat(): {str(h): {"control": estimate_record(control_walk.estimates[r][NET_ARM.name][h]), "arm": estimate_record(walked.estimates[r][h])}
+        r.isoformat(): {str(h): {"control": estimate_record(control_walk.estimates[r][NET_ARM.name][h]), "arm": estimate_record(walked.estimates[r][h], ctx["terms"].prefix)}
                         for h in LEADS}
         for r in refit_days
     }
+    with_back_filled = [r for r in refit_days if any(walked.estimates[r][h].targets and min(walked.estimates[r][h].targets) < ctx["terms"].prefix for h in LEADS)]
     first_entry = {
         str(h): {name: next((r.isoformat() for r in refit_days if "quarter_end" in (control_walk.estimates[r][NET_ARM.name][h] if name == "control"
                                                                                       else walked.estimates[r][h]).terms), None)
@@ -610,7 +622,8 @@ def run_window(window: str, ctx: dict, args) -> dict:
         "notes": notes, "days": len(frame.days), "first_scored": frame.days[0].isoformat(), "last_scored": frame.days[-1].isoformat(),
         "first_forecast_day": first.isoformat(), "skipped_by_arm": [d.isoformat() for d in walked.skipped],
         "refits": {"control": len(control_walk.fits), "arm": len(walked.estimates), "days": [r.isoformat() for r in refit_days]},
-        "refit_terms": refits, "first_quarter_end_refit": first_entry, "coverage_90": coverage, "named_quarter_ends": named,
+        "refit_terms": refits, "first_quarter_end_refit": first_entry,
+        "refits_with_back_filled_pairs": {"count": len(with_back_filled), "last": with_back_filled[-1].isoformat() if with_back_filled else None}, "coverage_90": coverage, "named_quarter_ends": named,
         "groups": result_groups, "skipped_groups": skipped,
         "pressure_day_type_counts": {x: sum(1 for t in pressure.values() if t == x) for x in sorted(set(pressure.values()))},
     }
@@ -805,12 +818,17 @@ def render(r: dict) -> str:
         for h, row in w["first_quarter_end_refit"].items():
             lines.append(f"| {h} | {row['control'] or 'never'} | {row['arm'] or 'never'} |")
         lines.append("")
+        held = w["refits_with_back_filled_pairs"]
+        lines += [f"The back-filled rows are in the training frame of {held['count']} of the arm's {w['refits']['arm']} refits, the last on {held['last']}: the model trains on "
+                  "a trailing two years (`spread_mean_reversion.TRAIN_YEARS`), so a refit from about April 2020 on holds no back-filled row and the arm's forecast is the "
+                  "control's up to the two-stage arithmetic (differences of rounding size are read as identical, tolerance 1e-9).", ""]
     lines += [
         "## What this does and does not show",
         "",
         "It is a scratch measurement on development data. It does not adopt the back-fill, change the frozen candidate, or settle whether IORB on back-filled rows "
         "stays admitted beyond training history. The 2014-18 floor period was calm with a negative spread, so its residuals can make the 2018-19 bands too narrow; "
-        "the coverage table is the check. The result goes to the validation report's known limits. Skipped groups, with their sizes, are in `result.json`.",
+        "the coverage table is the check. The result goes to the validation report's known limits. Skipped groups, with their sizes, are in `result.json`. The intervals of the small day-type groups (quarter-end, tax date) can "
+        "run very far above the point value: the studentized interval of #1288's method divides by a standard error that a resample of a few days can make near zero.",
         "",
         "Every figure on this page is in [`result.json`](s3c-ann-net-backfill-1444/result.json).",
         "",

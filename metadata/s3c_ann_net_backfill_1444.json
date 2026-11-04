@@ -51,5 +51,8 @@
  "variants": {
   "(s3c-ann-net)": "control, unchanged from #1288 / #1319 / #1314: no new fit",
   "(s3c-ann-net+bf)": "scored arm: (s3c-ann-net) with the admitted 2014-18 back-filled history in every training frame, the settlement and market-holiday terms not fitted on back-filled rows"
- }
+ },
+ "amendments": [
+  "Found after the first full run, in reading its page and before the second run (no figure of the first run changes; the same seeds and draws are used): the model trains on a trailing two years (spread_mean_reversion.TRAIN_YEARS), so a refit from about April 2020 on holds no back-filled row, and the 2026 window's two arms differ by about 1e-11 bp (the two-stage arithmetic against the single fit). The first run read that rounding-level difference as a `gain` at lead 1 of the 2026 window because it compared scores for exact equality. Two scores that agree within 1e-9 on every day of a group (#1314's tolerance) are now one score (`identical`), and the page and result.json say in how many refits the back-filled rows were in the training frame. A reading, not a fit, changed."
+ ]
 }

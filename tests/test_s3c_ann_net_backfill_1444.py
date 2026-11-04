@@ -265,6 +265,16 @@ class ConsistencyTests(unittest.TestCase):
             script.require_same_published(published, published, ("sofr",))
 
 
+class AlikeTests(unittest.TestCase):
+    def test_scores_that_differ_by_rounding_are_alike(self):
+        days = [date(2026, 1, 2), date(2026, 1, 5)]
+        self.assertTrue(script.alike({days[0]: 1.0, days[1]: 2.0}, {days[0]: 1.0 + 1e-12, days[1]: 2.0 - 1e-12}, days))
+
+    def test_scores_that_differ_are_not_alike(self):
+        days = [date(2026, 1, 2), date(2026, 1, 5)]
+        self.assertFalse(script.alike({days[0]: 1.0, days[1]: 2.0}, {days[0]: 1.0, days[1]: 2.001}, days))
+
+
 class ReadingTests(unittest.TestCase):
     def test_a_gain_is_an_interval_wholly_on_the_side_of_the_arm(self):
         self.assertEqual(script.reading({"difference": 0.1, "difference_interval": [0.02, 0.2]}), "gain")
