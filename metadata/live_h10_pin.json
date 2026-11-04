@@ -1,10 +1,10 @@
 {
-  "liquidity_commit": "783848316995d4f2d425abea0c6bd0be3e157c26",
-  "method_digest": "43bf1303164c3c085b33ccf762268b721a5bddc9d7a4dcf68524c67ea33d15bb",
-  "parent_commit": "08ff67e27bc3d7e357491cf8e1da59793702b3fb",
+  "liquidity_commit": "b4737219c8d443041bbc406cc97dfb584cbbcc2d",
+  "method_digest": "54b5f151c757b1cff5d3ebe6e8ce202bd41cafc4d8104effb00f3da4617c8770",
+  "parent_commit": "2032de4a7d7802289bc5a78dfc02599752bc7c5c",
   "parent_panel_sha256": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
-  "registered_on": "2026-10-22",
-  "registration": "https://github.com/eleonorabjornberg/repo-market-liquidity/issues/23#issuecomment-6353434164",
+  "registered_on": "2026-11-03",
+  "registration": "https://github.com/eleonorabjornberg/repo-market-liquidity/issues/23#issuecomment-6618862828",
   "report_days": 10,
-  "version": 1
+  "version": 2
 }
