@@ -38,6 +38,9 @@
   "a window other than 15 October plus two market days",
   "any verdict under protocol v1"
  ],
+ "amendments": [
+  "Found after the first full run, in reading its output and before the second run (the same seeds and draws; no figure of the first run changes): the October-window targets of the years but 2019 and 2025 are 18 days in the development window, below the study's minimum group size (m1273 MIN_GROUP_DAYS), so that group is not tested, and the first run's label_reading said 'undecided' for a missing row. A missing row is now read 'not read', and the page says so. The minimum is not changed: it is a threshold of the protocol's tooling and not this study's to move."
+ ],
  "variants": {
   "(s3c-ann-net)": "control, unchanged from #1288 / #1319 / #1314: no new fit",
   "(s3c-ann-net+oct)": "scored arm: (s3c-ann-net) with the 15 October window added to its tax_date term"

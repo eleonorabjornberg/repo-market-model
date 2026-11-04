@@ -191,9 +191,12 @@ def reading(row: Optional[Mapping[str, object]]) -> str:
 
 def label_reading(rows: Mapping[str, Optional[Mapping[str, object]]]) -> str:
     """The declared reading of the label from the grid CRPS and the upper-tail twCRPS rows (control less arm) of a group that leaves out the motivating years:
-    `supported` (a gain on one and no cost on the other), `not supported` (a cost on either, or an identical score), else `undecided`."""
+    `supported` (a gain on one and no cost on the other), `not supported` (a cost on either, or an identical score), `not read` where a row is missing (the group is
+    below the study's minimum), else `undecided`."""
 
     a, b = reading(rows.get("grid_crps")), reading(rows.get("upper_tail_twcrps"))
+    if "not read" in (a, b):
+        return "not read (the group is below the minimum size, or an interval is undefined)"
     if "cost" in (a, b) or (a == "identical" and b == "identical"):
         return "not supported"
     if "gain" in (a, b):
