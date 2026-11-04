@@ -22,9 +22,10 @@ they replace B1 and B1' is Eleonora's.
 **B1'*-cap and B2*-cap (#1421, development tier; her ruling of 3 November 2026).** The candidate is capped at the Standing Repo Facility line on
 target days at full allotment, so the confirmatory baselines carry the same cap: `capped_forecast` clips each quantile of a baseline at the line the
 candidate reads (`s3c_candidate.cap_line`: the register entries public at the decision instant, margin 0 bp) and reads the probabilities under the same
-rule (b) (`capped_exceedance`, `capped_law` rule `open_tail`). `b1_calendar_anchor_capped_forecast` is B1'*-cap. B2* is #1420's and is not on main yet:
-`b2_capped_forecast` caps B2 as it stands, the stand-in the size-and-power study (#1399) also used, and wraps B2* when that merges. The uncapped
-versions are reported beside the capped ones; nothing here changes B1, B2 or B3.
+rule (b) (`capped_exceedance`, `capped_law` rule `open_tail`). `b1_calendar_anchor_capped_forecast` is B1'*-cap and `b2_star_capped_forecast` is
+B2*-cap (#1440, the finding of #1434): `b2_star_forecast` clipped at the same line. #1422 had capped plain B2 in B2*'s place before B2* was on main; that
+stand-in is gone, and the re-run is `docs/research/capped-baselines-b2star-1434-result.md`. The uncapped versions are reported beside the capped ones;
+nothing here changes B1, B2 or B3.
 
 **What is read, and when.** The decision for lead h on decision row `t` is the forecast of row
 `t + h` under `InformationRule(horizon=h)`, so every lead of one decision day shares one
@@ -447,7 +448,7 @@ def b1_calendar_anchor_capped_forecast(
     return capped_forecast(raw, panel, decision_index, register=register, decision_time=decision_time)
 
 
-def b2_capped_forecast(
+def b2_star_capped_forecast(
     panel: Sequence[DailyObservation],
     decision_index: int,
     *,
@@ -456,9 +457,9 @@ def b2_capped_forecast(
     splits: SplitDeclaration,
     register,
 ) -> Dict[int, List[float]]:
-    """B2*-cap (#1421), with B2 standing in for B2* until #1420 merges: `b2_forecast` clipped at the SRF line of the candidate, `capped_forecast`."""
+    """B2*-cap (#1440): B2* (`b2_star_forecast`, #1420) clipped at the SRF line of the candidate, `capped_forecast`, the rule of B1'*-cap."""
 
-    raw = b2_forecast(panel, decision_index, registry=registry, decision_time=decision_time, splits=splits)
+    raw = b2_star_forecast(panel, decision_index, registry=registry, decision_time=decision_time, splits=splits)
     return capped_forecast(raw, panel, decision_index, register=register, decision_time=decision_time)
 
 

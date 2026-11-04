@@ -1,0 +1,11 @@
+{
+ "description": "Business days with no in-window record (16:00 to 18:30 ET) from the availability poll (#1343, #1441, finding #1435). A day with no in-window poll is not a day the source did not post; the result page counts in-window days, catch-up days and missed days separately. One entry per ET date: the cron slots that fell inside the window after the workflow was on main, the scheduled runs that started on that ET date, and the reason. Added by a pull request after the run history shows the loss; `python3 scripts/availability_poll.py missing` fails on a day that is lost and not listed, and on a listed day that has an in-window file. Nothing is back-filled.",
+ "days": [
+  {
+   "et_date": "2026-11-03",
+   "slots_scheduled": 7,
+   "runs_started": 1,
+   "reason": "The workflow merged at 17:20 ET (22:20 UTC), so the slots from 17:30 to 18:30 ET were the only ones inside the window. The single scheduled run started at 21:32:55 ET (02:32:55 UTC on 4 November), 3 hours after the window closed; it wrote nothing (finding #1435)."
+  }
+ ]
+}
