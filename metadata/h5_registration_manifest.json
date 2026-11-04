@@ -1320,6 +1320,7 @@
   "metadata/settlement_announcement_dating.json": "the dating of the auction announcements (#1288) that the candidate's sizing reads; a data declaration, not an arm",
   "metadata/s3c_uncapped_1361.json": "#1361's development study of the candidate without the Standing Repo Facility cap, declared before any score; a secondary result reported beside the candidate, which does not change, not an arm on the way to it",
   "metadata/capped_baselines_1421.json": "#1421's development study of the simple baselines with the candidate's SRF cap (B1'*-cap, B2-cap as the stand-in for B2*-cap), scored against the candidate; it changes no candidate and adds no arm on the way to it, and the capped baselines are the confirmatory benchmarks by her ruling of 3 November 2026",
+  "metadata/s3c_ann_net_backfill_1444.json": "#1444's scratch measurement of the candidate trained on the admitted 2014-18 back-filled history (H4 step 3, her ruling of 26 October 2026), declared before any score; a scratch reading that adopts nothing and leaves the candidate unchanged (information-set.md, back-fill amendment, item 3), not an arm on the way to it",
   "metadata/sources.json": "the source registry; it lists the inputs the candidate reads, not an arm"
  }
 }
