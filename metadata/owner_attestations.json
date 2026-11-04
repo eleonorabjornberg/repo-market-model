@@ -219,6 +219,13 @@
     },
     {
       "kind": "decisions",
+      "issue": 1393,
+      "comment_id": 6640870433,
+      "phrase": "GO #1393",
+      "what": "the H5 confirmation-design decision record, docs/decisions/h5-confirmation-design.md (PR #1394)"
+    },
+    {
+      "kind": "decisions",
       "issue": 1445,
       "comment_id": 6640905697,
       "phrase": "GO #1445",
