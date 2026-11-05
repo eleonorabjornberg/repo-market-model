@@ -173,7 +173,7 @@ class CommittedRecordTests(unittest.TestCase):
 
     def test_the_tracked_page_is_what_the_script_renders_from_the_tracked_record(self):
         record = json.loads(self.RECORD.read_text(encoding="utf-8"))
-        self.assertEqual(self.PAGE.read_text(encoding="utf-8"), script.page_text(record))
+        self.assertEqual(self.PAGE.read_text(encoding="utf-8"), script.page_text(record, json.loads(script.DOMAIN_RECORD.read_text(encoding="utf-8"))))
 
     def test_the_record_is_the_declared_setup_of_1196_on_the_same_panel(self):
         record = json.loads(self.RECORD.read_text(encoding="utf-8"))
