@@ -272,10 +272,11 @@ label are open and are updated when #1223's measurement lands and she rules on #
   - *Evidence.* #1444, no page yet: the scratch measurement of #1223 is queued, so there is no page yet
   - *Evidence.* #1319, `docs/research/s3c-ann-net-diagnosis-1319-result.md`: net against flag in 2018-19
   - *Evidence.* #1363, `docs/research/candidate-calibration-1363-result.md`: the 50 per cent band by regime
-- **The 15 October tax-date label.** The candidate reads no 15 October tax-date label. The gain that argued for it was measured on the days that prompted the label and its mean-d interval covers zero; the label was not adopted for now, and was deferred to be tested again with a model that reads calendar days at the target day. Tax-date target days are among the day types whose central bands are under-covered.
-  - *Status.* Open: her ruling on #1004 is pending; this report states the candidate without the label and changes when she rules.
+- **The 15 October tax-date label.** The candidate reads no 15 October tax-date label. The gain that argued for it was measured on the days that prompted the label and its mean-d interval covers zero; the label was not adopted for now, and was deferred to be tested again with a model that reads calendar days at the target day. Tax-date target days are among the day types whose central bands are under-covered. The label was then tested as a development arm of the candidate, read at the target day on direct pairs (#1455). The reading that leaves out the days that prompted the label cannot be taken: its October-window target days are fewer than the study's minimum group size, so it is not tested, and the 2026 development days hold no October-window day. The arm changes the forecast on every scored day through the fitted term, not only on the October windows, so its pooled move is not a move on the October windows.
+  - *Status.* Tested and not adopted: the frozen candidate reads no label, and any adoption is hers (her ruling of 4 November 2026 on #1004, option (a)). The limit stays open: the label is neither supported nor refuted on days that did not prompt it.
   - *Evidence.* #1004, `docs/research/tax-date-october-965-mean-d-1021-result.md`: the label's gain read on the mean-d bound
   - *Evidence.* #965, `docs/research/tax-date-october-965-result.md`: the measurement that proposed the label
+  - *Evidence.* #1455, `docs/research/s3c-ann-net-october-1455-result.md`: the label as a development arm of the candidate, read at the target day
   - *Evidence.* #1363, `docs/research/candidate-calibration-1363-result.md`: coverage on tax dates
 
 <!-- end generated: validation-known-limits -->
