@@ -267,11 +267,12 @@ class TestTradeTests(unittest.TestCase):
         series = fed_liquidity.series_from_snapshots(SNAPSHOTS, datetime(2026, 9, 8, 21, 31, 42, tzinfo=ZoneInfo("UTC")))
         accepted = series["repo_accepted"]
         for day, expected in (
-            (date(2024, 9, 23), 0.015),
             (date(2024, 12, 23), 0.050),
             (date(2025, 9, 10), 0.009),
-            (date(2025, 9, 22), 0.030),
-            (date(2025, 10, 6), 0.020),
+            # equal splits reclassified as Desk tests by the split rule (#1456): the day keeps a row at zero
+            (date(2024, 9, 23), 0.0),
+            (date(2025, 9, 22), 0.0),
+            (date(2025, 10, 6), 0.0),
         ):
             self.assertAlmostEqual(accepted[day], expected, msg=str(day))
         # 2024-09-24 was an unlabelled $57 mn test (limit $75 mn): the day keeps its row, at zero (#933)
@@ -573,6 +574,113 @@ class TestAfternoonPatternRule(unittest.TestCase):
         self.assertNotIn("RP 071526 25", found)
         self.assertIn("RP 022224 2", found)
         self.assertIn("RP 070825 3", found)
+
+
+class TestSplitTestTradeRule(unittest.TestCase):
+    """#1456: a standing repo operation that accepted USD 35 million or less in total, split equally across the
+    lines that accepted anything (at least two), is a Desk test trade, not take-up (Eleonora, 4 November 2026,
+    option (a) on finding #916; the rule of `ingest._is_split_test_trade`, bounds `ingest.SPLIT_TEST_TOTAL_MAX`).
+    It reads only the operation's own `details`. The 13 $10 mn / $0 / $10 mn days of the tracked snapshots are all
+    caught; a $20 mn unequal split and a $40 mn equal split are take-up. The date keeps a row, at zero (as for #802).
+
+    Recorded mutations (CLAUDE.md), 4 November 2026, in a disposable copy, `src/repo_model/ingest.py`,
+    `_is_split_test_trade`: 
+    `len(set(amounts)) == 1` mutated to `len(set(amounts)) >= 1` (unequal splits pass): `test_an_unequal_twenty_million_split_is_take_up`
+    then fails with `AssertionError` (`0.0 != 0.02`);
+    `0 < total <= SPLIT_TEST_TOTAL_MAX` mutated to `0 < total <= 2 * SPLIT_TEST_TOTAL_MAX` (bound doubled):
+    `test_an_equal_forty_million_split_is_take_up` then fails with `AssertionError` (`0.0 != 0.04`);
+    `len(amounts) >= 2` mutated to `len(amounts) >= 1` (a single line passes): `test_one_line_is_not_a_split` then fails with
+    `AssertionError` (`True is not false`).
+    """
+
+    DAYS = [
+        "2024-09-16", "2024-10-17", "2024-10-28", "2024-12-09", "2025-08-25", "2025-08-27", "2025-10-06",
+        "2026-01-05", "2026-02-09", "2026-03-23", "2026-05-04", "2026-06-16", "2026-07-27",
+    ]
+
+    EXTRA_DAYS = [
+        "2022-10-19", "2024-09-23", "2025-03-25", "2025-09-22", "2026-03-19", "2026-05-26", "2026-09-03",
+    ]
+
+    @staticmethod
+    def split(day, lines, *, term="Overnight", kind="Repo"):
+        record = operation(day, sum(lines), term=term, kind=kind)
+        record["details"] = [
+            {"securityType": ("Treasury", "Agency", "Mortgage-Backed")[n % 3], "amtSubmitted": a, "amtAccepted": a}
+            for n, a in enumerate(lines)
+        ]
+        return record
+
+    def taken(self, record):
+        return by_series(rows_for(record))["repo_accepted"][date.fromisoformat(record["operationDate"])].value
+
+    def test_the_bound_is_the_ruled_one(self):
+        self.assertEqual(ingest.SPLIT_TEST_TOTAL_MAX, 35_000_000)
+
+    def test_ten_zero_ten_is_a_test_trade(self):
+        self.assertEqual(self.taken(self.split("2024-09-16", [10_000_000, 0, 10_000_000])), 0.0)
+
+    def test_an_equal_split_up_to_the_bound_is_a_test_trade(self):
+        for lines in ([17_500_000, 17_500_000], [10_000_000, 10_000_000, 10_000_000], [11_000_000, 11_000_000, 11_000_000]):
+            with self.subTest(lines=lines):
+                self.assertTrue(ingest._is_split_test_trade(self.split("2024-09-16", lines)))
+
+    def test_an_unequal_twenty_million_split_is_take_up(self):
+        self.assertAlmostEqual(self.taken(self.split("2024-09-16", [5_000_000, 0, 15_000_000])), 0.02)
+
+    def test_an_equal_forty_million_split_is_take_up(self):
+        self.assertAlmostEqual(self.taken(self.split("2024-09-16", [20_000_000, 0, 20_000_000])), 0.04)
+
+    def test_just_over_the_bound_is_take_up(self):
+        self.assertFalse(ingest._is_split_test_trade(self.split("2024-09-16", [17_500_001, 17_500_001])))
+
+    def test_one_line_is_not_a_split(self):
+        self.assertFalse(ingest._is_split_test_trade(self.split("2024-09-16", [30_000_000, 0, 0])))
+
+    def test_a_nothing_accepted_day_is_not_a_test_trade(self):
+        self.assertFalse(ingest._is_split_test_trade(self.split("2024-09-16", [0, 0, 0])))
+
+    def test_a_non_repo_operation_is_not_one(self):
+        self.assertFalse(ingest._is_split_test_trade(self.split("2024-09-16", [10_000_000, 10_000_000], kind="Reverse Repo")))
+
+    def test_a_detail_line_with_no_numeric_amount_raises(self):
+        record = self.split("2024-09-16", [10_000_000, 10_000_000])
+        record["details"][0]["amtAccepted"] = None
+        with self.assertRaises(ValueError):
+            ingest._is_split_test_trade(record)
+
+    def test_the_srf_total_reads_the_rule(self):
+        operations = [self.split("2024-09-16", [10_000_000, 0, 10_000_000]), self.split("2024-09-17", [5_000_000, 0, 15_000_000])]
+        payload = json.dumps({"repo": {"operations": operations}}).encode()
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "srf.json"
+            path.write_bytes(payload)
+            artifact = SnapshotArtifact(
+                source_id=ingest.NYFED_SRF_SOURCE_ID, path=path,
+                retrieved_at="2026-10-08T20:51:05+00:00", sha256=hashlib.sha256(payload).hexdigest(),
+                url=ingest.NYFED_RP_RESULTS_URL, byte_count=len(payload),
+            )
+            rows = {r.ref_date: r.value for r in ingest._nyfed_srf_rows(artifact, payload)}
+        self.assertEqual(rows[date(2024, 9, 16)], 0.0)
+        self.assertAlmostEqual(rows[date(2024, 9, 17)], 0.02)
+
+    def test_the_tracked_snapshots_hold_exactly_the_listed_days(self):
+        found = []
+        for path in sorted((SNAPSHOTS / "nyfed_repo_ops").glob("*.json")):
+            if path.name.endswith(".manifest.json"):
+                continue
+            for record in ingest._nyfed_operations(json.loads(path.read_bytes())):
+                if (
+                    isinstance(record, dict)
+                    and not ingest._is_small_value_exercise(record)
+                    and not ingest._is_afternoon_test_trade(record)
+                    and ingest._is_split_test_trade(record)
+                    and not ingest._is_test_trade(record.get("totalAmtAccepted") or 0)
+                ):
+                    found.append(record["operationDate"])
+        self.assertEqual(sorted(d for d in found if d in self.DAYS), self.DAYS)
+        # the rule as ruled also reaches seven more equal splits of $10-33 mn (all released 13:30); the PR lists them for her
+        self.assertEqual(sorted(found), sorted(self.DAYS + self.EXTRA_DAYS))
 
 
 def ingest_series(operations):

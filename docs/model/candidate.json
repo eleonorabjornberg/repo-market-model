@@ -247,16 +247,18 @@
     {
       "id": "regime-2018-19",
       "title": "The 2018-19 regime",
-      "limit": "The 2018-19 regime has the shortest history and the candidate is weakest against the simpler arm there: the net arm is worse than the flag arm on all three scores, and the central 50 per cent band is under-covered. The quarter-end term is missing from every refit before 23 January 2019. Training on the admitted back-filled 2014-18 history is not yet measured, so this limit is open until that measurement lands, and this report is updated then.",
-      "status": "Open: the measurement of #1223 (scratch measurement #1444) has not landed; no ruling is needed to state the limit.",
+      "limit": "The 2018-19 regime has the shortest history and the candidate is weakest against the simpler arm there: the net arm is worse than the flag arm on all three scores, and the central 50 per cent band is under-covered. The quarter-end term is missing from every refit before 23 January 2019. Training on the admitted back-filled 2014-18 history was measured (#1444, filed as #1453) and was not adopted. It costs on ordinary days, d -0.038 [-0.086, -0.014] in grid CRPS, and does not fix 2018-19, d -0.062 [-0.154, +0.024], where the 90 per cent band's coverage moves by +0.016. The 2018-19 weakness stays open.",
+      "status": "Tested and not adopted: the back-filled 2014-18 training history was measured on development data and the frozen candidate does not use it (her ruling of 5 November 2026 on #1453 and #1223, option (a)). The limit stays open: the history did not fix 2018-19.",
+      "figures_page": "docs/research/s3c-ann-net-backfill-1444-result.md",
       "sources": [
         {
           "issue": "#1223",
-          "why_no_page": "the avenue is open and its measurement has not landed, so there is no page yet"
+          "why_no_page": "the avenue, closed as tested by her ruling of 5 November 2026; its measurement is the page of #1444"
         },
         {
           "issue": "#1444",
-          "why_no_page": "the scratch measurement of #1223 is queued, so there is no page yet"
+          "page": "docs/research/s3c-ann-net-backfill-1444-result.md",
+          "note": "the candidate trained on the back-filled 2014-18 history, filed as #1453"
         },
         {
           "issue": "#1319",
@@ -273,8 +275,8 @@
     {
       "id": "tax-date-label",
       "title": "The 15 October tax-date label",
-      "limit": "The candidate reads no 15 October tax-date label. The gain that argued for it was measured on the days that prompted the label and its mean-d interval covers zero; the label was not adopted for now, and was deferred to be tested again with a model that reads calendar days at the target day. Tax-date target days are among the day types whose central bands are under-covered.",
-      "status": "Open: her ruling on #1004 is pending; this report states the candidate without the label and changes when she rules.",
+      "limit": "The candidate reads no 15 October tax-date label. The gain that argued for it was measured on the days that prompted the label and its mean-d interval covers zero; the label was not adopted for now, and was deferred to be tested again with a model that reads calendar days at the target day. Tax-date target days are among the day types whose central bands are under-covered. The label was then tested as a development arm of the candidate, read at the target day on direct pairs (#1455). The reading that leaves out the days that prompted the label cannot be taken: its October-window target days are fewer than the study's minimum group size, so it is not tested, and the 2026 development days hold no October-window day. The arm changes the forecast on every scored day through the fitted term, not only on the October windows, so its pooled move is not a move on the October windows.",
+      "status": "Tested and not adopted: the frozen candidate reads no label, and any adoption is hers (her ruling of 4 November 2026 on #1004, option (a)). The limit stays open: the label is neither supported nor refuted on days that did not prompt it.",
       "sources": [
         {
           "issue": "#1004",
@@ -287,6 +289,11 @@
           "note": "the measurement that proposed the label"
         },
         {
+          "issue": "#1455",
+          "page": "docs/research/s3c-ann-net-october-1455-result.md",
+          "note": "the label as a development arm of the candidate, read at the target day"
+        },
+        {
           "issue": "#1363",
           "page": "docs/research/candidate-calibration-1363-result.md",
           "note": "coverage on tax dates"
@@ -296,8 +303,7 @@
   ],
   "open_questions": [
     "Whether any development figure should be published as a record in docs/runs/ so that this report can state it. Publishing is Eleonora's (docs/decisions/publish-rule.md). Until she does, the report cites each result by its issue and states none.",
-    "The wording of the use-limitation statement and of each known limit above, which this pull request proposes.",
-    "Her ruling on #1004, the 15 October tax-date label, and the measurement of #1223, the 2018-19 regime: the report states both as open and is updated when each lands."
+    "The wording of the use-limitation statement and of each known limit above, which this pull request proposes."
   ],
   "monitoring": {
     "live_record": "The live record (#215) logs the published model at the pinned commit (metadata/live_pin.json), not the candidate. The candidate has no logged day. A registered candidate joins the live record only by Eleonora's attested approval and a change of the live pin, which are hers alone (docs/decisions/drafts/owner-attestation.md).",

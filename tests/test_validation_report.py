@@ -282,8 +282,30 @@ class KnownLimitsTests(unittest.TestCase):
 
     def test_a_limit_is_development_data_and_gives_no_verdict_and_no_figure_is_typed(self):
         self.assertIn(self.candidate["evidence_label"], self.block)
-        body = re.sub(r"#\d+|`[^`]*`|\d{4}-\d{2}(?:-\d{2})?|\d{1,2} (?:October|November) 2026", "", self.block)
+        block = self.block
+        for limit in self.limits:
+            if limit.get("figures_page"):  # a limit that cites a page for its figures is checked against it below
+                block = block.replace(limit["limit"], "")
+        body = re.sub(r"#\d+|`[^`]*`|\d{4}-\d{2}(?:-\d{2})?|\d{1,2} (?:October|November) 2026", "", block)
         self.assertNotRegex(body, r"\d+\.\d+|%|\[[+-]|\bd [+-]\d")
+
+    def test_a_figure_in_a_limit_is_on_the_page_it_cites(self):
+        """#1469: the 2018-19 limit carries the back-fill's paired figures, each of which stands on its result page.
+
+        Recorded mutation: the limit's "-0.038" changed to "-0.777" in docs/model/candidate.json; this test failed
+        with AssertionError ("-0.777" not on the page).
+        """
+
+        cited = [l for l in self.limits if l.get("figures_page")]
+        self.assertEqual([l["id"] for l in cited], ["regime-2018-19"])
+        for limit in cited:
+            page = (ROOT / limit["figures_page"]).read_text(encoding="utf-8")
+            figures = re.findall(r"[+-]?\d+\.\d+", limit["limit"])
+            self.assertTrue(figures, limit["id"])
+            for figure in figures:
+                self.assertIn(figure, page, figure)
+        self.assertIn("not adopted", cited[0]["limit"])
+        self.assertIn("1453", cited[0]["limit"])
 
     def test_the_use_limitation_points_to_the_known_limits(self):
         self.assertIn("known limits", self.candidate["use_limitation"].lower())

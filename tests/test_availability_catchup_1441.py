@@ -167,6 +167,7 @@ class MissedDayTests(unittest.TestCase):
         self.assertIn(date(2026, 11, 3), listed)
         self.assertTrue(all(d >= ap.FIRST_DAY for d in listed))
         self.assertEqual(json.loads(LIST.read_text())["days"][0]["et_date"], "2026-11-03")
+        self.assertIn(date(2026, 11, 4), listed)  # no in-window run that day (#1474)
 
     def test_a_malformed_list_is_refused(self):
         good = {"et_date": "2026-11-03", "slots_scheduled": 7, "runs_started": 1, "reason": "r"}
@@ -186,11 +187,16 @@ class MissedDayTests(unittest.TestCase):
             for day in (date(2026, 11, 4), date(2026, 11, 5)):
                 ap.write_record(root, rec(day, ap.IN_WINDOW))
             out = root / "days.txt"
-            self.assertEqual(mod.missing(root, LIST, now, out), 0)  # 3 November is on the tracked list
+            # A fixture list with only 3 November: the tracked list also carries 4 November (#1474), whose
+            # real history has no in-window record, so it cannot sit beside the synthetic one written above.
+            fixture = Path(tmp) / "list.json"
+            tracked = json.loads(LIST.read_text())
+            fixture.write_text(json.dumps({**tracked, "days": tracked["days"][:1]}))
+            self.assertEqual(mod.missing(root, fixture, now, out), 0)  # 3 November is on the list
             self.assertEqual(out.read_text(), "")
             lonely = root / "other"
             ap.write_record(lonely, rec(date(2026, 11, 5), ap.IN_WINDOW))
-            self.assertEqual(mod.missing(lonely, LIST, now, out), 3)
+            self.assertEqual(mod.missing(lonely, fixture, now, out), 3)
             self.assertEqual(out.read_text(), "2026-11-04\n")
 
     def test_a_checkout_without_polls_is_refused_not_read_as_all_missed(self):

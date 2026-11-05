@@ -55,7 +55,7 @@ def _load(name: str):
     return module
 
 
-from repo_model import announced_iorb, b1_calendar as b1c, metrics  # noqa: E402
+from repo_model import announced_iorb, b1_calendar as b1c, day_type_interval as dti, metrics  # noqa: E402
 from repo_model import protocol_benchmarks as pb, scoring_protocol as sp  # noqa: E402
 from repo_model import spread_mr_calendar as cal, spread_mr_state_calendar as sc  # noqa: E402
 from repo_model.baseline import panel_sha256  # noqa: E402
@@ -498,6 +498,8 @@ def score(args) -> int:
 LABELS = {"B1": "B1", B1P: "B1' (#960)", "B2": "B2", GBM: "gbm_funding (#634)", A: "(a) base: #941 mad 20, floor 0.5"}
 LABELS.update({a.name: a.role for a in sc.S3_TERMS})
 LABELS[S3] = "(s3) (s1) with a Huber fit and a heavier ridge; the H5 candidate"
+#: Short names for tables with one row per pair: the arms and references of this study.
+SHORT = {"B1": "B1", B1P: "B1\u2032", "B2": "B2", A: "(a)", S3: "(s3)", S3S: "(s3+state)", S3C: "(s3+FOMC/IORB)"}
 METRIC_TITLES = {"grid_crps": "grid CRPS (23 levels)", "upper_tail_twcrps": "upper-tail twCRPS (weight 1{z > 0 bp})"}
 
 
@@ -517,6 +519,80 @@ def model_table(r: dict, cell: dict) -> List[str]:
         cells = ([_fmt(vs.get(b)) for b in ("B1", B1P, "B2")] + ["" if name == A else _fmt(vs.get(A))]
                  + ["" if name in (A, S3) else _fmt(vs.get(S3))] + [_fmt(vs.get(g)) for g in gbm])
         out.append(f"| {LABELS[name]} | {means[name]:.3f} | " + " | ".join(cells) + " |")
+    return out
+
+
+def _d_text(row: Optional[dict]) -> str:
+    """`d [90%]` in bp and the reading on the mean-d bound, for the day-type interval tables."""
+
+    if row is None:
+        return "–"
+    if "undefined" in row:
+        return "undefined"
+    lo, hi = row["difference_interval"]
+    return f"{row['difference']:+.3f} [{lo:+.3f}, {hi:+.3f}]{s761.dropped_text(row)}: {verdict(row)}"
+
+
+def domain_rows_of(r: dict, record: dict) -> dict:
+    """The studentized domain rows of a page's day-type groups, from a day-type record (`day_type_domain_1266.py score`) scored on
+    the same days: `{"target_day_type": {label: {metric: {arm: {reference: row}}}}}`, for `render` to read as `r["domain_vs"]`.
+
+    The record must be on the page's panel, and each of its current rows must equal the page's row at the same path, to the last
+    digit; a record that does not reproduce the page is refused rather than mixed in.
+
+    Raises:
+        ValueError: on another panel, a group or row the page does not have, or a current row that differs.
+    """
+
+    if record["panel_sha256"] != r["panel_sha256"]:
+        raise ValueError(f"the day-type record is on panel {record['panel_sha256'][:8]}, the page on {r['panel_sha256'][:8]}")
+    out: dict = {}
+    for x in record["rows"]:
+        entry = r["groups"].get("target_day_type", {}).get(x["group"])
+        page_row = None if entry is None else entry[x["metric"]]["vs"].get(x["arm"], {}).get(x["reference"])
+        if page_row != x["current"]:
+            raise ValueError(f"the day-type record's current row {x['group']}/{x['metric']}/{x['arm']}/{x['reference']} is not the page's")
+        out.setdefault(x["group"], {}).setdefault(x["metric"], {}).setdefault(x["arm"], {})[x["reference"]] = x["studentized"]
+    return {"target_day_type": out}
+
+
+def day_type_interval_lines(r: dict) -> List[str]:
+    """The day-type rows with the studentized domain interval beside the current one (#1454; her ruling of 4 November 2026 on #1221).
+
+    Read from `r["domain_vs"]["target_day_type"][label][metric][arm][reference]` (rows made by `day_type_interval.studentized_rows`);
+    a record without them adds nothing. A type of fewer than 20 days gets no interval; one of fewer than 60 is labelled thin.
+    """
+
+    domain = r.get("domain_vs", {}).get("target_day_type")
+    if not domain:
+        return []
+    out: List[str] = []
+    for metric in METRIC_NAMES:
+        out += [f"## {METRIC_TITLES[metric]} by target-day type: the studentized domain interval beside the current one", "",
+                "Each row is a mean paired difference d = benchmark - arm in bp (positive favours the arm) with its 90% interval and "
+                "the reading on the mean-d bound. **Current:** the type's own days sorted into one short series and resampled in blocks "
+                "(a block can join days months apart). **Studentized domain:** the whole target-day series is resampled and the mean of "
+                "d is taken over the resampled days of the type, each resample over its own HAC standard error (#1266"
+                + (f", rows from `{r['domain_source']}`" if r.get("domain_source") else "") + "). A type of fewer "
+                f"than {dti.FLOOR_DAYS} days gets no interval; one of fewer than {dti.THIN_DAYS} days is labelled thin.", ""]
+        for label in list(DAY_TYPES) + [ORDINARY, "calendar_days"]:
+            entry = r["groups"].get("target_day_type", {}).get(label)
+            if entry is None:
+                continue
+            state = dti.status(entry["days"])
+            tag = {"none": f", no interval: under {dti.FLOOR_DAYS} days", "thin": f", thin: under {dti.THIN_DAYS} days", "ok": ""}[state]
+            out += [f"**{label}** ({entry['days']} days{tag})", ""]
+            if state == "none":
+                continue
+            out += ["| arm | vs | current: d [90%] | studentized domain: d [90%] |", "|---|---|---|---|"]
+            by_arm = domain.get(label, {}).get(metric, {})
+            for arm in ARMS:
+                for reference, row in by_arm.get(arm, {}).items():
+                    cur = entry[metric]["vs"].get(arm, {}).get(reference)
+                    cell = dti.cell(entry["days"], cur, row)
+                    out.append(f"| {SHORT[arm]} | {SHORT.get(reference, reference)} | "
+                               f"{_d_text(cell['current'])} | {_d_text(cell['domain'])} |")
+            out.append("")
     return out
 
 
@@ -655,6 +731,7 @@ def render(r: dict) -> str:
                 if entry is None:
                     continue
                 out += [f"**{label}** ({entry['days']} days)", ""] + model_table(r, entry[metric]) + [""]
+    out += day_type_interval_lines(r)
     if r["skipped_groups"]:
         out += ["Groups with fewer than %d days are listed and not tested: %s." % (
             MIN_GROUP_DAYS, ", ".join(f"{k} ({v})" for k, v in sorted(r["skipped_groups"].items()))), ""]

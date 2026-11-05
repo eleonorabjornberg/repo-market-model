@@ -61,6 +61,7 @@ from repo_model import announced_iorb, scoring_protocol as sp  # noqa: E402
 from repo_model import spread_mr_calendar as cal  # noqa: E402
 from repo_model.baseline import panel_sha256  # noqa: E402
 from repo_model.data import load_daily_panel  # noqa: E402
+from repo_model.day_type_interval import studentized_rows  # noqa: E402,F401  (moved to src by #1454)
 from repo_model.domain_intervals import domain_estimates, studentized_domain_estimates  # noqa: E402
 from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
 
@@ -83,42 +84,6 @@ PAIRS = (("current", "percentile"), ("current", "studentized"), ("percentile", "
 NAME = {"current": "current", "percentile": "percentile domain", "studentized": "studentized domain"}
 
 _STATE: Dict = {}
-
-
-def studentized_rows(cells: Mapping[object, Tuple[Mapping[date, float], Mapping[date, float], Sequence[date]]],
-                     all_days: Sequence[date], seed: int = SEED, draws: int = sp.DRAWS, block_length: float = sp.BLOCK_LENGTH,
-                     level: float = 0.90) -> Dict[object, dict]:
-    """The studentized domain estimate of each group's mean paired difference, as `spread_mr_variants_761.domain_rows` makes the
-    percentile one: the same cells `(benchmark scores, candidate scores, the group's days)`, the same draws, a row with the group
-    mean as `difference` and the interval as `difference_interval`, without skill; `method` says "studentized domain". A group
-    whose interval is unavailable reads `undefined` with the reason, as `run_pairs` does; a bound read with resamples left out
-    carries `dropped_resamples` and `draws` (#1239)."""
-
-    days = sorted(all_days)
-    position = {day: i for i, day in enumerate(days)}
-    prepared = {}
-    for key, (benchmark, candidate, group) in cells.items():
-        missing = [day for day in group if day not in position]
-        if missing:
-            raise ValueError(f"cell {key!r}: {len(missing)} group days ({missing[0]} first) are not among the {len(days)} aligned days")
-        prepared[key] = ([benchmark[day] - candidate[day] for day in days], [position[day] for day in group])
-    done = studentized_domain_estimates(prepared, len(days), block_length=block_length, seed=seed, replications=draws, level=level)
-    out: Dict[object, dict] = {}
-    for key, (benchmark, candidate, group) in cells.items():
-        entry = done[key]
-        row = {"days": entry["count"], "method": "studentized domain",
-               "benchmark_mean": sum(benchmark[d] for d in group) / len(group) if group else None,
-               "candidate_mean": sum(candidate[d] for d in group) / len(group) if group else None}
-        if "interval" in entry:
-            row["difference"] = entry["mean"]
-            row["difference_interval"] = [entry["interval"]["lower"], entry["interval"]["upper"]]
-            row["standard_error"] = entry["standard_error"]
-            if entry["dropped_resamples"]:
-                row["dropped_resamples"], row["draws"] = entry["dropped_resamples"], entry["draws"]
-        else:
-            row["undefined"] = entry.get("interval_unavailable", "the group has no day")
-        out[key] = row
-    return out
 
 
 def compare3(rows: Mapping[str, Optional[dict]]) -> dict:

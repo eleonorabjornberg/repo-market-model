@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/h6_step2_724.json",
+  "script": "scripts/h6_step2_724.py",
+  "pairing": "direct",
+  "why": "(s3c-ann-net) on #1131's event-day strata, and one variant that rescales its stored forecasts. The candidate is walked by scripts/capped_baselines_b2star_1434.py, which calls (s3)'s estimation routine on direct pairs and no gradient-boosted fit; this script fits nothing and reads that walk's file. The strata read the calendar at the target day (the coupon flag only where public, as #849), and the variant's scale is estimated from realised scores public at each decision, never from an outcome it has not seen"
+}

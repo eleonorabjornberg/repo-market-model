@@ -1,0 +1,86 @@
+{
+  "status": "declared by the pull request that closes #724 before any score was computed. A development measurement (scoring protocol v1, #640): no verdict, no registration, nothing published, no critical value or decision rule in force moves, no day after 2025-12-31 and no lockbox day is scored. The series are development data seen before this declaration (#693, #739, #963, #1131), so a result is exploration only. Registering H6 is Eleonora's own action",
+  "issue": 724,
+  "hypothesis": "H6 (the spread on known risk dates is forecastable), development step 2 (docs/research/hypotheses/H6.md): the H5 model scored on risk dates, then a risk-date-specialised variant. Milestone M2",
+  "ruling": "Eleonora, 4 November 2026, decision docket, relayed by the orchestrating session on #724: option (a), rewrite this step on (s3c-ann-net) and #1131's strata, queued after #1394 (merged). The candidate is frozen (Eleonora, 2 November 2026, relayed): (s3c-ann-net) as it is, SRF cap kept, probability rule (b)",
+  "variants": {
+    "count": 1,
+    "declared": ["sc_s3c_ann_net_riskscale"],
+    "note": "one risk-date-specialised variant, declared here before any score. The candidate, its fit, its walk and its forecasts are (s3c-ann-net) unchanged (the walk of scripts/capped_baselines_b2star_1434.py, itself #1288's code at the 18:00 instant); the variant only rescales a forecast's 23 quantiles about their median, after the walk. No other variant, no other grid, no other window is scored, so the variant count reported is 1"
+  },
+  "decision_instant": "18:00 New York time, the instant new studies run at (#1312, #1397). #1131 ran at 16:00; every figure here is made at 18:00, so none is compared digit for digit with #1131's page. The FOMC calendar, the coupon announcement dating and the trailing bill threshold are read at the 18:00 instant. The panel is the published panel (digest 4ddc3882cd6d...) built with --decision-time 18:00:00; its bytes are the same at either instant",
+  "strata": {
+    "as_declared_in": "metadata/h6_design_1131.json, key 'strata', unchanged: coupon_settlement, bill_settlement_large, month_end_turn, quarter_end_turn, year_end, quarter_and_year_end, tax_date, fomc_meeting, post_fomc_window, union and union_without_bill; minimum_events 30 (a stratum below it is counted and reported as thin, not tested on its own). The membership code is scripts/h6_design_1131.py's (`membership`, `fomc_days`, `bill_threshold`), imported unchanged",
+    "one_change": "the coupon settlement is read as #849 does (default 9 of #1131's section 6): a target day is in the coupon_settlement stratum only if its coupon flag was public at the decision instant of lead 1 (the day before), through repo_model.spread_mr_variants.coupon_public and the registry. #1131 read the panel's flag; the number of coupon days that move is reported. (Amended, see amendments: the first reading used the longest lead and left the stratum empty.)",
+    "primary_unit": "the union without the bill stratum (default 2 and 1 of #1131's section 6): one event per target day in at least one of the strata other than large bill settlement. The union with the bill stratum, and every stratum alone, are reported cuts",
+    "turn_label": "#959's label through repo_model.turn_days, as #1131 (default 3)"
+  },
+  "defaults_and_rulings": {
+    "ruled": [
+      "Rewrite on (s3c-ann-net) and #1131's strata (Eleonora, 4 November 2026 docket, option a; this issue)",
+      "(s3c-ann-net) is the candidate, SRF cap kept, probability rule (b) (Eleonora, 2 November 2026, relayed)",
+      "H6 is registered ahead of H5 on the strata's unit of evidence (Eleonora, 22 October 2026, option c of #1024, on #1131)"
+    ],
+    "defaults_of_1131_section_6_taken_because_she_has_not_ruled": [
+      "1. unit of evidence: the union is primary and the strata are reported cuts",
+      "2. the union without the large bill stratum is the primary union",
+      "3. the month-end turn is #959's label",
+      "6. B1 and B2 decide; B1' and the #693 calendar benchmark are reported beside them",
+      "7. no multiplicity correction on reported cuts",
+      "9. settlement flags are read as #849 does"
+    ],
+    "not_applicable_to_a_development_step": "4 (window length), 5 (minimum meaningful effect), 8 (a stratum benchmark) and 10 (the critical value) concern the registration, not this score. This step uses #1131's studentized stationary bootstrap (block 3 events, HAC lag 3, 10,000 draws, two-sided 90%); no power is computed here"
+  },
+  "series": {
+    "days": "decision days from 2020-04-03 whose fifth target is on or before 2025-12-31, on the days the candidate, spread_mr_ctx, B1, B1', B2, B1'*-cap and B2*-cap all have a forecast at all five leads; lockbox.require_unlocked on every decision and target day. The frame is scripts/b1_calendar_960.py's build_frame, as #1131",
+    "history": "the variant's scale for a decision day reads the candidate's walked cells from the walk's first decision day (2018-07-19, #1434's development window) onward, realised by that day as stated under variant.estimation; only target days from 2020-04-03 are scored",
+    "target_score": "the mean over leads 1-5 of the cell scores that target the day, kept only where all five cells exist (as #1131's target_scores)",
+    "metrics": "grid CRPS (primary) and upper-tail twCRPS (key secondary), repo_model.scoring_protocol",
+    "d": "d_e = S(benchmark) - S(model) on the target day e, in date order, positive favours the model",
+    "paired_test": "scoring_protocol.paired_tests with seed 724, 10000 draws, block 3 events, HAC lag 3 (EVENT_BLOCK and EVENT_LAG of #1131); skill is the mean of d over the mean benchmark score, with the two-sided 90% interval of the studentized stationary bootstrap, so its lower end is the one-sided 95% lower bound",
+    "models": {
+      "candidate": "(s3c-ann-net), the frozen H5 candidate, capped at the Standing Repo Facility line on target days at full allotment (capped_law, rule b). It is walked by scripts/capped_baselines_b2star_1434.py unchanged; the pooled grid CRPS, twCRPS and Brier means of its development window reproduce docs/research/capped-baselines-b2star-1434/result.json within 1e-9 or the run refuses to write",
+      "variant": "sc_s3c_ann_net_riskscale, below",
+      "reference": "spread_mr_ctx (#761), #1131's stand-in, carried beside the candidate as the reference column; calendar-blind in the sense of #1131 and not a candidate here"
+    },
+    "benchmarks": {
+      "B1": "repo_model.protocol_benchmarks.b1_forecast",
+      "B1_prime": "repo_model.b1_calendar.b1_calendar_forecast (#960)",
+      "B2": "repo_model.protocol_benchmarks.b2_forecast",
+      "calendar": "repo_model.risk_date_spread.calendar_forecast (#693), defined only on a day typed as one of its four risk types at all five leads; a stratum's covered count is reported and an event without it is left out of that leg",
+      "B2star_cap": "protocol_benchmarks.b2_star_capped_forecast (#1420, #1440): B2* clipped at the same SRF line as the candidate. Merged (#1449), so it is a reported benchmark here, scored as the capped-baselines study scores it (capped_baselines_b2star_1434.model_cell)",
+      "B1p_star_cap": "B1'*-cap of the same study, reported beside it",
+      "decisive_and_reported": "B1 and B2 are decisive in the reading rule below; every other benchmark is reported"
+    }
+  },
+  "variant": {
+    "name": "sc_s3c_ann_net_riskscale",
+    "idea": "a risk-date-specific width: on a cell whose target is in a stratum, the candidate's 23 quantiles are stretched or shrunk about their median by a factor k chosen from the candidate's own recent errors on the same stratum. Stratum-specific scale, no shift",
+    "forecast_of_a_cell": "for the cell (decision day d, lead h) with raw (uncapped) quantiles r and median c: r' = c + k * (r - c), then capped at the cell's SRF line exactly as the candidate is. k = 1 reproduces the candidate",
+    "cell_label": "the first of quarter_and_year_end, month_end_turn, tax_date, coupon_settlement, bill_settlement_large, fomc_meeting, post_fomc_window that holds for the cell's target, read at THAT cell's own decision instant: the coupon flag only if public then (#849), the FOMC calendar as visible then, the bill threshold from the panel rows strictly before the decision row. A cell with no stratum keeps k = 1. The priority is the order above; a label is a function of the calendar only, never of an outcome",
+    "k_grid": [0.5, 0.67, 0.8, 1.0, 1.25, 1.5, 2.0],
+    "estimation": "at decision day d, k for a label is the grid value with the lowest mean grid CRPS of the candidate's own rescaled, capped forecasts over the most recent 150 cells of that label (pooled over leads) whose realised outcome was public at d. A cell's outcome is public at d if its target row is at or before the anchor row of d (protocol_benchmarks._anchor, the latest row whose values are public at the decision instant). A tie goes to the k nearest 1, then to the smaller. With fewer than 60 such cells k = 1",
+    "guard": "require_realised raises LookAheadError if an estimation cell's target row is after the decision day's anchor row; the selection never offers one, so the guard fires only on a mutation",
+    "directness": "no model is fitted and no calendar column is a regressor: the variant reads the stored forecasts of a walk that trains on direct pairs, and the label reads the calendar at the cell's target day. one_step_guard is not in play and no allow-list entry is used",
+    "nearest_prior": "#1402 (src/repo_model/day_type_scale.py) multiplies the candidate's residual pool per pressure-day type from each refit's own training residuals, a development arm of H5. This variant differs in its strata (it includes settlement and FOMC days), and in estimating k from realised scores, not residuals. It is not #1402's arm and does not reopen the candidate"
+  },
+  "splits": {
+    "regime": "frame.regime(target), as #1131's union_by_regime",
+    "pressure_day_type": "frame.day_type(target) (turn_days.reporting_day_type), the protocol's pressure-day type",
+    "by_stratum": "every stratum of the strata block, the union and the union without the bill stratum",
+    "thin": "a cut with fewer than 30 events is counted and shown as thin, not tested",
+    "where": "each split is shown on the union without the bill stratum for the candidate against B1, B2, B1' and B2*-cap, and for the variant against the candidate and against B1"
+  },
+  "reading_rules": {
+    "development_not_a_verdict": "every reading below is a development reading on days already seen. Under scoring protocol v1 only prospective confirmation days give a verdict",
+    "kill_rule_in_words": "H6's kill (docs/research/hypotheses/H6.md, docs/research/plan.md): no CRPS skill against as-of persistence and the risk-date calendar benchmark on the risk dates. Read on development data, (s3c-ann-net) shows no skill on risk dates if, on the union without the bill stratum, the 90% interval of its grid CRPS skill against B1 or against B2 includes zero or lies below it. It is read as showing skill if the interval's lower end is above zero against B1 and against B2 both. B1', the #693 calendar benchmark and B2*-cap do not decide; they say what the skill is worth: a candidate whose interval against B1' includes zero has learned nothing the calendar-aware persistence did not say",
+    "variant_rule": "the specialised variant adds skill over (s3c-ann-net) on the union without the bill stratum if the lower end of the 90% interval of its grid CRPS skill against the candidate (paired, same bootstrap) is above zero. If the interval includes zero, it adds none that this data can show. The result page ends with one line saying which, with the interval",
+    "twCRPS": "the upper-tail twCRPS is the key secondary and is read the same way; a disagreement between the two is reported as such, not resolved",
+    "no_correction": "no multiplicity correction on reported cuts (default 7); with 1 declared variant the variant count reported is 1",
+    "provisional": "the register (docs/research/provisional-calendar-register.md) is not touched except by this declaration's cleared row: the walk trains on direct pairs and reads the calendar at the target day, so the result is not provisional"
+  },
+  "limits": "a development measurement of one frozen candidate and one declared variant, on 2020-04-03 to 2025-12-31, on days seen before this declaration. The strata overlap; the union counts a day once. The calendar benchmark exists on a subset of events. The bill stratum's size rule is a stand-in without a ruling. The variant's scale is estimated on cells that overlap in information (five leads of a target day, consecutive days), so its effective sample is smaller than its 150 cells. The cap matters only from 11 December 2025, so on the development window the candidate and its uncapped self differ on a handful of days. No day of 2026 is scored (that is #1394's confirmation, not this step)",
+  "amendments": [
+    "5 November 2026, after a first run of scripts/h6_step2_724.py had written docs/research/h6-step2-724/result.json: the declared reading of the coupon flag at the decision instant of the longest lead (h = 5) left the coupon_settlement stratum with 0 events, because the panel's coupon flag becomes public only on the day before its settlement (#849), so at lead 5 no coupon settlement is ever public. The first run's other figures were seen: the union without the bill stratum had 340 events, the union 525, and the variant's grid CRPS skill over the candidate on the former was not distinguishable from zero. Amended before any further score to the same #849 reading at the decision instant of lead 1, the one lead at which the panel's flag is public; the strata, benchmarks, variant, bootstrap and reading rules are unchanged, and the variant's per-cell labels already read the flag at each cell's own decision instant. The record and page are re-run in full under the amended declaration; the first run is not kept. The question of how a day-level stratum should read a flag that is public at some leads only is put to Eleonora in the pull request (options and default there)."
+  ]
+}

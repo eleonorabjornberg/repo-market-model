@@ -565,6 +565,12 @@ def standings(repo):
             "record": STANDINGS, "step4": STEP4}
 
 
+#: Her ruling of 4 November 2026 on #1112 (#1458): the one sentence under the standings. The reading is #1009's (the
+#: mean-d interval) and #980's block length, recomputed post-2020 by #1022 (long-run ratio 2.0x to 2.1x).
+INTERVAL_CAVEAT_TEXT = "Post-2020 intervals are about twice too narrow."
+INTERVAL_CAVEAT_PAGE = "docs/research/block-length-1022-result.md"
+
+
 def candidate_standings_html(st):
     """The standings of the candidate the committed ruling record names (#1152): mean d with its interval and reading.
 
@@ -656,7 +662,10 @@ def candidate_standings_html(st):
         f'weigh. {caveat}The split below is the scoring rules&rsquo;: a pooled figure alone is not a result.</p>'
         f'<table class="rs-standings"><thead><tr><th scope="col">Split</th><th scope="col">Days</th>'
         f'<th scope="col">{own}&rsquo;s accuracy score</th>{split_head}</tr></thead>'
-        f'<tbody>{"".join(split_body)}</tbody></table>')
+        f'<tbody>{"".join(split_body)}</tbody></table>'
+        f'<p class="rs-note"><b>A caution on the intervals.</b> {esc(INTERVAL_CAVEAT_TEXT)} The block length the bootstrap '
+        f'uses is too short for the dependence of those days; <a href="{BLOB}{INTERVAL_CAVEAT_PAGE}">the block length '
+        'study</a> has the figures.</p>')
 
 
 def standings_html(st):

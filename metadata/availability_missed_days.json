@@ -6,6 +6,12 @@
    "slots_scheduled": 7,
    "runs_started": 1,
    "reason": "The workflow merged at 17:20 ET (22:20 UTC), so the slots from 17:30 to 18:30 ET were the only ones inside the window. The single scheduled run started at 21:32:55 ET (02:32:55 UTC on 4 November), 3 hours after the window closed; it wrote nothing (finding #1435)."
+  },
+  {
+   "et_date": "2026-11-04",
+   "slots_scheduled": 16,
+   "runs_started": 1,
+   "reason": "The cron (*/10 20-23 UTC) put 16 slots inside the window, 21:00 to 23:30 UTC (16:00 to 18:30 ET, after clocks went back on 1 November). No scheduled run started inside it. The one run that started on that ET date began at 19:43:34 ET (00:43:34 UTC on 5 November, run 41943455926), 73 minutes after the window closed; it wrote only the catch-up record polls/2026-11-04/20261105T004405643192Z-treasury_bill_rates.json. The run before it (41761458108, 02:32:55 UTC on 4 November) belongs to 3 November ET (finding #1472)."
   }
  ]
 }
