@@ -14,12 +14,12 @@ coupon flag read as #849 does for the strata, the per-target-day mean over leads
    was changed to `if target_row <= anchor_row + 3`. `ScaleLookAheadTests.test_a_cell_realised_after_the_anchor_never_moves_the_scale` then failed with
    `LookAheadError` (from `require_realised`, which re-checks every cell the selection returns); restored, it passes.
 
-2. In `evaluation_membership` (a coupon settlement is a risk date for the strata only where its flag was public at the longest lead's decision instant,
+2. In `evaluation_membership` (a coupon settlement is a risk date for the strata only where its flag was public at the lead-1 decision instant,
    #849), the line
 
        if coupons > 0.0 and coupon_public:
 
-   was changed to `if coupons > 0.0:`. `CouponPublicTests.test_a_coupon_not_public_at_the_longest_lead_is_not_a_member` then failed with
+   was changed to `if coupons > 0.0:`. `CouponPublicTests.test_a_coupon_not_public_at_the_lead_1_instant_is_not_a_member` then failed with
    `AssertionError: 'coupon_settlement' unexpectedly found in {...}`; restored, it passes.
 
 3. In `select_scale` (a label with fewer than `MIN_CELLS` realised cells keeps k = 1, so the variant is the candidate until it has history), the line
@@ -124,11 +124,11 @@ class ScaleLookAheadTests(unittest.TestCase):
 class CouponPublicTests(unittest.TestCase):
     values = {"treasury_settlement_coupons": 5.0, "treasury_settlement_bills": 0.0, "tax_date": 0.0}
 
-    def test_a_coupon_public_at_the_longest_lead_is_a_member(self):
+    def test_a_coupon_public_at_the_lead_1_instant_is_a_member(self):
         got = script.evaluation_membership(date(2024, 5, 15), self.values, fomc_meeting=False, post_fomc=False, bill_floor=None, coupon_public=True)
         self.assertIn("coupon_settlement", got)
 
-    def test_a_coupon_not_public_at_the_longest_lead_is_not_a_member(self):
+    def test_a_coupon_not_public_at_the_lead_1_instant_is_not_a_member(self):
         got = script.evaluation_membership(date(2024, 5, 15), self.values, fomc_meeting=False, post_fomc=False, bill_floor=None, coupon_public=False)
         self.assertNotIn("coupon_settlement", got)
 

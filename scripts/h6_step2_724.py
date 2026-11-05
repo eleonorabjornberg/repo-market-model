@@ -202,7 +202,7 @@ def cell_label(strata: Set[str]) -> Optional[str]:
 
 def evaluation_membership(day: date, values: Mapping[str, Optional[float]], *, fomc_meeting: bool, post_fomc: bool, bill_floor: Optional[float],
                           coupon_public: bool) -> Set[str]:
-    """#1131's strata for a target day, with the coupon settlement read as #849 does: a member only where its flag was public at the decision instant."""
+    """#1131's strata for a target day, with the coupon settlement read as #849 does: a member only where its flag was public at the lead-1 decision instant."""
 
     h6 = _STATE.get("h6") or _load("h6_design_1131")
     _STATE["h6"] = h6
@@ -400,7 +400,7 @@ def run_command(args) -> int:
         pos = positions[t]
         as_of = datetime.combine(dates[pos - LONGEST_LEAD], decision_time)
         meeting_days, window_days = h6.fomc_days(meetings, as_of)
-        public = smv.coupon_public(panel, pos, pos - LONGEST_LEAD, registry=registry, decision_time=decision_time)
+        public = smv.coupon_public(panel, pos, pos - 1, registry=registry, decision_time=decision_time)
         member = evaluation_membership(t, values[pos], fomc_meeting=t in meeting_days, post_fomc=t in window_days, bill_floor=h6.bill_threshold(values, pos),
                                        coupon_public=public)
         if float(values[pos].get("treasury_settlement_coupons") or 0.0) > 0.0 and not public:
@@ -426,7 +426,7 @@ def run_command(args) -> int:
         "min_cells": MIN_CELLS, "minimum_events": MINIMUM_EVENTS, "variants_scored": 1,
         "history": {"first_target": common[0].isoformat(), "last_target": common[-1].isoformat(), "target_days": len(common), "years": years,
                     "walk_decision_days": walk["decision_days"], "walk_cells": len(cells)},
-        "reproduces_1434": reproduced, "coupon_days_not_public_at_lead_5": coupon_moved, "strata": strata_rows, "variant_scales": scale_summary,
+        "reproduces_1434": reproduced, "coupon_days_not_public_at_lead_1": coupon_moved, "strata": strata_rows, "variant_scales": scale_summary,
     }
 
     # -- the jobs --------------------------------------------------------------------------------------------------------------
@@ -561,8 +561,8 @@ def render(r: Mapping[str, object]) -> str:
     out += ["### Defaults and rulings", "",
             "Rulings: " + "; ".join(d["defaults_and_rulings"]["ruled"]) + ".", "",
             "Defaults of #1131's section 6 that Eleonora has not ruled on, taken here: " + "; ".join(d["defaults_and_rulings"]["defaults_of_1131_section_6_taken_because_she_has_not_ruled"]) + ".", "",
-            f"The coupon flag is read as #849 does: {r['coupon_days_not_public_at_lead_5']} target days have a coupon settlement that was not public at the lead-5 decision "
-            f"instant and are not coupon-stratum members (#1131 read the panel's flag).", ""]
+            f"The coupon flag is read as #849 does: {r['coupon_days_not_public_at_lead_1']} target days have a coupon settlement that was not public at the lead-1 decision "
+            f"instant and are not coupon-stratum members (#1131 read the panel's flag). The declaration's first reading, the lead-5 instant, left the stratum empty (see its amendment).", ""]
     out += ["## 2. The strata", "",
             "| stratum | events | per year | by calendar year | " + " | ".join(BENCH_TITLES[b] for b in BENCHMARKS) + " |", "|---|---|---|---|" + "---|" * len(BENCHMARKS)]
     for name in [s[4:] for s in set_scopes]:
@@ -592,11 +592,11 @@ def render(r: Mapping[str, object]) -> str:
         f"**Kill rule, in words.** H6's kill is no CRPS skill against as-of persistence and the risk-date calendar benchmark on the risk dates. Read on development data: "
         f"(s3c-ann-net) shows no skill on the union without the bill stratum if the 90% interval of its grid CRPS skill against B1 or against B2 includes zero or lies below it, "
         f"and shows skill if the lower end is above zero against both. Against B1 it is {skill_text(g_b1)}, against B2 {skill_text(g_b2)}: **{reading['kill_rule_candidate']}**. "
-        f"B1' ({skill_text(prim['candidate']['B1_prime'])}) and B2*-cap ({skill_text(prim['candidate']['B2star_cap'])}) do not decide; they say what the skill is worth. "
+        f"B1' ({skill_text(prim['grid_crps']['candidate']['B1_prime'])}) and B2*-cap ({skill_text(prim['grid_crps']['candidate']['B2star_cap'])}) do not decide; they say what the skill is worth. "
         f"The risk-date calendar benchmark (#693) covers {r['strata'][PRIMARY_SET]['covered']['calendar']} of the {r['strata'][PRIMARY_SET]['n']} events: "
-        f"{skill_text(prim['candidate']['calendar'])}.", "",
-        f"The variant, read the same way, is **{reading['kill_rule_variant']}** (against B1 {skill_text(prim['variant']['B1'])}, against B2 {skill_text(prim['variant']['B2'])}). "
-        f"The reference `spread_mr_ctx` is {skill_text(prim['reference']['B1'])} against B1 and {skill_text(prim['reference']['B2'])} against B2.", "",
+        f"{skill_text(prim['grid_crps']['candidate']['calendar'])}.", "",
+        f"The variant, read the same way, is **{reading['kill_rule_variant']}** (against B1 {skill_text(prim['grid_crps']['variant']['B1'])}, against B2 {skill_text(prim['grid_crps']['variant']['B2'])}). "
+        f"The reference `spread_mr_ctx` is {skill_text(prim['grid_crps']['reference']['B1'])} against B1 and {skill_text(prim['grid_crps']['reference']['B2'])} against B2.", "",
         "This is a development reading on days already seen. It closes nothing and registers nothing; the verdict is for prospective confirmation days only.", ""]
     out += ["## What this shows, and does not", "",
             "- It shows how the frozen candidate scores on #1131's event-day strata on 2020-2025 development days, split by stratum, regime and pressure-day type, and "
