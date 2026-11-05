@@ -31,3 +31,12 @@ Eleonora's Mac (`docs/decisions/workflow.md`, "Long runs go to her Mac").
    make the scoring step score only the pieces that exist, so a lost piece costs only itself and a re-run skips what
    finished.
 6. Her pushed results are finished by a cloud session like any other branch.
+
+## Exception: the H9D panel is built in the cloud only
+
+The H9D scratch panel, and any declaration whose digest rests on its `sd15` column, is built in the cloud only, never
+on her Mac, whatever its length. The `sd15` column depends on the platform's libm (`pow`), so its declared digest does
+not reproduce on macOS (#1309; her ruling of 4 November 2026, option (a)). Steps 1 to 6 above do not apply to such a
+build: do not hand it to her as a `needs-mac:` paste. A step that needs this panel and is also long is split so that
+the panel build runs in a cloud session, and only the pieces that do not read the panel's digest go to her Mac. The
+computation is unchanged and no declaration is re-pinned.
