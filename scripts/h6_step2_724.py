@@ -597,6 +597,11 @@ def render(r: Mapping[str, object]) -> str:
         f"{skill_text(prim['grid_crps']['candidate']['calendar'])}.", "",
         f"The variant, read the same way, is **{reading['kill_rule_variant']}** (against B1 {skill_text(prim['grid_crps']['variant']['B1'])}, against B2 {skill_text(prim['grid_crps']['variant']['B2'])}). "
         f"The reference `spread_mr_ctx` is {skill_text(prim['grid_crps']['reference']['B1'])} against B1 and {skill_text(prim['grid_crps']['reference']['B2'])} against B2.", "",
+        "Read the same way inside the union without the bill stratum, the candidate's skill by regime is " + "; ".join(
+            f"{_scope_title(sc)}: {kill_reading(r['rows'][sc]['grid_crps']['candidate']['B1'], r['rows'][sc]['grid_crps']['candidate']['B2'])}" for sc in regimes)
+        + ", and by pressure-day type " + "; ".join(
+            f"{_scope_title(sc)}: {kill_reading(r['rows'][sc]['grid_crps']['candidate']['B1'], r['rows'][sc]['grid_crps']['candidate']['B2'])}" for sc in types)
+        + " (\"no skill shown\" is an interval that includes zero against B1 or B2, not a measured absence; the pooled reading above does not carry into a regime or type where it says so).", "",
         "This is a development reading on days already seen. It closes nothing and registers nothing; the verdict is for prospective confirmation days only.", ""]
     out += ["## What this shows, and does not", "",
             "- It shows how the frozen candidate scores on #1131's event-day strata on 2020-2025 development days, split by stratum, regime and pressure-day type, and "

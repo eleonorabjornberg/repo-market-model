@@ -211,5 +211,28 @@ class DeclarationTests(unittest.TestCase):
             script.require_scored_days([date(2026, 1, 2)])
 
 
+class RecordTests(unittest.TestCase):
+    """The committed record and page belong to the committed declaration and to each other."""
+
+    def test_the_record_is_the_declarations(self):
+        import json
+
+        record = json.loads(script.RECORD.read_text(encoding="utf-8"))
+        self.assertEqual(record["declaration_sha256"], script.sha256(script.DECLARATION))
+        self.assertEqual(record["variants_scored"], script.declaration_file()["variants"]["count"])
+        self.assertEqual(record["instant"], "18:00")
+        self.assertLessEqual(date.fromisoformat(record["history"]["last_target"]), script.LAST_TARGET)
+
+    def test_the_page_is_what_the_record_gives(self):
+        import json
+
+        record = json.loads(script.RECORD.read_text(encoding="utf-8"))
+        self.assertEqual(script.PAGE.read_text(encoding="utf-8"), script.render(record))
+
+    def test_the_page_ends_with_the_one_line_the_directive_asks_for(self):
+        last = script.PAGE.read_text(encoding="utf-8").rstrip("\n").splitlines()[-1]
+        self.assertTrue(last.startswith("**Does the specialised variant add skill over (s3c-ann-net) on the union"))
+
+
 if __name__ == "__main__":
     unittest.main()
