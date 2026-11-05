@@ -39,11 +39,11 @@ confirmed applied by grep (one match) and killed by the test named:
 * hashes: in `live_pin.parse_lock`, `if "--hash=sha256:" not in block:` ->
   `if False:` makes `test_a_requirement_without_a_hash_is_refused` fail with
   `AssertionError: ValueError not raised`.
-* the literal: `"current": "2eba843b35e197ed92cac968aa45aaf514a35e2a"` in
-  `metadata/live_pin.json` (the `decision-instant-1800` transition, #1369; it was
-  `492c53d…` under `protocol-block`) changed to forty zeros makes
+* the literal: `"current": "6d95ebb93db369892b2ee46b30b5e87ddb2e63e2"` in
+  `metadata/live_pin.json` (the `decision-row-bills` transition, #1475; it was
+  `2eba843…` under `decision-instant-1800`) changed to forty zeros makes
   `test_the_real_manifest_is_valid_and_its_pin_is_on_main` fail with
-  `AssertionError: '0000...' != '2eba843...'` (the old mutation that no test
+  `AssertionError: '0000...' != '6d95ebb...'` (the old mutation that no test
   caught). Re-pointing both `current` and the transition at a SHA that is not
   on main is the ancestry mutation above.
 """
@@ -63,7 +63,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS = ROOT / "scripts"
 WORKFLOW = ROOT / ".github" / "workflows" / "live-log.yml"
-PIN_SHA = "2eba843b35e197ed92cac968aa45aaf514a35e2a"
+PIN_SHA = "6d95ebb93db369892b2ee46b30b5e87ddb2e63e2"
 
 
 def _load(name):
@@ -128,6 +128,16 @@ class ManifestTests(unittest.TestCase):
         if shallow != "false":
             self.skipTest("a shallow clone does not hold the pin's commit, so its ancestry cannot be read")
         pins.verify_manifest(manifest, ROOT, "HEAD")
+
+    def test_the_last_transition_is_the_decision_row_fix_and_its_record_cites_1471(self):
+        manifest = pins.load_manifest()
+        last = manifest["transitions"][-1]
+        self.assertEqual(last["id"], "decision-row-bills")
+        self.assertEqual(last["sha"], PIN_SHA)
+        self.assertEqual(manifest["transitions"][-2]["sha"], "2eba843b35e197ed92cac968aa45aaf514a35e2a")
+        record = (ROOT / last["record"]).read_text(encoding="utf-8")
+        self.assertIn(PIN_SHA, record)
+        self.assertIn("#1471", record)
 
     def test_a_well_formed_manifest_verifies(self):
         with tempfile.TemporaryDirectory() as tmp:

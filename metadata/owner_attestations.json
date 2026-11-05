@@ -230,6 +230,20 @@
       "comment_id": 6640905697,
       "phrase": "GO #1445",
       "what": "scoring-protocol draft amendment 5: the H9 Holm pooling rule for near-identical targets (PR #1450)"
+    },
+    {
+      "kind": "live-pin",
+      "issue": 1475,
+      "comment_id": 6662675639,
+      "phrase": "GO #1475",
+      "what": "move the live pin to 6d95ebb9 (the merge of #1408, the decision row carries the day's own bill rates) in metadata/live_pin.json, live-pin v5; her ruling on #1471, option (a), 5 November 2026"
+    },
+    {
+      "kind": "decisions",
+      "issue": 1475,
+      "comment_id": 6662675639,
+      "phrase": "GO #1475",
+      "what": "the live-pin v5 bump decision record (docs/decisions/live-pin-v5-bump.md); her ruling on #1471, option (a), 5 November 2026"
     }
   ],
   "rule": "docs/decisions/drafts/owner-attestation.md",
