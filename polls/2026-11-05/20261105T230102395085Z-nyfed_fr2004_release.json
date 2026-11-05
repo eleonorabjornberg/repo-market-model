@@ -1,0 +1,12 @@
+{
+ "bytes": 103104,
+ "error": null,
+ "et_date": "2026-11-05",
+ "fetched_at": "2026-11-05T23:01:02.395085+00:00",
+ "kind": "in_window",
+ "latest_date": "1998-01-28",
+ "sha256": "829a81ed947f5b327f79eb049cefc506d239fa1e36ece676017a9190b1075055",
+ "source": "nyfed_fr2004_release",
+ "status": 200,
+ "url": "https://www.newyorkfed.org/markets/counterparties/primary-dealers-statistics"
+}
