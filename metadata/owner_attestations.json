@@ -230,6 +230,13 @@
       "comment_id": 6640905697,
       "phrase": "GO #1445",
       "what": "scoring-protocol draft amendment 5: the H9 Holm pooling rule for near-identical targets (PR #1450)"
+    },
+    {
+      "kind": "claude-files",
+      "issue": 1459,
+      "comment_id": 6663047248,
+      "phrase": "GO #1459",
+      "what": "the long-run skill's note that the H9D sd15 panel is built in the cloud only (.claude/skills/long-run/SKILL.md, PR #1467)"
     }
   ],
   "rule": "docs/decisions/drafts/owner-attestation.md",
