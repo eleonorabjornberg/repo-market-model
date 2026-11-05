@@ -1,0 +1,8 @@
+{
+  "command": [
+    "scripts/h6_step2_724.py",
+    "check"
+  ],
+  "where": "suite",
+  "pre_review": false
+}
