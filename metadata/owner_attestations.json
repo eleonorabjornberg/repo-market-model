@@ -237,6 +237,20 @@
       "comment_id": 6663047248,
       "phrase": "GO #1459",
       "what": "the long-run skill's note that the H9D sd15 panel is built in the cloud only (.claude/skills/long-run/SKILL.md, PR #1467)"
+    },
+    {
+      "kind": "live-pin",
+      "issue": 1475,
+      "comment_id": 6662675639,
+      "phrase": "GO #1475",
+      "what": "move the live pin to 6d95ebb9 (the merge of #1408, the decision row carries the day's own bill rates) in metadata/live_pin.json, live-pin v5; her ruling on #1471, option (a), 5 November 2026"
+    },
+    {
+      "kind": "decisions",
+      "issue": 1475,
+      "comment_id": 6669302727,
+      "phrase": "GO #1475",
+      "what": "the live pin v5 decision record, docs/decisions/live-pin-v5-bump.md (PR #1478)"
     }
   ],
   "rule": "docs/decisions/drafts/owner-attestation.md",

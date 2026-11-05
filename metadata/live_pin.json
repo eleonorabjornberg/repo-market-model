@@ -1,5 +1,5 @@
 {
-  "current": "2eba843b35e197ed92cac968aa45aaf514a35e2a",
+  "current": "6d95ebb93db369892b2ee46b30b5e87ddb2e63e2",
   "environment": {
     "lock": "metadata/live_requirements.lock",
     "lock_sha256": "80fd364df301d3a5235e824fe410a9ff614534b8246700d5a49d2ea1fd973902",
@@ -21,6 +21,11 @@
       "id": "decision-instant-1800",
       "record": "docs/decisions/live-pin-v4-bump.md",
       "sha": "2eba843b35e197ed92cac968aa45aaf514a35e2a"
+    },
+    {
+      "id": "decision-row-bills",
+      "record": "docs/decisions/live-pin-v5-bump.md",
+      "sha": "6d95ebb93db369892b2ee46b30b5e87ddb2e63e2"
     }
   ],
   "version": 1
