@@ -235,8 +235,7 @@ draft, their efficacy values are superseded.
 
 ## Draft amendment 4: passing the coverage tests is a registration requirement (#1130)
 
-**Status: a fourth draft, by the pull request that closes #1130, for Eleonora to review and merge. Nothing here is in force
-until she merges it** (§13: this record is merged by her, not under delegated review; the change is of kind (a), a
+**Status: In force since 23 October 2026 (GO #1130, PR #1137).** (§13: this record is merged by her, not under delegated review; the change is of kind (a), a
 demonstration). It follows her ruling of 22 October 2026 on PR #998, option a, relayed by the orchestrating session: passing
 the coverage tests becomes a registration requirement. Merging it is her own GitHub action, and a relayed ruling does not
 authorise it; the owner attestation cites her own `GO` when she gives it. Until she merges it, §2 stands as written,
@@ -303,8 +302,7 @@ rule is unmeasured until the follow-up runs.
 
 ## Draft amendment 5: near-identical targets are one Holm member (#1445)
 
-**Status: a fifth draft, by the pull request that closes #1445, for Eleonora to review and merge. Nothing here is in force
-until she merges it** (§13: this record is merged by her, not under delegated review). It records her ruling of 21 October 2026
+**Status: In force since 4 November 2026 (GO #1445, PR #1450).** (§13: this record is merged by her, not under delegated review). It records her ruling of 21 October 2026
 on #971, relayed by the orchestrating session; merging it is her own GitHub action, and a relayed ruling does not authorise it.
 Until she merges it, §8 stands as written. It changes no score, no critical value and no verdict.
 

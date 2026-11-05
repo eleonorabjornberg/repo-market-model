@@ -1,6 +1,6 @@
 # The live record's code pin
 
-**Status: a draft for Eleonora, not in force.** Drafted by the pull request that closes #255. It takes effect only
+**Status: In force since 7 October 2026 (GO #255, PR #323).** Drafted by the pull request that closes #255. It takes effect only
 when she merges it. The registered transition below records the pin the first live record was made with; it is a
 record of her decision on #215, not a new pin.
 

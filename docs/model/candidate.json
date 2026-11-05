@@ -85,7 +85,7 @@
   ],
   "limitations": [
     "Development data only. Scoring protocol v1 (#640) takes a verdict from prospective confirmation days alone, so nothing in this report supports, kills or registers the candidate.",
-    "Nothing is registered and the candidate is not in the live record. The confirmation design is a draft decision record awaiting Eleonora (#1394); no registration happens before she decides it, and registration is her own action.",
+    "Nothing is registered and the candidate is not in the live record. The confirmation design is a decision record in force since 4 November 2026 (GO #1393, PR #1394); no registration happens before she decides it, and registration is her own action.",
     "The quantiles are not recalibrated: no calibration layer corrects them. Interval coverage by period and day type, and whether the misses cluster in time, are measured on the pages cited (#1363, #1366), and the known limits below say where the bands fail.",
     "The regimes after 2020 carry the evidence that matters and the history there is short; the 2018-19 regime has the least history before the candidate's terms exist (the known limits below).",
     "The pooled gain over (s3c) is not a result on its own: the adoption records gave only the pooled figure, and the splits where the candidate loses are the known limits below (#1316).",
