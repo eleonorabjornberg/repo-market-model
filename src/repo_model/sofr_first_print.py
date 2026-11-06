@@ -32,6 +32,10 @@ days that were lost are listed in `metadata/sofr_missed_first_prints.json` (date
 rule for missing outcomes can count them. `unflagged_misses` names the business days that are due (their revision
 instant has passed), have no file and are not on the list; `read_missed` refuses a list that contradicts the branch.
 
+**The count** (#1491). By Eleonora's ruling a lost first print drops that lead alone, for every model
+(`docs/decisions/scoring-protocol.md`); the lost days are counted and reported at the 60, 125 and 250-day checks
+(`lost_day_report`). The report changes nothing that is scored and sets no ceiling.
+
 Stdlib only.
 """
 
@@ -61,6 +65,7 @@ __all__ = [
     "first_print_record",
     "iorb_source",
     "latest_published",
+    "lost_day_report",
     "publication_instant",
     "read_all",
     "read_missed",
@@ -391,3 +396,40 @@ def unflagged_misses(captured, now: datetime, missed: Mapping, first: date = FIR
         if day not in due:
             raise ValueError(f"{day.isoformat()} is listed as missed but its revision instant has not passed")
     return [day for day in due if day not in captured and day not in missed]
+
+
+LOST_DAY_RULE = "a lost first print drops that lead alone, for every model"
+
+
+def lost_day_report(missed: Mapping, start: date, now: datetime, checkpoints=None) -> list:
+    """The lost first prints in the first N business days from `start`, for each operational checkpoint N (#1491).
+
+    One row per checkpoint: `reached` (the N-th day's revision instant has passed at `now`), `window_days` (N, or the
+    days due so far if the checkpoint is not reached), `lost` and `lost_days` (the listed days in that window) and
+    `share`. The rule that applies to a lost day is `LOST_DAY_RULE` (`scoring-protocol.md`); this only counts.
+
+    Raises:
+        ValueError: `start` is not a business day, or `now` has no time zone.
+    """
+
+    if checkpoints is None:
+        from .scoring_protocol import CHECKPOINTS as checkpoints
+    if not _is_business_day(start):
+        raise ValueError(f"{start.isoformat()} is not a business day")
+    due = due_days(now, start)
+    rows = []
+    for checkpoint in checkpoints:
+        window = due[: int(checkpoint)]
+        lost = sorted(day for day in window if day in missed)
+        rows.append(
+            {
+                "checkpoint": int(checkpoint),
+                "reached": len(due) >= int(checkpoint),
+                "window_days": len(window),
+                "lost": len(lost),
+                "share": len(lost) / len(window) if window else 0.0,
+                "lost_days": lost,
+                "rule": LOST_DAY_RULE,
+            }
+        )
+    return rows
