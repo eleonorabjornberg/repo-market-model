@@ -52,7 +52,7 @@ class WindowTests(unittest.TestCase):
         self.assertEqual(ap.sources_due(at(2026, 10, 14, 18, 40, EDT)), ())
         self.assertEqual(ap.sources_due(at(2026, 11, 18, 23, 40, UTC)), ())
 
-    def test_thursday_adds_the_fr2004_page(self):
+    def test_thursday_adds_the_fr2004_csv(self):
         self.assertEqual(ap.sources_due(at(2026, 10, 15, 17, 0, EDT)), (ap.TREASURY, ap.FR2004))
 
     def test_weekend_and_holiday_poll_nothing(self):
@@ -90,9 +90,7 @@ class RecordTests(unittest.TestCase):
         self.assertNotEqual(other["sha256"], self.record()["sha256"])
         self.assertEqual(other["latest_date"], "2026-10-31")
 
-    def test_fr2004_page_latest_date_in_any_form(self):
-        page = b"<p>As of October 14, 2026</p><td>10/21/2026</td><i>2026-10-07</i>"
-        self.assertEqual(ap.latest_date(ap.FR2004, page), date(2026, 10, 21))
+    def test_fr2004_latest_date_no_dates(self):
         self.assertIsNone(ap.latest_date(ap.FR2004, b"no dates"))
 
     def test_http_error_is_a_record_without_a_date(self):
