@@ -480,6 +480,10 @@ def render(r: Mapping[str, object]) -> str:
         dlo, dhi = x["difference_interval"]
         out.append(f"| {_key_text(x['key'])} | {x['events']} | {pct(x['skill'])} [{pct(lo)}, {pct(hi)}] | {x['difference']:+.3f} [{dlo:+.3f}, {dhi:+.3f}] | "
                    f"{x['skill_reading']} | {x['mean_d_reading']} ({x['direction']}) | {'yes' if x['feeds_reading'] else 'no'} |")
+    feeding = [x for x in cmp["disagree"] if x["feeds_reading"]]
+    out += ["", "**Of these, the rows a stated reading is taken from** (and so change what section 2 says): " + (
+        "; ".join(f"{_key_text(x['key'])} ({x['skill_reading']} on the skill interval, {x['mean_d_reading']} on the mean-d bound)" for x in feeding) if feeding else "none")
+        + ". Every other row in the table moves a cell of the tables below, not a stated reading."]
     out += ["", "## 4. The rows that have a bound now", "",
             "#724 left these `undefined`: the benchmark scores zero on some resample, so skill has no interval. The mean-d bound is computed (#1215) and the row is read on it. "
             "A row that stays without a bound says why.", "",
@@ -488,6 +492,9 @@ def render(r: Mapping[str, object]) -> str:
         dlo, dhi = x["difference_interval"]
         out.append(f"| {_key_text(x['key'])} | {x['events']} | {x['difference']:+.3f} [{dlo:+.3f}, {dhi:+.3f}] | {x['reading']} | {'yes' if x['feeds_reading'] else 'no'} | "
                    f"{x['dropped_resamples']} |")
+    feeding_new = [x for x in cmp["newly_defined"] if x["feeds_reading"]]
+    out += ["", "**Of these, the rows a stated reading is taken from:** " + (
+        "; ".join(f"{_key_text(x['key'])} ({x['reading']})" for x in feeding_new) if feeding_new else "none") + "."]
     if cmp["still_undefined"]:
         out += ["", "Still without a bound:", "", "| row | events | why |", "|---|---|---|"]
         out += [f"| {_key_text(x['key'])} | {x['events']} | {x['why']} |" for x in cmp["still_undefined"]]
