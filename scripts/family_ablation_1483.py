@@ -373,10 +373,18 @@ def reused_rows(record_1350: Mapping[str, object]) -> Dict[str, Dict[str, dict]]
 
 
 def reused_tail(record_1345: Mapping[str, object]) -> dict:
-    """What #1345 recorded for the SOFR dispersion forecast as an input of (s3c-ann-net): its window, the pooled row and the regime rows."""
+    """What #1345 recorded for the SOFR dispersion forecast as one term of (s3c-ann-net): its window, and for the pooled, lead, regime and
+    pressure-day-type groups the nested row of the target (`candidate_mean` is the candidate with the term, `difference` is the candidate less that
+    with the term, so a positive `difference` and `skill` favour the term), for both primary metrics."""
 
-    return {"window": record_1345["window"], "target": TAIL_TARGET, "reading_rule": record_1345["reading_rule"],
-            "pooled": record_1345["groups"].get("pooled"), "keys": sorted(record_1345["groups"].keys())}
+    rows: Dict[str, dict] = {}
+    for split, labels in record_1345["groups"].items():
+        for label, group in labels.items():
+            if split == "pooled" and label != "all decision days":
+                continue
+            rows[f"{split}/{label}"] = {"days": group["days"], **{
+                metric: group[metric]["nested"].get(TAIL_TARGET) for metric in TESTED[:2] if metric in group}}
+    return {"window": record_1345["window"], "target": TAIL_TARGET, "reading_rule": record_1345["reading_rule"], "rows": rows}
 
 
 def assemble(args) -> int:
@@ -417,6 +425,15 @@ def _vs(group: Optional[Mapping[str, object]], metric: str, candidate: str, refe
     return m1288._vs(group, metric, candidate, reference)
 
 
+#: How a row's contrast reads in the family table.
+ROW_CONTRAST = {
+    "settlement": "candidate against the candidate without both settlement terms (coupon and bill)",
+    "settlement_coupon": "candidate against the candidate without the coupon term",
+    "settlement_bill": "candidate against the candidate without the bill term",
+    "settlement_size": "candidate against (s3c-ann): the settlement flags announced, without the net size",
+    "settlement_timing": "(s3c-ann) against (s3c): the settlement flags announced at leads 2 to 5, against read at lead 1 only",
+    "iorb": "candidate with the IORB terms against the candidate",
+}
 ROW_TITLES = {
     "settlement": "both settlement terms (coupon and bill)", "settlement_coupon": "the coupon term alone", "settlement_bill": "the bill term alone",
     "settlement_size": "the settlement size: the net, against the 0/1 flag announced", "settlement_timing": "the settlement timing: announced at leads 2 to 5, "
@@ -442,6 +459,22 @@ def row_cells(r: Mapping[str, object], key: str) -> Dict[str, str]:
     return out
 
 
+def tail_cell(row: Optional[Mapping[str, object]]) -> str:
+    """#1345's nested row as a cell, in the form of the other rows. The interval is the one #1345 recorded (two-sided 90%, the lower end the one-sided
+    95% bound) and the reading is taken from it as here."""
+
+    if not row or row.get("difference") is None:
+        return "n/a"
+    d = row["difference"]
+    if row.get("difference_interval") is None:
+        return f"d {d:+.3f}: interval not recorded"
+    lo, hi = row["difference_interval"]
+    word = "gain" if lo > 0 else "loss" if hi < 0 else "undecided"
+    skill = "skill n/a" if row.get("skill") is None or row.get("skill_interval") is None else (
+        f"{row['skill']:+.1%} [{row['skill_interval'][0]:+.1%}, {row['skill_interval'][1]:+.1%}]")
+    return f"{skill}; d {d:+.3f} [{lo:+.3f}, {hi:+.3f}]: **{word}**"
+
+
 def reused_cells(r: Mapping[str, object], key: str) -> Dict[str, str]:
     rows = r["reused"]["h41_per_release_1350"]
     out: Dict[str, str] = {}
@@ -452,43 +485,79 @@ def reused_cells(r: Mapping[str, object], key: str) -> Dict[str, str]:
     return out
 
 
+def family_rows(r: Mapping[str, object]) -> List[dict]:
+    """The rows of the family table as data: `family`, what the candidate `reads`, the `contrast`, how it was `obtained`, a `short` name for the prose,
+    and the `cells` by window and metric (grid CRPS and upper-tail twCRPS, pooled)."""
+
+    rows: List[dict] = []
+
+    def add(family, reads, contrast, how, short, cells):
+        rows.append({"family": family, "reads": reads, "contrast": contrast, "how": how, "short": short, "cells": cells})
+
+    reads = "both settlement terms, announced at leads 2 to 5 and sized by the net (USD 100 bn); no H.4.1 series (the scarcity state is held constant)"
+    for key in ROW_KEYS:
+        if key == "iorb":
+            continue
+        add("settlement and H.4.1 timing", reads if key == "settlement" else "as above",
+            ROW_CONTRAST[key], "scored here", f"settlement ({key.replace('settlement_', '').replace('settlement', 'both terms')})", row_cells(r, key))
+    add("settlement and H.4.1 timing", "no H.4.1 series, so dropping its timing leaves the candidate unchanged",
+        "(s3c-ann-net x state), H.4.1 per release against carried (the only arm that reads the H.4.1)", "re-used from #1350", "H.4.1 per release",
+        reused_cells(r, "h41_timing"))
+    add("the IORB change", "no IORB term (IORB enters only through the SRF cap's line)", ROW_CONTRAST["iorb"],
+        "scored here", "the IORB terms", row_cells(r, "iorb"))
+    add("the scarcity state read per leg", "no state (held at its maximum, so the net terms are plain sizes)",
+        "candidate with the state read (carried) against the candidate", "re-used from #1350", "the scarcity state", reused_cells(r, "scarcity_state"))
+    add("satiation distance", "nothing", "no input exists on main to add: the estimate is H7's (the liquidity repository), see question 2", "not measured",
+        "satiation distance", {f"{w}/{m}": "no row" for w in ("development", "2026") for m in TESTED[:2]})
+    tail = r["reused"]["h9_nested_1345"]
+    tail_cells = {f"{w}/{m}": "not recorded" for w in ("development", "2026") for m in TESTED[:2]}
+    entry = tail["rows"].get("pooled/all decision days", {})
+    for metric in TESTED[:2]:
+        if entry.get(metric):
+            tail_cells[f"development/{metric}"] = tail_cell(entry[metric])
+    add("tail spread", "no tail input", f"candidate with the {TAIL_TARGET} forecast as a term against the candidate (#1345, development window only)",
+        "re-used from #1345", "the SOFR dispersion forecast", tail_cells)
+    return rows
+
+
 def family_table(r: Mapping[str, object]) -> List[str]:
     """One row per family (and one per sub-row of the first): the candidate with the family against the candidate without it, the grid CRPS and the
     upper-tail twCRPS, on the development window and on the 2026 days."""
 
-    head = ["| family | what the candidate reads | contrast | how obtained | " + " | ".join(
+    out = ["| family | what the candidate reads | contrast | how obtained | " + " | ".join(
         f"{WINDOW_TITLES[w].split(' (')[0]}: {METRIC_TITLES[m]}" for w in ("development", "2026") for m in TESTED[:2]) + " |",
-            "|---|---|---|---|" + "---|" * 4]
-    out = list(head)
-
-    def line(family, reads, contrast, how, cells):
-        out.append(f"| {family} | {reads} | {contrast} | {how} | " + " | ".join(
-            cells[f"{w}/{m}"] for w in ("development", "2026") for m in TESTED[:2]) + " |")
-
-    reads = ("both settlement terms, announced at leads 2 to 5 and sized by the net (USD 100 bn); no H.4.1 series (the scarcity state is held constant)")
-    for key in ROW_KEYS:
-        if key == "iorb":
-            continue
-        line("settlement and H.4.1 timing", reads, f"candidate against {ROW_TITLES[key]} dropped", "scored here", row_cells(r, key))
-    line("settlement and H.4.1 timing", "no H.4.1 series, so dropping its timing leaves the candidate unchanged",
-         "(s3c-ann-net x state), H.4.1 per release against carried (the only arm that reads the H.4.1)", "re-used from #1350", reused_cells(r, "h41_timing"))
-    line("the IORB change", "no IORB term (IORB enters only through the SRF cap's line)", "candidate with the IORB terms against the candidate",
-         "scored here", row_cells(r, "iorb"))
-    line("the scarcity state read per leg", "no state (held at its maximum, so the net terms are plain sizes)",
-         "candidate with the state read (carried) against the candidate", "re-used from #1350", reused_cells(r, "scarcity_state"))
-    none = {f"{w}/{m}": "no row" for w in ("development", "2026") for m in TESTED[:2]}
-    line("satiation distance", "nothing", "no input exists on main to add: the estimate is H7's (the liquidity repository), see question 2", "not measured", none)
-    tail = r["reused"]["h9_nested_1345"]
-    tail_group = (tail.get("pooled") or {}).get("all decision days")
-    tail_cells = {f"{w}/{m}": "not recorded" for w in ("development", "2026") for m in TESTED[:2]}
-    if tail_group:
-        for metric in TESTED[:2]:
-            entry = tail_group.get(TAIL_TARGET, {}).get(metric) if isinstance(tail_group, dict) else None
-            if entry:
-                tail_cells[f"development/{metric}"] = json.dumps(entry, sort_keys=True)
-    line("tail spread", "no tail input", f"candidate with the {TAIL_TARGET} forecast as a term against the candidate (#1345, development window only)",
-         "re-used from #1345", tail_cells)
+           "|---|---|---|---|" + "---|" * 4]
+    for row in family_rows(r):
+        out.append(f"| {row['family']} | {row['reads']} | {row['contrast']} | {row['how']} | " + " | ".join(
+            row["cells"][f"{w}/{m}"] for w in ("development", "2026") for m in TESTED[:2]) + " |")
     return out
+
+
+def word_of(cell_text: str) -> str:
+    """`helps`, `hurts` or `undecided` from a cell's reading on the mean-d bound (a cell with no reading is `none`)."""
+
+    for word, name in (("**gain", "helps"), ("**loss", "hurts"), ("**undecided", "undecided")):
+        if word in cell_text:
+            return name
+    return "none"
+
+
+def reading_lines(r: Mapping[str, object]) -> List[str]:
+    """What the table says, generated from it: per window and metric, the rows that help, hurt and are undecided on the mean-d bound."""
+
+    rows = family_rows(r)
+    out = ["Generated from the table: on the studentized bound on mean d, the family helps when its lower end is above zero and hurts when its upper end is "
+           "below zero. A reading says only that the interval excludes zero; it is not a size, and a pooled "
+           "reading is not read without the splits below.", ""]
+    for window in ("development", "2026"):
+        for metric in TESTED[:2]:
+            groups: Dict[str, List[str]] = {"helps": [], "hurts": [], "undecided": [], "none": []}
+            for row in rows:
+                groups[word_of(row["cells"][f"{window}/{metric}"])].append(row["short"])
+            out.append(f"* {WINDOW_TITLES[window].split(' (')[0]}, {METRIC_TITLES[metric]}: helps: " + ("; ".join(groups["helps"]) or "none") + ". hurts: "
+                       + ("; ".join(groups["hurts"]) or "none") + ". undecided: " + ("; ".join(groups["undecided"]) or "none") + ". no reading: "
+                       + ("; ".join(groups["none"]) or "none") + ".")
+    return out + [""]
 
 
 def split_tables(w: Mapping[str, object], split: str, title: str, with_: str, without: str) -> List[str]:
@@ -505,7 +574,7 @@ def render(r: dict) -> str:
         "(scoring protocol v1, #640). Her ruling of 6 November 2026 (decision docket, relayed): #1354 Directive B (a). **(s3c-ann-net) stays the candidate; "
         "nothing here changes it.** Nothing is registered or published and no claim changes. Generated by `scripts/family_ablation_1483.py page` from "
         f"`docs/research/family-ablation-1483/result.json`, not edited by hand; declared in `{r['declaration']}` before any score.", "",
-        "## The families, one row each", ""] + family_table(r) + [""]
+        "## The families, one row each", ""] + family_table(r) + [""] + reading_lines(r)
     out += [
         "A family is *dropped* only if the candidate reads it. (s3c-ann-net) reads the settlement family and the calendar columns and nothing else of the five, "
         "so for the other four a drop is the candidate itself, and the contrast is the nested one: the candidate with the family added against the candidate. "
@@ -529,8 +598,20 @@ def render(r: dict) -> str:
         if w["skipped_groups"]:
             out += ["Groups of fewer than 20 days, listed and not tested: " + ", ".join(f"{x} ({n_})" for x, n_ in sorted(w["skipped_groups"].items())) + ".", ""]
     out += reused_sections(r)
+    out += references_section(r)
     out += question()
     return "\n".join(out).rstrip() + "\n"
+
+
+def references_section(r: Mapping[str, object]) -> List[str]:
+    """The references re-run here against #1321's record: the pooled means agree to rounding (a shown check, not a requirement)."""
+
+    if not r.get("against_1321"):
+        return []
+    diffs = [abs(v["difference"]) for a in r["against_1321"].values() for ms in a.values() for v in ms.values()]
+    return ["## The references against #1321's record", "",
+            "(s3), (s3c) and (s3c-ann-net) are re-run here with the machinery and at the instant of #1321's record; the pooled means of all three metrics, in both "
+            f"windows, are compared with it. Largest absolute difference of a pooled mean: {max(diffs):.1e}. Shown, not required to agree; no record is edited.", ""]
 
 
 def reused_sections(r: Mapping[str, object]) -> List[str]:
@@ -542,9 +623,15 @@ def reused_sections(r: Mapping[str, object]) -> List[str]:
            "times the scarcity state and the net settlement times the state (`s3c_announced.ANN_NET_ARM` on the carried states); the H.4.1 contrast is that arm "
            "read per release against carried. #1350 shows the candidate itself is unmoved by the per-release reading, because it reads no H.4.1 series.",
            f"* **The tail spread**: `docs/research/h9-nested-1800-1345/result.json` (#1345), panel `{r['reused']['panel_sha256_1345']}`, the development window only. "
-           "It adds the walk-forward forecast of a richer target (the SOFR and BGCR dispersions, the ON RRP change) as one term of the candidate. Its intervals are "
-           "one-sided bounds on mean d and it has no pressure-day-type split, so it does not meet the table's reading rule; it is shown as it was recorded, and the "
-           "gap is question 3.", ""]
+           "It adds the walk-forward forecast of a richer target (here the SOFR dispersion) as one term of the candidate, on the 18:00 instant and direct pairs. "
+           "Its test is #1345's (a Diebold-Mariano statistic and a bootstrap interval of mean d, not re-run here), and the target is a dispersion, not the "
+           "99th percentile less IORB that the manual's tail spread names: question 3.", ""]
+    tail = r["reused"]["h9_nested_1345"]["rows"]
+    out += [f"### Development window: (s3c-ann-net) with the {TAIL_TARGET} forecast as a term, against (s3c-ann-net) (#1345)", "",
+            "| group | days | " + " | ".join(METRIC_TITLES[m] for m in TESTED[:2]) + " |", "|---|---|" + "---|" * 2]
+    for name, entry in tail.items():
+        out.append(f"| {name} | {entry['days']} | " + " | ".join(tail_cell(entry.get(m)) for m in TESTED[:2]) + " |")
+    out.append("")
     for window in WINDOWS:
         rows = r["reused"]["h41_per_release_1350"].get(window)
         if not rows:

@@ -51,7 +51,8 @@ class DeclarationTests(unittest.TestCase):
         self.assertEqual([a["name"] for a in declaration["arms"]], [script.model_of(a) for a in script.WALK_ARMS])
         self.assertEqual([(r["key"], r["with"], r["without"]) for r in declaration["rows"]], [(k, w, o) for k, _f, w, o in script.ROWS])
         self.assertEqual(declaration["limits"]["last_day"], script.LAST_DAY.isoformat())
-        self.assertEqual(declaration["amendments"], [])
+        self.assertEqual(len(declaration["amendments"]), 1)  # a correction of one sentence about #1345's record, before any figure was read
+        self.assertIn("reused[2].why", declaration["amendments"][0]["what"])
         self.assertIn("18:00", declaration["decision_instant"])
         self.assertEqual(sorted(f["family"] for f in declaration["families"]), sorted(script.FAMILY_ORDER))
 
@@ -161,7 +162,25 @@ class ReusedRowTests(unittest.TestCase):
     def test_the_tail_row_is_the_dispersion_target_of_1345(self):
         record = json.loads(script.RECORD_1345.read_text(encoding="utf-8"))
         self.assertIn(script.TAIL_TARGET, record["targets"])
-        self.assertEqual(script.reused_tail(record)["window"], "development")
+        tail = script.reused_tail(record)
+        self.assertEqual(tail["window"], "development")
+        pooled = tail["rows"]["pooled/all decision days"]
+        self.assertEqual(pooled["days"], 1855)
+        self.assertIn("difference_interval", pooled["grid_crps"])
+        self.assertTrue(any(name.startswith("regime/") for name in tail["rows"]))
+        self.assertTrue(any(name.startswith("pressure_day_type/") for name in tail["rows"]))
+
+    def test_the_tail_cell_reads_the_interval_of_mean_d(self):
+        row = {"skill": 0.01, "skill_interval": [0.0, 0.02], "difference": 0.02, "difference_interval": [0.01, 0.03]}
+        self.assertIn("**gain**", script.tail_cell(row))
+        row = dict(row, difference=-0.02, difference_interval=[-0.03, -0.01])
+        self.assertIn("**loss**", script.tail_cell(row))
+        row = dict(row, difference=0.0, difference_interval=[-0.01, 0.01])
+        self.assertIn("**undecided**", script.tail_cell(row))
+        self.assertEqual(script.tail_cell(None), "n/a")
+        self.assertEqual(script.tail_cell({"difference": None}), "n/a")
+        self.assertIn("interval not recorded", script.tail_cell({"skill": 0.0, "difference": 0.0, "difference_interval": None, "skill_interval": None}))
+        self.assertIn("skill n/a", script.tail_cell({"skill": None, "difference": -0.05, "difference_interval": [-0.4, -0.0007], "skill_interval": None}))
 
 
 class PageTests(unittest.TestCase):
