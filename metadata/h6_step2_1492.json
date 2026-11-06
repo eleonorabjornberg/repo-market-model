@@ -1,0 +1,31 @@
+{
+  "status": "declared by the pull request that closes #1492 before any score was computed. A re-run of the development measurement of #724 under a changed reading rule, ruled by Eleonora. A development measurement (scoring protocol v1, #640): no verdict, no registration, nothing published, no critical value or decision rule in force moves, no day after 2025-12-31 and no lockbox day is scored. It replaces nothing: metadata/h6_step2_724.json, docs/research/h6-step2-724/result.json and docs/research/h6-step2-724-result.md are not edited",
+  "issue": 1492,
+  "hypothesis": "H6 (the spread on known risk dates is forecastable), development step 2 re-run (docs/research/hypotheses/H6.md). H6 step 3 waits on this",
+  "variants": {
+    "count": 1,
+    "declared": ["sc_s3c_ann_net_riskscale"],
+    "note": "the one variant #724 declared, unchanged and scored the same way; this re-run declares no other, so the variant count reported is 1. (Added after the first run of this script as a structural field that tests/test_model_declarations.py requires; no figure and no choice depends on it, and the run was repeated afterwards on the amended file)"
+  },
+  "ruling": "Eleonora, 6 November 2026, decision docket, relayed by the orchestrating session on #1492 (comment 6688185119): option 1. Re-run H6 step 2 (scripts/h6_step2_724.py) with the fallback for undefined rows, and read every row on the mean-d bound (#1009). Show both intervals and the HAC caveat (#1215). Publish as a new result, not an edit in place, and say which of the disagreeing rows change reading",
+  "what_is_unchanged": "Everything in metadata/h6_step2_724.json (as amended on 5 November 2026) other than its reading rule: the candidate (s3c-ann-net) and its walk, the 18:00 decision instant, the strata and their membership (coupon flag read as #849 does), the benchmarks, the one declared variant sc_s3c_ann_net_riskscale with its k grid, window and labels, the target-day series, the splits, seed 724, 10,000 draws, mean block 3 events, HAC lag 3, two-sided 90% studentized stationary bootstrap. The variant count is 1. scripts/h6_step2_1492.py reuses scripts/h6_step2_724.py's run unchanged and replaces only the paired test and the reading. The panel is the published panel built at 18:00 from the tracked fixtures; the walk is the development walk of scripts/capped_baselines_b2star_1434.py",
+  "what_changes": {
+    "reading_rule": "Every reading (the kill rule on the union without the bill stratum, the same reading by regime and by pressure-day type, and the variant rule) is taken from the lower end of the studentized 90% interval on mean(d), d = S(benchmark) - S(model), positive favouring the model (her ruling on #1009, 20 October 2026; pattern of docs/research/s3-terms-1243-result.md), not from the skill interval. Skill and its interval are shown beside it on every row. #724's declaration fixed the skill interval (its reading_rules); this declaration replaces that reading by her ruling of 6 November 2026 and nothing else in the rule",
+    "fallback": "A pair whose skill is undefined (the benchmark scores zero on a resample) keeps its mean(d) bound (#1215): it is retried on the same seed, block and lag with skill left out. A pair whose mean(d) bound fails because some resample has no long-run variance is read once more from the same seed with those resamples dropped and counted (#1239), exactly as spread_mr_variants_761.run_pairs does, with the event block and lag of #1131 instead of the pooled defaults. A pair stays undefined only when the series itself has no long-run variance or every resample has none, with the reason",
+    "defined_rows_unchanged": "a row defined in #724's record is recomputed on the same pair, seed, block and lag and must equal it; the run refuses to write otherwise (ValueError). Only the rows #724 left undefined can gain a bound",
+    "lens_c_caveat": "shown on the page: the HAC standard error that studentizes the bound is understated about 2x after 2020 (Lens C, #958; measured for the daily lag-10 series, not for this event series at lag 3), so an interval that excludes zero is narrower than it should be and a reading is evidence for a question"
+  },
+  "comparison": "the page lists every row that #724's record defines whose skill-interval lower end and mean-d lower end fall on opposite sides of zero, with both intervals and the direction of the change, every row #724 left undefined that now has a bound, and the readings that move (kill rule, by regime and pressure-day type, variant rule). The count of each goes in result.json",
+  "reading_rules": {
+    "development_not_a_verdict": "every reading is a development reading on days already seen. Under scoring protocol v1 only prospective confirmation days give a verdict",
+    "row_reading": "gain if the lower end of the mean-d interval is above zero, loss if its upper end is below zero, undecided otherwise, no reading where the row is thin, identical or has no bound",
+    "kill_rule": "(s3c-ann-net) shows skill on the union without the bill stratum if the lower end of its mean-d interval is above zero against B1 and against B2 both; otherwise it shows none that this data can show. B1', the #693 calendar benchmark and B2*-cap do not decide",
+    "variant_rule": "the variant adds skill over (s3c-ann-net) on the union without the bill stratum if the lower end of the mean-d interval of the paired difference against the candidate is above zero",
+    "twCRPS": "read the same way; a disagreement between grid CRPS and twCRPS is reported, not resolved"
+  },
+  "not_ruled": {
+    "pressure_day_type_rows": "the pressure-day-type rows bootstrap each group's own days, as #724 did, not the studentized domain interval she ruled for H5 day-type rows (#1454). Whether that ruling also covers H6 pages is hers (the issue says so); this re-run does not change it and the page says so. Question with a default in the pull request",
+    "no_multiplicity_correction": "no multiplicity correction on reported cuts (default 7 of #1131); the variant count is 1"
+  },
+  "limits": "as metadata/h6_step2_724.json: a development measurement of one frozen candidate and one declared variant on 2020-04-03 to 2025-12-31, on days seen before. The strata overlap; the union counts a day once. The HAC caveat above applies to every bound. No day of 2026 is scored"
+}
