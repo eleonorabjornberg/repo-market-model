@@ -606,9 +606,9 @@ def render(r: dict) -> str:
 def references_section(r: Mapping[str, object]) -> List[str]:
     """The references re-run here against #1321's record: the pooled means agree to rounding (a shown check, not a requirement)."""
 
-    if not r.get("against_1321"):
+    diffs = [abs(v["difference"]) for a in r.get("against_1321", {}).values() for ms in a.values() for v in ms.values()]
+    if not diffs:
         return []
-    diffs = [abs(v["difference"]) for a in r["against_1321"].values() for ms in a.values() for v in ms.values()]
     return ["## The references against #1321's record", "",
             "(s3), (s3c) and (s3c-ann-net) are re-run here with the machinery and at the instant of #1321's record; the pooled means of all three metrics, in both "
             f"windows, are compared with it. Largest absolute difference of a pooled mean: {max(diffs):.1e}. Shown, not required to agree; no record is edited.", ""]
