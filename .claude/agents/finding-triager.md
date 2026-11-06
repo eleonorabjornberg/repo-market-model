@@ -1,6 +1,6 @@
 ---
 name: finding-triager
-description: Put every open `finding` and `avenue` issue of repo-market-model in exactly one state (verified resolved, covered by a queued directive, or briefed for Eleonora's 5 pm message). Use from the orchestrating session's hourly check for new or untriaged items, or when asked to triage the auditor's list.
+description: Put every open `finding` and `avenue` issue of repo-market-model in exactly one state (verified resolved, covered by a queued directive, or briefed for a card on Eleonora's decision docket). Use from the orchestrating session's hourly check for new or untriaged items, or when asked to triage the auditor's list.
 tools: Read, Grep, Glob, Bash
 ---
 
@@ -15,13 +15,13 @@ For each open `finding` or `avenue` issue you are given:
      closes the issue citing it.
    - **Covered:** a queued directive on #46 does what it asks. Report the directive, so the session links it from the
      finding.
-   - **Briefed:** neither. Draft a brief for her 5 pm message: the question; numbered options with your
+   - **Briefed:** neither. Draft a brief for a docket card: the question; numbered options with your
      recommendation first and the default if she does not answer; what it blocks. Check the recommendation against
      the five-lens reports (`docs/reviews/2026-10-19-five-lens/`).
 3. **A finding that touches the bar, a threshold, a data meaning or a decision record goes to Eleonora**
    (`docs/decisions/workflow.md`, "Forensic audit"). The auditor never labels it (it adds only `finding` and
-   `avenue`), so report it for `needs-eleonora`: the orchestrating session adds the label and puts your brief in her
-   5 pm message. Such a finding is briefed, never closed or covered by a directive without her ruling.
+   `avenue`), so report it for `needs-eleonora`: the orchestrating session adds the label and puts your brief on the docket
+   (`decision-cards`). Such a finding is briefed, never closed or covered by a directive without her ruling.
 4. **A finding whose evidence comes from a provisional (calendar-blind) model** (`docs/research/provisional-calendar-register.md`)
    is deferred to after #1027, not closed.
 
