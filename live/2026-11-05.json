@@ -1,0 +1,1387 @@
+{
+ "baselines": {
+  "calendar_climatology": {
+   "forecasts": {
+    "1": {
+     "+10bp": 0.020844761382336808,
+     "+5bp": 0.05924300603400987
+    },
+    "2": {
+     "+10bp": 0.020844761382336808,
+     "+5bp": 0.05924300603400987
+    },
+    "3": {
+     "+10bp": 0.020844761382336808,
+     "+5bp": 0.05924300603400987
+    },
+    "4": {
+     "+10bp": 0.020844761382336808,
+     "+5bp": 0.05924300603400987
+    },
+    "5": {
+     "+10bp": 0.020844761382336808,
+     "+5bp": 0.05924300603400987
+    }
+   }
+  },
+  "leap_calendar_climatology": {
+   "forecasts": {
+    "1": {
+     "leap": 0.07797913234486546
+    },
+    "2": {
+     "leap": 0.06758241758241758
+    },
+    "3": {
+     "leap": 0.0725673446948873
+    },
+    "4": {
+     "leap": 0.0737073707370737
+    },
+    "5": {
+     "leap": 0.06989543203082003
+    }
+   }
+  },
+  "leap_persistence_logistic": {
+   "forecasts": {
+    "1": {
+     "leap": 0.11216710485087929
+    },
+    "2": {
+     "leap": 0.11252084162799525
+    },
+    "3": {
+     "leap": 0.11484182352441066
+    },
+    "4": {
+     "leap": 0.11127024265221513
+    },
+    "5": {
+     "leap": 0.09707585959151485
+    }
+   }
+  },
+  "persistence_logistic": {
+   "forecasts": {
+    "1": {
+     "+10bp": 0.04938267716995903,
+     "+5bp": 0.15708743964523153
+    },
+    "2": {
+     "+10bp": 0.040992341011379795,
+     "+5bp": 0.14564157039336173
+    },
+    "3": {
+     "+10bp": 0.03951277723581463,
+     "+5bp": 0.1258960999434861
+    },
+    "4": {
+     "+10bp": 0.04519967408780277,
+     "+5bp": 0.13785005594338443
+    },
+    "5": {
+     "+10bp": 0.045072693548655784,
+     "+5bp": 0.13784792407352647
+    }
+   }
+  }
+ },
+ "chain": {
+  "prev_commit": "32003f88bfdcd6f138882f2f14c3c69db5f1afb9",
+  "prev_date": "2026-11-03",
+  "prev_sha256": "1dc701c654e7b333be8fcb3dd9df93eb16570014ecb09356ba500695de2966fe"
+ },
+ "code": {
+  "pinned_sha": "6d95ebb93db369892b2ee46b30b5e87ddb2e63e2",
+  "sha": "6d95ebb93db369892b2ee46b30b5e87ddb2e63e2"
+ },
+ "decision_day": "2026-11-05",
+ "decision_instant": "2026-11-05T18:00:00-05:00",
+ "distributions": {
+  "levels": [
+   0.05,
+   0.25,
+   0.5,
+   0.75,
+   0.95
+  ],
+  "persistence": {
+   "quantiles_bps": {
+    "1": [
+     0.9999999999999787,
+     3.000000000000025,
+     4.0000000000000036,
+     4.999999999999982,
+     8.000000000000007
+    ],
+    "2": [
+     0.9999999999999787,
+     3.000000000000025,
+     4.0000000000000036,
+     4.999999999999982,
+     8.000000000000007
+    ],
+    "3": [
+     0.9999999999999787,
+     3.000000000000025,
+     4.0000000000000036,
+     4.999999999999982,
+     8.000000000000007
+    ],
+    "4": [
+     0.9999999999999787,
+     3.000000000000025,
+     4.0000000000000036,
+     4.999999999999982,
+     8.000000000000007
+    ],
+    "5": [
+     0.9999999999999787,
+     3.000000000000025,
+     4.0000000000000036,
+     4.999999999999982,
+     8.000000000000007
+    ]
+   }
+  },
+  "published": {
+   "declaration_sha256": {
+    "1": "6e48bc40a6eb16c50acc28b682e3fa40bc889a04a63992d72ccf10eaa7b28c9e",
+    "2": "c62c6d0ccf296946d8dceafb2089ab3829459e0b0738a914141cd74d81470d41",
+    "3": "285a77265d0f3abaae3da8f7428620d31fe54574b77c68d05deb6de71c9a7d12",
+    "4": "5a7e88f9c70cb9a81b73dc26baf9fa62d4095932c30bed8320201954fbc8c1a7",
+    "5": "f85090e5645a958d2af0f73dc4d990acd8e556ed096cfeb9e30a71208fea6f28"
+   },
+   "quantiles_bps": {
+    "1": [
+     -1.6115255651131455,
+     1.7374889791232584,
+     3.2699944050872025,
+     6.312331515951769,
+     10.223543964906794
+    ],
+    "2": [
+     -3.168501480725318,
+     1.137074651513453,
+     2.5081963299454486,
+     6.59768609286798,
+     10.744116099015116
+    ],
+    "3": [
+     -3.8429519834306394,
+     1.137074651513453,
+     2.5081963299454486,
+     6.59768609286798,
+     11.418566601720437
+    ],
+    "4": [
+     -4.074797516669455,
+     1.137074651513453,
+     2.5081963299454486,
+     6.59768609286798,
+     11.650412134959254
+    ],
+    "5": [
+     -3.9055021463731645,
+     1.137074651513453,
+     2.5081963299454486,
+     6.59768609286798,
+     11.481116764662962
+    ]
+   },
+   "records": {
+    "1": "docs/runs/compare_persistence_vs_gbm_conformal_pid_nested_funding_crps.json",
+    "2": "docs/runs/pressure_model_v1_h2.json",
+    "3": "docs/runs/pressure_model_v1_h3.json",
+    "4": "docs/runs/pressure_model_v1_h4.json",
+    "5": "docs/runs/pressure_model_v1_h5.json"
+   }
+  },
+  "published_v2": {
+   "declaration_sha256": {
+    "1": "428de0190daba64b8d1154e725096570418bd7494346a148aa4e042eb6f0879f"
+   },
+   "quantiles_bps": {
+    "1": [
+     -2.3742531360354113,
+     0.9125784685534286,
+     2.6204644945121602,
+     5.492831216939679,
+     10.677581408641442
+    ]
+   },
+   "records": {
+    "1": "docs/runs/pressure_model_v2_distribution_h1.json"
+   }
+  }
+ },
+ "environment": {
+  "lock_sha256": "80fd364df301d3a5235e824fe410a9ff614534b8246700d5a49d2ea1fd973902",
+  "packages": {
+   "cloudpickle": "3.1.2",
+   "joblib": "1.6.0",
+   "narwhals": "2.26.0",
+   "numpy": "2.4.6",
+   "scikit-learn": "1.9.1",
+   "scipy": "1.17.1",
+   "threadpoolctl": "3.7.0"
+  },
+  "python": "3.11.16",
+  "runner": "ubuntu-24.04"
+ },
+ "field_flags": {
+  "basis": {
+   "age_hours": "hours from the declared instant of the observation behind the value to the decision instant; null for a calendar column",
+   "carried": "true for a weekly value carried on a later panel row than its own print",
+   "imputed": "true when the cell read is a hole at that row; a model fills it from its training mean or refuses it",
+   "latest_public": "true when no later row than the one read was observable at the decision instant (a calendar or scheduled read: it is read at the scored row)"
+  },
+  "horizons": {
+   "1": {
+    "days_to_month_end": {
+     "age_hours": null,
+     "carried": false,
+     "fields": [],
+     "imputed": false,
+     "kind": "calendar",
+     "latest_public": true,
+     "read_date": "2026-11-06",
+     "rows_before_scored": 0
+    },
+    "quarter_end": {
+     "age_hours": null,
+     "carried": false,
+     "fields": [],
+     "imputed": false,
+     "kind": "calendar",
+     "latest_public": true,
+     "read_date": "2026-11-06",
+     "rows_before_scored": 0
+    },
+    "reserve_balances": {
+     "age_hours": 73.5,
+     "carried": true,
+     "fields": [
+      "fred_macro_latest_vintage.WRESBAL"
+     ],
+     "imputed": false,
+     "kind": "observed",
+     "latest_public": true,
+     "read_date": "2026-10-30",
+     "rows_before_scored": 5
+    },
+    "sofr_p25": {
+     "age_hours": 3.0,
+     "carried": false,
+     "fields": [
+      "nyfed_sofr.SOFR_p25"
+     ],
+     "imputed": false,
+     "kind": "observed",
+     "latest_public": true,
+     "read_date": "2026-11-04",
+     "rows_before_scored": 2
+    },
+    "sofr_p75": {
+     "age_hours": 3.0,
+     "carried": false,
+     "fields": [
+      "nyfed_sofr.SOFR_p75"
+     ],
+     "imputed": false,
+     "kind": "observed",
+     "latest_public": true,
+     "read_date": "2026-11-04",
+     "rows_before_scored": 2
+    },
+    "sofr_volume": {
+     "age_hours": 3.0,
+     "carried": false,
+     "fields": [
+      "nyfed_sofr.SOFR_volume"
+     ],
+     "imputed": false,
+     "kind": "observed",
+     "latest_public": true,
+     "read_date": "2026-11-04",
+     "rows_before_scored": 2
+    },
+    "spread_bps": {
+     "age_hours": 3.0,
+     "carried": false,
+     "fields": [
+      "fred_macro_latest_vintage.IOER",
+      "fred_macro_latest_vintage.IORB",
+      "nyfed_sofr.SOFR"
+     ],
+     "imputed": false,
+     "kind": "observed",
+     "latest_public": true,
+     "read_date": "2026-11-04",
+     "rows_before_scored": 2
+    },
+    "tax_date": {
+     "age_hours": null,
+     "carried": false,
+     "fields": [],
+     "imputed": false,
+     "kind": "calendar",
+     "latest_public": true,
+     "read_date": "2026-11-06",
+     "rows_before_scored": 0
+    },
+    "tbill_13w": {
+     "age_hours": 1.5,
+     "carried": false,
+     "fields": [
+      "treasury_bill_rates.tbill_13w_coupon_equivalent"
+     ],
+     "imputed": false,
+     "kind": "observed",
+     "latest_public": true,
+     "read_date": "2026-11-05",
+     "rows_before_scored": 1
+    },
+    "tbill_4w": {
+     "age_hours": 1.5,
+     "carried": false,
+     "fields": [
+      "treasury_bill_rates.tbill_4w_coupon_equivalent"
+     ],
+     "imputed": false,
+     "kind": "observed",
+     "latest_public": true,
+     "read_date": "2026-11-05",
+     "rows_before_scored": 1
+    },
+    "tga": {
+     "age_hours": 73.5,
+     "carried": true,
+     "fields": [
+      "fred_macro_latest_vintage.WTREGEN"
+     ],
+     "imputed": false,
+     "kind": "observed",
+     "latest_public": true,
+     "read_date": "2026-10-30",
+     "rows_before_scored": 5
+    },
+    "treasury_settlement": {
+     "age_hours": 3.0,
+     "carried": false,
+     "fields": [
+      "treasury_auctions.treasury_settlement"
+     ],
+     "imputed": false,
+     "kind": "scheduled",
+     "latest_public": true,
+     "read_date": "2026-11-06",
+     "rows_before_scored": 0
+    }
+   },
+   "2": {
+    "days_to_month_end": {
+     "age_hours": null,
+     "carried": false,
+     "fields": [],
+     "imputed": false,
+     "kind": "calendar",
+     "latest_public": true,
+     "read_date": "2026-11-09",
+     "rows_before_scored": 0
+    },
+    "quarter_end": {
+     "age_hours": null,
+     "carried": false,
+     "fields": [],
+     "imputed": false,
+     "kind": "calendar",
+     "latest_public": true,
+     "read_date": "2026-11-09",
+     "rows_before_scored": 0
+    },
+    "reserve_balances": {
+     "age_hours": 73.5,
+     "carried": true,
+     "fields": [
+      "fred_macro_latest_vintage.WRESBAL"
+     ],
+     "imputed": false,
+     "kind": "observed",
+     "latest_public": true,
+     "read_date": "2026-10-30",
+     "rows_before_scored": 6
+    },
+    "sofr_p25": {
+     "age_hours": 3.0,
+     "carried": false,
+     "fields": [
+      "nyfed_sofr.SOFR_p25"
+     ],
+     "imputed": false,
+     "kind": "observed",
+     "latest_public": true,
+     "read_date": "2026-11-04",
+     "rows_before_scored": 3
+    },
+    "sofr_p75": {
+     "age_hours": 3.0,
+     "carried": false,
+     "fields": [
+      "nyfed_sofr.SOFR_p75"
+     ],
+     "imputed": false,
+     "kind": "observed",
+     "latest_public": true,
+     "read_date": "2026-11-04",
+     "rows_before_scored": 3
+    },
+    "sofr_volume": {
+     "age_hours": 3.0,
+     "carried": false,
+     "fields": [
+      "nyfed_sofr.SOFR_volume"
+     ],
+     "imputed": false,
+     "kind": "observed",
+     "latest_public": true,
+     "read_date": "2026-11-04",
+     "rows_before_scored": 3
+    },
+    "spread_bps": {
+     "age_hours": 3.0,
+     "carried": false,
+     "fields": [
+      "fred_macro_latest_vintage.IOER",
+      "fred_macro_latest_vintage.IORB",
+      "nyfed_sofr.SOFR"
+     ],
+     "imputed": false,
+     "kind": "observed",
+     "latest_public": true,
+     "read_date": "2026-11-04",
+     "rows_before_scored": 3
+    },
+    "tax_date": {
+     "age_hours": null,
+     "carried": false,
+     "fields": [],
+     "imputed": false,
+     "kind": "calendar",
+     "latest_public": true,
+     "read_date": "2026-11-09",
+     "rows_before_scored": 0
+    },
+    "tbill_13w": {
+     "age_hours": 1.5,
+     "carried": false,
+     "fields": [
+      "treasury_bill_rates.tbill_13w_coupon_equivalent"
+     ],
+     "imputed": false,
+     "kind": "observed",
+     "latest_public": true,
+     "read_date": "2026-11-05",
+     "rows_before_scored": 2
+    },
+    "tbill_4w": {
+     "age_hours": 1.5,
+     "carried": false,
+     "fields": [
+      "treasury_bill_rates.tbill_4w_coupon_equivalent"
+     ],
+     "imputed": false,
+     "kind": "observed",
+     "latest_public": true,
+     "read_date": "2026-11-05",
+     "rows_before_scored": 2
+    },
+    "tga": {
+     "age_hours": 73.5,
+     "carried": true,
+     "fields": [
+      "fred_macro_latest_vintage.WTREGEN"
+     ],
+     "imputed": false,
+     "kind": "observed",
+     "latest_public": true,
+     "read_date": "2026-10-30",
+     "rows_before_scored": 6
+    }
+   },
+   "3": {
+    "days_to_month_end": {
+     "age_hours": null,
+     "carried": false,
+     "fields": [],
+     "imputed": false,
+     "kind": "calendar",
+     "latest_public": true,
+     "read_date": "2026-11-10",
+     "rows_before_scored": 0
+    },
+    "quarter_end": {
+     "age_hours": null,
+     "carried": false,
+     "fields": [],
+     "imputed": false,
+     "kind": "calendar",
+     "latest_public": true,
+     "read_date": "2026-11-10",
+     "rows_before_scored": 0
+    },
+    "reserve_balances": {
+     "age_hours": 73.5,
+     "carried": true,
+     "fields": [
+      "fred_macro_latest_vintage.WRESBAL"
+     ],
+     "imputed": false,
+     "kind": "observed",
+     "latest_public": true,
+     "read_date": "2026-10-30",
+     "rows_before_scored": 7
+    },
+    "sofr_p25": {
+     "age_hours": 3.0,
+     "carried": false,
+     "fields": [
+      "nyfed_sofr.SOFR_p25"
+     ],
+     "imputed": false,
+     "kind": "observed",
+     "latest_public": true,
+     "read_date": "2026-11-04",
+     "rows_before_scored": 4
+    },
+    "sofr_p75": {
+     "age_hours": 3.0,
+     "carried": false,
+     "fields": [
+      "nyfed_sofr.SOFR_p75"
+     ],
+     "imputed": false,
+     "kind": "observed",
+     "latest_public": true,
+     "read_date": "2026-11-04",
+     "rows_before_scored": 4
+    },
+    "sofr_volume": {
+     "age_hours": 3.0,
+     "carried": false,
+     "fields": [
+      "nyfed_sofr.SOFR_volume"
+     ],
+     "imputed": false,
+     "kind": "observed",
+     "latest_public": true,
+     "read_date": "2026-11-04",
+     "rows_before_scored": 4
+    },
+    "spread_bps": {
+     "age_hours": 3.0,
+     "carried": false,
+     "fields": [
+      "fred_macro_latest_vintage.IOER",
+      "fred_macro_latest_vintage.IORB",
+      "nyfed_sofr.SOFR"
+     ],
+     "imputed": false,
+     "kind": "observed",
+     "latest_public": true,
+     "read_date": "2026-11-04",
+     "rows_before_scored": 4
+    },
+    "tax_date": {
+     "age_hours": null,
+     "carried": false,
+     "fields": [],
+     "imputed": false,
+     "kind": "calendar",
+     "latest_public": true,
+     "read_date": "2026-11-10",
+     "rows_before_scored": 0
+    },
+    "tbill_13w": {
+     "age_hours": 1.5,
+     "carried": false,
+     "fields": [
+      "treasury_bill_rates.tbill_13w_coupon_equivalent"
+     ],
+     "imputed": false,
+     "kind": "observed",
+     "latest_public": true,
+     "read_date": "2026-11-05",
+     "rows_before_scored": 3
+    },
+    "tbill_4w": {
+     "age_hours": 1.5,
+     "carried": false,
+     "fields": [
+      "treasury_bill_rates.tbill_4w_coupon_equivalent"
+     ],
+     "imputed": false,
+     "kind": "observed",
+     "latest_public": true,
+     "read_date": "2026-11-05",
+     "rows_before_scored": 3
+    },
+    "tga": {
+     "age_hours": 73.5,
+     "carried": true,
+     "fields": [
+      "fred_macro_latest_vintage.WTREGEN"
+     ],
+     "imputed": false,
+     "kind": "observed",
+     "latest_public": true,
+     "read_date": "2026-10-30",
+     "rows_before_scored": 7
+    }
+   },
+   "4": {
+    "days_to_month_end": {
+     "age_hours": null,
+     "carried": false,
+     "fields": [],
+     "imputed": false,
+     "kind": "calendar",
+     "latest_public": true,
+     "read_date": "2026-11-12",
+     "rows_before_scored": 0
+    },
+    "quarter_end": {
+     "age_hours": null,
+     "carried": false,
+     "fields": [],
+     "imputed": false,
+     "kind": "calendar",
+     "latest_public": true,
+     "read_date": "2026-11-12",
+     "rows_before_scored": 0
+    },
+    "reserve_balances": {
+     "age_hours": 73.5,
+     "carried": true,
+     "fields": [
+      "fred_macro_latest_vintage.WRESBAL"
+     ],
+     "imputed": false,
+     "kind": "observed",
+     "latest_public": true,
+     "read_date": "2026-10-30",
+     "rows_before_scored": 8
+    },
+    "sofr_p25": {
+     "age_hours": 3.0,
+     "carried": false,
+     "fields": [
+      "nyfed_sofr.SOFR_p25"
+     ],
+     "imputed": false,
+     "kind": "observed",
+     "latest_public": true,
+     "read_date": "2026-11-04",
+     "rows_before_scored": 5
+    },
+    "sofr_p75": {
+     "age_hours": 3.0,
+     "carried": false,
+     "fields": [
+      "nyfed_sofr.SOFR_p75"
+     ],
+     "imputed": false,
+     "kind": "observed",
+     "latest_public": true,
+     "read_date": "2026-11-04",
+     "rows_before_scored": 5
+    },
+    "sofr_volume": {
+     "age_hours": 3.0,
+     "carried": false,
+     "fields": [
+      "nyfed_sofr.SOFR_volume"
+     ],
+     "imputed": false,
+     "kind": "observed",
+     "latest_public": true,
+     "read_date": "2026-11-04",
+     "rows_before_scored": 5
+    },
+    "spread_bps": {
+     "age_hours": 3.0,
+     "carried": false,
+     "fields": [
+      "fred_macro_latest_vintage.IOER",
+      "fred_macro_latest_vintage.IORB",
+      "nyfed_sofr.SOFR"
+     ],
+     "imputed": false,
+     "kind": "observed",
+     "latest_public": true,
+     "read_date": "2026-11-04",
+     "rows_before_scored": 5
+    },
+    "tax_date": {
+     "age_hours": null,
+     "carried": false,
+     "fields": [],
+     "imputed": false,
+     "kind": "calendar",
+     "latest_public": true,
+     "read_date": "2026-11-12",
+     "rows_before_scored": 0
+    },
+    "tbill_13w": {
+     "age_hours": 1.5,
+     "carried": false,
+     "fields": [
+      "treasury_bill_rates.tbill_13w_coupon_equivalent"
+     ],
+     "imputed": false,
+     "kind": "observed",
+     "latest_public": true,
+     "read_date": "2026-11-05",
+     "rows_before_scored": 4
+    },
+    "tbill_4w": {
+     "age_hours": 1.5,
+     "carried": false,
+     "fields": [
+      "treasury_bill_rates.tbill_4w_coupon_equivalent"
+     ],
+     "imputed": false,
+     "kind": "observed",
+     "latest_public": true,
+     "read_date": "2026-11-05",
+     "rows_before_scored": 4
+    },
+    "tga": {
+     "age_hours": 73.5,
+     "carried": true,
+     "fields": [
+      "fred_macro_latest_vintage.WTREGEN"
+     ],
+     "imputed": false,
+     "kind": "observed",
+     "latest_public": true,
+     "read_date": "2026-10-30",
+     "rows_before_scored": 8
+    }
+   },
+   "5": {
+    "days_to_month_end": {
+     "age_hours": null,
+     "carried": false,
+     "fields": [],
+     "imputed": false,
+     "kind": "calendar",
+     "latest_public": true,
+     "read_date": "2026-11-13",
+     "rows_before_scored": 0
+    },
+    "quarter_end": {
+     "age_hours": null,
+     "carried": false,
+     "fields": [],
+     "imputed": false,
+     "kind": "calendar",
+     "latest_public": true,
+     "read_date": "2026-11-13",
+     "rows_before_scored": 0
+    },
+    "reserve_balances": {
+     "age_hours": 73.5,
+     "carried": true,
+     "fields": [
+      "fred_macro_latest_vintage.WRESBAL"
+     ],
+     "imputed": false,
+     "kind": "observed",
+     "latest_public": true,
+     "read_date": "2026-10-30",
+     "rows_before_scored": 9
+    },
+    "sofr_p25": {
+     "age_hours": 3.0,
+     "carried": false,
+     "fields": [
+      "nyfed_sofr.SOFR_p25"
+     ],
+     "imputed": false,
+     "kind": "observed",
+     "latest_public": true,
+     "read_date": "2026-11-04",
+     "rows_before_scored": 6
+    },
+    "sofr_p75": {
+     "age_hours": 3.0,
+     "carried": false,
+     "fields": [
+      "nyfed_sofr.SOFR_p75"
+     ],
+     "imputed": false,
+     "kind": "observed",
+     "latest_public": true,
+     "read_date": "2026-11-04",
+     "rows_before_scored": 6
+    },
+    "sofr_volume": {
+     "age_hours": 3.0,
+     "carried": false,
+     "fields": [
+      "nyfed_sofr.SOFR_volume"
+     ],
+     "imputed": false,
+     "kind": "observed",
+     "latest_public": true,
+     "read_date": "2026-11-04",
+     "rows_before_scored": 6
+    },
+    "spread_bps": {
+     "age_hours": 3.0,
+     "carried": false,
+     "fields": [
+      "fred_macro_latest_vintage.IOER",
+      "fred_macro_latest_vintage.IORB",
+      "nyfed_sofr.SOFR"
+     ],
+     "imputed": false,
+     "kind": "observed",
+     "latest_public": true,
+     "read_date": "2026-11-04",
+     "rows_before_scored": 6
+    },
+    "tax_date": {
+     "age_hours": null,
+     "carried": false,
+     "fields": [],
+     "imputed": false,
+     "kind": "calendar",
+     "latest_public": true,
+     "read_date": "2026-11-13",
+     "rows_before_scored": 0
+    },
+    "tbill_13w": {
+     "age_hours": 1.5,
+     "carried": false,
+     "fields": [
+      "treasury_bill_rates.tbill_13w_coupon_equivalent"
+     ],
+     "imputed": false,
+     "kind": "observed",
+     "latest_public": true,
+     "read_date": "2026-11-05",
+     "rows_before_scored": 5
+    },
+    "tbill_4w": {
+     "age_hours": 1.5,
+     "carried": false,
+     "fields": [
+      "treasury_bill_rates.tbill_4w_coupon_equivalent"
+     ],
+     "imputed": false,
+     "kind": "observed",
+     "latest_public": true,
+     "read_date": "2026-11-05",
+     "rows_before_scored": 5
+    },
+    "tga": {
+     "age_hours": 73.5,
+     "carried": true,
+     "fields": [
+      "fred_macro_latest_vintage.WTREGEN"
+     ],
+     "imputed": false,
+     "kind": "observed",
+     "latest_public": true,
+     "read_date": "2026-10-30",
+     "rows_before_scored": 9
+    }
+   }
+  },
+  "version": 1
+ },
+ "inputs": {
+  "build_cutoff": "2026-11-06T03:31:17+00:00",
+  "panel_last_date": "2026-11-04",
+  "panel_sha256": "18cbe0f5531da54f161fca6403876b81072b3c051708d50511aa1a3cdcb6714d",
+  "registry_sha256": "676b53a1bee46db1c8b5ba16fb50b48b0504707df6b570f3ee1b24336e15e2fc",
+  "snapshots": [
+   {
+    "retrieved_at": "2026-11-06T03:28:27.106527+00:00",
+    "sha256": "004a607b82d31bf156377cea2f70759f6ede388f7bd3e9da1ba6007237f05f70",
+    "source_id": "fred_macro_latest_vintage",
+    "url": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=IORB%2CIOER%2CWRESBAL%2CWTREGEN%2CRRPONTSYD%2CDFF%2CRRPONTSYAWARD%2CTREAST%2CWLRRAOL"
+   },
+   {
+    "retrieved_at": "2026-11-06T03:28:23.834669+00:00",
+    "sha256": "0cc32ef719bb10f488fd182b46dd2db4d1e9c50482e355a2007235575054beb6",
+    "source_id": "nyfed_sofr",
+    "url": "https://markets.newyorkfed.org/api/rates/secured/sofr/search.json?startDate=2018-04-03&endDate=2026-11-05&type=rate"
+   },
+   {
+    "retrieved_at": "2026-11-06T03:28:23.834669+00:00",
+    "sha256": "516902774c0c2db5b1be72d91f4686cc9a6043e9dfd04975c8ff7a92b769b011",
+    "source_id": "nyfed_sofr",
+    "url": "https://markets.newyorkfed.org/api/rates/secured/sofr/search.json?startDate=2018-04-03&endDate=2026-11-05&type=volume"
+   },
+   {
+    "retrieved_at": "2026-11-06T03:31:17.737015+00:00",
+    "sha256": "694ea1cbbcb78d8a05ee71c247c7f729b35c39804752c254c112f771f27b1057",
+    "source_id": "treasury_auctions",
+    "url": "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v1/accounting/od/auctions_query?filter=issue_date%3Agte%3A2017-01-03%2Cissue_date%3Alte%3A2027-01-04&page%5Bsize%5D=10000&sort=record_date%2Cissue_date%2Ccusip"
+   },
+   {
+    "retrieved_at": "2026-11-06T03:28:27.110046+00:00",
+    "sha256": "4059b158b989b5bb4d295cc5e3356434bcceba44d89365e368a2aafbf2077859",
+    "source_id": "treasury_bill_rates",
+    "url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2022/all?type=daily_treasury_bill_rates&field_tdr_date_value=2022&_format=csv"
+   },
+   {
+    "retrieved_at": "2026-11-06T03:28:27.110046+00:00",
+    "sha256": "47cc8985d9474bbdaea37266ac5658f6b1b276d3310c54c7efd70358e80bc37b",
+    "source_id": "treasury_bill_rates",
+    "url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2024/all?type=daily_treasury_bill_rates&field_tdr_date_value=2024&_format=csv"
+   },
+   {
+    "retrieved_at": "2026-11-06T03:28:27.110046+00:00",
+    "sha256": "6f037e225a3f296613f620404667971df9f202743e70540d9ffbf5c7d30a3a51",
+    "source_id": "treasury_bill_rates",
+    "url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2018/all?type=daily_treasury_bill_rates&field_tdr_date_value=2018&_format=csv"
+   },
+   {
+    "retrieved_at": "2026-11-06T03:28:27.110046+00:00",
+    "sha256": "aa024dfde7700a971b287d7cc8284fd8c34f4dd6c66cb009cf39f501be33b562",
+    "source_id": "treasury_bill_rates",
+    "url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2025/all?type=daily_treasury_bill_rates&field_tdr_date_value=2025&_format=csv"
+   },
+   {
+    "retrieved_at": "2026-11-06T03:28:27.110046+00:00",
+    "sha256": "abc4ca3df92d55d3cb4759a18d415a455f9fb46a4bf8323eff55c1aff3e5d968",
+    "source_id": "treasury_bill_rates",
+    "url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2026/all?type=daily_treasury_bill_rates&field_tdr_date_value=2026&_format=csv"
+   },
+   {
+    "retrieved_at": "2026-11-06T03:28:27.110046+00:00",
+    "sha256": "ca4d73d5e9856391c06ef0b3ec252d950019b1a5db97c934d92d9569fc4ba87c",
+    "source_id": "treasury_bill_rates",
+    "url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2023/all?type=daily_treasury_bill_rates&field_tdr_date_value=2023&_format=csv"
+   },
+   {
+    "retrieved_at": "2026-11-06T03:28:27.110046+00:00",
+    "sha256": "cc29ccb650fe49ce04781e97332cecba11c20e466b053a08d6fb15b6b24dbd20",
+    "source_id": "treasury_bill_rates",
+    "url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2020/all?type=daily_treasury_bill_rates&field_tdr_date_value=2020&_format=csv"
+   },
+   {
+    "retrieved_at": "2026-11-06T03:28:27.110046+00:00",
+    "sha256": "e45398cf008aeca21679fe1ebcc7d051add07f0819ef62723fe472a1ea00377d",
+    "source_id": "treasury_bill_rates",
+    "url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2021/all?type=daily_treasury_bill_rates&field_tdr_date_value=2021&_format=csv"
+   },
+   {
+    "retrieved_at": "2026-11-06T03:28:27.110046+00:00",
+    "sha256": "f0396ee6dfaa3a60ce676c593a026f8cfbb9bcd72af7b6aa8450c68a5d3ac98a",
+    "source_id": "treasury_bill_rates",
+    "url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2019/all?type=daily_treasury_bill_rates&field_tdr_date_value=2019&_format=csv"
+   }
+  ],
+  "splits_sha256": "24cde33374353a83f1f8c61322b9ab91b15e10e70daad21c5ab54a9c7876dc75",
+  "thresholds_sha256": "537dd7bbf9fd52eaa857dcf038e3326b4f00a87a623ea2182349ab29c624e620"
+ },
+ "models": {
+  "pressure_model_v1": {
+   "declaration_sha256": {
+    "1": "2003b59f58f8b2ac986445bb11cfa23ba64d1ec7d21a0fb4706efbd8a96892da",
+    "2": "c62c6d0ccf296946d8dceafb2089ab3829459e0b0738a914141cd74d81470d41",
+    "3": "285a77265d0f3abaae3da8f7428620d31fe54574b77c68d05deb6de71c9a7d12",
+    "4": "5a7e88f9c70cb9a81b73dc26baf9fa62d4095932c30bed8320201954fbc8c1a7",
+    "5": "f85090e5645a958d2af0f73dc4d990acd8e556ed096cfeb9e30a71208fea6f28"
+   },
+   "forecasts": {
+    "1": {
+     "+10bp": 0.020294865802731574,
+     "+5bp": 0.25160033437023416,
+     "leap": 0.10861583639735817
+    },
+    "2": {
+     "+10bp": 0.03089322758526407,
+     "+5bp": 0.24016318778202292,
+     "leap": 0.04987074457374763
+    },
+    "3": {
+     "+10bp": 0.04331160650993926,
+     "+5bp": 0.2380015441009958,
+     "leap": 0.04987074457374763
+    },
+    "4": {
+     "+10bp": 0.045939005317778475,
+     "+5bp": 0.22620211121458178,
+     "leap": 0.04987074457374763
+    },
+    "5": {
+     "+10bp": 0.04247162932171318,
+     "+5bp": 0.22415505512122133,
+     "leap": 0.04987074457374763
+    }
+   },
+   "published": "docs/runs/pressure_model_v1_h{h}.json"
+  }
+ },
+ "packages": {
+  "numpy": "2.4.6",
+  "python": "3.11.16",
+  "scikit-learn": "1.9.1"
+ },
+ "protocol": {
+  "benchmarks": {
+   "b1": {
+    "1": [
+     -5.080000000000069,
+     -2.0000000000000018,
+     -0.9999999999999787,
+     0.9999999999999787,
+     1.9999999999999574,
+     2.0000000000000018,
+     2.000000000000046,
+     2.9999999999999805,
+     3.000000000000025,
+     3.400000000000022,
+     4.0000000000000036,
+     4.0000000000000036,
+     4.0000000000000036,
+     4.0000000000000036,
+     4.999999999999982,
+     4.999999999999982,
+     5.000000000000027,
+     5.9999999999999964,
+     6.00000000000005,
+     7.000000000000028,
+     8.999999999999995,
+     11.000000000000032,
+     14.039999999999992
+    ],
+    "2": [
+     -12.04000000000001,
+     -5.000000000000009,
+     -2.1999999999999877,
+     0.0,
+     0.39999999999998304,
+     1.000000000000023,
+     2.0000000000000018,
+     2.000000000000046,
+     2.9999999999999805,
+     3.000000000000025,
+     4.0000000000000036,
+     4.0000000000000036,
+     4.999999999999982,
+     4.999999999999982,
+     5.000000000000027,
+     6.000000000000005,
+     6.000000000000005,
+     7.000000000000028,
+     8.000000000000007,
+     9.00000000000003,
+     11.000000000000032,
+     13.000000000000016,
+     14.999999999999993
+    ],
+    "3": [
+     -13.11999999999999,
+     -6.000000000000005,
+     -3.000000000000025,
+     -1.0000000000000409,
+     0.0,
+     0.9999999999999787,
+     1.0000000000000675,
+     2.0000000000000018,
+     2.9999999999999805,
+     3.000000000000025,
+     4.0000000000000036,
+     4.0000000000000036,
+     4.0000000000000036,
+     4.999999999999982,
+     5.000000000000071,
+     6.000000000000005,
+     6.99999999999994,
+     7.000000000000028,
+     8.000000000000007,
+     10.000000000000027,
+     12.199999999999996,
+     15.000000000000037,
+     18.999999999999954
+    ],
+    "4": [
+     -15.039999999999992,
+     -7.000000000000011,
+     -4.999999999999982,
+     -2.0000000000000018,
+     -0.9999999999999787,
+     0.9999999999999787,
+     1.000000000000023,
+     2.0000000000000018,
+     2.9999999999999805,
+     3.000000000000025,
+     4.0000000000000036,
+     4.0000000000000036,
+     4.0000000000000036,
+     4.999999999999982,
+     5.999999999999961,
+     6.000000000000005,
+     6.99999999999994,
+     7.000000000000028,
+     8.999999999999986,
+     10.999999999999988,
+     12.99999999999999,
+     16.000000000000014,
+     20.999999999999996
+    ],
+    "5": [
+     -14.999999999999993,
+     -7.600000000000016,
+     -5.000000000000071,
+     -2.0000000000000018,
+     -0.9999999999999787,
+     0.9999999999999787,
+     1.0000000000000675,
+     2.0000000000000018,
+     2.5999999999999743,
+     3.000000000000025,
+     4.0000000000000036,
+     4.0000000000000036,
+     4.999999999999982,
+     4.999999999999982,
+     5.000000000000071,
+     6.000000000000005,
+     6.999999999999984,
+     8.000000000000007,
+     8.999999999999986,
+     10.999999999999961,
+     14.000000000000012,
+     17.00000000000002,
+     22.04000000000008
+    ]
+   },
+   "b2": {
+    "1": [
+     -13.780000000000012,
+     -10.000000000000009,
+     -7.449999999999994,
+     -4.999999999999982,
+     -2.9999999999999805,
+     -2.9999999999999805,
+     -2.9999999999999805,
+     -2.0000000000000018,
+     -2.0000000000000018,
+     -1.5999999999999868,
+     -0.9999999999999787,
+     -0.9999999999999787,
+     0.0,
+     0.0,
+     0.0,
+     1.000000000000023,
+     1.000000000000023,
+     1.000000000000023,
+     2.350000000000004,
+     4.0000000000000036,
+     6.000000000000005,
+     10.000000000000009,
+     10.999999999999988
+    ],
+    "2": [
+     -13.780000000000012,
+     -10.000000000000009,
+     -7.449999999999994,
+     -4.999999999999982,
+     -2.9999999999999805,
+     -2.9999999999999805,
+     -2.9999999999999805,
+     -2.0000000000000018,
+     -2.0000000000000018,
+     -1.5999999999999868,
+     -0.9999999999999787,
+     -0.9999999999999787,
+     0.0,
+     0.0,
+     0.0,
+     1.000000000000023,
+     1.000000000000023,
+     1.000000000000023,
+     2.350000000000004,
+     4.0000000000000036,
+     6.000000000000005,
+     10.000000000000009,
+     10.999999999999988
+    ],
+    "3": [
+     -13.780000000000012,
+     -10.000000000000009,
+     -7.449999999999994,
+     -4.999999999999982,
+     -2.9999999999999805,
+     -2.9999999999999805,
+     -2.9999999999999805,
+     -2.0000000000000018,
+     -2.0000000000000018,
+     -1.5999999999999868,
+     -0.9999999999999787,
+     -0.9999999999999787,
+     0.0,
+     0.0,
+     0.0,
+     1.000000000000023,
+     1.000000000000023,
+     1.000000000000023,
+     2.350000000000004,
+     4.0000000000000036,
+     6.000000000000005,
+     10.000000000000009,
+     10.999999999999988
+    ],
+    "4": [
+     -13.780000000000012,
+     -10.000000000000009,
+     -7.449999999999994,
+     -4.999999999999982,
+     -2.9999999999999805,
+     -2.9999999999999805,
+     -2.9999999999999805,
+     -2.0000000000000018,
+     -2.0000000000000018,
+     -1.5999999999999868,
+     -0.9999999999999787,
+     -0.9999999999999787,
+     0.0,
+     0.0,
+     0.0,
+     1.000000000000023,
+     1.000000000000023,
+     1.000000000000023,
+     2.350000000000004,
+     4.0000000000000036,
+     6.000000000000005,
+     10.000000000000009,
+     10.999999999999988
+    ],
+    "5": [
+     -13.780000000000012,
+     -10.000000000000009,
+     -7.449999999999994,
+     -4.999999999999982,
+     -2.9999999999999805,
+     -2.9999999999999805,
+     -2.9999999999999805,
+     -2.0000000000000018,
+     -2.0000000000000018,
+     -1.5999999999999868,
+     -0.9999999999999787,
+     -0.9999999999999787,
+     0.0,
+     0.0,
+     0.0,
+     1.000000000000023,
+     1.000000000000023,
+     1.000000000000023,
+     2.350000000000004,
+     4.0000000000000036,
+     6.000000000000005,
+     10.000000000000009,
+     10.999999999999988
+    ]
+   },
+   "b3": {
+    "on_grid": false,
+    "reason": "the published v1 declaration forecasts five levels; how it is put on the protocol's 23-level grid is not decided",
+    "reference": "distributions.published.quantiles_bps"
+   }
+  },
+  "candidates": {},
+  "grid": [
+   0.01,
+   0.025,
+   0.05,
+   0.1,
+   0.15,
+   0.2,
+   0.25,
+   0.3,
+   0.35,
+   0.4,
+   0.45,
+   0.5,
+   0.55,
+   0.6,
+   0.65,
+   0.7,
+   0.75,
+   0.8,
+   0.85,
+   0.9,
+   0.95,
+   0.975,
+   0.99
+  ],
+  "h7m": null,
+  "version": 1,
+  "written_at": "2026-11-05T22:49:48.126659-05:00"
+ },
+ "record_version": 4,
+ "run": {
+  "durations_seconds": {
+   "build": 6.624,
+   "fetch": 173.994,
+   "fit_forecast_baselines": 21.841,
+   "fit_forecast_distributions": 367.696,
+   "fit_forecast_models": 714.148,
+   "total": 1284.311,
+   "write": 0.007
+  },
+  "finished_at": "2026-11-06T03:49:48.132047+00:00",
+  "started_at": "2026-11-06T03:28:23.189144+00:00",
+  "workflow_run": "https://github.com/eleonorabjornberg/repo-market-model/actions/runs/42156693876"
+ },
+ "targets": [
+  {
+   "anchor_date": "2026-11-04",
+   "anchor_spread_bp": 4,
+   "horizon": 1,
+   "leap_threshold_bp": 3.0,
+   "target_date": "2026-11-06",
+   "train_end": "2026-10-27"
+  },
+  {
+   "anchor_date": "2026-11-04",
+   "anchor_spread_bp": 4,
+   "horizon": 2,
+   "leap_threshold_bp": 4.0,
+   "target_date": "2026-11-09",
+   "train_end": "2026-10-27"
+  },
+  {
+   "anchor_date": "2026-11-04",
+   "anchor_spread_bp": 4,
+   "horizon": 3,
+   "leap_threshold_bp": 4.0,
+   "target_date": "2026-11-10",
+   "train_end": "2026-10-27"
+  },
+  {
+   "anchor_date": "2026-11-04",
+   "anchor_spread_bp": 4,
+   "horizon": 4,
+   "leap_threshold_bp": 4.0,
+   "target_date": "2026-11-12",
+   "train_end": "2026-10-27"
+  },
+  {
+   "anchor_date": "2026-11-04",
+   "anchor_spread_bp": 4,
+   "horizon": 5,
+   "leap_threshold_bp": 4.0,
+   "target_date": "2026-11-13",
+   "train_end": "2026-10-27"
+  }
+ ]
+}
