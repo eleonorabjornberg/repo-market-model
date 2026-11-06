@@ -91,13 +91,21 @@ recommendation against the five-lens reports.
   paste from the PR's `needs-mac:` comment (the `long-run` skill's format), shown with a Copy button; options
   `Started it` and `Later`. A paste carries no secret.
 
-The chat message beside the link is one line.
+The chat message beside the link is the link and a one-line summary, nothing more.
 
-**Publish.** In the orchestrating session, republish the same file path each day to keep one URL; from another session,
-pass the URL recorded in #1044. Use new ids for a new item and the same id for one carried over. Record the URL in the
+**The docket is the only way anything reaches her** (Eleonora, 6 November 2026, #1486). Every decision, question, `GO`
+or attested action owed, Mac run, deadline and status item meant for her is a card on the docket, in the same turn it
+arises, whether or not it is also said in chat, an issue, a PR or a log. She does not see or rule on anything that is
+only there.
+
+**One docket, one URL** (Eleonora, 6 November 2026): https://claude.ai/artifact/BKdcRH3vMS1dYrjAf13B6Y. Each round republishes that same
+artifact (same file path, the URL passed as `url`); a session never publishes a docket or decision page to a new URL.
+
+**Publish.** Republish to the one docket URL above, from whichever session builds the round: pass it as `url`. Use new ids for a new item and the same id for one carried over. Record the URL in the
 day's #1044 comment, then append "<time> ET: sent the 5 pm docket".
 
-**Read back** when she says she is done, or at the next hourly check. Relay each choice on its own issue or PR as
+**Read back.** Every run, and the 5 pm one first, lists the `answers` collection of the docket before anything else
+(`ArtifactData`), and acts on each answer not yet relayed. Do this when she says she is done, and at every hourly check. Relay each choice on its own issue or PR as
 "**Ruling (Eleonora, <date>; relayed by the orchestrating session):**" with the option text, tick it on the ledger
 (#1116), and fire the Directive loop for the work it releases (the `directive-orchestrator` skill). Rulings stay on
 their issues and results in the research log; #1044 records only what the session did. An item she has not answered

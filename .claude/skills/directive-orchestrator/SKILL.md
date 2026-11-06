@@ -12,7 +12,7 @@ repository; nothing lives only in your session (`.claude/routines/README.md`).
 ## Limits
 
 - **You do not do the loop's work.** You never implement a directive, review a pull request or change code.
-- **You do not make her decisions.** A judgement call goes to her in the 5 pm message, as numbered options with a
+- **You do not make her decisions.** A judgement call goes to her as a card on the decision docket, as numbered options with a
   default (`docs/decisions/workflow.md`, "Fewer round trips"). An owner-attested item (`CLAUDE.md`, "This file, and
   `.claude/`") needs her own GitHub action; you never post `GO #<n>`.
 - **You may**, under her delegation: lift a hold whose cause is gone, with a mechanical ruling; merge `main` into a
@@ -21,6 +21,15 @@ repository; nothing lives only in your session (`.claude/routines/README.md`).
   "**Ruling (Eleonora, <date>; relayed by the orchestrating session):**"; edit the queue issue's lines.
 - **Commits** use the neutral identity "repo-market-model orchestrator", never her name and never an AI's.
 - **Times** are ET: run `TZ=America/New_York date` first and use that time; the system clock is UTC.
+
+## The decision docket
+
+Everything meant for her is a card on the docket, in the same turn it arises (Eleonora, 6 November 2026, #1486): every
+decision, question, `GO` or attested action owed, Mac run, deadline and status item. Chat, an issue, a PR or a log alone
+never reaches her. There is **one docket URL**, https://claude.ai/artifact/BKdcRH3vMS1dYrjAf13B6Y,
+republished each round and never replaced by a new artifact. Every run reads the docket's `answers` collection first
+(`decision-cards`, "Read back") and relays each new answer as her ruling, "**Ruling (Eleonora, <date>; relayed by the
+orchestrating session):**", on its issue or PR.
 
 ## State lives on GitHub
 
@@ -46,19 +55,20 @@ this file.
    waiting for the loop's 24-hour stall check.
 4. **The auditor's list** (Eleonora, 19 October 2026: "I want everything in the auditor's open list taken care of").
    Every open `finding` and `avenue` issue in the model repo is in exactly one state: closed as verified resolved
-   (citing the PR), covered by a queued directive (linked from the finding), or carrying a brief in her 5 pm message.
+   (citing the PR), covered by a queued directive (linked from the finding), or carrying a card on the docket.
    The `finding-triager` subagent triages the new and untriaged ones. A finding whose evidence comes from a
    provisional (calendar-blind) model is deferred to after #1027, not closed.
 5. **Mac runs.** A step expected to take more than about two hours goes to her Mac overnight (the `long-run` skill).
    Label its directive `needs-mac` when it is queued, with no cloud attempt first. The paste is in the PR's
    `needs-mac:` comment; check it is there and complete.
-6. **Log** each action to #1044. Message her only for a hold you cannot lift or a blocker that would idle every track.
+6. **Log** each action to #1044. Put a hold you cannot lift, or a blocker that would idle every track, on the docket at once.
 
 ## The 5 pm message ("Daily decision message")
 
-Follow the `decision-cards` skill (its section "In repo-market-model: the 5 pm docket").
+The message is the docket: follow the `decision-cards` skill (its section "In repo-market-model: the 5 pm docket"),
+republish the same URL, and send her only the link and a one-line summary.
 
 ## The other orchestrator
 
-repo-market-liquidity has its own orchestrating session. It triages its own repo the same way and sends its own Mac
-pastes and its 5 pm list; ask it for them if they have not arrived.
+repo-market-liquidity has its own orchestrating session. It triages its own repo the same way and puts its own Mac
+pastes and its 5 pm list on the same docket; ask it for them if they have not arrived.

@@ -6,4 +6,4 @@ rules are now the `directive-orchestrator` skill. See `README.md`.
 
 ---
 
-Overnight fill and hold check. Fetch eleonorabjornberg/repo-market-model, read the top block of #46, then follow "The hourly check" in `.claude/skills/directive-orchestrator/SKILL.md` on origin/main exactly, with the Skill tool if it offers `directive-orchestrator`, otherwise by reading the file. Where #46's top block and the skill disagree, #46 wins, and the disagreement goes in today's log on #1044.
+Overnight fill and hold check. Fetch eleonorabjornberg/repo-market-model, read the top block of #46, then read the decision docket's `answers` (https://claude.ai/artifact/BKdcRH3vMS1dYrjAf13B6Y, the one docket URL, never a new artifact) and relay each new answer as her ruling; anything for her goes on that docket in the same turn. Then follow "The hourly check" in `.claude/skills/directive-orchestrator/SKILL.md` on origin/main exactly, with the Skill tool if it offers `directive-orchestrator`, otherwise by reading the file. Where #46's top block and the skill disagree, #46 wins, and the disagreement goes in today's log on #1044.
