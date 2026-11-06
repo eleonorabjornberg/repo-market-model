@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Poll Treasury's bill-rate export (and, on Thursdays, the FR 2004 release page) after 16:00 ET and keep each poll (#1343).
+"""Poll Treasury's bill-rate export (and, on Thursdays, the FR 2004 CSV, #1493) after 16:00 ET and keep each poll (#1343).
 
     PYTHONPATH=src python3 scripts/availability_poll.py capture --out-dir DIR [--now ISO]
     PYTHONPATH=src python3 scripts/availability_poll.py verify --dir DIR

@@ -7,7 +7,10 @@ the fetch time, the HTTP status, the latest date present in the response and a S
 
 * Poll business days only, from 16:00 ET to 18:30 ET inclusive (EST and EDT alike: the ET clock decides).
 * Treasury's daily bill-rate export (the URL `ingest.fetch_treasury_bill_rates` reads) every poll.
-* The New York Fed's Primary Dealer Statistics release page (the FR 2004 release) on Thursdays only.
+* The FR 2004 time series CSV, the declared source of `nyfed_fr2004` (`metadata/sources.json`), on Thursdays only
+  (#1493). From Thursday 12 November 2026 the poll reads it; the Primary Dealer Statistics page it read before
+  carries no release date, so 5 November 2026 is no evidence. Only the response's hash, size and latest `As Of Date`
+  are kept, never the roughly 27 MB file.
 
 A poll that fails (HTTP error or no connection) is still a record, with `status` null and an `error`: a gap in the
 sample is itself a fact the result page needs. The record changes no declaration and no panel input.
@@ -49,8 +52,8 @@ THURSDAY = 3
 
 TREASURY = "treasury_bill_rates"
 FR2004 = "nyfed_fr2004_release"
-#: The page the New York Fed announces each FR 2004 release on.
-FR2004_RELEASE_URL = "https://www.newyorkfed.org/markets/counterparties/primary-dealers-statistics"
+#: The declared source of the FR 2004 series: the CSV carries each week's `As Of Date` (#1493; the release page did not).
+FR2004_RELEASE_URL = "https://markets.newyorkfed.org/api/pd/get/all/timeseries.csv"
 SOURCES = (TREASURY, FR2004)
 IN_WINDOW = "in_window"
 CATCH_UP = "catch_up"
@@ -64,11 +67,8 @@ MISSED_LIST = Path(__file__).parents[2] / "metadata" / "availability_missed_days
 MISSED_KEYS = {"et_date", "slots_scheduled", "runs_started", "reason"}
 NO_RECORD, CATCH_UP_ONLY = "no_record", "catch_up_only"
 
-_MONTHS = {m: i for i, m in enumerate(
-    ("january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"), 1)}
 _US_DATE = re.compile(r"\b(\d{1,2})/(\d{1,2})/(\d{4})\b")
 _ISO_DATE = re.compile(r"\b(\d{4})-(\d{2})-(\d{2})\b")
-_LONG_DATE = re.compile(r"\b(" + "|".join(m.capitalize() for m in _MONTHS) + r")\s+(\d{1,2}),\s+(\d{4})\b")
 
 
 def _is_business_day(day: date) -> bool:
@@ -132,8 +132,8 @@ def url_for(source: str, day: date) -> str:
 def latest_date(source: str, payload: bytes) -> Optional[date]:
     """The latest date present in the response, or None if it holds none.
 
-    Treasury: the first column ("Date", MM/DD/YYYY) of the export. The release page: the latest date written
-    anywhere in the page, in the US, ISO or long form.
+    Treasury: the first column ("Date", MM/DD/YYYY) of the export. FR 2004: the latest value in the
+    `As Of Date` column of its CSV (ISO dates). Dates elsewhere in a response are not read.
     """
 
     text = payload.decode("utf-8-sig", errors="replace")
@@ -144,9 +144,10 @@ def latest_date(source: str, payload: bytes) -> Optional[date]:
             if match:
                 found.append(_day(int(match[3]), int(match[1]), int(match[2])))
     elif source == FR2004:
-        found += [_day(int(m[3]), int(m[1]), int(m[2])) for m in _US_DATE.finditer(text)]
-        found += [_day(int(m[1]), int(m[2]), int(m[3])) for m in _ISO_DATE.finditer(text)]
-        found += [_day(int(m[3]), _MONTHS[m[1].lower()], int(m[2])) for m in _LONG_DATE.finditer(text)]
+        for row in csv.reader(io.StringIO(text)):
+            match = _ISO_DATE.fullmatch(row[0].strip()) if row else None
+            if match:
+                found.append(_day(int(match[1]), int(match[2]), int(match[3])))
     else:
         raise ValueError(f"unknown source {source!r}")
     found = [d for d in found if d is not None]

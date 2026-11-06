@@ -21,7 +21,7 @@ Each business day, after the day's H5 record is written, `run` does this on the 
    commit, no parent override, a clean parent). A row that differs is refused: nothing is written and the job fails;
 4. writes `h10/<day>.json`, labelled prospective, to the add-only `live-h10` branch. An onset the registered method
    refuses with a `LookAheadError` is recorded as a row with status `pending` (her ruling on #1324, 30 October 2026:
-   awaiting the new registration, not attributed); the refusal is never overridden. A pending onset has no
+   not attributed); the refusal is never overridden. A pending onset has no
    attribution, so it is tried again each day while its window is open, and the other onsets of the day are still
    attributed. A day with no onset is recorded too, so a missing file means the job did not run.
 
@@ -201,7 +201,8 @@ def _miss_row(onset: date, report: date, pin: dict) -> dict:
 def _pending_row(onset: date, report: date, error: Exception) -> dict:
     return {
         "onset": onset.isoformat(), "report_day": report.isoformat(), "status": PENDING,
-        "reason": "the registered method refused this onset; awaiting the new registration (#1324)",
+        "reason": "the registered method refused this onset at its report instant (see refusal); "
+                  "retried each panel day until the report window closes",
         "refusal": {"type": type(error).__name__, "error": str(error)},
         "under_bar": False, "beats_null": False, "counted": False,
     }

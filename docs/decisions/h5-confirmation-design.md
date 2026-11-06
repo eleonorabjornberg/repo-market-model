@@ -106,14 +106,14 @@ treats all models alike on missing data keeps the paired comparison paired.
 new count of origins. Old evidence stays visible.
 *Reason:* a changed recipe is a different forecast. Carrying its count across would let the sample absorb the fix.
 
-**10. Open, marked for her.** Items 1 to 3 have a default that applies if she has not answered by the next 5 pm batch. No default changes what the
-project claims. Settled by her rulings and no longer open: 500 origins (rule 6), the claim against B1′*-cap alone with
-B2*-cap beside it (rule 4), the capped baselines as the confirmatory benchmarks (rule 3), and the per-baseline fail
-bound (rule 4).
-1. *The SRF cap.* Wait for #1361 and #1389. Default: decide then; the record is not merged as a registration before. The capped baselines of rule 3
-take whatever cap and rule (b) this settles.
-2. *The 3% threshold* of rule 4. Default: 3%, the figure already used against persistence in the protocol.
-3. *The tolerances* of rule 7. Default: as proposed.
+**10. Settled, status only.** The three items that stood open here are settled by her rulings. 500 origins (rule 6), the
+claim against B1′*-cap alone with B2*-cap beside it (rule 4), the capped baselines as the confirmatory benchmarks
+(rule 3), and the per-baseline fail bound (rule 4) were settled earlier.
+1. *The SRF cap.* Kept, with probability rule (b) (capped percentiles, open completion above the line), by her freeze
+   of 2 November 2026; this answers #1395's question as option 1. The capped baselines of rule 3 take that cap and rule.
+2. *The 3% threshold* of rule 4. 3%, as in rule 4. The MME itself is set later from the power study (her ruling on
+   #1354, question 2).
+3. *The tolerances* of rule 7. As proposed in the record.
 
 ## How this relates to what is in force
 
