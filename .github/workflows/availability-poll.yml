@@ -5,7 +5,7 @@ name: availability-poll
 # decision instant is 18:00 ET (#1312). Nothing has measured it. This is a measurement only: no declaration changes.
 #
 # Every ten minutes `scripts/availability_poll.py capture` decides from the ET clock whether to poll (business days,
-# 16:00 to 18:30 ET inclusive; Thursdays add the FR 2004 release page) and writes one file per poll:
+# 16:00 to 18:30 ET inclusive; Thursdays add the FR 2004 CSV, #1493) and writes one file per poll:
 # `polls/<ET date>/<fetch time>-<source>.json` with the fetch time, HTTP status, latest date present and a content
 # hash. The files are added to the add-only `availability-polls` branch in one commit, checked before the push.
 #
