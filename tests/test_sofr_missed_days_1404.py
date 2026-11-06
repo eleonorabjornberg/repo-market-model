@@ -100,9 +100,12 @@ class MissedDayTests(unittest.TestCase):
         self.assertEqual(fp.unflagged_misses(CAPTURED_ON_2_NOV, NOW, {LOST[0]: "late"}), LOST[1:])
 
     def test_the_tracked_list_covers_every_day_lost_so_far(self):
+        # Days lost after 2 November are added to the tracked list by their own change; the 2 November view reads
+        # the part of the list that was due then.
         missed = fp.read_missed()
-        self.assertEqual(sorted(missed), LOST)
-        self.assertEqual(fp.unflagged_misses(CAPTURED_ON_2_NOV, NOW, missed), [])
+        self.assertEqual(sorted(missed)[: len(LOST)], LOST)
+        due_then = {day: reason for day, reason in missed.items() if day in LOST}
+        self.assertEqual(fp.unflagged_misses(CAPTURED_ON_2_NOV, NOW, due_then), [])
 
     def test_a_day_that_is_not_yet_due_is_not_a_miss(self):
         morning = datetime(2026, 11, 3, 14, 0, tzinfo=timezone.utc)  # 09:00 ET: 2 November is not yet lost
@@ -187,8 +190,9 @@ class ScriptTests(unittest.TestCase):
         self.assertEqual(code, 2)
 
     def test_with_every_miss_listed_it_passes(self):
-        with _tree(CAPTURED_ON_2_NOV) as root:
-            code, out, _ = self._run("missing", "--dir", root, "--list", str(fp.MISSED_LIST), "--now", NOW.isoformat())
+        with _tree(CAPTURED_ON_2_NOV) as root, tempfile.TemporaryDirectory() as aux:
+            listed = _list(Path(aux), LOST)
+            code, out, _ = self._run("missing", "--dir", root, "--list", str(listed), "--now", NOW.isoformat())
         self.assertEqual(code, 0)
         self.assertIn("no unlisted", out)
 
