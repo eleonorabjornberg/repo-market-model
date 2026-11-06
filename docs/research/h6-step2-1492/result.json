@@ -2058,7 +2058,7 @@
  },
  "coupon_days_not_public_at_lead_1": 0,
  "declaration_724_sha256": "ccc7a13ed3aaffa1113fc2080419b9f8639fa876c09a01f2f6cf30219d01e5e2",
- "declaration_sha256": "06e6a4884531f316f6639de53920d806bfd687bb7945cfafab5d17645c658076",
+ "declaration_sha256": "804f22d3082ea021a3382aaa2c6a0bd10e422bf9b1be5eced434adddaec0ad44",
  "draws": 10000,
  "event_block": 3.0,
  "event_lag": 3,
