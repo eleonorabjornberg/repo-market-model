@@ -4,6 +4,7 @@
     PYTHONPATH=src python3 scripts/sofr_first_print.py capture --out-dir DIR
     PYTHONPATH=src python3 scripts/sofr_first_print.py verify --dir DIR
     PYTHONPATH=src python3 scripts/sofr_first_print.py missing --dir DIR --list FILE [--days-out FILE]
+    PYTHONPATH=src python3 scripts/sofr_first_print.py report [--list FILE] [--start DATE] [--now INSTANT]
 
 The New York Fed publishes SOFR at about 08:00 ET on the next business day and may revise it at about 14:30 ET
 (`repo_model.sofr_first_print`). `.github/workflows/sofr-first-print.yml` runs `capture` in the morning, after
@@ -21,6 +22,10 @@ fetched, the retrieval time, its SHA-256, the publication and revision instants 
   on the tracked list of lost days (`metadata/sofr_missed_first_prints.json`): exit 3, one line per day on stderr and,
   with `--days-out`, one date per line in that file. The workflow runs it after every slot and comments on #225. A
   list that contradicts the branch is exit 2. Nothing is back-filled.
+
+* `report` (#1491) counts the lost days in the first 60, 125 and 250 business days from `--start` (default: the
+  capture's first day), for the confirmation's operational checks. By the ruling on #1491 a lost print drops that
+  lead alone for every model; the report counts and sets no ceiling.
 
 The live record (`scripts/live_record.py`) runs after the 16:00 ET decision, hours after a revision could have
 replaced the print, so it cannot keep first prints itself; its pinned code is untouched.
@@ -109,6 +114,19 @@ def missing(directory: Path, listed: Path, now: datetime, days_out=None) -> int:
     return 3
 
 
+def report(listed: Path, start: date, now: datetime) -> int:
+    """Print the lost-day count at each operational checkpoint (#1491). Exit 0."""
+
+    for row in fp.lost_day_report(fp.read_missed(listed), start, now):
+        state = "reached" if row["reached"] else "not yet reached"
+        days = ", ".join(day.isoformat() for day in row["lost_days"]) or "none"
+        print(
+            f"check at {row['checkpoint']} days ({state}): {row['lost']} lost of {row['window_days']} "
+            f"({row['share']:.0%}); {days}. Rule: {row['rule']}."
+        )
+    return 0
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = parser.add_subparsers(dest="command", required=True)
@@ -122,10 +140,17 @@ def main(argv=None) -> int:
     mis.add_argument("--list", type=Path, default=fp.MISSED_LIST, help="the tracked list of lost days")
     mis.add_argument("--now", help="an aware ISO instant, for a test; defaults to the clock")
     mis.add_argument("--days-out", type=Path, help="write the unlisted dates here, one per line")
+    rep = sub.add_parser("report")
+    rep.add_argument("--list", type=Path, default=fp.MISSED_LIST, help="the tracked list of lost days")
+    rep.add_argument("--start", type=date.fromisoformat, default=fp.FIRST_EFFECTIVE, help="the first day counted")
+    rep.add_argument("--now", help="an aware ISO instant, for a test; defaults to the clock")
     args = parser.parse_args(argv)
     try:
         if args.command == "verify":
             return verify(args.dir)
+        if args.command == "report":
+            now = datetime.fromisoformat(args.now) if args.now else datetime.now(timezone.utc)
+            return report(args.list, args.start, now)
         if args.command == "missing":
             now = datetime.fromisoformat(args.now) if args.now else datetime.now(timezone.utc)
             return missing(args.dir, args.list, now, args.days_out)
