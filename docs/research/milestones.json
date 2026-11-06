@@ -18,6 +18,8 @@
     "H2.M3": {"evidence": "docs/pivot/upper-bound-result.md", "pr": "eleonorabjornberg/repo-market-model#703"},
     "H5.M2": {"evidence": "docs/pivot/spread-distribution-protocol-result.md", "pr": "eleonorabjornberg/repo-market-model#711",
       "caveat": "Rests on a provisional model (one-step, calendar columns learned a day off): docs/research/provisional-calendar-register.md, section 2, row 2 (#711). Re-run pending."},
+    "H5.M3": {"evidence": "docs/research/family-ablation-1483-result.md", "pr": "eleonorabjornberg/repo-market-model#1500",
+      "caveat": "Development evidence on seen days, not a verdict. The candidate reads one of the five families (settlement), so the others are added to it, not dropped (page, question 1). Satiation distance has no row (no input on main); the scarcity state per leg and the H.4.1 timing are re-used from #1350 and the tail spread from #1345 (development window only, a dispersion forecast)."},
     "H5.M4": {"evidence": "docs/pivot/h5-step3-diagnoses-result.md", "pr": "eleonorabjornberg/repo-market-model#756",
       "caveat": "Rests on a provisional model (the phase 2 gbm, one-step): docs/research/provisional-calendar-register.md, section 2, row 5 (#756). Re-run pending."},
     "H5.M5a": {"evidence": "docs/model/validation.md", "pr": "eleonorabjornberg/repo-market-model#1452"},

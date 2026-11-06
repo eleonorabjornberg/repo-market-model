@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/family_ablation_1483.json",
+  "script": "scripts/family_ablation_1483.py",
+  "pairing": "direct",
+  "why": "The family-by-family ablation on (s3c-ann-net): the candidate with its settlement terms, or one leg's, taken out, and the candidate with the IORB terms. The fit is (s3)'s estimation routine, spread_mr_state_calendar.walk with training_pairs = direct (guarded by one_step_guard with no allow-list entry), and no gradient-boosted fit is called, so the study is not provisional; the settlement terms are those of (s3c-ann-net) (repo_model.s3c_announced, each figure counting an auction only when it was announced at or before the decision instant), the IORB terms are #1227's (spread_mr_state_calendar.IorbTable, read from the announcement at the decision instant), and the other terms are calendar columns read at the target day; no outcome is an input"
+}
