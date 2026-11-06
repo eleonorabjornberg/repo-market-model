@@ -1,0 +1,8 @@
+{
+  "command": [
+    "scripts/recalibration_1482.py",
+    "check"
+  ],
+  "where": "suite",
+  "pre_review": false
+}
