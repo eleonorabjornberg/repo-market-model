@@ -12,6 +12,10 @@
   {
    "effective_date": "2026-10-30",
    "reason": "No scheduled run started on 2026-11-02 before 21:44:13 UTC (16:44 ET), after the 14:30 ET revision instant; it was refused."
+  },
+  {
+   "effective_date": "2026-11-04",
+   "reason": "No scheduled run started on 2026-11-05 between publication and the 14:30 ET revision instant: the runs around it started at 01:42:15 UTC (20:42 ET on 2026-11-04, before publication) and 19:53:53 UTC (14:53 ET on 2026-11-05, after the revision instant); the second was refused."
   }
  ]
 }
