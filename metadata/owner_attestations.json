@@ -258,6 +258,13 @@
       "comment_id": 6671076866,
       "phrase": "GO #1477",
       "what": "mark merged decision records in force, status lines only: h5-confirmation-design, live-pin, live-pin-v2-bump, live-pin-v4-bump, live-pin-v5-bump, retire-idle-freezes, and scoring-protocol amendments 4 and 5 (COVERAGE_REQUIREMENT_IN_FORCE unchanged); her 5 November 2026 docket ruling #1473 Q1 (a)"
+    },
+    {
+      "kind": "decisions",
+      "issue": 1482,
+      "comment_id": 6688262386,
+      "phrase": "GO #1482",
+      "what": "docs/decisions/scoring-protocol.md amendment 6 (a): recalibrated critical and futility values (PR #1490); her 6 November 2026 docket ruling"
     }
   ],
   "rule": "docs/decisions/drafts/owner-attestation.md",
