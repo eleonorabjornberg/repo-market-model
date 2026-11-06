@@ -263,3 +263,14 @@ class CommittedRecordTests(unittest.TestCase):
     def test_the_tracked_page_is_what_the_script_renders_from_the_tracked_record(self):
         record = json.loads(self.RECORD.read_text(encoding="utf-8"))
         self.assertEqual(self.PAGE.read_text(encoding="utf-8"), script.render(record))
+
+
+class MilestoneTests(unittest.TestCase):
+    """`docs/research/milestones.json` marks H5.M3 on this page, with the unmeasured and re-used rows in its caveat (the directive's acceptance)."""
+
+    def test_h5_m3_is_marked_on_the_page_with_a_caveat(self):
+        marks = json.loads((ROOT / "docs" / "research" / "milestones.json").read_text(encoding="utf-8"))["milestones"]
+        self.assertEqual(marks["H5.M3"]["evidence"], "docs/research/family-ablation-1483-result.md")
+        self.assertTrue((ROOT / marks["H5.M3"]["evidence"]).exists())
+        for word in ("Satiation distance", "#1350", "#1345", "not a verdict"):
+            self.assertIn(word, marks["H5.M3"]["caveat"])
