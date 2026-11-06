@@ -322,6 +322,28 @@ cut applies between family members as well (BGCR dispersion against SOFR dispers
 they stay two members), and how a pooled group yields one p-value for Holm (default: the member ranked highest under step 2's
 rule represents it).
 
+## Draft amendment 6: the values are calibrated on the candidate's own loss differentials (#1482)
+
+**Status: a draft by the pull request that closes #1482, for Eleonora to merge. Nothing here is in force until she merges it** (§13: this record is merged by her, not under delegated review). Until then item 5 and Q-C stand as written, `CRITICAL_VALUES`, `FUTILITY_CRITICAL_VALUES` and `B2_LEG_CRITICAL_VALUES` in `scoring_protocol.py` are unchanged, and `docs/research/milestones.json` does not mark H1.M3. It is an alternative to draft amendments 1 to 3: she merges at most one set of values. It follows her ruling of 6 November 2026 on #1354 (question 1, option (a)); the values are re-run if the candidate changes.
+
+**What it changes.** Draft amendments 1 to 3 calibrated on series of the benchmarks (S(B2) − S(B1), S(B3) − S(B1)) because no candidate stood behind them. The values below are calibrated on the loss differentials of the current H5 candidate (s3c-ann-net) against B1, B2 and B3, d = S(benchmark) − S(candidate), on the stationary-bootstrap windows of the post-2020 days (from 2020-04-03; mean block 10, her ruling of 22 October 2026 on #1022), with #886's looks, levels, windows and seed 1:
+
+| value | days | in force | amended |
+|---|---|---|---|
+| efficacy, B1 leg (`CRITICAL_VALUES[GRID_COMPARISON]`) | 125 | 3.419 | 2.431 |
+| efficacy, B1 leg (`CRITICAL_VALUES[GRID_COMPARISON]`) | 250 | 2.426 | 1.610 |
+| efficacy, B2 leg (`B2_LEG_CRITICAL_VALUES`; empty today, so the grid value) | 125 | 3.419 | 3.337 |
+| efficacy, B2 leg (`B2_LEG_CRITICAL_VALUES`; empty today, so the grid value) | 250 | 2.426 | 1.974 |
+| efficacy, B3 against the candidate, five levels (`CRITICAL_VALUES[FIVE_LEVEL_COMPARISON]`) | 125 | 9.501 | 2.604 |
+| efficacy, B3 against the candidate, five levels (`CRITICAL_VALUES[FIVE_LEVEL_COMPARISON]`) | 250 | 5.455 | 1.657 |
+| futility, B1 leg (`FUTILITY_CRITICAL_VALUES[GRID_COMPARISON]`) | 60 | 1.930 | 3.324 |
+| futility, B1 leg (`FUTILITY_CRITICAL_VALUES[GRID_COMPARISON]`) | 125 | 1.565 | 2.941 |
+| futility, B1 leg (`FUTILITY_CRITICAL_VALUES[GRID_COMPARISON]`) | 250 | 1.446 | 2.744 |
+
+Look 1 still has no efficacy value (Q-B). The windows, the series, each series' Politis-White block, and the size and power at the values in force and at these (by 125 and 250 days, four readings, with Monte Carlo intervals) are in `docs/research/recalibration-1482-result.md` and `docs/research/recalibration-1482/`.
+
+**What she decides.** Whether to merge this amendment as drafted, and the minimum meaningful effect, which the result page puts as a marked question with the power figures.
+
 ---
 
 **Draft scoring protocol, v1 (orchestrating session, 12 Oct 2026, for Eleonora's decision). Designed from first principles; current rules are kept only where they survive scrutiny.**

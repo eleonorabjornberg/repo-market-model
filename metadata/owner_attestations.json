@@ -265,6 +265,13 @@
       "comment_id": 6688156532,
       "phrase": "GO #1486",
       "what": ".claude/ skills and routines put everything for her on the one decision docket (PR #1487); her 6 November 2026 docket ruling go-1486"
+    },
+    {
+      "kind": "decisions",
+      "issue": 1482,
+      "comment_id": 6688262386,
+      "phrase": "GO #1482",
+      "what": "docs/decisions/scoring-protocol.md amendment 6 (a): recalibrated critical and futility values (PR #1490); her 6 November 2026 docket ruling"
     }
   ],
   "rule": "docs/decisions/drafts/owner-attestation.md",
