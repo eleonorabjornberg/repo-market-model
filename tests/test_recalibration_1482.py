@@ -176,6 +176,15 @@ class TestTheDraft(unittest.TestCase):
 
 
 class TestThePage(unittest.TestCase):
+    def test_the_page_records_the_mme_ruling_with_the_power_figure(self):
+        import json
+        cal = json.loads(rc.CALIBRATION.read_text(encoding="utf-8"))
+        power = json.loads(rc.POWER.read_text(encoding="utf-8"))
+        text = rc.render(cal, power)
+        self.assertIn("## 8. Ruling recorded, 6 November 2026: the MME stays at 3% (#1498)", text)
+        self.assertIn("is 7.0% \u00b1 1.1, and 0.6% \u00b1 0.3 at the values in force", text)
+        self.assertIn("out of reach by 250 confirmation days", text)
+
     def test_the_records_and_the_page_agree(self):
         if not rc.PAGE.exists():
             self.skipTest("the page is not written yet")
