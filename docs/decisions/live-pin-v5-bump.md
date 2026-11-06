@@ -1,6 +1,6 @@
 # Version bump: the live pin moves to the decision-row fix (#1475)
 
-**Status: a draft for Eleonora, not in force.** Drafted by the pull request that closes #1475. Her own `GO #1475` (comment
+**Status: In force since 5 November 2026 (GO #1475, PR #1478).** Drafted by the pull request that closes #1475. Her own `GO #1475` (comment
 6662675639, 5 November 2026) and her ruling on #1471, option (a) (the decision docket, relayed on #1475), authorise the pin
 move. It takes effect only when she merges the pull request; the merge is hers.
 

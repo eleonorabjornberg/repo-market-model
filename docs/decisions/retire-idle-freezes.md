@@ -1,6 +1,6 @@
 # Decision (draft): retire the freezes that protect no live registration
 
-**Status: a draft for Eleonora, not in force.** Drafted by the pull request that closes #1134, on her ruling of 22
+**Status: In force since 23 October 2026 (GO #1134, PR #1136).** Drafted by the pull request that closes #1134, on her ruling of 22
 October 2026 ("we need to move away from freezing things"). It takes effect only once she merges it with her own `GO`.
 **The code change behind it is not in this pull request** (see "What is not done"). Serves the process directive
 #1134 and unblocks #1106.

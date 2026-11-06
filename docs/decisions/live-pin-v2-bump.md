@@ -1,6 +1,6 @@
 # Version bump: pressure model v2 joins the live record (#245)
 
-**Status: a draft for Eleonora, not in force.** Drafted by the pull request that closes #245. It takes effect only
+**Status: In force since 8 October 2026 (GO #245, PR #355).** Drafted by the pull request that closes #245. It takes effect only
 when she merges it, and the pin moves only through her own approval (`docs/decisions/live-pin.md`: an owner-attested
 comment, cited in `metadata/owner_attestations.json`).
 

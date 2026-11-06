@@ -1,6 +1,6 @@
 # Decision (draft): the H5 confirmation design
 
-**Status: a draft for Eleonora, not in force.** Drafted by the pull request that closes #1393, on her ruling of 2
+**Status: In force since 4 November 2026 (GO #1393, PR #1394).** Drafted by the pull request that closes #1393, on her ruling of 2
 November 2026 (chat, relayed): draft the record from the second outside review's proposal, with the defaults put to
 her. Revised on her rulings of 2 and 3 November 2026 (chat, relayed on #1394) and her ruling on #1399 of 4 November
 2026 ("per baseline is fine, keep 500"). It takes effect only once she merges it with her own `GO` and the attestation entry that `GO` makes (#256). For

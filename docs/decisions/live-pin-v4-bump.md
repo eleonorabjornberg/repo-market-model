@@ -1,6 +1,6 @@
 # Version bump: the live record moves to the 18:00 decision instant (#1313)
 
-**Status: a draft for Eleonora, not in force.** Drafted by the pull request that closes #1313, which is a draft until her own
+**Status: In force since 4 November 2026 (GO #1369, PR #1424).** Drafted by the pull request that closes #1313, which is a draft until her own
 `GO #1313` on that issue (a comment by her, not through an app), cited in `metadata/owner_attestations.json`. It takes effect only
 when she merges it, and the pin moves only through her own approval (`docs/decisions/live-pin.md`: an owner-attested
 comment, cited in `metadata/owner_attestations.json`, in a follow-up that edits `metadata/live_pin.json`).

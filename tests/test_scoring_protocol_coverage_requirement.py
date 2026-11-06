@@ -193,7 +193,9 @@ class InertUntilMergedTests(unittest.TestCase):
         start = text.index(HEADING)
         end = text.find("\n## ", start + len(HEADING))
         section = text[start:end if end != -1 else None]
-        self.assertIn("Nothing here is in force until she merges it", " ".join(section.split()))
+        # The amendment is merged (GO #1130), but her #1473 Q2 ruling (b) keeps the requirement reported only:
+        # the record still states the flag is False, and the flag is False.
+        self.assertIn("`scoring_protocol.COVERAGE_REQUIREMENT_IN_FORCE` is False", " ".join(section.split()))
         self.assertFalse(sp.COVERAGE_REQUIREMENT_IN_FORCE)
 
     def test_enforcement_returns_nothing_while_off(self):
