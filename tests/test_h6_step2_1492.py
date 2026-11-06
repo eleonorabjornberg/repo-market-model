@@ -181,6 +181,15 @@ class ComparisonTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             script.require_defined_rows_reproduce(old, new)
 
+    def test_the_rows_a_reading_is_taken_from(self):
+        feeds = script._feeds_reading
+        self.assertTrue(feeds(["set/union_without_bill", "grid_crps", "candidate", "B1"]))
+        self.assertTrue(feeds(["regime/2024", "grid_crps", "variant", "B2"]))
+        self.assertTrue(feeds(["pressure_day_type/turn", "upper_tail_twcrps", "variant", "candidate"]))
+        self.assertFalse(feeds(["set/union_without_bill", "grid_crps", "candidate", "B1_prime"]))
+        self.assertFalse(feeds(["set/tax_date", "grid_crps", "candidate", "B1"]))
+        self.assertFalse(feeds(["regime/2024", "upper_tail_twcrps", "candidate", "B1"]))
+
     def test_the_readings_that_move_are_listed(self):
         old, new = self.records()
         for rec in (old, new):

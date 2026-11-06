@@ -90,7 +90,7 @@ STRATUM_TEXT = {
 }
 
 #: Why the HAC standard error that studentizes the bound is not to be trusted at face value (Lens C, #958; her ruling of 20 October 2026 on #1009).
-HAC_CAVEAT = ("the HAC standard error that studentizes the bound is understated about 2x after 2020 (Lens C, #958; measured for the daily lag-10 series, "
+HAC_CAVEAT = ("the HAC standard error that studentizes the bound is understated about 2x after 2020 (measured for the daily lag-10 series, "
               "not for this page's event series at lag 3), so an interval that excludes zero is narrower than it should be. A reading here is evidence for a question")
 
 
@@ -280,13 +280,12 @@ def require_defined_rows_reproduce(old: Mapping[str, object], new: Mapping[str, 
 
 
 def _feeds_reading(key: Sequence[str]) -> bool:
-    """Whether the row is one a stated reading is taken from: the kill rule on a union, a regime or a pressure-day type, and the variant rule."""
+    """Whether the row is one a stated reading (`readings`) is taken from: the kill rule on the primary union or a regime or pressure-day type, and the variant rule."""
 
     scope, metric, model, bench = key
-    split = not scope.startswith("set/")
-    if scope == f"set/{PRIMARY_SET}":
-        return (metric == "grid_crps" and model in ("candidate", "variant") and bench in ("B1", "B2")) or (model == "variant" and bench == "candidate")
-    return split and metric == "grid_crps" and model == "candidate" and bench in ("B1", "B2")
+    if scope.startswith("set/") and scope != f"set/{PRIMARY_SET}":
+        return False
+    return (metric == "grid_crps" and model in ("candidate", "variant") and bench in ("B1", "B2")) or (model == "variant" and bench == "candidate")
 
 
 def compare(old: Mapping[str, object], new: Mapping[str, object]) -> Dict[str, object]:
