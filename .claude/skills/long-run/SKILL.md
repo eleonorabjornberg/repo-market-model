@@ -10,7 +10,7 @@ Eleonora's Mac (`docs/decisions/workflow.md`, "Long runs go to her Mac").
 
 1. **Commit the script and the exact commands first**, and push the branch, so the run is reproducible from the branch.
 2. **Comment `needs-mac:` on the PR** with the paste, complete and ready to run, so it lives on GitHub and not in a
-   session. The orchestrating session hands it to her in the 5 pm message; she runs it overnight. Its shape:
+   session. The orchestrating session puts it on her decision docket as a Mac-run card; she runs it overnight. Its shape:
    ```
    bash -s <<'EOF'
    set -euo pipefail

@@ -26,7 +26,7 @@ prompt is the agent file's text with its inputs, and follows a skill by reading 
 | Was | Now |
 | --- | --- |
 | The orchestrating session's hourly check and standing rules, in its routine prompt | skill `directive-orchestrator` |
-| The 5 pm message, in its routine prompt | skill `decision-cards` (replaced `daily-decision-message`, #1438) |
+| The 5 pm message, in its routine prompt | skill `decision-cards` (replaced `daily-decision-message`, #1438); the message is the one decision docket, link plus one line (#1486) |
 | Scratchpad `tools/remerge2.sh` | skill `remerge-branch`, run by subagent `pr-remerger` |
 | Scratchpad `mac-<N>.sh` pastes | the PR's `needs-mac:` comment, in the `long-run` skill's format |
 | Scratchpad `orchestrator-state.md` | the day's comment on the "Orchestrator log" issue (#1044) |

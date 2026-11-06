@@ -6,4 +6,6 @@ session). The text it carried on 21 October 2026 is in this file's history; its 
 
 ---
 
-Daily decision message for Eleonora. Fetch eleonorabjornberg/repo-market-model and follow `.claude/skills/decision-cards/SKILL.md` on origin/main exactly (its section "In repo-market-model: the 5 pm docket"), with the Skill tool if it offers `decision-cards`, otherwise by reading the file.
+Daily decision message for Eleonora. Fetch eleonorabjornberg/repo-market-model and follow `.claude/skills/decision-cards/SKILL.md` on origin/main exactly (its section "In repo-market-model: the 5 pm docket"), with the Skill tool if it offers `decision-cards`, otherwise by reading the file. The 5 pm message is the decision docket
+(https://claude.ai/artifact/BKdcRH3vMS1dYrjAf13B6Y), built with `decision-cards` and republished to that same URL, never to a new
+one. Read its `answers` collection first and act on the new answers, then send her only the link and a one-line summary.

@@ -258,6 +258,13 @@
       "comment_id": 6671076866,
       "phrase": "GO #1477",
       "what": "mark merged decision records in force, status lines only: h5-confirmation-design, live-pin, live-pin-v2-bump, live-pin-v4-bump, live-pin-v5-bump, retire-idle-freezes, and scoring-protocol amendments 4 and 5 (COVERAGE_REQUIREMENT_IN_FORCE unchanged); her 5 November 2026 docket ruling #1473 Q1 (a)"
+    },
+    {
+      "kind": "claude-files",
+      "issue": 1486,
+      "comment_id": 6688156532,
+      "phrase": "GO #1486",
+      "what": ".claude/ skills and routines put everything for her on the one decision docket (PR #1487); her 6 November 2026 docket ruling go-1486"
     }
   ],
   "rule": "docs/decisions/drafts/owner-attestation.md",
