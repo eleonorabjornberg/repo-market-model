@@ -218,7 +218,9 @@ class LookAheadTests(unittest.TestCase):
         self.assertEqual([(r["onset"], r["status"]) for r in record["rows"]],
                          [("2026-10-27", "attributed"), ("2026-10-28", "pending"), ("2026-10-29", "attributed")])
         pending = record["rows"][1]
-        self.assertIn("awaiting the new registration", pending["reason"])
+        self.assertNotIn("awaiting the new registration", pending["reason"])
+        self.assertNotIn("1324", pending["reason"])
+        self.assertIn("see refusal", pending["reason"])
         self.assertIn("locked blind tier", pending["refusal"]["error"])
         self.assertEqual(pending["refusal"]["type"], "LookAheadError")
         self.assertFalse(pending["counted"])
