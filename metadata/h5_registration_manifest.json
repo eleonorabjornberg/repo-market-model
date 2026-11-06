@@ -1327,6 +1327,7 @@
   }
  ],
  "not_arms": {
+  "metadata/h6_step2_1492.json": "#1492's re-run of #724 (H6 step 2) under her ruling of 6 November 2026, the same candidate, strata and one variant, with the mean-d fallback and the mean-d reading; a different hypothesis (H6) read with the candidate, not an arm on the way to the H5 candidate, which it leaves unchanged",
   "metadata/h6_step2_724.json": "#724's development study of H6 step 2, the candidate on #1131's event-day strata and one risk-date variant, declared before any score; a different hypothesis (H6) read with the candidate, not an arm on the way to the H5 candidate, which it leaves unchanged",
   "metadata/confirmation_size_power_1392.json": "#1392's size and power study of the proposed confirmation test, run on the candidate's own origin losses; a power study of a test design, not an arm on the way to the candidate, which it leaves unchanged",
   "metadata/aligned_pairs_931.json": "#931's scratch measurement of the gbm_funding line's pair construction, declared before any score with nothing published; a precursor of #1027, not an arm on the way to the candidate",
