@@ -527,6 +527,18 @@ def render(cal: Mapping[str, object], power: Mapping[str, object]) -> str:
     a("- The B3 leg uses the days on which the published record has all five leads, scored on B3's five levels with B1 and the candidate read at those levels.")
     a("- 2026 days are not read; no day of the lockbox is read.")
     a("")
+    a("## 8. Ruling recorded, 6 November 2026: the MME stays at 3% (#1498)")
+    a("")
+    a("**Dated note, 6 November 2026.** Eleonora ruled on the marked question of section 5 (decision docket, 10:12 am ET, card mme-1490, option 1; "
+      "relayed on #1482, comment 6688184333): keep the minimum meaningful effect at 3% (protocol decision 5). This note records it and changes nothing else.")
+    a("")
+    a(f"- **Power at 3% by 250 days.** On reading (d) with the new values the test's power at 3% by 250 days is {share(p3, paths)}, "
+      f"and {share(d_new['in_force|0.03']['gated']['250'], paths)} at the values in force (section 4). "
+      + ("No skill on the grid reaches 80% power, so 80% power at 3% is out of reach by 250 confirmation days."
+         if reach is None else f"The smallest skill on the grid that reaches 80% power is {reach:.0%}, so 80% power at 3% is out of reach by 250 confirmation days."))
+    a("- **Length or test.** Whether the confirmation is longer, or read by another test, is left to the confirmation design (#1392, #1394). This ruling does not decide it.")
+    a("- **Unchanged.** No threshold, critical value or decision record is changed by this note.")
+    a("")
     return "\n".join(L) + "\n"
 
 
