@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/satiation_arm_1507.json",
+  "script": "scripts/satiation_arm_1507.py",
+  "pairing": "direct",
+  "why": "The satiation-distance arm of the family ablation on (s3c-ann-net): the candidate with the as-of satiation distance (satiation_dist_roll), or the hinge (satiation_hinge_roll), as one extra term. The fit is (s3)'s estimation routine, spread_mr_state_calendar.walk with training_pairs = direct (guarded by one_step_guard with no allow-list entry), and no gradient-boosted fit is called, so the study is not provisional; the calendar and settlement terms are those of (s3c-ann-net) read at the target day (repo_model.s3c_announced, each figure counting an auction only when it was announced at or before the decision instant); the satiation term is a state of the decision row, built at the 18:00 instant from the reserves ratio each row's as-of read gives (repo_model.satiation.build_distance_columns, refused by check_distance_no_future if it depends on a later row), and served by repo_model.s3c_satiation; no outcome is an input"
+}
