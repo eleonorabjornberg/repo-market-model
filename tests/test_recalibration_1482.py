@@ -175,6 +175,44 @@ class TestTheDraft(unittest.TestCase):
         self.assertEqual(text.count(rc.DRAFT_ANCHOR), 1)
 
 
+class TestTheParkingAndTheGate(unittest.TestCase):
+    """#1506 (her ruling of 7 November 2026, card f1504-h5-gate-power): amendment 6 is parked, the gate reads the confirmation's own power.
+
+    Not a leakage guard; no mutation is recorded.
+    """
+
+    def test_the_draft_is_marked_parked_and_not_proposed_for_h5(self):
+        text = rc.draft_text(TestTheDraft.cal(None))
+        self.assertIn("Parked, 7 November 2026 (#1506): not proposed for H5", text)
+        self.assertIn("docs/decisions/h5-confirmation-design.md", text)
+        self.assertIn("Nothing here is in force until she merges it", text)
+
+    def test_the_page_beside_the_250_day_figure_states_the_confirmations_own_power(self):
+        import json
+        cal = json.loads(rc.CALIBRATION.read_text(encoding="utf-8"))
+        power = json.loads(rc.POWER.read_text(encoding="utf-8"))
+        text = rc.render(cal, power)
+        self.assertIn("Dated note, 7 November 2026 (#1506)", text)
+        self.assertIn("at most 1.4%", text)
+        self.assertIn("about 32-35%", text)
+        self.assertIn("The MME stays at 3%", text)
+        # the figure of 8 stays as it was written
+        self.assertIn("is 7.0% \u00b1 1.1, and 0.6% \u00b1 0.3 at the values in force", text)
+
+    def test_the_quoted_figures_are_in_the_confirmation_design_and_its_study(self):
+        design = (ROOT / "docs" / "decisions" / "h5-confirmation-design.md").read_text(encoding="utf-8")
+        study = (ROOT / "docs" / "research" / "confirmation-size-power-1392-full-result.md").read_text(encoding="utf-8")
+        for needle in ("pass rate is at most 1.4%", "34.6%", "31.6%"):
+            self.assertIn(needle, design)
+        self.assertIn("at most 1.4%", study)
+
+    def test_the_manuals_name_the_confirmation_study_as_the_gate(self):
+        for name in ("H1.md", "H5.md"):
+            text = (ROOT / "docs" / "research" / "hypotheses" / name).read_text(encoding="utf-8")
+            self.assertIn("confirmation-size-power-1392-full-result.md", text, name)
+            self.assertIn("#1506", text, name)
+
+
 class TestThePage(unittest.TestCase):
     def test_the_page_records_the_mme_ruling_with_the_power_figure(self):
         import json
