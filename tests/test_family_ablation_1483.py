@@ -262,7 +262,8 @@ class CommittedRecordTests(unittest.TestCase):
     @unittest.skipUnless(RECORD.exists(), "the declared run has not been scored yet")
     def test_the_tracked_page_is_what_the_script_renders_from_the_tracked_record(self):
         record = json.loads(self.RECORD.read_text(encoding="utf-8"))
-        self.assertEqual(self.PAGE.read_text(encoding="utf-8"), script.render(record))
+        # the page is rendered with #1507's record joined when it exists (the satiation row, measured; a dated correction), else as #1483 wrote it
+        self.assertEqual(self.PAGE.read_text(encoding="utf-8"), script.render(script.with_satiation(record)))
 
 
 class MilestoneTests(unittest.TestCase):

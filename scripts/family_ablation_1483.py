@@ -87,6 +87,8 @@ DECLARATION = REPO / "metadata" / "family_ablation_1483.json"
 RECORD_1350 = REPO / "docs" / "research" / "h41-per-release-1350" / "result.json"
 RECORD_1345 = REPO / "docs" / "research" / "h9-nested-1800-1345" / "result.json"
 RECORD_1321 = REPO / "docs" / "research" / "s3c-flagnet-gross-1321" / "result.json"
+#: #1507's record (the satiation-distance arm, a dated amendment of this study's declaration): when the page is given it, the satiation row is measured.
+RECORD_1507 = REPO / "docs" / "research" / "satiation-arm-1507" / "result.json"
 SEED = 1483
 LAST_DAY = EXPLORATORY_END
 WINDOW_LAST = m1288.WINDOW_LAST
@@ -507,8 +509,22 @@ def family_rows(r: Mapping[str, object]) -> List[dict]:
         "scored here", "the IORB terms", row_cells(r, "iorb"))
     add("the scarcity state read per leg", "no state (held at its maximum, so the net terms are plain sizes)",
         "candidate with the state read (carried) against the candidate", "re-used from #1350", "the scarcity state", reused_cells(r, "scarcity_state"))
-    add("satiation distance", "nothing", "no input exists on main to add: the estimate is H7's (the liquidity repository), see question 2", "not measured",
-        "satiation distance", {f"{w}/{m}": "no row" for w in ("development", "2026") for m in TESTED[:2]})
+    sat = r.get("satiation_1507")
+    if sat is None:
+        add("satiation distance", "nothing", "no input exists on main to add: the estimate is H7's (the liquidity repository), see question 2", "not measured",
+            "satiation distance", {f"{w}/{m}": "no row" for w in ("development", "2026") for m in TESTED[:2]})
+    else:
+        for key, _family, with_, without in sat["rows"]:
+            cells = {}
+            for window in ("development", "2026"):
+                w = sat["windows"].get(window)
+                group = None if w is None else w["groups"]["pooled"]["all decision days"]
+                for metric in TESTED[:2]:
+                    cells[f"{window}/{metric}"] = "not run" if group is None else cell(_vs(group, metric, with_, without))
+            term = "distance (satiation_dist_roll)" if key == "satiation_dist" else "hinge (satiation_hinge_roll)"
+            add("satiation distance", "nothing" if key == "satiation_dist" else "as above",
+                f"candidate with the satiation {term}, in percentage points, as one term against the candidate", "scored in #1507 (corrected)",
+                f"satiation {key.replace('satiation_', '')}", cells)
     tail = r["reused"]["h9_nested_1345"]
     tail_cells = {f"{w}/{m}": "not recorded" for w in ("development", "2026") for m in TESTED[:2]}
     entry = tail["rows"].get("pooled/all decision days", {})
@@ -560,6 +576,29 @@ def reading_lines(r: Mapping[str, object]) -> List[str]:
     return out + [""]
 
 
+def correction_note(r: Mapping[str, object]) -> List[str]:
+    """The dated correction of the satiation row (#1507), shown once the row is measured."""
+
+    if r.get("satiation_1507") is None:
+        return []
+    return ["**Correction, 7 November 2026 (#1507, her ruling on the decision docket, card f1505-satiation-row).** The satiation-distance row first read `no row`, "
+            "on the premise (in `metadata/family_ablation_1483.json`, declared before any score, and in question 2 as first written) that no daily as-of "
+            "satiation-distance series exists on main. That was wrong: `satiation_dist_roll` and `satiation_hinge_roll` (`repo_model.satiation`, #598) are such "
+            "columns, built from the as-of reserves ratio and guarded by `satiation.check_distance_no_future`; they were off in every published declaration. "
+            "#1507 adds each as one term to the candidate on direct pairs, in both windows, with this study's machinery and settings, under a dated amendment "
+            "declaration (`metadata/satiation_arm_1507.json`) made before any score. The two satiation rows above are those; the full tables, the checks of the "
+            "columns at 18:00 (#621, #622) and the fitted coefficients are on `docs/research/satiation-arm-1507-result.md`. The declaration "
+            "`metadata/family_ablation_1483.json` and this study's record are not edited, and every other figure on this page is unchanged. H5.M3 is not re-marked.", ""]
+
+
+def with_satiation(record: dict, path: Path = RECORD_1507) -> dict:
+    """`record` with #1507's record joined under `satiation_1507` when it exists, else `record` itself."""
+
+    if not Path(path).exists():
+        return record
+    return dict(record, satiation_1507=json.loads(Path(path).read_text(encoding="utf-8")))
+
+
 def split_tables(w: Mapping[str, object], split: str, title: str, with_: str, without: str) -> List[str]:
     table = m1288.split_table(w, split, with_, without)
     return [f"#### {title}: {SHORT[with_]} against {SHORT[without]}", ""] + table + [""] if table else []
@@ -575,6 +614,7 @@ def render(r: dict) -> str:
         "nothing here changes it.** Nothing is registered or published and no claim changes. Generated by `scripts/family_ablation_1483.py page` from "
         f"`docs/research/family-ablation-1483/result.json`, not edited by hand; declared in `{r['declaration']}` before any score.", "",
         "## The families, one row each", ""] + family_table(r) + [""] + reading_lines(r)
+    out += correction_note(r)
     out += [
         "A family is *dropped* only if the candidate reads it. (s3c-ann-net) reads the settlement family and the calendar columns and nothing else of the five, "
         "so for the other four a drop is the candidate itself, and the contrast is the nested one: the candidate with the family added against the candidate. "
@@ -599,7 +639,7 @@ def render(r: dict) -> str:
             out += ["Groups of fewer than 20 days, listed and not tested: " + ", ".join(f"{x} ({n_})" for x, n_ in sorted(w["skipped_groups"].items())) + ".", ""]
     out += reused_sections(r)
     out += references_section(r)
-    out += question()
+    out += question(r.get("satiation_1507"))
     return "\n".join(out).rstrip() + "\n"
 
 
@@ -646,7 +686,9 @@ def reused_sections(r: Mapping[str, object]) -> List[str]:
     return out
 
 
-def question() -> List[str]:
+def question(satiation: Optional[Mapping[str, object]] = None) -> List[str]:
+    """The marked questions; with #1507's record joined, question 2 is the corrected one."""
+
     return [
         "## Questions for Eleonora (marked; defaults change no claim)", "",
         "**Question 1. What is a family drop when the candidate does not read the family?** (s3c-ann-net) reads only the settlement family of the manual's five. "
@@ -657,17 +699,31 @@ def question() -> List[str]:
         "state, a satiation distance and a tail input all at once) and drop each in turn. It needs the satiation distance (question 2) and is a new arm of "
         "the search, so it is a directive of its own.",
         "3. **Do not mark H5.M3 on this page.** Keep the rows as evidence and mark when the satiation row exists.", "",
+    ] + (_question_2() if satiation is not None else [
         "**Question 2. Satiation distance.** No input on main carries it as a daily as-of series: `satiation.fit_level` fits the kink at a refit and H7's estimator "
         "is in the liquidity repository, gating the nested test here. Options: (1) **leave the row as `not measured`** until H7's estimate exists (default); "
         "(2) add the scarcity state's band distance (`scarcity.reserves_ratio` less the 0.12 band) as a term here, which the state arm of #1350 already reads "
         "through the state; (3) a directive that builds the rolling satiation column (`satiation.ROLLING_COLUMN`) as an input to the candidate.", "",
+    ]) + [
         "**Question 3. Tail spread.** The H5 manual's tail spread has no arm on the candidate except #1345's dispersion forecasts, which are not the tail "
         "of the SOFR distribution (the 99th percentile less IORB). Options: (1) **re-use #1345's row, as here** (default); (2) a directive for the "
         "99th-percentile-less-IORB forecast as a term, on the protocol's test; (3) drop the family from the manual's step 2.", ""]
 
 
+def _question_2() -> List[str]:
+    return [
+        "**Question 2 (as corrected on 7 November 2026, #1507). Satiation distance.** The first version of this question said no daily as-of series exists on main "
+        "and waited on H7's estimate; both were wrong (see the correction above; H7m closed on 29 October 2026, eleonorabjornberg/repo-market-liquidity#198). The "
+        "row is measured. What is left is the caveat of H5.M3 in `docs/research/milestones.json`, which still says \"Satiation distance has no row (no input on main)\" "
+        "and which this change does not touch. Options: (1) **leave the milestone as it is until you rule** (default; no claim changes); (2) replace that sentence of the "
+        "caveat with the measured row, in a pull request of its own for you to review; (3) hold the milestone until the rolling level is read as the satiation "
+        "level it is called (finding #621) or a level fitted to the kink replaces it.", ""]
+
+
 def page(args) -> int:
     r = json.loads(Path(args.score).read_text(encoding="utf-8"))
+    if args.satiation:
+        r = with_satiation(r, Path(args.satiation))
     Path(args.output).parent.mkdir(parents=True, exist_ok=True)
     Path(args.output).write_text(render(r), encoding="utf-8")
     return 0
@@ -693,6 +749,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     g = sub.add_parser("page", help="write the result page from the assembled record")
     g.add_argument("--score", required=True)
     g.add_argument("--output", required=True)
+    g.add_argument("--satiation", default=None, help="#1507's record: join it so that the satiation row is measured (a dated correction)")
     g.set_defaults(func=page)
     args = parser.parse_args(argv)
     return args.func(args)

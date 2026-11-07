@@ -1,0 +1,83 @@
+{
+ "status": "declared by the pull request that closes #1507 before any score was computed; a development study, never a verdict. It is a dated amendment of metadata/family_ablation_1483.json (which is not edited): it adds one family row, satiation distance, that #1483's declaration marked 'not measured' on a premise that was wrong. (s3c-ann-net) stays the candidate and nothing here changes it. Nothing is registered or published: no record in docs/runs/ is edited, the live record and its pin do not change, docs/research/h5-candidate.json and scripts/final_test_preregistration.py do not change, docs/research/milestones.json is not changed (H5.M3 is not re-marked; the caveat is put back to her as a marked question), no day after 2026-09-03 is scored and no lockbox day is scored.",
+ "issue": 1507,
+ "amends": "metadata/family_ablation_1483.json",
+ "amendment_date": "7 November 2026",
+ "amendment_made": "before any score of this study was computed or any figure of it was read",
+ "ruling": "Eleonora, 7 November 2026, decision docket, 11:15 am ET, card f1505-satiation-row, option run-arm, relayed on #1505 and queued as #1507.",
+ "hypothesis": "H5 (primary goal): the SOFR - IORB spread distribution in bp. Step 2, follow-up of the ablation of the new input families (milestone H5.M3): one added family row. Development tier",
+ "correction_of_premise": {
+  "declared": "metadata/family_ablation_1483.json, families[3] ('satiation distance'), contrast: 'none: no daily as-of satiation-distance series exists on main (satiation.fit_level is a refit-time kink; H7's estimator is in the liquidity repository)'; and docs/research/family-ablation-1483-result.md, Question 2, whose default waits on H7's estimate.",
+  "found": "src/repo_model/satiation.py declares two daily panel columns, satiation_dist_roll and satiation_hinge_roll (#598; DISTANCE_COLUMN, HINGE_COLUMN), built by build_distance_columns from the as-of reserves-to-assets ratio and the rolling level of #587, each row reading rows up to its own only, and guarded by check_distance_no_future. They are off in every published declaration, but they exist and are as-of. H7m closed on 29 October 2026 (eleonorabjornberg/repo-market-liquidity#198): its estimate will not come, so the page's default no longer waits on a live stage.",
+  "what_is_not_changed": "metadata/family_ablation_1483.json is not edited. Its figures, rows, arms and record (docs/research/family-ablation-1483/result.json) are unchanged and this study re-runs the candidate only as the control of the new rows."
+ },
+ "target": "spread_bps at the scored day, in basis points, as a 23-quantile distribution at each lead h = 1..5 (scoring_protocol.GRID)",
+ "decision_instant": "18:00 America/New_York on the decision day (repo_model.decision_instant.DECISION_TIME, #1312). The walks are made at that instant and the instant is pinned for the run (scripts/s3c_flagnet_gross_1321.decision_instant_pinned). The two distance columns are built at the same instant: the two legs of the ratio are read through InformationRule at 18:00, per H.4.1 release (h41_release.release_dated_registry, #541, #622), with the rolling constants of metadata/satiation_587.json unchanged (quantile 0.10, 504 rows, minimum 63).",
+ "family": {
+  "family": "satiation distance",
+  "candidate_reads": "no.",
+  "contrast": "added to the candidate: the daily as-of distance from the rolling satiation level as one term, against the candidate (the nested contrast of #1483's question 1, default 1)",
+  "columns": {
+   "satiation_dist_roll": "the reserves-to-assets ratio the as-of rule reads at the row's own decision minus the rolling level at that row; the term is the column in percentage points (times 100)",
+   "satiation_hinge_roll": "the percentage points by which that ratio is below the level, 0 at or above it (already in percentage points)"
+  },
+  "term_names": {"satiation_dist": "the distance, in percentage points", "satiation_hinge": "the hinge, in percentage points"},
+  "units": "percentage points of the reserves-to-assets ratio, chosen before any score and not tuned; the ridge of 5 is the candidate's and is not changed for the new term"
+ },
+ "alignment": "The term of a training pair with target row T at lead h is the column at row T - h, the decision row of the direct pair; the term of a forecast made at decision row d is the column at row d, whatever the lead (the same rows as repo_model.s3c_h9.TargetForecastTable). A column value is public at its own row's decision (zero lag, sources_measurement.json satiation_distance_columns) so the training pair reads nothing after its own decision. A training pair whose decision row has no value raises ValueError; a forecast whose decision row has none enters at 0.",
+ "arms": [
+  {"name": "sc_s3c_ann_net", "role": "(s3c-ann-net), the candidate; the control", "margin_bp": 0.0},
+  {"name": "sc_s3c_ann_net_satdist", "role": "(s3c-ann-net) with the satiation distance (satiation_dist_roll, in percentage points) as one term after the candidate's terms; everything else is the candidate's: the Huber fit (k = 1.345), the ridge of 5, the pool of standardised residuals, the direct pairs and the SRF cap", "margin_bp": 0.0},
+  {"name": "sc_s3c_ann_net_sathinge", "role": "(s3c-ann-net) with the satiation hinge (satiation_hinge_roll, in percentage points) as one term; the second arm of the ruling, cheap because it shares the walk", "margin_bp": 0.0}
+ ],
+ "references": [
+  {"name": "sc_s3_robust", "label": "(s3)", "role": "re-run in the frame, as in #1483; not a comparison of this directive"},
+  {"name": "sc_s3c", "label": "(s3c)", "role": "re-run in the frame, as in #1483; not a comparison of this directive"}
+ ],
+ "models": ["sc_s3_robust", "sc_s3c", "sc_s3c_ann_net", "sc_s3c_ann_net_satdist", "sc_s3c_ann_net_sathinge"],
+ "rows": [
+  {"key": "satiation_dist", "with": "sc_s3c_ann_net_satdist", "without": "sc_s3c_ann_net"},
+  {"key": "satiation_hinge", "with": "sc_s3c_ann_net_sathinge", "without": "sc_s3c_ann_net"}
+ ],
+ "prechecks": {
+  "note": "Made at the 18:00 instant before the walk and reported on the page (the ruling asks for both, from findings #621 and #622 as #1505 relays them). They are measurements of the columns, not conditions of the run.",
+  "621": "the share of rows with the hinge on (ratio below the rolling level), by calendar year, on the release-dated build at 18:00: a rolling level that acts as a two-year reserves low shows the hinge on in years with no pressure (2022 and 2023 on the first build)",
+  "622": "the same columns built on the weekly H.4.1 lag and on the per-release read, both at 18:00: the rows on which the distance differs (median and largest, in percentage points) and the days on which the hinge switches on or off differently; the weekly lag is the older read, so the difference is staleness and not leakage",
+  "no_future": "satiation.check_distance_no_future on the rows of the built columns, every row, at 18:00 (LookAheadError on a value that depends on a later row)"
+ },
+ "frame": {
+  "windows": "the two windows of #1255, loaded as #1483 loads them: the development window (decision days whose five targets fall on or before 2025-12-31) and the 2026 development days (five targets from 2026-01-02 to 2026-09-03). The 2026 days are reported on their own, as a window",
+  "walk": "one sc.walk per window with the candidate and the two arms, which share the base fit and #941's pool; the arms are compared on the same days. The study refuses to write a record unless every scored decision day has a forecast of every arm",
+  "guards": "a scored decision day or target day passes lockbox.require_unlocked through spread_mean_reversion_686.require_scored_days with the last day of the window; the blind tier (from 2026-09-04) and every lockbox day are refused",
+  "reproduction": "the candidate, (s3) and (s3c) are re-run in the same walk; their pooled means are written beside #1483's record (against_1483) and are expected to agree to rounding, which shows the control is #1483's"
+ },
+ "inputs": "the published panel (digest 4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999, built at 18:00) and the scratch panel of scripts/pressure_v1_1.py panel --end 2026-09-03 (same dates, plus bank_total_assets), from which only the two distance columns are built; the study refuses a scratch panel whose dates or published columns differ from the published panel's",
+ "primary": {
+  "metric": "grid CRPS (23 levels) averaged over leads h = 1..5",
+  "key_secondary": "upper-tail twCRPS (weight 1{z > 0 bp})",
+  "also_reported": "the Brier score of P(spread > +5 bp) and the coverage of the central 90% band, as in #1483",
+  "splits": "pooled, by lead, by regime and by pressure-day type of the target day; groups of fewer than 20 days are listed and not tested"
+ },
+ "scoring": {
+  "scorer": "repo_model.scoring_protocol (#655), the development tier: no verdict, no registration",
+  "test": "scoring_protocol.paired_tests, the studentized stationary bootstrap (ruling 1), mean block 10 business days, 10,000 draws, seed 1483 (#1483's, so the settings are the ablation's), two-sided 90% interval (the lower end is the one-sided 95% bound); the skill interval and the studentized interval on mean d are reported for every tested row; where the studentized bound cannot be computed the unstudentized percentile interval of mean d is given beside it, with no reading taken from it",
+  "reading": "a reading is taken from the mean-d bound (her ruling on #1009): the family helps when the lower end of the 90% interval of mean d is above zero, hurts when the upper end is below zero, otherwise undecided"
+ },
+ "reading_rules": [
+  "A figure is a check on days that were already seen. Nothing here is a verdict, nothing is registered and no choice is made on it; (s3c-ann-net) stays the candidate until she rules.",
+  "A gain or loss is read from the 90% interval of mean d excluding zero; otherwise undecided. A point estimate alone is not read.",
+  "A pooled figure is never read without the lead, regime and pressure-day-type splits beside it.",
+  "The row does not mark or re-mark H5.M3. If it changes what the milestone's caveat says, the page and the pull request put that to her as a marked question with numbered options and a default that changes no claim."
+ ],
+ "limits": {
+  "last_day": "2026-09-03",
+  "named_candidate": "unchanged; docs/research/h5-candidate.json is not changed",
+  "preregistration": "scripts/final_test_preregistration.py is not touched",
+  "allow_list": "repo_model.one_step_guard.ONE_STEP_ALLOW_LIST is not changed",
+  "sources": "metadata/sources.json and metadata/sources_measurement.json are not changed; docs/runs/ is not touched; the one change in src/ is the two extra-term names in spread_mr_state_calendar (SATIATION_EXTRAS, listed in EXTRA_TERMS so that the fit treats them as the extras it already reads) and the table repo_model.s3c_satiation that serves them, with a no-future test and one recorded mutation",
+  "family_ablation_1483": "metadata/family_ablation_1483.json and docs/research/family-ablation-1483/result.json are not edited; the page docs/research/family-ablation-1483-result.md is regenerated by scripts/family_ablation_1483.py page with the new row and a dated correction note"
+ },
+ "pairs": "direct: the calendar and settlement terms are columns of the target row exactly as the candidate reads them, and the fit trains on direct pairs (training_pairs = 'direct'; spread_mr_state_calendar.fit_state_terms is guarded by one_step_guard with no allow-list entry); the satiation term is a state of the decision row (alignment above); the provisional-register row is metadata/provisional/cleared/satiation_arm_1507.json",
+ "long_run": "one arm of #1483 was minutes per walk; this is two arms on the same walk. If the measured time on a subset says the full run exceeds about two hours, it goes to the Mac as a `needs-mac:` comment, per window, each window writing its own file (docs/research/satiation-arm-1507/result-<window>.json)",
+ "amendments": []
+}
