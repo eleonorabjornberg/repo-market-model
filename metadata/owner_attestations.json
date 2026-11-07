@@ -279,6 +279,13 @@
       "comment_id": 6688170716,
       "phrase": "GO #1485",
       "what": "docs/decisions/h5-confirmation-design.md rule 10 recorded as settled, status only (PR #1488); her 6 November 2026 docket ruling"
+    },
+    {
+      "kind": "decisions",
+      "issue": 1506,
+      "comment_id": 6712519282,
+      "phrase": "GO #1506",
+      "what": "docs/decisions/scoring-protocol.md draft amendment 6 marked parked, not proposed for H5 (PR #1508); her 7 November 2026 docket ruling on #1504"
     }
   ],
   "rule": "docs/decisions/drafts/owner-attestation.md",

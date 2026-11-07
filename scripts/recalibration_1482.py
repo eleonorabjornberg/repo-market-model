@@ -539,6 +539,19 @@ def render(cal: Mapping[str, object], power: Mapping[str, object]) -> str:
     a("- **Length or test.** Whether the confirmation is longer, or read by another test, is left to the confirmation design (#1392, #1394). This ruling does not decide it.")
     a("- **Unchanged.** No threshold, critical value or decision record is changed by this note.")
     a("")
+    a("## 9. The confirmation's own power governs the MME (#1506)")
+    a("")
+    a("**Dated note, 7 November 2026 (#1506).** Beside the 250-day figure of section 8, which stays as written. Eleonora ruled (decision docket, 11:14 am ET, "
+      "card f1504-h5-gate-power, option confirm-design; finding #1504): H1.M4 and the H5 registration are gated on the confirmation design's own size-and-power study "
+      "(#1392, `docs/research/confirmation-size-power-1392-full-result.md`), not on the 60/125/250-day values of this page, and draft amendment 6 is parked.")
+    a("")
+    a("- **Which power governs.** The H5 confirmation is read by `docs/decisions/h5-confirmation-design.md`, which supersedes the sequential 60/125/250-day "
+      "checkpoint design and its critical values for the H5 confirmation only. The 7.0% of section 8 is the power of that superseded design.")
+    a("- **The confirmation's figures** (rule 6 of the design; development data, not a verdict). At the 3% boundary the pass rate is at most 1.4%. At 10% skill "
+      "with 500 origins, against B1\u2032* binding with B2 as developed, power is about 32-35% (31.6% under the regime chain, 34.6% under block resampling).")
+    a("- **The MME stays at 3%.** This ruling does not change it, or any threshold, critical value or block length.")
+    a("- **Draft amendment 6 is parked,** not proposed for H5: it is marked so in `docs/decisions/scoring-protocol.md`, which she merges.")
+    a("")
     return "\n".join(L) + "\n"
 
 
@@ -556,6 +569,11 @@ def draft_text(cal: Mapping[str, object]) -> str:
         rows.append(f"| futility, B1 leg (`FUTILITY_CRITICAL_VALUES[GRID_COMPARISON]`) | {n} | {num(force['futility'][n])} | {num(cal['futility_critical_values'][n])} |")
     return "\n".join([
         DRAFT_HEADING, "",
+        "**Parked, 7 November 2026 (#1506): not proposed for H5.** Her ruling of 7 November 2026 (decision docket, card f1504-h5-gate-power, option confirm-design) "
+        "gates H1.M4 and the H5 registration on the confirmation design's own size-and-power study (#1392) and parks this draft. The H5 confirmation is read by "
+        "`docs/decisions/h5-confirmation-design.md` (lines 118-120, \"How this relates to what is in force\"), which supersedes, for the H5 confirmation only, the "
+        "sequential 60/125/250-day checkpoint design and its critical values in this record. The values below stay as drafted, for the record; nothing in this "
+        "paragraph changes a value.", "",
         "**Status: a draft by the pull request that closes #1482, for Eleonora to merge. Nothing here is in force until she merges it** (§13: this record is merged by her, "
         "not under delegated review). Until then item 5 and Q-C stand as written, `CRITICAL_VALUES`, `FUTILITY_CRITICAL_VALUES` and `B2_LEG_CRITICAL_VALUES` in "
         "`scoring_protocol.py` are unchanged, and `docs/research/milestones.json` does not mark H1.M3. It is an alternative to draft amendments 1 to 3: she merges at most one "

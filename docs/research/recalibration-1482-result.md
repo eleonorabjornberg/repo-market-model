@@ -101,3 +101,12 @@ Nothing here is in force. Under protocol section 13 a different value is her dec
 - **Length or test.** Whether the confirmation is longer, or read by another test, is left to the confirmation design (#1392, #1394). This ruling does not decide it.
 - **Unchanged.** No threshold, critical value or decision record is changed by this note.
 
+## 9. The confirmation's own power governs the MME (#1506)
+
+**Dated note, 7 November 2026 (#1506).** Beside the 250-day figure of section 8, which stays as written. Eleonora ruled (decision docket, 11:14 am ET, card f1504-h5-gate-power, option confirm-design; finding #1504): H1.M4 and the H5 registration are gated on the confirmation design's own size-and-power study (#1392, `docs/research/confirmation-size-power-1392-full-result.md`), not on the 60/125/250-day values of this page, and draft amendment 6 is parked.
+
+- **Which power governs.** The H5 confirmation is read by `docs/decisions/h5-confirmation-design.md`, which supersedes the sequential 60/125/250-day checkpoint design and its critical values for the H5 confirmation only. The 7.0% of section 8 is the power of that superseded design.
+- **The confirmation's figures** (rule 6 of the design; development data, not a verdict). At the 3% boundary the pass rate is at most 1.4%. At 10% skill with 500 origins, against B1′* binding with B2 as developed, power is about 32-35% (31.6% under the regime chain, 34.6% under block resampling).
+- **The MME stays at 3%.** This ruling does not change it, or any threshold, critical value or block length.
+- **Draft amendment 6 is parked,** not proposed for H5: it is marked so in `docs/decisions/scoring-protocol.md`, which she merges.
+
