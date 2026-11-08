@@ -547,8 +547,11 @@ def render(cal: Mapping[str, object], power: Mapping[str, object]) -> str:
     a("")
     a("- **Which power governs.** The H5 confirmation is read by `docs/decisions/h5-confirmation-design.md`, which supersedes the sequential 60/125/250-day "
       "checkpoint design and its critical values for the H5 confirmation only. The 7.0% of section 8 is the power of that superseded design.")
-    a("- **The confirmation's figures** (rule 6 of the design; development data, not a verdict). At the 3% boundary the pass rate is at most 1.4%. At 10% skill "
-      "with 500 origins, against B1\u2032* binding with B2 as developed, power is about 32-35% (31.6% under the regime chain, 34.6% under block resampling).")
+    a("- **The confirmation's figures, each set-up with its own size and power** (rule 6 of the design; development data, not a verdict; corrected 8 November 2026 "
+      "by `docs/research/size-power-pairing-1517.md`, #1517). With B1\u2032* binding and B2 as developed, the pass rate at the 3% boundary is 6.2% (block) and 6.4% (regime) "
+      "at 500 origins, up to 10.8% at other lengths, and power at 10% skill with 500 origins is about 32-35% (31.6% under the regime chain, 34.6% under block resampling). "
+      "With both baselines at the stated skill, the pass rate at the 3% boundary is at most 1.4%, and power at 10% skill with 500 origins is 6.6% (block) and 3.4% (regime). "
+      "The first version of this bullet set the 1.4% beside the 32-35%, which are figures of two different set-ups.")
     a("- **The MME stays at 3%.** This ruling does not change it, or any threshold, critical value or block length.")
     a("- **Draft amendment 6 is parked,** not proposed for H5: it is marked so in `docs/decisions/scoring-protocol.md`, which she merges.")
     a("")
