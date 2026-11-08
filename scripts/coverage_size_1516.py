@@ -532,7 +532,7 @@ def render(r: Mapping[str, object]) -> str:
     a("")
     a("## Family-wise size: how often the design rejects a calibrated forecaster")
     a("")
-    a(f"Share of null draws with at least one Holm rejection among the {obs['families']['iid']['tests']} tests (nominal {_pc(r['alpha'])}), with a Wilson 95% interval. "
+    a(f"Share of null draws with at least one Holm rejection across the family of {obs['families']['iid']['tests']} cells (nominal {_pc(r['alpha'])}), with a Wilson 95% interval. "
       "In the `bootstrap` worlds the independence test is not at its size: the world keeps the candidate's dependence, so its rejections there are power "
       "against that dependence. The `iid` row is the design's size.")
     a("")

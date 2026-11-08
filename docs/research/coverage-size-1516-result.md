@@ -8,7 +8,7 @@ The engine's p-values equal `scoring_protocol.coverage_cells`' on the candidate 
 
 ## Family-wise size: how often the design rejects a calibrated forecaster
 
-Share of null draws with at least one Holm rejection among the 200 tests (nominal 5.0%), with a Wilson 95% interval. In the `bootstrap` worlds the independence test is not at its size: the world keeps the candidate's dependence, so its rejections there are power against that dependence. The `iid` row is the design's size.
+Share of null draws with at least one Holm rejection across the family of 200 cells (nominal 5.0%), with a Wilson 95% interval. In the `bootstrap` worlds the independence test is not at its size: the world keeps the candidate's dependence, so its rejections there are power against that dependence. The `iid` row is the design's size.
 
 | World | Variance | family-wise rejection | of which a Kupiec test | of which an independence test | mean tests rejected |
 |---|---|---|---|---|---|
