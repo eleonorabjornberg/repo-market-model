@@ -8,7 +8,7 @@ The record is a DRAFT for Eleonora. Registering (s3c-ann-net) is her own `GO #15
   analysis, mean block 50, 50,000 replications, the claim against B1'*-cap alone with B2*-cap and B4 beside it), and invents no value of its own;
 * the power it states beside the design equals #1392's full-mode `result-full.json` (10% skill with B1'* binding, 10% on both baselines, and
   development-level skill, on both bootstraps, at 500 origins), recomputed here from the pass counts and not copied;
-* every marked question has numbered options and a default and appears in the reader;
+* her eight rulings on the marked questions are recorded and in the reader (seed 1393, freeze at this PR's merge commit), and registration waits on #1512's coverage report;
 * it scores no day and moves no pin.
 
 Mutation: not a leakage, availability or staleness guard, so no recorded mutation. The test was run first against a tree without the record and failed with
@@ -65,13 +65,21 @@ class RecordShapeTests(unittest.TestCase):
         self.assertIn("draft", self.reader.lower())
         self.assertIn("GO #1510", self.reader)
 
-    def test_every_question_has_numbered_options_and_a_default(self):
-        questions = self.record["questions"]
-        self.assertTrue(questions)
-        for q in questions:
-            self.assertGreaterEqual(len(q["options"]), 2, q["id"])
-            self.assertIn(q["default"], range(1, len(q["options"]) + 1), q["id"])
-            self.assertIn(q["id"], self.reader, q["id"])
+    def test_every_ruling_is_in_the_reader_and_the_settled_values_are_recorded(self):
+        ids = [x["id"] for x in self.record["rulings"]["items"]]
+        self.assertEqual(ids, [f"Q{i}" for i in range(1, 9)])
+        for i in ids:
+            self.assertIn(f"**{i}.**", self.reader)
+        self.assertEqual(self.record["confirmation_design"]["seed"], 1393)
+        self.assertEqual(self.record["candidate"]["secondary_candidates"], [])
+        self.assertEqual(self.record["confirmation_design"]["primary_claim_against"], "B1'*-cap")
+        self.assertNotIn("questions", self.record)
+
+    def test_registration_waits_on_the_coverage_report_of_1512(self):
+        self.assertEqual(self.record["pending"]["coverage_report"], {
+            "directive": 1512, "state": "pending", "requirement": "amendment 4 of docs/decisions/scoring-protocol.md"})
+        self.assertIn("#1512", self.reader)
+        self.assertIn("merge commit", self.reader)
 
 
 class DesignIsTheDesignInForceTests(unittest.TestCase):

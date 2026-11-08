@@ -1,5 +1,5 @@
 {
- "status": "DRAFT for Eleonora's review (#1510; H5, milestone M5, candidate registered). Not registered. Registering (s3c-ann-net) is her own GitHub action: a `GO #1510` comment, an entry in metadata/owner_attestations.json citing that comment, and her merge. A relayed ruling does not register it. Until then nothing here is in force, no confirmation day exists, and no choice below is changed by this file.",
+ "status": "DRAFT for Eleonora's review (#1510; H5, milestone M5, candidate registered). Not registered. Registering (s3c-ann-net) is her own GitHub action: a `GO #1510` comment, an entry in metadata/owner_attestations.json citing that comment, and her merge. A relayed ruling does not register it. `GO #1510` is not asked for until the coverage report of #1512 is merged. Until then nothing here is in force.",
  "registered": false,
  "owner_attestation": null,
  "issue": 1510,
@@ -7,7 +7,7 @@
  "ruling": "Eleonora, 7 November 2026, decision docket, 7:18 pm ET: card queue-h5-registration-1107 option `queue`; card why-confirm-1107 option `keep` (500 origins, at least 24 months, a 30-month ceiling, one final analysis, the power stated beside the result)",
  "drafted_against": {
   "origin_main": "b0a09d2a508eb669def3e1495aafb0316d5f32bd",
-  "note": "The code freeze is the commit she names with her GO (metadata/h5_registration_manifest.json, candidate.freeze_target). This pull request changes no code; see question Q3."
+  "note": "Drafting base only. The code freeze is this pull request's merge commit (ruling on Q3)."
  },
  "candidate": {
   "name": "sc_s3c_ann_net",
@@ -76,7 +76,7 @@
    20,
    100
   ],
-  "seed": null,
+  "seed": 1393,
   "claim_b": "gated: tested only if A passes; descriptive otherwise"
  },
  "power_beside_the_design": {
@@ -111,90 +111,56 @@
  },
  "changes_nothing_else": "No threshold, critical value, MME, block length or design rule, no model change. Finding #1473's open Q2 is left alone.",
  "not_in_this_file": [
-  "metadata/owner_attestations.json entry: it needs the id of her own GO comment, which does not exist yet (Q2)"
- ],
- "questions": [
-  {
-   "id": "Q1",
-   "question": "The issue says the primary claim is against B1'* alone; the design in force (rule 4, rule 3) says B1'*-cap, with the uncapped B1'* reported beside it. Which is registered?",
-   "options": [
-    "B1'*-cap, as docs/decisions/h5-confirmation-design.md says (confirmatory by her ruling of 3 November 2026 on #1421)",
-    "the uncapped B1'*, which changes the design in force and needs a new decision record"
-   ],
-   "default": 1
-  },
-  {
-   "id": "Q2",
-   "question": "The issue asks for the line in metadata/ that a registration needs. That line is an entry in metadata/owner_attestations.json citing her own GO comment id, which a session cannot know or invent. What does this draft carry?",
-   "options": [
-    "No entry now. The registering change appends it after her `GO #1510`, with the comment id (the pattern of #1393 and #1506)",
-    "A placeholder entry with a dummy comment id (the owner-attested check would fail on it)"
-   ],
-   "default": 1
-  },
-  {
-   "id": "Q3",
-   "question": "Which commit is the code freeze? Section 2 of the protocol freezes the primary candidate by hash; the manifest says `the code at the commit she names with her GO`. This pull request changes no code.",
-   "options": [
-    "She names it in her GO comment (default; the manifest test must pass at that commit)",
-    "origin/main at the drafting base b0a09d2a508eb669def3e1495aafb0316d5f32bd",
-    "the merge commit of this pull request"
-   ],
-   "default": 1
-  },
-  {
-   "id": "Q4",
-   "question": "Section 2 asks for a minimum meaningful effect. The design records the 3% practical threshold (rule 4) and says the MME itself is set later from the power study (her ruling on #1354, question 2). Is it set before registration?",
-   "options": [
-    "The registration carries the 3% threshold of rule 4 and states that no MME is set apart from it (default; changes no value)",
-    "She sets an MME with her GO",
-    "Registration waits until an MME is set"
-   ],
-   "default": 1
-  },
-  {
-   "id": "Q5",
-   "question": "Section 2 fixes the bootstrap seed at registration; the design says `seed in the manifest`, and the manifest holds none. Which seed?",
-   "options": [
-    "She names it with her GO (default; left empty here)",
-    "1393, the number of the design's issue (arbitrary; the seed moves no figure but the Monte Carlo error)"
-   ],
-   "default": 1
-  },
-  {
-   "id": "Q6",
-   "question": "Secondary candidates (at most two). Rule 3 logs (s3c) and the announced-flag arm on every origin. Does either register as a secondary?",
-   "options": [
-    "Neither: both are logged on every origin and not registered (default)",
-    "The announced-flag arm registers as a secondary candidate",
-    "(s3c) registers as a secondary candidate"
-   ],
-   "default": 1
-  },
-  {
-   "id": "Q7",
-   "question": "Rule 3 says B4 joins the confirmatory set only if it is competitive before registration. The issue says B2 and B4 are reported beside the claim. On the development window the candidate beats B4 by +23.8% [+15.2%, +32.2%] (#1360, development data). Does B4 join the confirmatory set?",
-   "options": [
-    "No: B4 is reported beside the claim and is not a condition of the verdict (default; as the issue says)",
-    "Yes: B4 joins the confirmatory set, which changes the power stated above"
-   ],
-   "default": 1
-  },
-  {
-   "id": "Q8",
-   "question": "Amendment 4 of the scoring protocol (in force) makes the coverage tests (Kupiec and Christoffersen at q05/q95 and q01/q99, by lead and regime, both hit rules) a registration requirement, and `COVERAGE_REQUIREMENT_IN_FORCE` is still False. The candidate's coverage is measured on #1363's page, which reports band and quantile coverage with bootstrap intervals. Does that page stand as the registration's coverage report, or is the amendment's report built first?",
-   "options": [
-    "The amendment's report is built first by a separate directive; registration waits on it (default; this pull request does not claim the requirement is met)",
-    "#1363's page stands as the report",
-    "She waives it for this registration"
-   ],
-   "default": 1
-  }
+  "metadata/owner_attestations.json entry: it needs the id of her own GO #1510 comment, asked for only after #1512's report is merged"
  ],
  "not_checked": [
   "No score was run and no figure is new: every figure is copied from a merged page and recomputed from the record named for it.",
   "Whether the attached validation report's own status line about the confirmation design is current (finding #1473, left alone).",
-  "Whether the amendment 4 coverage report exists in the form it asks for (Q8).",
-  "The capped baselines B1'*-cap and B2*-cap are not in #1392's power study (it used the uncapped B1'* and B2 as stand-ins)."
- ]
+  "The capped baselines B1'*-cap and B2*-cap are not in #1392's power study (it used the uncapped B1'* and B2 as stand-ins).",
+  "The amendment 4 coverage report: pending, directive #1512."
+ ],
+ "rulings": {
+  "source": "Eleonora's decision docket, 7 November 2026 (9:23-9:24 pm ET), relayed on https://github.com/eleonorabjornberg/repo-market-model/pull/1511#issuecomment-6716150954",
+  "items": [
+   {
+    "id": "Q1",
+    "ruling": "The claim is against B1'*-cap, as the design in force says; the uncapped B1'* is reported beside it."
+   },
+   {
+    "id": "Q2",
+    "ruling": "The metadata/owner_attestations.json entry is added only after she posts GO #1510, with that comment's id."
+   },
+   {
+    "id": "Q3",
+    "ruling": "The code freeze is this pull request's merge commit."
+   },
+   {
+    "id": "Q4",
+    "ruling": "The 3% threshold of design rule 4 is registered; no separate MME is set."
+   },
+   {
+    "id": "Q5",
+    "ruling": "The bootstrap seed is 1393."
+   },
+   {
+    "id": "Q6",
+    "ruling": "No secondary candidates; (s3c) and the announced-flag arm are logged on every origin and not registered."
+   },
+   {
+    "id": "Q7",
+    "ruling": "B4 is reported beside the claim and is not in the confirmatory set."
+   },
+   {
+    "id": "Q8",
+    "ruling": "Registration waits on the amendment 4 coverage report, built by directive #1512 (pending). GO #1510 is not asked for until that report is merged."
+   }
+  ]
+ },
+ "pending": {
+  "coverage_report": {
+   "directive": 1512,
+   "state": "pending",
+   "requirement": "amendment 4 of docs/decisions/scoring-protocol.md"
+  }
+ }
 }
