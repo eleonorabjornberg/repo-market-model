@@ -275,3 +275,30 @@ class MilestoneTests(unittest.TestCase):
         self.assertTrue((ROOT / marks["H5.M3"]["evidence"]).exists())
         for word in ("Satiation distance", "#1350", "#1345", "not a verdict"):
             self.assertIn(word, marks["H5.M3"]["caveat"])
+
+
+class RegimeLineTests(unittest.TestCase):
+    """#1518 (her ruling of 8 November 2026, "split"): the page names the satiation distance's figures by regime beside its pooled and 2026 rows.
+
+    Wording only, from #1507's record already joined to the page; nothing is re-scored. The line must carry the 2025-26 and 2021-23 losses, taken from
+    the record, and must be absent when #1507's record is not joined (the page as #1483 wrote it).
+    """
+
+    RECORD = ROOT / "docs" / "research" / "satiation-arm-1507" / "result.json"
+    PAGE = ROOT / "docs" / "research" / "family-ablation-1483-result.md"
+
+    @unittest.skipUnless(RECORD.exists(), "#1507's record is not tracked")
+    def test_the_regime_line_names_the_losses_beside_the_2026_gain(self):
+        sat = json.loads(self.RECORD.read_text(encoding="utf-8"))
+        lines = script.regime_line({"satiation_1507": sat})
+        text = "\n".join(lines)
+        self.assertIn("2025-26", text)
+        self.assertIn("2021-23", text)
+        self.assertIn("-0.8% [-1.6%, -0.2%]", text)  # 2025-26 grid CRPS, from the record
+        self.assertIn("-1.0% [-2.4%, -0.3%]", text)  # 2021-23 grid CRPS
+        self.assertIn("+0.5% [+0.3%, +0.9%]", text)  # the 2026 days
+        self.assertIn("**loss**", text)
+        self.assertIn("-0.1% [-0.9%, +1.7%]", text)  # the pooled figure
+
+    def test_no_line_without_the_satiation_record(self):
+        self.assertEqual(script.regime_line({}), [])

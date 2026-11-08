@@ -277,6 +277,10 @@ label were each tested and not adopted (her rulings on #1223 and #1004), and bot
   - *Evidence.* #965, `docs/research/tax-date-october-965-result.md`: the measurement that proposed the label
   - *Evidence.* #1455, `docs/research/s3c-ann-net-october-1455-result.md`: the label as a development arm of the candidate, read at the target day
   - *Evidence.* #1363, `docs/research/candidate-calibration-1363-result.md`: coverage on tax dates
+- **The satiation distance, by regime.** Added as one term to the candidate on direct pairs (#1507), the satiation distance gains on the 2026 development days but loses in 2025 (the 2025-26 regime, all of it 2025) on grid CRPS, upper-tail twCRPS and the Brier score of the pressure-day probability, and in 2021-23 on grid CRPS. Its pooled figure is undecided because those losses net against wide, undecided days (2020 above all). The 2026 gain is not read as the term helping: the sign flips between 2025 and 2026, and the fitted coefficient changes sign across refits. The candidate does not read the term. The figures are on the pages cited; this report states none.
+  - *Status.* Named as a split by her ruling of 8 November 2026 on #1515 (option split); nothing is re-scored, the term is not adopted, and the candidate is frozen as it is. The family-ablation page for H5.M3 carries the same regime line.
+  - *Evidence.* #1507, `docs/research/satiation-arm-1507-result.md`: the distance and hinge arms, with the regime, lead and pressure-day-type tables
+  - *Evidence.* #1483, `docs/research/family-ablation-1483-result.md`: the family row and, since #1518, its regime line
 
 <!-- end generated: validation-known-limits -->
 
