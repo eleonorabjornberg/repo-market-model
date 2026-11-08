@@ -82,7 +82,12 @@ class DeclarationTests(unittest.TestCase):
 
     def test_the_milestone_is_not_re_marked_by_this_change(self):
         marks = json.loads((ROOT / "docs" / "research" / "milestones.json").read_text(encoding="utf-8"))["milestones"]
-        self.assertIn("Satiation distance has no row", marks["H5.M3"]["caveat"])
+        caveat = marks["H5.M3"]["caveat"]
+        # #1518 rewrote the caveat on her ruling; #1507 left it alone. The old "has no row" sentence is false after #1507.
+        self.assertNotIn("Satiation distance has no row", caveat)
+        self.assertIn("Satiation distance is measured (#1507", caveat)
+        self.assertIn("2025-26", caveat)
+        self.assertIn("2021-23", caveat)
 
 
 class ArmTests(unittest.TestCase):
