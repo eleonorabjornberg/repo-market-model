@@ -1,0 +1,71 @@
+{
+ "status": "declared by the pull request that closes #1533 before any diagnostic figure was computed; a development study, never a verdict. No candidate change, no lockbox day, no day after 2026-09-03, no record in docs/runs/ is edited or re-scored, nothing is registered or published. The only thing run before this file was committed is the unchanged walk of scripts/candidate_calibration_1363.py, to check its sha256 against docs/research/candidate-calibration-1363/result.json (walk_files). Amendments made after a figure was computed are listed in `amendments` (none at the time of writing).",
+ "issue": 1533,
+ "hypothesis": "H5, step 3: diagnosis of the calendar-day band failure of (s3c-ann-net). Is the failure a width problem (a scale, A-type), a shape problem (the tails are set by ordinary-day residuals), stale support (C), or an information limit?",
+ "ruling": "Eleonora, 9 November 2026, relayed on #1533: the first diagnostic package combines event influence, tail-support provenance and same-target forecast paths; and, on docket card h5-family-1109 ('after1533'), the Mechanism section says plainly whether the evidence points to a width or a shape problem",
+ "candidate": "sc_s3c_ann_net, (s3c-ann-net), walked by candidate_calibration_1363.py unchanged at the 18:00 decision instant (RMM_DECISION_TIME=18:00, the panel built with --decision-time 18:00:00 at build cutoff 2026-09-08T21:31:42+00:00)",
+ "windows": {
+  "development": "decision days whose five targets fall on or before 2025-12-31; decides the reading",
+  "2026": "decision days whose five targets fall from 2026-01-02 to 2026-09-03; shown apart, decides nothing"
+ },
+ "step_0_same_forecasts": {
+  "regenerate": "the walk of scripts/candidate_calibration_1363.py, called unchanged (qe_diagnosis_1533.py walk calls its walk_command with spread_mr_state_calendar.walk wrapped to keep the Walk it returns)",
+  "check": "the sha256 of each regenerated walk file equals docs/research/candidate-calibration-1363/result.json walk_files.<window>.sha256, and its refit count equals walk_files.<window>.refits; the command raises ValueError otherwise and writes no extension",
+  "extension": "a second file per window (not committed, its sha256 and size are recorded in result.json) holding, for each refit and each h: the refit date, the term effects and state slopes (the coefficients), the flagged counts, the number of pairs, the Huber iteration count and whether it equals MAX_ITERATIONS (the cap; a fit that converged on exactly the last allowed iteration is indistinguishable and counts as capped, stated on the page), and each residual-pool member (origin date, target date, residual in scale units, target day type from turn_days.turn_day_type, regime). Per cell: the raw (pre-cap) quantiles, and the settlement flags and sizes the forecast read. Per decision day: the anchor date, the last public spread and the scale. The quantiles in the walk file are the 1363 walk's, bit for bit, by the sha256 check; nothing here re-derives them",
+  "iterations_are_a_fact_only": "the Huber iteration counts are recorded and reported as a fact; the stricter Huber convergence replay is her item 7, a later package"
+ },
+ "definitions": {
+  "cell": "(decision day D, lead h = 1..5), target T the h-th panel day after D, outcome the whole-basis-point spread at T (as #1363)",
+  "pressure_day_type": "turn_days.turn_day_type of T with the panel's tax_date column: quarter_end_turn, year_end, turn, tax_date or ordinary (the reporting type of every study since #1241)",
+  "quarter_end_event": "all cells whose target T has pressure_day_type quarter_end_turn or year_end, grouped by the quarter-end they belong to: the last business day of March, June, September or December and the first business day after it. Event id = year and month of that last business day (e.g. 2021-03). All five horizons and both turn days are one event (one cluster in every resampling)",
+  "regime_of_event": "the regime (SplitDeclaration.regime) of the event's last business day",
+  "tails": [0.01, 0.05, 0.95, 0.99],
+  "bands": {"90": "closed band [q05, q95]", "98": "closed band [q01, q99]"},
+  "miss_rates": "lower miss = share of cells with y < q_tau (strict), tau in {0.01, 0.05}; upper miss = share with y > q_tau, tau in {0.95, 0.99}; the weak versions (y <= q, y >= q) are in result.json beside; the nominal rate is tau for a lower tail and 1 - tau for an upper tail",
+  "scores": "scoring_protocol.grid_crps (primary) and scoring_protocol.upper_tail_twcrps (key secondary), lower is better; the paired difference is the candidate minus the benchmark on the same cells, so negative favours the candidate; benchmarks B1' and B2 of the 1363 walk"
+ },
+ "item_1_event_influence": {
+  "procedure": "leave each quarter-end event out of the summaries in turn, forecasts fixed. For the set of all cells and for the set of the group's cells, report by h = 1..5 and pooled: coverage of the 90% and 98% bands, the four tail miss rates, mean grid CRPS and mean upper-tail twCRPS, and the candidate minus B1' and minus B2 paired CRPS difference. The range is the minimum and maximum over the left-out events, with the event that produces each end named. Also the greedy 'drop the three most influential events' value: the three events whose removal moves the group 90% coverage most, removed one at a time with the choice remade after each removal",
+  "per_event_table": "for each event: regime, pressure-day type, n cells, 90% and 98% coverage, the four tail misses, mean grid CRPS and the paired difference to B1' and B2",
+  "interval": "a 90% percentile interval of a group figure from resampling whole events with replacement (2000 resamples, seed 1533; the five horizons and both turn days of an event stay together). The figures outside the group are resampled as target-day series by the stationary bootstrap of #1363 (mean block 10, 2000 resamples, seed 1533), the current day-type method with #1221/#1228's caveat; both are intervals of the figure, the leave-one-out range is not an interval",
+  "splits": "by regime of the event and by the two labels quarter_end_turn and year_end apart; ordinary, tax_date and non-quarter turn cells as the contrast groups",
+  "decision_informed": "does A (the shrunk quarter-end-only scale, #1531) address a recurring failure, or is the apparent benefit dominated by a few exceptional events? Read from: the share of events whose own 90% coverage is below 0.90 less one event's worth, the leave-one-out range, and the drop-three value"
+ },
+ "item_2_tail_support": {
+  "unit": "every refit and every h (the pool of that fit at that lead)",
+  "interpolation": "protocol_benchmarks.empirical_quantiles: the quantile at level tau of n sorted values is the value at position tau*(n-1), linearly interpolated between ranks low = floor(position) and low + 1. The 'setters' of a tail are the members at those ranks (one, when the position is whole). The 'neighbours' are the members at ranks low - 1 and low + 2. The 'tail zone' is every member beyond the quantile (ranks 0..low for a lower tail, low+1..n-1 for an upper tail). Ties in the residual are ordered by pool position",
+  "per_refit_h_tau": "dates (target and origin), pressure-day types, regimes of the setters, neighbours and tail zone; the number of distinct events in the tail zone (a quarter-end event as defined above; any other member joins a cluster of members whose target rows lie within 5 panel days of one another, chained) and in setters plus neighbours; the share of the tail zone that is a quarter-end-event target against the share of the whole pool that is (enrichment = the first over the second); the age of each setter in panel days at the refit against the ages of the pool's members (the setter's percentile among the pool's ages); the share of the tail zone from a regime other than the regime of the refit date",
+  "cap": "the candidate is the pool's raw quantile clipped at the full-allotment line (s3c_candidate.capped_quantiles); for the cells in the group the page gives the share of cells at which the clip changes q95 and q99 (then the pool does not set that tail), and measures the pool tails as unclipped",
+  "bootstrap": {
+   "what": "the uncertainty of each tail quantile of the pool: the pool in target-date order, resampled with the stationary (time-block) bootstrap, the quantile recomputed with the same interpolation on each resample, the 90% percentile interval taken",
+   "block_length_declared_here_before_any_number": 10,
+   "block_length_meaning": "mean block length 10 in pool positions (consecutive targets), the same as every other study of this project (scoring_protocol.BLOCK_LENGTH). Sensitivity: 5 and 20, reported beside, never chosen after the fact",
+   "resamples": 500,
+   "seed": 1533,
+   "reading": "the interval width in scale units, per h and tail, as a median over refits, beside the same for q25 and q75 and the median; and in bp for the group's cells (width times the scale the forecast used at that decision). Sparse support = the tail interval is many times the interquartile interval's width and the tail zone holds few distinct events"
+  },
+  "decision_informed": "sparse support favours shrinkage or partial pooling (A-type); stale support (setters older than typical members, or from another regime) strengthens C"
+ },
+ "item_2b_width_or_shape": {
+  "question": "her docket ruling h5-family-1109 'after1533': are the quarter-end tails set by ordinary-day residuals, so that the shape is wrong and not only the width?",
+  "tail_setting_reading": "for the group's cells, the share of the q95 and q99 setters and neighbours (and of the tail zone) at the refit in force that are themselves quarter-end-event targets. Declared reading: 'set by ordinary-day residuals' when a majority (over 50 per cent, median over the group's cells) of the setters and neighbours are not quarter-end-event targets, at both q95 and q99",
+  "shape_of_the_realised_outcome": "for the group's cells z = (y - q50) / (q95 - q05) on the raw (pre-cap) quantiles of the cell, the outcome in units of the forecast's own 90% span; the forecast law has z_tau = (q_tau - q50)/(q95 - q05) at each level. For tau in {0.01, 0.05, 0.25, 0.75, 0.95, 0.99} report the realised quantile of z minus its median over the cells against the mean law z_tau minus 0 and their ratio. A pure width problem shows one ratio common to all levels (and to both sides); a shape problem shows ratios that grow towards the tails or differ by side. Event-clustered 90% interval of each ratio (2000 resamples, seed 1533), by regime of the event, with the same on ordinary-day cells as the control",
+  "pool_composition": "the root-mean-square pool residual of quarter-end-event members over that of all members, per refit and h (the m_raw of #1402), and the share of quarter-end-event members in the pool",
+  "limits": "the ratio reading is descriptive; thirty-odd events is small and the page says so; no multiplier is fitted or scored here"
+ },
+ "item_3_same_target_paths": {
+  "path": "for each target T with all five horizons in the window, h = 5 to 1: the median, q05, q95, q01, q99 (final, as scored) and the error y - median, with the 90% span, the refit in force, whether it differs from the refit at h + 1 (new refit), whether the settlement flags or sizes the forecast read differ from those at h + 1 (new settlement announcement, from metadata/settlement_announcement_dating.json as served by repo_model.s3c_announced), and the last public spread and its change since h + 1 (a new published spread, always one panel day)",
+  "summaries": "by pressure-day type and by regime of T, and for each failed quarter-end event (an event with at least half of its cells outside the closed 90% band): the mean absolute error by h, the mean absolute error in span units by h, the 90% band miss rate by h, the paired change of the absolute error from h = 5 to h = 1 with an event-clustered interval, the share of steps (h + 1 to h) on which the absolute error rises, split by whether the step carried a new announcement, a new refit or neither, and the share of targets whose error keeps its sign and at least 80 per cent of its size from h = 5 to h = 1",
+  "reading": "improve as information arrives = the absolute error falls from h = 5 to h = 1 with an interval wholly below zero and the miss rate falls; stay misplaced = the error keeps its sign and size and the miss is present at every h; worsen after one update = the error rises on steps with a new announcement or refit. The first separates an information limit from a fitting problem only as far as these rows go; the page says so",
+  "decision_informed": "an information limit (nothing to learn earlier, the error is the news) against a fitting problem (information arrived and the forecast did not use it)"
+ },
+ "item_4_deliverable": "A section 'Mechanism' that names the mechanism the evidence supports (width, shape, stale support, information limit) and the repair it points to (A, B, C or D), with the figures behind it, or says plainly that the evidence still cannot distinguish them and why",
+ "seeds": {"all": 1533},
+ "limits": [
+  "development data on seen days, never a verdict; the 2026 days are shown apart and decide nothing",
+  "about thirty quarter-end events in the development window: small; an interval from it is wide and a split by regime has few events",
+  "the diagnosis reads the candidate's own walk; it fits and scores nothing new",
+  "her items 4 to 7 (out-of-sample predictability, error against fit age, interval-score decomposition, stricter Huber convergence) are a later package; the iteration counts are recorded as a fact only"
+ ],
+ "amendments": []
+}
