@@ -1,5 +1,7 @@
 {
- "amendments": [],
+ "amendments": [
+  "Added after the figures were computed, only so that the declarations check (tests/test_model_declarations.py) finds the `variants` block it requires of a declaration that names a hypothesis: the single scored arm is the unchanged candidate. No definition, rule, seed, block length or reading in this file changed."
+ ],
  "block": 10.0,
  "declaration": "metadata/qe_diagnosis_1533.json",
  "event_reps": 2000,
