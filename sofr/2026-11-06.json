@@ -1,0 +1,20 @@
+{
+ "effective_date": "2026-11-06",
+ "iorb": {
+  "announced_at": "2026-09-16T14:00",
+  "effective_date": "2026-09-17",
+  "implementation_note_url": "https://www.federalreserve.gov/newsevents/pressreleases/monetary20260916a1.htm",
+  "rate_percent": 3.9,
+  "source": "fed-iorb-announcements",
+  "table_sha256": "793c5a8234053b1bc2dc7538c5e6cdac81799418744d4eee83f8cc07cb7d536b"
+ },
+ "payload": "{ \"refRates\": [ { \"effectiveDate\": \"2026-11-06\", \"type\": \"SOFR\" ,\"percentRate\": 3.89 ,\"percentPercentile1\": 3.85 ,\"percentPercentile25\": 3.87 ,\"percentPercentile75\": 3.94 ,\"percentPercentile99\": 3.97 ,\"revisionIndicator\": \"\" } ] }",
+ "publication_instant": "2026-11-09T08:00:00-05:00",
+ "retrieved_at": "2026-11-09T13:31:55.020247+00:00",
+ "revision_indicator": "",
+ "revision_instant": "2026-11-09T14:30:00-05:00",
+ "sha256": "9aec51976c741d5c0784220ea568b6fda46e46b71fbaa7ed404b9214db687296",
+ "sofr_percent": 3.89,
+ "url": "https://markets.newyorkfed.org/api/rates/secured/sofr/search.json?startDate=2026-11-06&endDate=2026-11-06&type=rate",
+ "version": 1
+}
