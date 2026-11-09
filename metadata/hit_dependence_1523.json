@@ -24,17 +24,31 @@
   "A1_recentre": "q' = q + beta_h * e_pub(D) for every grid quantile of lead h; beta_h = clamp(sum(e_pub(D') * e(D', h)) / sum(e_pub(D')^2), 0, 1) over the resolved cells of lead h with an e_pub (expanding window); beta_h = 0 until 100 cells are resolved. Targets the level that adapts too slowly",
   "A2_rescale": "q' = m + kappa_h * (q - m) with m the forecast's median; kappa_h = clamp(mean |e| / mean s_fc over the last 60 resolved cells of lead h, 0.7, 1.5), where s_fc is the forecast's own mean absolute deviation about its median (the grid quantiles weighted by half the gap between neighbouring levels, the weights normalised); kappa_h = 1 until 30 cells are resolved. Targets the scale that adapts too slowly",
   "A3_both": "A1's shift, then A2's rescaling about the shifted median, where the realised errors that A2 reads are the errors of the A3 forecasts themselves, as made online",
-  "variant_count": 3,
+  "variant_count": 5,
   "settings_tuned": "none: beta clamp, the 100 and 30 cell minimums, the window of 60, the clamp of kappa and the half-gap weights were fixed above before any adjusted score, and are not varied",
   "reads": "grid CRPS (scoring_protocol.grid_crps) averaged over all cells (h = 1..5 equally weighted, as the primary score), paired against the unadjusted candidate on the same cells, 90% stationary-bootstrap interval (mean block 10 decision days, 2000 resamples, seed 1523) of the mean daily difference, pooled, by lead, by regime and by pressure-day type of the target; upper-tail twCRPS is also paired; and the design's coverage verdict (Holm rejections of 200, and which cells) on the adjusted forecasts. Also the same reads on the decision days after the first 250 (the online rules' warm-up)"
  },
  "not_here": "no new model is fitted or registered; the 2026 days, B1, B1', B2, B4 and the uncapped secondary version are not read; a gate or spacing change is not adopted (the spacing table says what it would do, the choice is hers)",
  "lockbox": "metadata/lockbox.json is not touched; load_window_doc of scripts/coverage_size_1516.py refuses another window and any day after 2025-12-31",
- "amendments": [],
+ "amendments": [
+  {
+   "when": "after the first score of this pull request was computed, before any of the added items was",
+   "why": "the first score showed (a) hits on ordinary target days at well under half the regime-expected rate and on calendar or pressure days above it, with 73% of lead-1 target days non-ordinary, so a lift taken against the regime's rate alone overstates dependence that a day-type rate difference between adjacent days would produce; (b) a public lag-2 error that correlates negatively with the target's error (so A1, clamped at beta >= 0, can do nothing at lead 1); (c) a standardised absolute error that autocorrelates strongly at the public lags (so a scale that reacts faster than A2's 60 cells is the natural next arm)",
+   "added": {
+    "tadj_lift": "the lift at lags 1..6, leads 1..5, levels q05 and q95, with the expected pair value r_i * r_(i-k) from a multiplicative rate fitted in sample to that lead's hits by coordinate-wise iterative scaling on: the decision day's regime, each of the ten target-day types (membership) and each non-ordinary pressure-day type of the target. Same bootstrap as the lift. The fit is in sample (about 16 parameters on 100 to 130 hits), so this lift is biased a little downward; the page says so",
+    "A4_meanrevert": "A1 with beta_h clamped to [-1, 1] instead of [0, 1], everything else as A1: the sign the first score showed at the public lag",
+    "A5_fast_rescale": "A2 with the window of 20 resolved cells and the minimum of 10 instead of 60 and 30, everything else as A2",
+    "variant_count": "5 (A1, A2, A3 as declared, A4 and A5 added here); all five are reported, none is selected on its result, and no setting of any of them is varied"
+   },
+   "unchanged": "A1, A2 and A3 and every setting declared above; the descriptive tables; the reads; no adjusted result of A4 or A5 existed when this entry was written"
+  }
+ ],
  "variants": {
   "sc_s3c_ann_net": "scored arm, the candidate, read from the development walk unchanged: no new fit, nothing tuned",
   "A1_recentre": "post-hoc adjustment, not a model: the candidate's quantiles shifted by an online slope times the latest public lead-1 error; settings fixed above",
   "A2_rescale": "post-hoc adjustment, not a model: the candidate's quantiles scaled about the median by an online ratio of realised to forecast absolute deviation; settings fixed above",
-  "A3_both": "post-hoc adjustment, not a model: A1 then A2; settings fixed above"
+  "A3_both": "post-hoc adjustment, not a model: A1 then A2; settings fixed above",
+  "A4_meanrevert": "post-hoc adjustment, not a model (added by amendment): A1 with the slope allowed to be negative, in [-1, 1]",
+  "A5_fast_rescale": "post-hoc adjustment, not a model (added by amendment): A2 with a window of 20 resolved cells and a minimum of 10"
  }
 }
