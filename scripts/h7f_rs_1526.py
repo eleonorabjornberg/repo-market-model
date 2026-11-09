@@ -589,7 +589,8 @@ def benchmark_table(w: Mapping[str, object]) -> List[str]:
 def b3_lines(w: Mapping[str, object]) -> List[str]:
     b3 = w["b3"]
     if not b3["days"]:
-        return ["No decision day of this window has all five leads in the published record."]
+        return ["No decision day of this window has all five leads in the published record: its lead-5 file ends on 2025-12-31, before the first target of the 2026 days. "
+                "B3 is therefore not scored on this window, and nothing is read from its absence."]
     out = [f"B3 is the published v1 declaration's five levels {', '.join(str(x) for x in b3['levels'])}, scored on those five against each model read at the same five "
            f"(a secondary comparison, protocol section 4). The record covers {b3['days']:,} of the window's decision days ({b3['first']} to {b3['last']}). "
            "Mean five-level CRPS: " + ", ".join(f"{SHORT[m] if m in SHORT else m} {v:.3f}" for m, v in b3["means"].items()) + ".", "",
@@ -657,7 +658,7 @@ def render(r: dict) -> str:
         "**Does the scarcity reading, R+S, improve H5's primary score as an input, on development data?** The first table is the answer: the candidate with R and S "
         "added against the candidate, on grid CRPS (primary) and upper-tail twCRPS, in both windows. A positive skill and a positive mean d say R+S helps; the reading "
         "is taken from the studentized bound on mean d (her ruling on #1009). Pooled grid CRPS reads: "
-        + ", ".join(f"{WINDOW_TITLES[w].split(' (')[0]} **{word}**" for w, word in reading.items()) + ".", ""]
+        + "; ".join(f"{WINDOW_TITLES[w].split(' (')[0][0].lower() + WINDOW_TITLES[w].split(' (')[0][1:]} **{word}**" for w, word in reading.items()) + ".", ""]
     out += answer_table(r) + [""]
     out += [
         "**Hypothesis and step:** H7, step 2 (milestone H7.M2): the development nested forecast test, H7f, with R+S alone. **Development data, not a verdict** (scoring protocol v1, "

@@ -1,0 +1,148 @@
+{
+ "by_year": {
+  "2018": {
+   "days": 178,
+   "ratio_max_pct": 12.940476190476188,
+   "ratio_median_pct": 11.461606791543955,
+   "ratio_min_pct": 9.747874356732524,
+   "state_days": {
+    "0": 0,
+    "1": 0,
+    "2": 47,
+    "3": 131
+   }
+  },
+  "2019": {
+   "days": 250,
+   "ratio_max_pct": 10.108588942646437,
+   "ratio_median_pct": 8.861776833549948,
+   "ratio_min_pct": 7.956454494090252,
+   "state_days": {
+    "0": 0,
+    "1": 0,
+    "2": 0,
+    "3": 250
+   }
+  },
+  "2020": {
+   "days": 251,
+   "ratio_max_pct": 16.1034649008447,
+   "ratio_median_pct": 14.154905880722868,
+   "ratio_min_pct": 9.052104983053697,
+   "state_days": {
+    "0": 4,
+    "1": 184,
+    "2": 4,
+    "3": 59
+   }
+  },
+  "2021": {
+   "days": 250,
+   "ratio_max_pct": 19.292332551141293,
+   "ratio_median_pct": 18.281097509178945,
+   "ratio_min_pct": 14.828932106402723,
+   "state_days": {
+    "0": 175,
+    "1": 75,
+    "2": 0,
+    "3": 0
+   }
+  },
+  "2022": {
+   "days": 249,
+   "ratio_max_pct": 18.012173829330088,
+   "ratio_median_pct": 14.483981464576651,
+   "ratio_min_pct": 12.991574734735789,
+   "state_days": {
+    "0": 247,
+    "1": 2,
+    "2": 0,
+    "3": 0
+   }
+  },
+  "2023": {
+   "days": 249,
+   "ratio_max_pct": 15.260565231820907,
+   "ratio_median_pct": 14.175976910769016,
+   "ratio_min_pct": 12.290012159110647,
+   "state_days": {
+    "0": 244,
+    "1": 5,
+    "2": 0,
+    "3": 0
+   }
+  },
+  "2024": {
+   "days": 250,
+   "ratio_max_pct": 15.570137359216465,
+   "ratio_median_pct": 14.295574897008889,
+   "ratio_min_pct": 13.210015264042276,
+   "state_days": {
+    "0": 249,
+    "1": 1,
+    "2": 0,
+    "3": 0
+   }
+  },
+  "2025": {
+   "days": 249,
+   "ratio_max_pct": 14.502720471074346,
+   "ratio_median_pct": 13.520927673276406,
+   "ratio_min_pct": 11.603804760416201,
+   "state_days": {
+    "0": 122,
+    "1": 48,
+    "2": 36,
+    "3": 43
+   }
+  },
+  "2026": {
+   "days": 169,
+   "ratio_max_pct": 12.39809052193721,
+   "ratio_median_pct": 11.925136493036234,
+   "ratio_min_pct": 11.284325306324533,
+   "state_days": {
+    "0": 0,
+    "1": 0,
+    "2": 70,
+    "3": 99
+   }
+  }
+ },
+ "candidate_reads": {
+  "answered_by_construction": false,
+  "arm": "sc_s3_ann_net",
+  "cap": "the SRF line from the policy register (s3c_candidate): no reserves series",
+  "days": 2104,
+  "extra_terms": [],
+  "interact": false,
+  "location_terms": [
+   "month_end",
+   "quarter_end",
+   "tax_date",
+   "settlement_coupon",
+   "settlement_bill",
+   "dom_19_23",
+   "post_month_end_window"
+  ],
+  "reads_R": false,
+  "reads_S": false,
+  "scale": "the median absolute daily change of the spread (spread_mr_fhs, #941): no reserves series",
+  "sized": true,
+  "state_held_at_maximum": true,
+  "state_levels_read": [
+   1.0
+  ],
+  "the_arm_adds": [
+   "rs_ratio",
+   "rs_state"
+  ]
+ },
+ "check_every": 1,
+ "decision_time": "18:00",
+ "first_row_with_a_value": 9,
+ "no_future_check": "passed (s3c_rs.check_rs_no_future, LookAheadError on a value that depends on a later row)",
+ "rows": 2104,
+ "rows_with_a_value": 2095,
+ "rows_with_ratio_only": 0
+}
