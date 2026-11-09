@@ -1,5 +1,5 @@
 {
- "status": "declared by the pull request that closes #1533 before any diagnostic figure was computed; a development study, never a verdict. No candidate change, no lockbox day, no day after 2026-09-03, no record in docs/runs/ is edited or re-scored, nothing is registered or published. The only thing run before this file was committed is the unchanged walk of scripts/candidate_calibration_1363.py, to check its sha256 against docs/research/candidate-calibration-1363/result.json (walk_files). Amendments made after a figure was computed are listed in `amendments` (none at the time of writing).",
+ "status": "declared by the pull request that closes #1533 before any diagnostic figure was computed; a development study, never a verdict. No candidate change, no lockbox day, no day after 2026-09-03, no record in docs/runs/ is edited or re-scored, nothing is registered or published. The only thing run before this file was committed is the unchanged walk of scripts/candidate_calibration_1363.py, to check its sha256 against docs/research/candidate-calibration-1363/result.json (walk_files). Amendments made after a figure was computed are listed in `amendments`.",
  "issue": 1533,
  "hypothesis": "H5, step 3: diagnosis of the calendar-day band failure of (s3c-ann-net). Is the failure a width problem (a scale, A-type), a shape problem (the tails are set by ordinary-day residuals), stale support (C), or an information limit?",
  "ruling": "Eleonora, 9 November 2026, relayed on #1533: the first diagnostic package combines event influence, tail-support provenance and same-target forecast paths; and, on docket card h5-family-1109 ('after1533'), the Mechanism section says plainly whether the evidence points to a width or a shape problem",
@@ -67,5 +67,10 @@
   "the diagnosis reads the candidate's own walk; it fits and scores nothing new",
   "her items 4 to 7 (out-of-sample predictability, error against fit age, interval-score decomposition, stricter Huber convergence) are a later package; the iteration counts are recorded as a fact only"
  ],
- "amendments": []
+ "variants": {
+  "sc_s3c_ann_net": "the only scored arm, the candidate read from the development walk unchanged: no new fit, no adjustment, nothing tuned; the study measures it and compares it with B1' and B2 on the same cells"
+ },
+ "amendments": [
+  "Added after the figures were computed, only so that the declarations check (tests/test_model_declarations.py) finds the `variants` block it requires of a declaration that names a hypothesis: the single scored arm is the unchanged candidate. No definition, rule, seed, block length or reading in this file changed."
+ ]
 }
