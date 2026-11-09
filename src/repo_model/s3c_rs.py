@@ -31,6 +31,16 @@ from .data import DailyObservation
 from .satiation import _extended as extended_dates
 from .splits import LookAheadError, SplitError
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_READS = {
+    "read_legs": (
+        "not_entry",
+        "reads the three legs the as-of rule gives one panel row's decision (#1526); scores nothing, "
+        "`_values` (its only caller) reads no row after the declared last day, `build_rs_columns` "
+        "takes that day as an argument, and `scripts/h7f_rs_1526.py` passes its fixed LAST_DAY",
+    ),
+}
+
 __all__ = [
     "LEGS", "RATIO_COLUMN", "RSTable", "STATE_COLUMN", "TERMS", "build_rs_columns", "check_rs_no_future", "extended_dates", "merged", "read_legs",
 ]
