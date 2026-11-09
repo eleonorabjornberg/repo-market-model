@@ -576,6 +576,33 @@ def reading_lines(r: Mapping[str, object]) -> List[str]:
     return out + [""]
 
 
+def regime_line(r: Mapping[str, object]) -> List[str]:
+    """The satiation distance by regime, beside its pooled and 2026 rows (#1518, her ruling of 8 November 2026, "split").
+
+    Wording from #1507's record, already joined under `satiation_1507`; nothing is re-scored. Empty when the record is not joined."""
+
+    sat = r.get("satiation_1507")
+    if sat is None:
+        return []
+    dev = sat["windows"]["development"]["groups"]
+    metrics = list(TESTED[:2]) + ["brier_gt5"]
+    with_, without = "sc_s3c_ann_net_satdist", "sc_s3c_ann_net"
+    parts = []
+    for label, group in dev["regime"].items():
+        c = cell(_vs(group, "grid_crps", with_, without))
+        parts.append(f"{label} ({group['days']} days) grid CRPS {c}")
+    pooled_ = cell(_vs(dev["pooled"]["all decision days"], "grid_crps", with_, without))
+    y2026 = cell(_vs(sat["windows"]["2026"]["groups"]["pooled"]["all decision days"], "grid_crps", with_, without))
+    last = dev["regime"]["2025-26"]
+    tail = "; ".join(f"{METRIC_TITLES[m]} {cell(_vs(last, m, with_, without))}" for m in metrics[1:])
+    return [
+        "**Satiation distance by regime (#1518, her ruling of 8 November 2026: name the split; from #1507's record, nothing re-scored).** The pooled row above "
+        f"({pooled_}) nets two regime losses against wide, undecided days; read by regime on the development window: " + "; ".join(parts) + ". "
+        f"In 2025-26 (all of it 2025, the most recent pressure year) the loss also holds in {tail}. The 2026 days gain ({y2026}), so the sign flips between "
+        "2025 and 2026. The gain on the 2026 days is not read as \"the family helps\" without the 2021-23 and 2025 losses beside it. Full tables: "
+        "`docs/research/satiation-arm-1507-result.md`.", ""]
+
+
 def correction_note(r: Mapping[str, object]) -> List[str]:
     """The dated correction of the satiation row (#1507), shown once the row is measured."""
 
@@ -615,6 +642,7 @@ def render(r: dict) -> str:
         f"`docs/research/family-ablation-1483/result.json`, not edited by hand; declared in `{r['declaration']}` before any score.", "",
         "## The families, one row each", ""] + family_table(r) + [""] + reading_lines(r)
     out += correction_note(r)
+    out += regime_line(r)
     out += [
         "A family is *dropped* only if the candidate reads it. (s3c-ann-net) reads the settlement family and the calendar columns and nothing else of the five, "
         "so for the other four a drop is the candidate itself, and the contrast is the nested one: the candidate with the family added against the candidate. "

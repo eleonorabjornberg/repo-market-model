@@ -8,7 +8,7 @@
   "declaration_candidate": "sc_s3c_ann_net",
   "protocol_declaration": "metadata/spread_distribution_634.json",
   "development_last_target_day": "2025-12-31",
-  "use_limitation": "A development-stage research forecast of the SOFR − IORB spread distribution in bp, the frozen H5 candidate (s3c-ann-net). It is not registered, it has no prospective day, and nothing it has scored is a verdict. It is not a stress-warning system and not a basis for VaR, limits, liquidity or capital, or desk sizing. Its quantiles are not recalibrated. Its known limits (2020, FOMC target days, the upper tail, lead 1, the plain flag arm, the central bands at quarter-end and on other calendar days, the SRF cap's dependence on full allotment, the 2018-19 regime and the 15 October tax-date label) are listed under known limits, with the evidence for each, and are not settled. It needs revalidation at each confirmation checkpoint and after a material policy or regime change.",
+  "use_limitation": "A development-stage research forecast of the SOFR − IORB spread distribution in bp, the frozen H5 candidate (s3c-ann-net). It is not registered, it has no prospective day, and nothing it has scored is a verdict. It is not a stress-warning system and not a basis for VaR, limits, liquidity or capital, or desk sizing. Its quantiles are not recalibrated. Its known limits (2020, FOMC target days, the upper tail, lead 1, the plain flag arm, the central bands at quarter-end and on other calendar days, the SRF cap's dependence on full allotment, the 2018-19 regime, the satiation distance by regime and the 15 October tax-date label) are listed under known limits, with the evidence for each, and are not settled. It needs revalidation at each confirmation checkpoint and after a material policy or regime change.",
   "evidence_label": "development data, not a verdict",
   "evidence": [
     {
@@ -297,6 +297,25 @@
           "issue": "#1363",
           "page": "docs/research/candidate-calibration-1363-result.md",
           "note": "coverage on tax dates"
+        }
+      ]
+    },
+    {
+      "id": "satiation-distance-split",
+      "title": "The satiation distance, by regime",
+      "limit": "Added as one term to the candidate on direct pairs (#1507), the satiation distance gains on the 2026 development days but loses in 2025 (the 2025-26 regime, all of it 2025) on grid CRPS, upper-tail twCRPS and the Brier score of the pressure-day probability, and in 2021-23 on grid CRPS. Its pooled figure is undecided because those losses net against wide, undecided days (2020 above all). The 2026 gain is not read as the term helping: the sign flips between 2025 and 2026, and the fitted coefficient changes sign across refits. The candidate does not read the term. Figures, from the record of #1507 (development data on seen days, not a verdict; paired, with intervals): in 2025-26 grid CRPS -0.8% [-1.6%, -0.2%], upper-tail twCRPS -1.2% [-3.6%, -0.2%], Brier P(> +5 bp) -2.4% [-8.3%, -0.2%]; in 2021-23 grid CRPS -1.0% [-2.4%, -0.3%]; on the 2026 days grid CRPS +0.5% [+0.3%, +0.9%]; pooled grid CRPS -0.1% [-0.9%, +1.7%], undecided.",
+      "figures_page": "docs/research/satiation-arm-1507-result.md",
+      "status": "Named as a split by her ruling of 8 November 2026 on #1515 (option split); nothing is re-scored, the term is not adopted, and the candidate is frozen as it is. The family-ablation page for H5.M3 carries the same regime line.",
+      "sources": [
+        {
+          "issue": "#1507",
+          "page": "docs/research/satiation-arm-1507-result.md",
+          "note": "the distance and hinge arms, with the regime, lead and pressure-day-type tables"
+        },
+        {
+          "issue": "#1483",
+          "page": "docs/research/family-ablation-1483-result.md",
+          "note": "the family row and, since #1518, its regime line"
         }
       ]
     }

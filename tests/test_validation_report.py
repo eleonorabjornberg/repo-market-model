@@ -252,7 +252,7 @@ class KnownLimitsTests(unittest.TestCase):
     """The known-limits section of the rewrite (#1442): each limit is linked to the evidence that shows it."""
 
     REQUIRED = ("2020", "fomc-days", "upper-tail-against-a", "lead-1", "net-against-flag", "quarter-end-coverage",
-                "srf-cap-full-allotment", "regime-2018-19", "tax-date-label")
+                "srf-cap-full-allotment", "regime-2018-19", "tax-date-label", "satiation-distance-split")
 
     def setUp(self):
         self.candidate = json.loads((ROOT / "docs/model/candidate.json").read_text(encoding="utf-8"))
@@ -297,7 +297,7 @@ class KnownLimitsTests(unittest.TestCase):
         """
 
         cited = [l for l in self.limits if l.get("figures_page")]
-        self.assertEqual([l["id"] for l in cited], ["regime-2018-19"])
+        self.assertEqual([l["id"] for l in cited], ["regime-2018-19", "satiation-distance-split"])
         for limit in cited:
             page = (ROOT / limit["figures_page"]).read_text(encoding="utf-8")
             figures = re.findall(r"[+-]?\d+\.\d+", limit["limit"])
@@ -306,6 +306,14 @@ class KnownLimitsTests(unittest.TestCase):
                 self.assertIn(figure, page, figure)
         self.assertIn("not adopted", cited[0]["limit"])
         self.assertIn("1453", cited[0]["limit"])
+
+    def test_the_satiation_split_limit_carries_its_losses_and_the_2026_gain(self):
+        """#1518: the limit states the 2025-26 and 2021-23 losses, the 2026 gain and the pooled figure, each on #1507's page."""
+
+        limit = next(l for l in self.limits if l["id"] == "satiation-distance-split")
+        self.assertEqual(limit["figures_page"], "docs/research/satiation-arm-1507-result.md")
+        for figure in ("-0.8% [-1.6%, -0.2%]", "-1.0% [-2.4%, -0.3%]", "+0.5% [+0.3%, +0.9%]", "-0.1% [-0.9%, +1.7%]"):
+            self.assertIn(figure, limit["limit"], figure)
 
     def test_the_use_limitation_points_to_the_known_limits(self):
         self.assertIn("known limits", self.candidate["use_limitation"].lower())
