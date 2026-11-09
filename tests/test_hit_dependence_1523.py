@@ -331,8 +331,12 @@ class WindowTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             script.load_window_doc(doc)
 
-    def test_the_requirement_flag_stays_off_in_the_tree(self):
-        self.assertFalse(sp.COVERAGE_REQUIREMENT_IN_FORCE)
+    def test_the_study_neither_reads_nor_writes_the_requirement_flag(self):
+        import ast
+        tree = ast.parse(Path(script.__file__).read_text())
+        for node in ast.walk(tree):
+            name = getattr(node, "attr", None) or getattr(node, "id", None)
+            self.assertNotEqual(name, "COVERAGE_REQUIREMENT_IN_FORCE")
 
 
 if __name__ == "__main__":

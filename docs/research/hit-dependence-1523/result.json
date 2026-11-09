@@ -460,7 +460,6 @@
  },
  "block": 10.0,
  "candidate": "sc_s3c_ann_net",
- "coverage_requirement_in_force": false,
  "day_types": {
   "days": 1855,
   "levels": {
