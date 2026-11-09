@@ -264,8 +264,9 @@ class HacZeroHitTests(unittest.TestCase):
 
 
 class FlagTests(unittest.TestCase):
-    def test_the_requirement_flag_stays_off_in_the_tree(self):
-        self.assertFalse(sp.COVERAGE_REQUIREMENT_IN_FORCE)
+    def test_the_requirement_flag_is_on_in_the_tree_as_set_by_1522(self):
+        # Amendment 4 is in force as set (#1522); this study patches the flag inside one call and leaves it as it found it.
+        self.assertTrue(sp.COVERAGE_REQUIREMENT_IN_FORCE)
 
 
 class PageTests(unittest.TestCase):
