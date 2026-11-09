@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/h7f_rs_1526.json",
+  "script": "scripts/h7f_rs_1526.py",
+  "pairing": "direct",
+  "why": "H7f, the nested development test of R+S on (s3c-ann-net): the candidate with the as-of reserves ratio and scarcity state as two extra terms. The fit is (s3)'s estimation routine, spread_mr_state_calendar.walk with training_pairs = direct (guarded by one_step_guard with no allow-list entry), and no gradient-boosted fit is called, so the study is not provisional; the calendar and settlement terms are those of (s3c-ann-net) read at the target day (repo_model.s3c_announced, each figure counting an auction only when it was announced at or before the decision instant); R and S are states of the decision row, built at the 18:00 instant from the three legs each read at its own latest public row (repo_model.s3c_rs, refused by check_rs_no_future if a value depends on a later row); no outcome is an input"
+}

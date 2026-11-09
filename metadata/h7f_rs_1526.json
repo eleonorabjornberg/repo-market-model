@@ -1,0 +1,85 @@
+{
+ "status": "declared by the pull request that closes #1526 before any score was computed; a development study, never a verdict. (s3c-ann-net) stays the H5 candidate and nothing here changes it. Nothing is registered or published: no record in docs/runs/ is edited, the live record and its pin do not change, docs/research/h5-candidate.json and scripts/final_test_preregistration.py do not change, no day after 2026-09-03 is scored and no lockbox day is scored. Whether H7 is closed or registered, and whether the arm is adopted, are Eleonora's decisions.",
+ "issue": 1526,
+ "ruling": "Eleonora, 28 October 2026, relayed by the orchestrating session: 'H7f goes on with R+S in the model repo.' Queued on her instruction of 8 November 2026 ('queue it'). It implements the consequence the liquidity plan set for H7m closing as not testable as stated (eleonorabjornberg/repo-market-liquidity docs/research/plan.md:193-194; docs/stages/h7m-verdict.md; docs/stages/phase3-exit.md; liquidity#198, PR #199): 'Effort then goes to H7f with R+S alone.'",
+ "hypothesis": "H7 (reserve scarcity can be tracked), step 2, milestone H7.M2: the development nested forecast test (H7f) with R+S alone, against H5's candidate. Development tier",
+ "question": "Does the scarcity reading, R+S, improve H5's primary score as an input, on development data? R is the plain reserves ratio (repo_model.scarcity.reserves_ratio); S is the current scarcity state (repo_model.scarcity.reserve_scarcity_state, the own-leg read of #586). No liquidity estimator is involved: none is eligible.",
+ "target": "spread_bps at the scored day, in basis points, as a 23-quantile distribution at each lead h = 1..5 (scoring_protocol.GRID)",
+ "decision_instant": "18:00 America/New_York on the decision day (repo_model.decision_instant.DECISION_TIME, #1312). The walks are made at that instant and the instant is pinned for the run (scripts/s3c_flagnet_gross_1321.decision_instant_pinned). R and S are built at the same instant: the legs are read through InformationRule at 18:00, the H.4.1 legs per release (h41_release.release_dated_registry, #541, #622), the daily ON RRP leg at its own latest public row.",
+ "step_1_what_the_candidate_reads": {
+  "note": "Established from the code before any score and written to result.json (candidate_reads) by the script; the page states it first. If the candidate had read both R and S, the step would report that as the result and H7f would be answered by construction; it reads neither.",
+  "state_S": "No. (s3c-ann-net) is the sized arm of #1172 with the scarcity state held at its maximum (repo_model.s3c_net.constant_states): the sized settlement regressor size / SIZE_UNIT * level(state) is the plain signed net over USD 100 bn. The earlier 'scarcity state read per leg' row of #1483 was a different contrast (every term times the state, an interaction); S as an additive input has not been measured on the candidate.",
+  "ratio_R": "No. The candidate's terms are the calendar and settlement terms (cal.NO_FOMC_IORB with the net settlement sizes), its scale is the median absolute daily change of the spread (spread_mr_fhs, #941), and its cap reads the SRF line from the policy register. No reserves series is read.",
+  "arm_adds": "both, R and S, and nothing else"
+ },
+ "arm": {
+  "name": "sc_s3c_ann_net_rs",
+  "form": "(s3c-ann-net) with R and S as two extra terms after the candidate's terms (repo_model.spread_mr_state_calendar.RS_EXTRAS, served by repo_model.s3c_rs): rs_ratio, R in percentage points of reserves over H.8 total assets of all commercial banks; rs_state, S over 3 (0 abundant, 1 scarce) as spread_mr_state_calendar.level gives it. Everything else is the candidate's: the Huber fit (k = 1.345), the ridge of 5, the pool of standardised residuals, the direct pairs, the net settlement terms and the SRF cap (margin 0)",
+  "units": "chosen before any score and not tuned; the ridge of 5 is the candidate's and is not changed for the new terms",
+  "reference": "sc_s3c_ann_net, the candidate, re-run in the same walk on the same days"
+ },
+ "reads": {
+  "R": "the reserves-to-assets ratio a forecast made at the decision row reads: reserve_balances and bank_total_assets, each at its own latest row public at the decision instant (asof.InformationRule; repo_model.s3c_rs.read_legs); both H.4.1 legs per release",
+  "S": "repo_model.scarcity.reserve_scarcity_state of those two legs and the day's on_rrp, each at its own latest public row (the own-leg read of #586, her ruling on #571): 0 to 3, a hole when a leg is a hole",
+  "alignment": "A state of the DECISION row, not a scheduled field of the target row. The value of a training pair with target row T at lead h is the column at T - h, the decision row of the direct pair; a forecast made at decision row d reads the column at d whatever the lead (as repo_model.s3c_satiation). A training pair whose decision row has no value raises ValueError; a forecast whose decision row has none enters at 0. repo_model.s3c_rs.check_rs_no_future refuses a column that depends on a later row (LookAheadError), run on every row",
+  "calendar": "the calendar and settlement terms are the candidate's, read at the target day (training_pairs = 'direct'; spread_mr_state_calendar.fit_state_terms is guarded by one_step_guard with no allow-list entry); R and S are not calendar or scheduled columns"
+ },
+ "arms": [
+  {
+   "name": "sc_s3c_ann_net",
+   "role": "(s3c-ann-net), the candidate; the control",
+   "margin_bp": 0.0
+  },
+  {
+   "name": "sc_s3c_ann_net_rs",
+   "role": "(s3c-ann-net) with R and S as two extra terms",
+   "margin_bp": 0.0
+  }
+ ],
+ "benchmarks": [
+  "B1",
+  "B1_prime",
+  "B2",
+  "B3"
+ ],
+ "benchmark_reading": "B1, B1' (#960) and B2 on the 23-level grid, the arm and the candidate each against them, in the orientation d = S(benchmark) - S(model). B3 is the published v1 declaration's five levels (0.05, 0.25, 0.5, 0.75, 0.95), scored on those five against the arm and the candidate read at the same five (scoring_protocol.level_crps, on_levels), on the decision days on which docs/runs/published_distribution_daily_h{1..5}.json has all five leads, as the protocol's section 4 and #1482 do. B3 is a secondary comparison. The record is read, never edited.",
+ "frame": {
+  "windows": "the two windows of #1255, loaded as #1483 and #1507 load them: the development window (decision days whose five targets fall on or before 2025-12-31) and the 2026 development days (five targets from 2026-01-02 to 2026-09-03). The 2026 days are shown on their own, as a window, and decide nothing",
+  "walk": "one sc.walk per window with the candidate and the arm, which share the base fit and #941's pool; the arms are compared on the same days. The study refuses to write a record unless every scored decision day has a forecast of each",
+  "guards": "a scored decision day or target day passes lockbox.require_unlocked through spread_mean_reversion_686.require_scored_days with the last day of the window; the blind tier (from 2026-09-04) and every lockbox day are refused; the scratch panel is refused unless its dates and published columns are the published panel's",
+  "inputs": "the published panel (digest 4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999, built at 18:00) and the scratch panel of scripts/pressure_v1_1.py panel --end 2026-09-03 (same dates, plus on_rrp and bank_total_assets), from which only the two columns are built"
+ },
+ "primary": {
+  "metric": "grid CRPS (23 levels) averaged over leads h = 1..5",
+  "key_secondary": "upper-tail twCRPS (weight 1{z > 0 bp})",
+  "also_reported": "the Brier score of P(spread > +5 bp), as in #1483",
+  "splits": "pooled, by lead, by regime and by pressure-day type of the target day; groups of fewer than 20 days are listed and not tested"
+ },
+ "scoring": {
+  "scorer": "repo_model.scoring_protocol (#655), the development tier: no verdict, no registration",
+  "test": "scoring_protocol.paired_tests, the studentized stationary bootstrap (ruling 1), mean block 10 business days, 10,000 draws, seed 1526, two-sided 90% interval (the lower end is the one-sided 95% bound); the skill interval and the studentized interval on mean d are reported for every tested row; where the studentized bound cannot be computed the unstudentized percentile interval of mean d is given beside it, with no reading taken from it",
+  "reading": "a reading is taken from the pooled mean-d bound (her ruling on #1009): R+S helps when the lower end of the 90% interval of mean d is above zero, hurts when the upper end is below zero, otherwise undecided"
+ },
+ "lead_1_dependence": {
+  "what": "the arm's miss-after-miss rate at lead 1 beside the candidate's, in the form of #1363 (scripts/candidate_calibration_1363.py): the 0/1 sequences of a miss of the central 90% band (strict) and of a miss above q95 (strict), over the scored decision days of lead 1 in order, no transition across a gap; P(miss after miss), P(miss after hit), longest run, Christoffersen's statistic and its permutation p (10,000 permutations, seed 1363)",
+  "status": "reported, not a gate"
+ },
+ "kill": "From #46's H7 line: the scarcity reading does not predict later spread behaviour beyond the current scarcity state. Reading 'undecided' or 'loss' on the pooled mean-d bound is a development reading, not a verdict. Because the candidate reads neither R nor S, the contrast cannot separate R from S: a gain is R+S together, a loss or an undecided reading says R+S as read here adds nothing to the candidate. Whether H7 is closed or registered is her decision.",
+ "reading_rules": [
+  "A figure is a check on days that were already seen. Nothing here is a verdict, nothing is registered and no choice is made on it; (s3c-ann-net) stays the candidate until she rules.",
+  "A gain or loss is read from the 90% interval of mean d excluding zero; otherwise undecided. A point estimate alone is not read.",
+  "A pooled figure is never read without the lead, regime and pressure-day-type splits beside it.",
+  "The 2026 days are shown separately and decide nothing.",
+  "The study does not mark H7.M2 done: the milestone is marked, if it is, by her ruling on the page's marked question."
+ ],
+ "limits": {
+  "last_day": "2026-09-03",
+  "named_candidate": "unchanged; docs/research/h5-candidate.json and its declarations are not changed",
+  "preregistration": "scripts/final_test_preregistration.py is not touched",
+  "allow_list": "repo_model.one_step_guard.ONE_STEP_ALLOW_LIST is not changed",
+  "sources": "metadata/sources.json and metadata/sources_measurement.json are not changed; docs/runs/ is read (B3) and not touched; no liquidity snapshot is ingested, R and S being model-repo functions; the changes in src/ are the two extra-term names in spread_mr_state_calendar (RS_EXTRAS, listed in EXTRA_TERMS so that the fit treats them as the extras it already reads) and the module repo_model.s3c_rs that builds and serves them, with a no-future test and recorded mutations"
+ },
+ "pairs": "direct: the calendar and settlement terms are columns of the target row exactly as the candidate reads them, and the fit trains on direct pairs (training_pairs = 'direct'); R and S are states of the decision row (alignment above); the provisional-register row is metadata/provisional/cleared/h7f_rs_1526.json",
+ "long_run": "the walk is two arms on one walk per window (minutes, as #1507); the paired tests are the long part. If the measured time on a subset says the full run exceeds about two hours, it goes to the Mac as a `needs-mac:` comment, per window, each window writing its own file (docs/research/h7f-rs-1526/result-<window>.json)",
+ "amendments": []
+}
