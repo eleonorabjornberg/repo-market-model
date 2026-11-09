@@ -454,7 +454,7 @@ def against_1483(result: Mapping[str, dict], window: str) -> dict:
     there = json.loads(RECORD_1483.read_text(encoding="utf-8"))["windows"][window]["groups"]["pooled"]["all decision days"]
     here = result["groups"]["pooled"]["all decision days"]
     return {m: {x: {"now": here[m]["means"][x], "then": there[m]["means"][x], "difference": here[m]["means"][x] - there[m]["means"][x]}
-                for x in (B1, B1P, B2, ANNNET)} for m in ("grid_crps", "upper_tail_twcrps", "brier_gt5")}
+                for x in (ANNNET,)} for m in ("grid_crps", "upper_tail_twcrps", "brier_gt5")}
 
 
 def score(args) -> int:
@@ -634,7 +634,7 @@ def control_section(r: Mapping[str, object]) -> List[str]:
     if not diffs:
         return []
     return ["## The control against #1483's record", "",
-            "B1, B1', B2 and (s3c-ann-net) are re-run in this walk; their pooled means of all three metrics, in both windows, are compared with "
+            "(s3c-ann-net) is re-run in this walk; its pooled means of all three metrics, in both windows, are compared with "
             f"`docs/research/family-ablation-1483/result.json`. Largest absolute difference of a pooled mean: {max(diffs):.1e}. Shown, not required to agree; no record is edited.", ""]
 
 

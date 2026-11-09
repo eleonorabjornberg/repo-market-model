@@ -16,7 +16,7 @@ Recorded mutations (9 November 2026, disposable copy, each restored after its ru
 `AttributeError: 'NoneType' object has no attribute 'dates'` (the guard gone, the call went on and met the `None` frame; `ValueError` was not raised). Second, in
 the same function, the guard `if [r.date for r in built] != [r.date for r in panel]:` was changed to `if False:`;
 `WalkTests.test_rows_that_are_not_the_panels_days_are_refused` then errored with the same `AttributeError`. Third, in `aug_rows`,
-`if a.values[name] != value` was replaced by `if False`: `ScratchPanelTests.test_a_published_column_that_differs_is_refused` failed with
+`if name in a.values and a.values[name] != value` was replaced by `if False`: `ScratchPanelTests.test_a_published_column_that_differs_is_refused` failed with
 `AssertionError: ValueError not raised`. Fourth, in `candidate_reads`, `if reads_reserves_term:` was replaced by `if False:`:
 `CandidateReadsTests.test_a_candidate_that_already_reads_r_is_refused` failed with `AssertionError: ValueError not raised`. Fifth, in `b3_scores`, the
 outcome check `if abs(float(entry["actual_bps"]) - float(observed)) > 1e-9:` was replaced by `if False:`:
