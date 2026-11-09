@@ -575,6 +575,8 @@ def split_table(window: Mapping[str, object], split: str, candidate: str, refere
 
 def b3_table(b3: Mapping[str, object]) -> List[str]:
     out = ["| decision days | days | B3 | (s3c-ann-net) | (s3c-ann-net-qe) | (s3c-ann-net) against B3 | (s3c-ann-net-qe) against B3 |", "|---|---|---|---|---|---|---|"]
+    if not b3["groups"]:
+        return ["The published record holds no decision day of this window with all five leads, so B3 is not scored here.", ""]
     for label, g in b3["groups"].items():
         if g.get("skipped"):
             out.append(f"| {label} | {g['days']} | not tested (fewer than {MIN_GROUP_DAYS} days) | | | | |")
@@ -594,7 +596,7 @@ def window_section(window: str, w: Mapping[str, object]) -> List[str]:
            "### Coverage and tail misses on the group, candidate against arm", ""] + rates_table(group_rows(g)) + [
            "", f"**{short_of_nominal(g)}**", "",
            "### Accuracy of the distribution on the group (paired, same cells)", ""] + scores_table(group_rows(g)) + [
-           "", "### The declared kill", "", kill_sentence(g["kill"]), "",
+           "", "### The declared kill" + ("" if window == "development" else " (shown apart; the kill is read on the development window only, and these days decide nothing)"), "", kill_sentence(g["kill"]), "",
            "### The multipliers (shrunk), over the window's refits", ""] + multiplier_table(w["multipliers"]) + [""]
     pooled = w["groups"]["pooled"]["all decision days"]
     out += ["### Pooled, against B1, B1' and B2 (studentized stationary bootstrap)", "",
