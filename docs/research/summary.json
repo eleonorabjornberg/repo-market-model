@@ -127,7 +127,7 @@
       "amendment4_coverage": "a coverage report that passes the fourth amendment to the scoring rules"
     },
     "failures": {
-      "amendment4_coverage": "It fails the coverage report that the fourth amendment to the scoring rules requires before registration: {failing} of {tests} coverage tests are rejected on past days.",
+      "amendment4_coverage": "It fails the coverage report that the fourth amendment to the scoring rules requires before registration: the report rejects some of its coverage checks on past days.",
       "quarter_end_band": "Its 90% range holds the outcome in a share of {qend} of quarter-end turns and {yend} of year-end days, where 0.900 is claimed (past days)."
     },
     "failure_mark": "Figures from past days, development, not a verdict.",

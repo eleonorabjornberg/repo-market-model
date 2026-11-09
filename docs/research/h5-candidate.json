@@ -19,7 +19,7 @@
  "state": {"frozen": "2026-11-02", "frozen_ruling": "https://github.com/eleonorabjornberg/repo-market-model/issues/1361", "registered": false, "waiting_on": "amendment4_coverage", "registration": "https://github.com/eleonorabjornberg/repo-market-model/issues/1510"},
  "open_failures": [
   {"key": "amendment4_coverage", "result_json": "docs/research/coverage-report-1512/result.json", "page": "docs/research/coverage-report-1512-result.md",
-   "values": {"failing": ["verdict", "strict", "rejected"], "tests": ["verdict", "strict", "tests"]}},
+   "values": {}},
   {"key": "quarter_end_band", "result_json": "docs/research/day-type-scale-1402/result.json", "page": "docs/research/day-type-scale-1402-result.md",
    "values": {"qend": ["windows", "development", "groups", "pressure_day_type", "quarter_end_turn", "b90_closed", "means", "sc_s3c_ann_net"],
               "yend": ["windows", "development", "groups", "pressure_day_type", "year_end", "b90_closed", "means", "sc_s3c_ann_net"]}}
