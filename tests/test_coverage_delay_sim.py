@@ -14,7 +14,7 @@ distribution is the exact mixture over the volatility paths it cannot see. What 
 - the fit recovers a known AR coefficient, volatility states and class scales from a long simulated series;
 - the window guard: `require_development` refuses a day after the window's last day.
 
-Recorded mutation for the window guard (a new leakage guard): changing `if day > last:` to `if day > last + timedelta(days=4000):` in
+Recorded mutation for the window guard (a new leakage guard): changing `if day > last:` to `if day > date.max:` in
 `coverage_delay_sim.require_development` makes `WindowGuardTests.test_a_day_after_the_last_day_is_refused` fail with `AssertionError:
 LookAheadError not raised`.
 

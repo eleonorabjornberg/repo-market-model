@@ -152,6 +152,8 @@ def build_declaration(doc: Mapping[str, object]) -> dict:
         "calibration_method": "regime median of ordinary days removed; class scale = the mean-absolute-deviation sd of the class's days (about their median) over that of ordinary days; phi by least squares through the origin; two-state Markov scale mixture on the AR(1) residuals by Baum-Welch (150 iterations)",
         "model": "x[t] = phi x[t-1] + sigma[z[t]] e[t]; spread = level + scale[class] x; the forecaster reads x[D-1], z[D-1] and the class of its target day; PITs are PITs of x",
         "classes": list(sim.CLASSES),
+        "variants": {n: f"{d} (family {f})" for n, (f, d, sc, on, lag) in FORECASTERS.items()},
+        "variants_note": "the simulated forecasters (the true distribution and the faults (a), (b) and (c)), named so that the count of declared arms (#803) reads this file; no model is fitted, tuned or selected, and this block changes no number",
         "forecasters": [
             {"name": n, "family": f, "description": d, "scale": sc, "on": None if on is None else list(on), "lag": lag}
             for n, (f, d, sc, on, lag) in FORECASTERS.items()

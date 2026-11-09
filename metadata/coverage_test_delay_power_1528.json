@@ -2121,5 +2121,16 @@
    ]
   ]
  },
+ "variants": {
+  "a_cal75": "band too narrow on every calendar-class day (quarter-end, month-end, tax, settlement, policy): about 75% (family a)",
+  "a_qe50": "band too narrow on quarter-end days only: 90% band covers about 50% (family a)",
+  "a_qe75": "band too narrow on quarter-end days only: 90% band covers about 75% (family a)",
+  "b_70": "band too narrow on all days: standard deviation cut to 70% (family b)",
+  "b_85": "band too narrow on all days: standard deviation cut to 85% (family b)",
+  "c_lag20": "volatility state 20 days stale (family c)",
+  "c_lag5": "volatility state 5 days stale (family c)",
+  "truth": "the true conditional distribution (correctly specified) (family size)"
+ },
+ "variants_note": "the simulated forecasters (the true distribution and the faults (a), (b) and (c)), named so that the count of declared arms (#803) reads this file; no model is fitted, tuned or selected, and this block changes no number",
  "window": "development"
 }
