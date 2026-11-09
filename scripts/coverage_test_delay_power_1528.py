@@ -79,6 +79,8 @@ RULE_TEXT = {
     "h1": "Kupiec and independence both at spacing h + 1",
 }
 P_NAMES = ("kupiec_h", "kupiec_h1", "indep_h", "indep_h1")
+#: How the page names a rule.
+RULE_SHORT = {"h": "h", "indep_h1": "indep h+1", "h1": "h+1"}
 
 
 
@@ -416,7 +418,7 @@ def render(r: Mapping[str, object]) -> str:
     w("Pooled over the 20 lead-and-level cells of a regime (the regime split of the report; the cells of one path are dependent, so the interval is Wilson on "
       f"{n * 20} cell draws and is a little narrow):")
     w("")
-    w("| Regime | days | " + " | ".join(f"combined, {k}" for k in rules) + " |")
+    w("| Regime | days | " + " | ".join(f"combined, rule {RULE_SHORT[k]}" for k in rules) + " |")
     w("|---|---|" + "---|" * len(rules))
     for reg in r["regimes"]:
         cs = [c for c in truth["cells"] if c["regime"] == reg]
@@ -443,18 +445,32 @@ def render(r: Mapping[str, object]) -> str:
         for rule in rules:
             x = b["rules"][rule]
             cover = _pc(b["band"][0] / b["band"][1]) if b["band"][1] else "n/a"
-            w(f"| {desc} | {cover} | {rule} | {_pc(x['family_wise'])} {_iv(x['family_wise_interval'])} | {_pc(x['size_adjusted'])} {_iv(x['size_adjusted_interval'])} | {_pc(x['any_kupiec'])} | {_pc(x['any_independence'])} |")
+            w(f"| {desc} | {cover} | {RULE_SHORT[rule]} | {_pc(x['family_wise'])} {_iv(x['family_wise_interval'])} | {_pc(x['size_adjusted'])} {_iv(x['size_adjusted_interval'])} | {_pc(x['any_kupiec'])} | {_pc(x['any_independence'])} |")
     w("")
     w(f"Target days by class in the {r['decision_target_pairs']} (decision, lead) pairs: " + ", ".join(f"{k} {v}" for k, v in r["class_days"].items()) + ".")
     w("")
     w("Raw detection per level (the share of (path, regime, lead) cells with a raw p below 5% under the rule's pair of tests, pooled over leads and regimes):")
     w("")
-    w("| Forecaster | Level | " + " | ".join(f"rule {k}" for k in rules) + " |")
+    w("| Forecaster | Level | " + " | ".join(f"rule {RULE_SHORT[k]}" for k in rules) + " |")
     w("|---|---|" + "---|" * len(rules))
     for name in FORECASTERS:
         for lv in sim.LEVELS:
             cs = [c for c in fcs[name]["cells"] if c["level"] == lv]
             w(f"| {name} | q{lv:g} | " + " | ".join(_pc(sum(c["either"][k] for c in cs) / len(cs)) for k in rules) + " |")
+    w("")
+    w("Raw detection by regime (the share of (path, lead, level) cells with a raw p below 5% under the rule's pair of tests, pooled over the 20 lead-and-level cells of the "
+      "regime): the regime split of the report. The day-type split of the report is the class of the target day, whose counts are above; a fault confined to a class "
+      "can only be seen in the cells that hold its days.")
+    w("")
+    w("| Forecaster | Rule | " + " | ".join(r["regimes"]) + " |")
+    w("|---|---|" + "---|" * len(r["regimes"]))
+    for name in FORECASTERS:
+        for rule in rules:
+            cols = []
+            for reg in r["regimes"]:
+                cs = [c for c in fcs[name]["cells"] if c["regime"] == reg]
+                cols.append(_pc(sum(c["either"][rule] for c in cs) / len(cs)))
+            w(f"| {name} | {RULE_SHORT[rule]} | " + " | ".join(cols) + " |")
     w("")
     w("## Read-out")
     w("")
@@ -476,39 +492,61 @@ def render(r: Mapping[str, object]) -> str:
 
 
 def readout(r: Mapping[str, object]) -> List[str]:
-    """The plain-language reading, from the figures; the page's thresholds (size interval below 10%, size-adjusted detection of at least 80%) are its own, not the protocol's."""
+    """The plain-language reading, from the figures. Two conventions are this page's own, not the protocol's: size is "above nominal" when the Wilson
+    interval of the family-wise rate lies above 5%, and a fault is "detected" when its size-adjusted detection is at least 80%."""
 
     fcs = r["results"]["forecasters"]
     truth = fcs["truth"]["rules"]
-    lines = []
+    short = RULE_SHORT
+    lines: List[str] = []
+    above = {rule: truth[rule]["family_wise_interval"][0] > ALPHA for rule in sim.RULES}
     for rule in sim.RULES:
         t = truth[rule]
-        lines.append(f"- **{r['rules'][rule]['text']}.** A correct forecaster is rejected in {_pc(t['family_wise'])} {_iv(t['family_wise_interval'])} of paths "
-                     f"(independence {_pc(t['any_independence'])}, Kupiec {_pc(t['any_kupiec'])}).")
+        where = "above nominal" if above[rule] else ("below nominal" if t["family_wise_interval"][1] < ALPHA else "at nominal")
+        lines.append(
+            f"- **Size, rule {short[rule]} ({r['rules'][rule]['text']}):** a correct forecaster is rejected in {_pc(t['family_wise'])} {_iv(t['family_wise_interval'])} "
+            f"of paths, {where} (independence {_pc(t['any_independence'])}, Kupiec {_pc(t['any_kupiec'])})."
+        )
     lines.append("")
-    keeps = {rule: truth[rule]["family_wise_interval"][1] < 0.10 for rule in sim.RULES}
     for rule in sim.RULES:
         det = {n: fcs[n]["rules"][rule] for n in FORECASTERS if n != "truth"}
-        bits = ", ".join(f"{n} {_pc(d['family_wise'], 0)} ({_pc(d['size_adjusted'], 0)} size-adjusted)" for n, d in det.items())
-        lines.append(f"- Detection under {rule}: {bits}.")
+        bits = ", ".join(f"{n} {_pc(d['family_wise'], 0)} ({_pc(d['size_adjusted'], 0)})" for n, d in det.items())
+        lines.append(f"- **Detection, rule {short[rule]}** (Holm, size-adjusted in brackets): {bits}.")
     lines.append("")
     adj = lambda rule, n: fcs[n]["rules"][rule]["size_adjusted"]
-    a_names = [n for n, v in FORECASTERS.items() if v[0] == "a"]
-    verdict = []
-    for rule in ("indep_h1", "h1"):
-        detects = {n: adj(rule, n) >= 0.80 for n in a_names}
-        verdict.append(
-            f"Under {rule}, size {'is' if keeps[rule] else 'is not'} kept (family-wise interval upper end {_pc(truth[rule]['family_wise_interval'][1])}, against the "
-            f"page's reading of below 10%) and fault (a) is detected in {', '.join(n for n, v in detects.items() if v) or 'none of its variants'} "
-            f"(size-adjusted detection of at least 80%; {', '.join(f'{n} {_pc(adj(rule, n), 0)}' for n in a_names)})."
+    a_all = [n for n, v in FORECASTERS.items() if v[0] == "a"]
+    a_qe = [n for n in a_all if FORECASTERS[n][3] == ("quarter_end",)]
+    for rule in sim.RULES:
+        lines.append(
+            f"- **Fault (a), rule {short[rule]}**, size-adjusted: " + ", ".join(f"{n} {_pc(adj(rule, n), 0)}" for n in a_all)
+            + f"; {'detected in all variants' if all(adj(rule, n) >= 0.80 for n in a_all) else 'not detected in all variants'} (at least 80%)."
         )
-    both = [rule for rule in ("indep_h1", "h1") if keeps[rule] and all(adj(rule, n) >= 0.80 for n in a_names)]
-    lines.extend(f"- {v}" for v in verdict)
     lines.append("")
-    if both:
-        lines.append(f"- Spacing h + 1 ({', '.join(both)}) keeps size and detects every variant of (a) at the page's reading.")
+    lines.append("**Plainly.**")
+    lines.append("")
+    for rule in ("indep_h1", "h1"):
+        t = truth[rule]
+        lines.append(
+            f"- Spacing h + 1, rule {short[rule]}: size is {'above nominal at ' + _pc(t['family_wise']) if above[rule] else 'kept (' + _pc(t['family_wise']) + ', not above 5%)'}"
+            + (f"; the excess is Kupiec's at spacing h ({_pc(t['any_kupiec'])}), independence adds {_pc(t['any_independence'])}" if above[rule] and rule == "indep_h1" else "")
+            + f". It detects (a) restricted to calendar-class days at {_pc(adj(rule, 'a_cal75'), 0)}, and (a) restricted to quarter-end days at "
+            + " and ".join(_pc(adj(rule, n), 0) for n in a_qe) + "; narrow overall at " + " and ".join(_pc(adj(rule, n), 0) for n in ("b_85", "b_70"))
+            + "; a stale volatility state at " + " and ".join(_pc(adj(rule, n), 0) for n in ("c_lag5", "c_lag20")) + "."
+        )
+    lines.append(
+        f"- Spacing h (the amendment as set) rejects a correct forecaster in {_pc(truth['h']['family_wise'], 0)} of paths, so its detection of any fault is not "
+        f"informative; size-adjusted, its power against (a) restricted to quarter-end days is {' and '.join(_pc(adj('h', n), 0) for n in a_qe)}."
+    )
+    ok = [rule for rule in ("indep_h1", "h1") if not above[rule] and all(adj(rule, n) >= 0.80 for n in a_all)]
+    if ok:
+        lines.append(f"- Rule(s) {', '.join(short[x] for x in ok)} keep size and detect every variant of (a).")
     else:
-        lines.append("- **No spacing does both for every variant of (a).** The rule is not tuned here: #1527 and her own ruling decide what to do with this.")
+        lines.append(
+            "- **No spacing both keeps size and detects every variant of (a).** Independence at spacing h + 1 with Kupiec at h is above nominal because of Kupiec at "
+            "spacing h; both at h + 1 keep size, below nominal, and detect (a) on calendar-class days at less than the other. A fault confined to quarter-end "
+            "days is not detected at any spacing, the current one included: the report holds too few such days (see the class counts). Detection of an overall "
+            "narrowing and of a stale volatility state is in the rows above. The rule is not tuned here; #1527 and her own ruling decide."
+        )
     return lines
 
 
