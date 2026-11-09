@@ -167,11 +167,13 @@ class EnforceStaysInertTests(unittest.TestCase):
             tie_probabilities=fill(forecasts, 0.5, None), draws=fill(forecasts, 0.0, 0.1),
         )
 
-    def test_the_flag_is_still_off(self):
-        self.assertFalse(sp.COVERAGE_REQUIREMENT_IN_FORCE)
+    def test_the_flag_is_on_since_1522(self):
+        self.assertTrue(sp.COVERAGE_REQUIREMENT_IN_FORCE)
 
     def test_the_randomised_rule_is_accepted_by_the_requirement_and_inert_while_off(self):
-        self.assertEqual(sp.enforce_coverage_requirement(self.cells(), alpha=0.05, family="holm", rule="randomised"), [])
+        cells = self.cells()
+        with mock.patch.object(sp, "COVERAGE_REQUIREMENT_IN_FORCE", False):
+            self.assertEqual(sp.enforce_coverage_requirement(cells, alpha=0.05, family="holm", rule="randomised"), [])
 
     def test_once_on_it_reads_the_randomised_cells_only(self):
         cells = self.cells()

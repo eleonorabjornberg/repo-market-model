@@ -147,9 +147,11 @@ class ReportTests(unittest.TestCase):
         self.assertEqual(rep["family"], "holm")
         self.assertEqual(rep["alpha"], 0.05)
 
-    def test_the_flag_stays_off_in_the_tree(self):
+    def test_the_report_leaves_the_flag_as_it_found_it(self):
+        before = sp.COVERAGE_REQUIREMENT_IN_FORCE
         script.report(self.w)
-        self.assertFalse(sp.COVERAGE_REQUIREMENT_IN_FORCE)
+        self.assertEqual(sp.COVERAGE_REQUIREMENT_IN_FORCE, before)
+        self.assertTrue(before)  # in force since #1522
 
     def test_a_forecast_far_too_narrow_fails_every_rule(self):
         d = doc(300, outcome=lambda i: 40.0 if i % 3 else -40.0)

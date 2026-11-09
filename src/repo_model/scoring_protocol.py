@@ -1080,12 +1080,12 @@ def report(
 
 
 # --------------------------------------------------------------------------
-# Draft amendment 4 (#1130): the coverage requirement. Inert until Eleonora merges the record.
+# Amendment 4 (#1130): the coverage requirement. In force as set by #1522.
 # --------------------------------------------------------------------------
 
-#: False until she merges "Draft amendment 4" of `docs/decisions/scoring-protocol.md`; a follow-up directive then
-#: sets it. `tests/test_scoring_protocol_coverage_requirement.py` fails if it is True while the record is a draft.
-COVERAGE_REQUIREMENT_IN_FORCE = False
+#: True from #1522 (amendment 4 of `docs/decisions/scoring-protocol.md`, in force as set; the requirement reads the
+#: `strict` hit rule). `tests/test_scoring_protocol_coverage_requirement.py` checks it against the record's own statement.
+COVERAGE_REQUIREMENT_IN_FORCE = True
 #: The lower and upper level of each pair the amendment names: q05/q95 and q01/q99. A level's nominal hit
 #: probability is `min(level, 1 - level)`.
 COVERAGE_LEVELS: Tuple[float, ...] = (0.05, 0.95, 0.01, 0.99)
@@ -1252,7 +1252,7 @@ def coverage_cells(
 def enforce_coverage_requirement(
     cells: Sequence[CoverageCell], *, alpha: float, family: str, rule: str
 ) -> List[CoverageCell]:
-    """The registration requirement of draft amendment 4: no cell of `rule` fails either test.
+    """The registration requirement of amendment 4 (in force from #1522): no cell of `rule` fails either test.
 
     Inert while `COVERAGE_REQUIREMENT_IN_FORCE` is False: returns an empty list whatever the cells say. Once on,
     raises `CoverageRequirementFailed` naming the failing cells, and returns an empty list when none fails.
@@ -1261,7 +1261,7 @@ def enforce_coverage_requirement(
         alpha: the level of a cell's test (family "per_cell") or the family-wise level (family "holm"); required,
             the record's marked question sets it.
         family: "per_cell" (each p-value against `alpha`) or "holm" (`holm` over all of the rule's p-values).
-        rule: which hit rule the requirement reads; required, no default: the record leaves it to the size simulation.
+        rule: which hit rule the requirement reads; required, no default. The record names `strict` (#1522).
     """
 
     if family not in COVERAGE_FAMILIES:

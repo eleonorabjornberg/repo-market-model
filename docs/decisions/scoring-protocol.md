@@ -235,12 +235,38 @@ draft, their efficacy values are superseded.
 
 ## Draft amendment 4: passing the coverage tests is a registration requirement (#1130)
 
-**Status: In force since 23 October 2026 (GO #1130, PR #1137).** (§13: this record is merged by her, not under delegated review; the change is of kind (a), a
-demonstration). It follows her ruling of 22 October 2026 on PR #998, option a, relayed by the orchestrating session: passing
-the coverage tests becomes a registration requirement. Merging it is her own GitHub action, and a relayed ruling does not
-authorise it; the owner attestation cites her own `GO` when she gives it. Until she merges it, §2 stands as written,
-`scoring_protocol.COVERAGE_REQUIREMENT_IN_FORCE` is False, and `enforce_coverage_requirement` returns without checking
-anything. It does not touch §3 to §6, the critical values or any verdict.
+**Status: In force as set (#1522; GO #1522 once she posts it and merges this change).** The amendment was recorded on
+23 October 2026 (GO #1130, PR #1137; §13: this record is merged by her, not under delegated review; the change is of kind (a), a
+demonstration), and its requirement was held off until a size simulation cleared the design. Her docket ruling of 8 November
+2026 on PR #1520 ("bar") puts it in force as set: a directive turns the flag on, and a directive diagnoses the lead-1
+dependence for a model change. As of this change `scoring_protocol.COVERAGE_REQUIREMENT_IN_FORCE` is True, and
+`enforce_coverage_requirement` checks the cells of the hit rule it is given. It follows her ruling of 22 October 2026 on
+PR #998, option a, relayed by the orchestrating session: passing the coverage tests becomes a registration requirement.
+Merging this change is her own GitHub action, and a relayed ruling does not authorise it; the owner attestation cites her own
+`GO #1522`. It does not touch §3 to §6, the critical values or any verdict, and it re-scores nothing: no published record is
+edited.
+
+**In force as set (#1522).** The requirement is the design of answers 1, 2 and 3 below, on the hit rule of answer 4:
+
+- thinned days above lead 1 (`method="thinned"`), Holm over the family at 5% (`family="holm"`, `alpha=0.05`);
+- the requirement reads the `strict` hit rule (`y < q` below, `y > q` above), the rule PR #1520 measured. `tie_counts` and the
+  randomised tie rule coincide with it on the H5 candidate's data: there are 0 ties at each of the four read levels (q0.01,
+  q0.05, q0.95, q0.99), so a deterministic and a randomised rule give the same hits there. `tie_counts` and `randomised` stay
+  reported; `enforce_coverage_requirement` still takes the rule as an argument and a caller names `strict`;
+- **point 3 is met by the iid-control size in PR #1520** (`docs/research/coverage-size-1516-result.md`, development data, no
+  verdict): on 2000 null draws of a forecaster calibrated by construction with independent PITs, the design rejects in 1.7%
+  (Wilson 95% interval 1.2% to 2.3%) of draws against the 5.0% nominal level (1.4% through a Kupiec test, 0.3% through an
+  independence test). The block-bootstrap worlds there reject in 100% because they keep the candidate's own dependence, which
+  the independence test detects; that is power, not size;
+- the candidate in that study, (s3c-ann-net), fails the requirement as set: 11 Holm rejections across its family (10 independence
+  tests, mostly at lead 1, and one Kupiec test, q0.99 in 2021-23). Its registration (#1510, PR #1511) cannot proceed until a
+  model change passes. The lead-1 diagnosis is a separate directive.
+
+**Marked question for her: the hit-rule naming (point 4).** This record names `strict`. Options: (1) name `strict`, as PR #1520
+measured, noting that `tie_counts` and the randomised rule coincide on this data (default if she has not answered by the next
+5 pm batch); (2) name the randomised tie rule, for a future target with mass points at the quantile, which needs the forecast's
+tie probabilities and draws supplied by the registering candidate; (3) name `tie_counts`. Changing the rule changes the argument
+callers pass, not the code. Whichever she names binds only once she merges this record.
 
 **The demonstration (kind (a)).** The synthetic world of #961 (PR #998, development data, no verdict): a forecaster whose
 bands are too narrow beats calibrated forecasters on grid CRPS and is ranked first by the rule without the ideal forecaster
@@ -258,13 +284,13 @@ its coverage report, read on its development walk-forward forecasts only (§1: n
 - the candidate passes when no cell fails either test, at the level and family the answers below set.
 
 The check is `repo_model.scoring_protocol.coverage_cells` (reporting) and `enforce_coverage_requirement` (the requirement,
-inert until the flag is set by a follow-up directive after she merges this record). Registration stays her attested action;
+in force from #1522). Registration stays her attested action;
 the code does not register anything.
 
 ### Her answers (22 October 2026, PR #1137, relayed by the orchestrating session) and the one question left open
 
-Her answers 1, 2, 3 and 5 are the defaults below; 4 is left to a measurement. They are recorded here as a draft; they bind
-only once she merges this record.
+Her answers 1, 2, 3 and 5 are the defaults below; 4 was left to a measurement, which PR #1520 made (see "In force as set"
+above). They bind as set from #1522.
 
 The reported size of the unmodified gate is why 1 to 3 were asked: on 2,000-day paths of a calibrated forecaster, the gate as
 #961 declared it (Kupiec per cell at 1%, no thinning) failed it on 54% of paths, almost all of it Kupiec at the longer leads,
@@ -274,19 +300,20 @@ h-th day brought that to 20% (post hoc, not declared), still far above 1%.
 1. **Leads above 1: thinned days.** Kupiec and independence on every h-th decision day at lead h (`method="thinned"`). The
    HAC variant (`method="hac"`) stays implemented and reported-only; its size is unmeasured.
 2. **Family-wise level: Holm over the family at 5%** (`family="holm"`, `alpha=0.05`, the protocol's `holm`). The family is
-   all tests of the hit rule the requirement reads. Its size is unmeasured here.
+   all tests of the hit rule the requirement reads. Its size under independent calibrated PITs is 1.7% against the 5.0% nominal
+   (PR #1520).
 3. **The 54%: the requirement stays off until a size simulation clears the chosen design.** `COVERAGE_REQUIREMENT_IN_FORCE`
-   stays False until a follow-up simulation shows that the design of answers 1, 2 and 4 fails a calibrated forecaster on no more
-   than its family-wise level (5%). A later directive sets the flag, after her own merge of this record and her `GO`.
-4. **Which hit rule the requirement reads: open, decided by the size simulation.** A whole-bp target has mass points, and a
+   stays off until a follow-up simulation shows that the design of answers 1, 2 and 4 fails a calibrated forecaster on no more
+   than its family-wise level (5%). **Met** by the iid control of PR #1520 (1.7% [1.2%, 2.3%] against 5.0%); #1522 sets the flag
+   under her `GO`.
+4. **Which hit rule the requirement reads: `strict`, named by #1522 (marked question above).** A whole-bp target has mass points, and a
    deterministic rule is mis-sized for a perfect forecaster when outcomes tie the quantile (five-lens review, Lens C point F).
    The simulation measures the size of three rules: `strict` (`y` beyond `q`), `tie_counts` (`y` at or beyond `q`) and a
    **randomised tie rule** (a tie counts as a hit with the probability the forecast's own distribution assigns it, as in the
    randomised PIT of Czado, Gneiting and Held 2009; `coverage_tests.randomised_hit_sequence`, a reporting option, inert, with
-   caller-supplied draws). The requirement reads the rule the simulation shows a calibrated forecaster passes. Both
-   deterministic rules stay reported whatever it finds. Until the simulation has run, `enforce_coverage_requirement` takes the
-   rule as a required argument and nothing here names one; `coverage_cells` does not yet report the randomised rule (it needs
-   the forecast's tie probabilities, which the simulation's directive supplies).
+   caller-supplied draws). Both deterministic rules stay reported. `enforce_coverage_requirement` takes the rule as a
+   required argument and the requirement reads `strict`; `coverage_cells` reports the randomised rule when the caller supplies
+   the forecast's tie probabilities and the draws.
 5. **The regime split: the protocol's existing development-figure split,** with the labels supplied by the caller. No new
    definition of a regime; a different split is her ruling and a change to the labels, not to the code.
 
@@ -295,9 +322,9 @@ forecasters over a whole-bp target with mass points, at the answers above, measu
 each of the three hit rules and, for power, the too-narrow forecaster of #961. Its result names the rule the requirement reads
 and whether the design may be put in force; setting the flag is a further step under her `GO`.
 
-What was not checked: the candidate (`gbm_funding`, B3, the direct-pairs twin) has not been run through the check; that
-needs walks and runs on her Mac under the long-run rule if she wants it. The size of the thinned, Holm design and of every hit
-rule is unmeasured until the follow-up runs.
+What was not checked: the candidate (`gbm_funding`, B3, the direct-pairs twin) has not been run through the check. The size of
+the thinned, Holm design was measured by #1156 (all three rules) and by PR #1520 (the `strict` rule, on (s3c-ann-net)'s own
+forecasts and an iid control); the randomised rule's size on a whole-basis-point world is #1156's, not repeated.
 
 
 ## Draft amendment 5: near-identical targets are one Holm member (#1445)

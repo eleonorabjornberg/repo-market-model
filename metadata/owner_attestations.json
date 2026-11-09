@@ -286,6 +286,13 @@
       "comment_id": 6712519282,
       "phrase": "GO #1506",
       "what": "docs/decisions/scoring-protocol.md draft amendment 6 marked parked, not proposed for H5 (PR #1508); her 7 November 2026 docket ruling on #1504"
+    },
+    {
+      "kind": "decisions",
+      "issue": 1522,
+      "comment_id": 6730682161,
+      "phrase": "GO #1522",
+      "what": "docs/decisions/scoring-protocol.md amendment 4 put in force as set, COVERAGE_REQUIREMENT_IN_FORCE on (PR #1524); her 8 November 2026 docket ruling 'bar' on #1520"
     }
   ],
   "rule": "docs/decisions/drafts/owner-attestation.md",
