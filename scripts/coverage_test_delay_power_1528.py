@@ -371,7 +371,7 @@ def render(r: Mapping[str, object]) -> str:
     w("")
     w("## What was measured")
     w("")
-    w(f"The design of amendment 4 (Kupiec and Christoffersen independence at q05/q95 and q01/q99, leads 1 to 5, each regime, Holm over the 200 tests at 5%) "
+    w(f"The design of amendment 4 (Kupiec and Christoffersen independence at q05/q95 and q01/q99, leads 1 to 5, each regime, Holm over its whole family of tests at 5%) "
       f"was applied to {n} simulated paths over the real development calendar: {r['decision_days']} decision days, targets to {r['last_day']}, the regimes "
       f"({', '.join(f'{k} {v}' for k, v in r['regime_days'].items())} days) and the class of every target day as the real report has them. A decision "
       f"on day D reads the last published spread, that of D - 1, so lead h looks h + 1 days ahead of its last value (the one-day publication delay). The "
@@ -395,7 +395,7 @@ def render(r: Mapping[str, object]) -> str:
     w("")
     w("## Size: how often the design rejects a correctly specified forecaster")
     w("")
-    w(f"Family-wise: the share of {n} paths with at least one Holm rejection across the 200 tests (nominal 5.0%), Wilson 95% interval.")
+    w(f"Family-wise: the share of {n} paths with at least one Holm rejection across the whole family of tests (nominal 5.0%), Wilson 95% interval.")
     w("")
     w("| Rule | family-wise rejection | of which a Kupiec test | of which an independence test | mean tests rejected |")
     w("|---|---|---|---|---|")
