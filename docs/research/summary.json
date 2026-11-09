@@ -115,5 +115,26 @@
     "description": "a model in which the spread drifts back to its usual level, with calendar effects read on the day being forecast (quarter-ends, tax dates and Treasury settlements), fitted so that single extreme days count for less, and with its forecasts capped at the rate at which the Fed lends cash against Treasuries on demand (its standing repo facility). Its two settlement terms use the size of the day's Treasury settlement as announced the business day before",
     "replaces": "the same model without the announced settlement size",
     "base": "The tables are not the candidate's own: they are for its base, the same model without the announced settlement size or the cap, scored on the record below; the candidate's own scores are on the last study page."
+  },
+  "current_model": {
+    "about": "The wording of the current-model paragraph, the limits and what comes next on the results page, rendered with docs/research/h5-candidate.json (which model, whether it is frozen or registered, its open failures with the figures of their result records). Draft for Eleonora's review (Q2 of the pull request that adds it). The checker refuses a failure of the candidate file without a line here.",
+    "incumbent": "The published model is the project's forecast that learns from many inputs at once and corrects its range from its own recent misses. The scoring rules compare any candidate with it.",
+    "candidate": "The research candidate is {description}.",
+    "frozen": "It was frozen on {frozen}, so it does not change while its limits are measured.",
+    "not_registered": "It is not registered: registering is Eleonora's own act, and it waits on {waiting}.",
+    "registered": "It was registered on {registered}.",
+    "waiting": {
+      "amendment4_coverage": "a coverage report that passes the fourth amendment to the scoring rules"
+    },
+    "failures": {
+      "amendment4_coverage": "It fails the coverage report that the fourth amendment to the scoring rules requires before registration: {failing} of {tests} coverage tests are rejected on past days.",
+      "quarter_end_band": "Its 90% range holds the outcome in a share of {qend} of quarter-end turns and {yend} of year-end days, where 0.900 is claimed (past days)."
+    },
+    "failure_mark": "Figures from past days, development, not a verdict.",
+    "next": {
+      "quarter_end_band": "test a narrower range for quarter-end days on the candidate, with every other forecast unchanged",
+      "registration": "decide the registration once the coverage report passes"
+    },
+    "limits": ["The final test on past data was near-blind, since its days had appeared in earlier results, and the forecast\u2019s central range is not yet fully calibrated (it is still too narrow)."]
   }
 }

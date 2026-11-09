@@ -46,14 +46,15 @@ REGISTER = provisional_register.REGISTER
 STEP4 = "docs/pivot/evidence/h5-step4/score.json"
 STANDINGS = "docs/pivot/evidence/b1-calendar-960/score.json"
 STANDINGS_DECLARATION = "metadata/b1_calendar_960.json"
-#: The current H5 candidate (#1152): a small committed record of Eleonora's ruling. The standings read the candidate
-#: from it and fall back to the step 4 record only when it is absent. Its scores are #1145's `result.json` (#1173).
+#: The current H5 candidate (#1152): a small committed record of Eleonora's ruling, and since #1532 the one source of
+#: the page's model naming: the candidate, the incumbent, whether it is frozen or registered, its open failures and
+#: what comes next. The standings read the candidate from it and fall back to the step 4 record only when it is absent.
+#: Its scores are the record it names, `scores.record` (`scores_record`); no other path to them is typed here.
 CANDIDATE = "docs/research/h5-candidate.json"
-CANDIDATE_SCORES = "docs/research/state-calendar-1145/result.json"
 #: Every source the page is built from: the one list a new input is added to (#1059). `LOG` and `HYPOTHESES` are
 #: directories; `input_files` expands them, and `emit_visual.py` stamps the page with the digest of each.
 INPUTS = (PLAN, LOG, PROGRESS, HYPOTHESES, TAGLINES, SUMMARY, REGISTER, STEP4, STANDINGS, STANDINGS_DECLARATION,
-          CANDIDATE, CANDIDATE_SCORES)
+          CANDIDATE)
 
 DEV_LABEL = "development, not a verdict"
 #: The mark on a figure from a registered result (#1028). It names no issue number: the page is for a lay reader.
@@ -103,11 +104,34 @@ def input_files(repo):
     """The tracked files the page is digested from: the files of `INPUTS`, then the hypothesis manuals. The log is not
     here: it is built from its entry files (#928), and `log_digest` is its digest."""
     files = [rel for rel in INPUTS if rel not in (LOG, HYPOTHESES)]
+    files += [rel for rel in (scores_record(repo), *failure_records(repo)) if rel and rel not in files]
     return files + sorted(str(p.relative_to(repo)) for p in (Path(repo) / HYPOTHESES).glob("H*.md"))
 
 
 def read(repo, rel):
     return (Path(repo) / rel).read_text(encoding="utf-8")
+
+
+def candidate_source(repo):
+    """The page source `CANDIDATE` as data, or None when the file is absent."""
+    path = Path(repo) / CANDIDATE
+    return json.loads(path.read_text(encoding="utf-8")) if path.exists() else None
+
+
+def scores_record(repo):
+    """The record section 1's scores are read from: `scores.record` of the source (#1532), or None."""
+    try:
+        return candidate_source(repo)["scores"]["record"]
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+
+
+def failure_records(repo):
+    """The `result.json` of each open failure the source lists (#1532); each is a page input."""
+    try:
+        return [f["result_json"] for f in (candidate_source(repo) or {}).get("open_failures", ())]
+    except (TypeError, KeyError):
+        return []
 
 
 # ---------------------------------------------------------------- parsing
@@ -341,6 +365,9 @@ def _plain_strings(node):
     if isinstance(node, dict):
         for value in node.values():
             yield from _plain_strings(value)
+    elif isinstance(node, list):
+        for value in node:
+            yield from _plain_strings(value)
     elif isinstance(node, str):
         yield node
 
@@ -351,11 +378,11 @@ def load_plain(repo):
     Refused when one is missing, or when any line of them names something internal (`INTERNAL_PAGE`).
     """
     data = json.loads(read(repo, SUMMARY))
-    for part in ("questions", "models", "day_types", "candidate"):
+    for part in ("questions", "models", "day_types", "candidate", "current_model"):
         if not data.get(part):
             raise ResearchError(f"{SUMMARY}: no plain {part}")
-    for part in ("questions", "models", "day_types", "candidate"):
-        for text in _plain_strings(data[part]):
+    for part in ("questions", "models", "day_types", "candidate", "current_model"):
+        for text in _plain_strings({k: v for k, v in data[part].items() if k != "about"}):
             if INTERNAL_PAGE.search(text):
                 raise ResearchError(f"{SUMMARY}: a line of {part} names something internal: {text!r}")
     return data
@@ -380,7 +407,104 @@ def load_summary(repo, hypotheses, links):
     return aims, nexts
 
 
-def summary_html(hypotheses, links, aims, nexts):
+MONTHS = ("January", "February", "March", "April", "May", "June", "July", "August", "September", "October",
+          "November", "December")
+
+
+def long_date(iso):
+    """"2026-11-02" as "2 November 2026"."""
+    year, month, day = (int(x) for x in iso.split("-"))
+    return f"{day} {MONTHS[month - 1]} {year}"
+
+
+def format_value(value):
+    """A figure copied from a result record: an integer as it is, a share to three places."""
+    return f"{value:.3f}" if isinstance(value, float) else str(value)
+
+
+def current_model_plain(repo):
+    """The source and its plain wording, or None when the source has no `state` (no model naming then)."""
+    src = candidate_source(repo)
+    if not src or "state" not in src:
+        return None
+    return src, load_plain(repo)["current_model"]
+
+
+def failure_lines(repo, links=False):
+    """One (key, html) line for each open failure the source lists (#1532), its figures copied from the failure's own
+    `result.json` through the paths the source gives. Refused when a failure has no plain line or a path is absent.
+    `links` adds a link to the failure's result page: the executive summary carries none (#1352), section 1 does."""
+    found = current_model_plain(repo)
+    if not found:
+        return []
+    src, words = found
+    lines = []
+    for failure in src.get("open_failures", ()):
+        template = words["failures"].get(failure["key"])
+        if not template:
+            raise ResearchError(f"{SUMMARY}: the open failure {failure['key']} of {CANDIDATE} has no plain line")
+        record = json.loads(read(repo, failure["result_json"]))
+        values = {}
+        for name, path in failure["values"].items():
+            node = record
+            for step in path:
+                try:
+                    node = node[step]
+                except (KeyError, IndexError, TypeError):
+                    raise ResearchError(f"{failure['result_json']}: no {'/'.join(map(str, path))} for {failure['key']}") from None
+            values[name] = format_value(node)
+        link = f' (<a href="{BLOB}{esc(failure["page"])}">the record</a>)' if links else ""
+        lines.append((failure["key"], esc(template.format(**values)) + link))
+    return lines
+
+
+def current_model_html(repo, links=False):
+    """The current-model paragraph (#1532), shown in the executive summary and again in section 1: the published
+    model, the research candidate, whether it is frozen or registered, and each open failure. All of it comes from
+    the source `CANDIDATE` and the plain wording in `SUMMARY`; none is typed here. Empty when there is no source."""
+    found = current_model_plain(repo)
+    if not found:
+        return ""
+    src, words = found
+    state, plain = src["state"], load_plain(repo)
+    parts = [words["incumbent"], words["candidate"].format(description=plain["candidate"]["description"]),
+             words["frozen"].format(frozen=long_date(state["frozen"]))]
+    if state["registered"]:
+        parts.append(words["registered"].format(registered=long_date(state["registered"])))
+    else:
+        waiting = words["waiting"].get(state["waiting_on"])
+        if not waiting:
+            raise ResearchError(f"{SUMMARY}: {CANDIDATE} waits on {state['waiting_on']}, which has no plain line")
+        parts.append(words["not_registered"].format(waiting=waiting))
+    body = " ".join(esc(x) for x in parts) + " " + " ".join(line for _, line in failure_lines(repo, links))
+    return f'<p class="rs-current"><b>Current model.</b> {body} <span class="rs-tag">{esc(DEV_LABEL)}</span></p>'
+
+
+def next_steps(repo):
+    """The plain lines of what comes next for the candidate, in the order the source lists them."""
+    found = current_model_plain(repo)
+    if not found:
+        return []
+    src, words = found
+    out = []
+    for key in src.get("next", ()):
+        if key not in words["next"]:
+            raise ResearchError(f"{SUMMARY}: the next step {key} of {CANDIDATE} has no plain line")
+        out.append(words["next"][key])
+    return out
+
+
+def limits_html(repo):
+    """The sentences after the use limitation on the executive summary's Limits line (#1532): the plain limits of the
+    summary source, then each open failure of the candidate."""
+    found = current_model_plain(repo)
+    if not found:
+        return ""
+    _, words = found
+    return " ".join([esc(x) for x in words["limits"]] + [line for _, line in failure_lines(repo)])
+
+
+def summary_html(hypotheses, links, aims, nexts, current="", candidate_next=()):
     """The executive summary (#893, #1352): plain prose for a reader who may not know the repo market.
 
     It says what the project forecasts, its two aims, whether any conclusion has been reached and what comes next, in
@@ -399,6 +523,8 @@ def summary_html(hypotheses, links, aims, nexts):
         verdict_text = "<b>No conclusions yet.</b>"
     nexts_by_link = {}
     for h in goals:
+        if candidate_next and h["role"] == "primary":
+            continue  # the primary aim's next steps are the candidate source's (#1532)
         opened = next((l for l in links if h["id"] in l["gates"] and not l["done"]), None)
         if opened:
             nexts_by_link.setdefault(opened["id"], (opened, []))[1].append(h)
@@ -407,6 +533,8 @@ def summary_html(hypotheses, links, aims, nexts):
         (f'For {"both aims" if len(gated) == len(goals) > 1 else joined(aim_name[h["role"]] for h in gated)}, '
          f'the next step is to {esc(nexts[link["milestone"]].rstrip("."))}')
         for link, gated in nexts_by_link.values()]
+    if candidate_next:
+        clauses.insert(0, f'For the main aim, the next steps are to {esc(joined(x.rstrip(".") for x in candidate_next))}')
     next_text = ("<b>What comes next.</b> " + "; ".join(clauses) + ".") if clauses else ""
     return (
         '<div class="abstract">'
@@ -415,6 +543,7 @@ def summary_html(hypotheses, links, aims, nexts):
         'banks on the reserves they hold with it, and asks what drives that spread. It has two aims. '
         f'{aim_text} The other research questions in section 2 support those aims or follow from them; each has one '
         'line there, with its details folded beneath it.</p>'
+        + current +
         f'<p>{verdict_text} A conclusion can come only from forecasts made in advance and then checked against what '
         'happened; tests on past data help build and choose a model but never settle the question. Figures '
         f'from those tests are marked &ldquo;{esc(DEV_LABEL)}&rdquo;. A figure from a model that did not yet read the '
@@ -716,7 +845,7 @@ def standings_html(st):
         + (f'<p class="rs-note">The record&rsquo;s own reading rules:</p><ul>{rules}</ul>' if rules else ""))
 
 
-def best_html(final, provisional=False, standing=None):
+def best_html(final, provisional=False, standing=None, current=""):
     """The incumbent and the development leader (#645 §2). `final` is the page's final-test payload.
 
     `provisional` marks the incumbent's figures when the register registers them (#1028). `standing` is
@@ -739,10 +868,7 @@ def best_html(final, provisional=False, standing=None):
         f'<span class="cap">Five-quantile score (mean pinball loss) one day ahead of the published forecast and of persistence; '
         f'lower is better.</span><span class="rs-tag">{esc(DEV_LABEL)}</span>{mark}</aside></div>')
     return (
-        '<p class="lede">No candidate has been registered yet (set down in writing before any new day is scored), so '
-        'the incumbent stands: the project&rsquo;s published forecast, which the scoring rules use as the model a new '
-        'candidate is compared with.</p>'
-        + callouts +
+        current + callouts +
         '<p><span class="runin">The incumbent.</span> '
         f'{esc(figs)} <span class="rs-tag">{esc(DEV_LABEL)}</span>{mark}</p>'
         + standings_html(standing) +
@@ -835,6 +961,8 @@ def fills(repo, final):
     aims, nexts = load_summary(repo, hypotheses, links)
     plain = load_plain(repo)
     incumbent = provisional_register.marks_incumbent(provisional_register.load(repo))
-    return {"research_summary": summary_html(hypotheses, links, aims, nexts), "research_best": best_html(final, incumbent, standings(repo)),
+    return {"research_summary": summary_html(hypotheses, links, aims, nexts, current_model_html(repo), next_steps(repo)),
+            "research_best": best_html(final, incumbent, standings(repo), current_model_html(repo, links=True)),
+            "research_limits": limits_html(repo),
             "research_steps": steps_html(),
             "research_hypotheses": hypotheses_html(hypotheses, plain)}, payload(hypotheses)
