@@ -76,12 +76,15 @@ GRID = sp.GRID
 LAGS = (1, 2, 3, 4, 5, 6)
 MEDIAN = GRID.index(0.5)
 Q25, Q75 = GRID.index(0.25), GRID.index(0.75)
-VARIANTS = ("A1_recentre", "A2_rescale", "A3_both")
+VARIANTS = ("A1_recentre", "A2_rescale", "A3_both", "A4_meanrevert", "A5_fast_rescale")
 MIN_RESOLVED_A1 = 100
 MIN_RESOLVED_A2 = 30
 WINDOW_A2 = 60
 KAPPA_CLAMP = (0.7, 1.5)
 BETA_CLAMP = (0.0, 1.0)
+BETA_CLAMP_A4 = (-1.0, 1.0)
+WINDOW_A5 = 20
+MIN_RESOLVED_A5 = 10
 WARMUP_DAYS = 250
 SIM_PHIS = (0.3, 0.6, 0.9)
 SIM_PATHS = 300
@@ -276,6 +279,57 @@ def lift(n11: Sequence[float], exp: Sequence[float]) -> float:
     return sum(n11) / e if e > 0 else float("nan")
 
 
+def fit_rates(hits: Sequence[int], columns: Sequence[Sequence[bool]], sweeps: int = 400) -> List[float]:
+    """Per-row hit rates of a multiplicative model r_i = b * prod(a_f over the columns f that contain i), fitted in sample by coordinate-wise
+    iterative scaling (the Poisson maximum-likelihood fit), each rate capped below one. Columns may overlap and need not be a partition."""
+
+    n = len(hits)
+    base = max(sum(hits) / n, 1e-9)
+    factor = [1.0] * len(columns)
+    members = [[i for i, v in enumerate(col) if v] for col in columns]
+    fitted = [base] * n
+    for _ in range(sweeps):
+        worst = 0.0
+        for f, idx in enumerate(members):
+            if not idx:
+                continue
+            obs = sum(hits[i] for i in idx)
+            fit = sum(fitted[i] for i in idx)
+            if fit <= 0:
+                continue
+            ratio = max(obs, 1e-9) / fit
+            worst = max(worst, abs(ratio - 1.0))
+            factor[f] *= ratio
+            for i in idx:
+                fitted[i] = min(0.999, fitted[i] * ratio)
+        if worst < 1e-10:
+            break
+    return fitted
+
+
+def typed_lift_terms(hits: Sequence[int], rates: Sequence[float], regimes: Sequence[str], pos: Sequence[int], k: int) -> Tuple[List[float], List[float]]:
+    """As `lift_terms`, with each pair's expectation r_i * r_(i-k) from per-row fitted rates (`fit_rates`) instead of the regime's rate."""
+
+    n = len(hits)
+    n11, exp = [0.0] * n, [0.0] * n
+    for i in range(k, n):
+        if regimes[i] == regimes[i - k] and pos[i] - pos[i - k] == k:
+            n11[i] = float(hits[i] * hits[i - k])
+            exp[i] = rates[i] * rates[i - k]
+    return n11, exp
+
+
+def rate_columns(frame: "Frame", h: int) -> List[List[bool]]:
+    """The covariates of the typed rate at lead h: the decision day's regime, each target-day type of the target, each non-ordinary pressure type."""
+
+    n = len(frame.days)
+    infos = [frame.info[frame.target_date(i, h)] for i in range(n)]
+    cols = [[frame.regimes[i] == r for i in range(n)] for r in sorted(set(frame.regimes))]
+    cols += [[k in infos[i]["types"] for i in range(n)] for k in m63.DAY_TYPES]
+    cols += [[infos[i]["pressure"] == p for i in range(n)] for p in sorted({v["pressure"] for v in infos}) if p != "ordinary"]
+    return cols
+
+
 def mean_abs_dev(quantiles: Sequence[float]) -> float:
     """The forecast's own mean absolute deviation about its median: the grid quantiles weighted by half the gap between neighbouring levels."""
 
@@ -336,12 +390,14 @@ def adjust(frame: Frame, variant: str) -> List[Dict[int, List[float]]]:
 
     if variant not in VARIANTS:
         raise ValueError(f"unknown variant {variant!r}")
-    use1, use2 = variant in ("A1_recentre", "A3_both"), variant in ("A2_rescale", "A3_both")
+    use1, use2 = variant in ("A1_recentre", "A3_both", "A4_meanrevert"), variant in ("A2_rescale", "A3_both", "A5_fast_rescale")
+    beta_clamp = BETA_CLAMP_A4 if variant == "A4_meanrevert" else BETA_CLAMP
+    window, minimum = (WINDOW_A5, MIN_RESOLVED_A5) if variant == "A5_fast_rescale" else (WINDOW_A2, MIN_RESOLVED_A2)
     n = len(frame.days)
     e_pub = [public_error(frame, i) for i in range(n)]
     out: List[Dict[int, List[float]]] = []
     target_positions = {h: [p + h for p in frame.pos] for h in LEADS}
-    state = {h: {"done": 0, "sxy": 0.0, "sxx": 0.0, "cnt": 0, "win": deque(maxlen=WINDOW_A2)} for h in LEADS}
+    state = {h: {"done": 0, "sxy": 0.0, "sxx": 0.0, "cnt": 0, "win": deque(maxlen=window)} for h in LEADS}
     used: List[Dict[int, Tuple[float, float]]] = [dict() for _ in range(n)]  # (median used, unscaled forecast spread) of each cell
     for i in range(n):
         dp = frame.pos[i]
@@ -361,10 +417,10 @@ def adjust(frame: Frame, variant: str) -> List[Dict[int, List[float]]]:
                 st["win"].append((abs(frame.y[j][h] - median_used), spread))
                 st["done"] += 1
             q = frame.q[i][h]
-            beta = clamp(st["sxy"] / st["sxx"], BETA_CLAMP) if st["cnt"] >= MIN_RESOLVED_A1 and st["sxx"] > 0 else 0.0
+            beta = clamp(st["sxy"] / st["sxx"], beta_clamp) if st["cnt"] >= MIN_RESOLVED_A1 and st["sxx"] > 0 else 0.0
             shift = beta * e_pub[i] if use1 and e_pub[i] is not None else 0.0
             kappa = 1.0
-            if use2 and len(st["win"]) >= MIN_RESOLVED_A2:
+            if use2 and len(st["win"]) >= minimum:
                 spread_sum = sum(s for _a, s in st["win"])
                 if spread_sum > 0:
                     kappa = clamp(sum(a for a, _s in st["win"]) / spread_sum, KAPPA_CLAMP)
@@ -527,6 +583,13 @@ def lag_profile(frame: Frame, reg: Registry, tag: str, levels: Sequence[float] =
                 point[name] = {"lead": h, "level": level, "lag": k, "lift": lift(n11, exp), "pairs_hit": sum(n11), "pairs_expected": sum(exp)}
                 if level in (0.05, 0.95):
                     reg.ratio(name, (f"n11|{h}|{level}|{k}", n11), (f"exp|{h}|{level}|{k}", exp))
+            if level in (0.05, 0.95):
+                rates = fit_rates(hits, rate_columns(frame, h))
+                for k in LAGS:
+                    n11, exp = typed_lift_terms(hits, rates, frame.regimes, frame.pos, k)
+                    name = f"{tag}|tadj|{h}|{level:g}|{k}"
+                    point[name] = {"lead": h, "level": level, "lag": k, "lift": lift(n11, exp), "pairs_hit": sum(n11), "pairs_expected": sum(exp)}
+                    reg.ratio(name, (f"tn11|{h}|{level}|{k}", n11), (f"texp|{h}|{level}|{k}", exp))
     return point
 
 

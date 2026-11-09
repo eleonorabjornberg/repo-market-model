@@ -153,6 +153,32 @@ class LiftTests(unittest.TestCase):
         self.assertAlmostEqual(script.lift(n11, exp), 1.0, places=9)
 
 
+class RateFitTests(unittest.TestCase):
+    def test_the_fit_recovers_group_rates_on_a_partition(self):
+        rng = random.Random(2)
+        a = [rng.random() < 0.5 for _ in range(3000)]
+        hits = [int(rng.random() < (0.30 if x else 0.02)) for x in a]
+        rates = script.fit_rates(hits, [a, [not x for x in a]])
+        self.assertAlmostEqual(sum(r for r, x in zip(rates, a) if x) / sum(a), sum(h for h, x in zip(hits, a) if x) / sum(a), places=6)
+        self.assertAlmostEqual(sum(rates), sum(hits), places=4)
+
+    def test_adjacent_days_that_share_a_day_type_lift_less_once_the_rate_is_typed(self):
+        # hits only on "calendar" days, which come in pairs of adjacent days: a regime-only lift is high, a typed lift is about one
+        rng = random.Random(8)
+        flag, hits = [], []
+        for _ in range(4000):
+            on = rng.random() < 0.1
+            flag += [on, on]
+            hits += [int(on and rng.random() < 0.3), int(on and rng.random() < 0.3)]
+        n = len(hits)
+        pos = list(range(n))
+        plain = script.lift(*script.lift_terms(hits, ["r"] * n, pos, 1))
+        rates = script.fit_rates(hits, [flag, [not x for x in flag]])
+        typed = script.lift(*script.typed_lift_terms(hits, rates, ["r"] * n, pos, 1))
+        self.assertGreater(plain, 1.5)
+        self.assertAlmostEqual(typed, 1.0, delta=0.2)
+
+
 class SpreadMeasureTests(unittest.TestCase):
     def test_the_mean_absolute_deviation_of_a_normal_forecast_is_its_expectation(self):
         q = [N.inv_cdf(level) * 2.0 for level in sp.GRID]
@@ -170,7 +196,7 @@ class AdjustmentTests(unittest.TestCase):
 
     def test_a_forecast_with_nothing_to_learn_is_left_alone_early_on(self):
         frame = self.frame(n_days=60)
-        for variant in ("A1_recentre", "A2_rescale", "A3_both"):
+        for variant in script.VARIANTS:
             adjusted = script.adjust(frame, variant)
             # fewer than 100 (A1) or 30 (A2) resolved cells in the first days: unchanged
             self.assertEqual(adjusted[0][1], frame.q[0][1], variant)
@@ -193,6 +219,23 @@ class AdjustmentTests(unittest.TestCase):
         self.assertGreater(after, 1.4 * before)  # the forecast is half as wide as the data: the ratio is about 2, clamped at 1.5
         self.assertLessEqual(after, script.KAPPA_CLAMP[1] * before * (1 + 1e-9))
 
+    def test_a_negative_public_error_slope_is_taken_up_only_by_the_variant_that_allows_it(self):
+        # an ignorant forecast (median 0) of a spread with y_t = -0.6 y_(t-2) + noise: the public error predicts the target's with a negative sign
+        doc = walk_doc(n_days=700, phi=0.0)
+        rng = random.Random(6)
+        cal = doc["calendar"]
+        y = {}
+        for i, d in enumerate(cal):
+            y[d] = rng.gauss(0, 1) - (0.6 * y[cal[i - 2]] if i >= 2 else 0.0)
+        for t in doc["outcome"]:
+            doc["outcome"][t] = y[t]
+        doc["models"][script.CANDIDATE] = [[N.inv_cdf(level) for level in sp.GRID] for _ in doc["cells"]]
+        frame = script.Frame.from_window(script.load_window_doc(doc))
+        a1 = script.adjust(frame, "A1_recentre")
+        a4 = script.adjust(frame, "A4_meanrevert")
+        self.assertEqual(a1[-1][1], frame.q[-1][1])  # beta clamped at zero
+        self.assertNotEqual(a4[-1][1], frame.q[-1][1])
+
     def test_an_adjusted_forecast_keeps_its_quantiles_ordered(self):
         frame = self.frame(n_days=400, phi=0.8)
         for variant in script.VARIANTS:
@@ -206,12 +249,15 @@ class AdjustmentTests(unittest.TestCase):
         self.assertEqual(script.MIN_RESOLVED_A1, 100)
         self.assertEqual(script.MIN_RESOLVED_A2, 30)
         self.assertEqual(script.WINDOW_A2, 60)
+        self.assertEqual((script.WINDOW_A5, script.MIN_RESOLVED_A5), (20, 10))
+        self.assertEqual(script.BETA_CLAMP_A4, (-1.0, 1.0))
         self.assertEqual(script.KAPPA_CLAMP, (0.7, 1.5))
         self.assertEqual(script.BETA_CLAMP, (0.0, 1.0))
         self.assertEqual(len(script.VARIANTS), a["variant_count"])
         self.assertEqual(script.SEED, 1523)
         self.assertEqual(script.REPS, 2000)
         self.assertEqual(sorted(DECLARATION["variants"]), sorted(("sc_s3c_ann_net",) + tuple(script.VARIANTS)))
+        self.assertEqual(len(DECLARATION["amendments"]), 1)
 
 
 class GuardTests(unittest.TestCase):
