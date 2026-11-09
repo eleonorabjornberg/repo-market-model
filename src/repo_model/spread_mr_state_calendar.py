@@ -162,9 +162,13 @@ PRICE_EXTRAS: Tuple[str, ...] = (BILL_LESS_IORB,)
 #: `satiation_dist_roll` and `satiation_hinge_roll` of `repo_model.satiation` (#598). Continuous states of the decision row, not 0/1 flags.
 SATIATION_DIST, SATIATION_HINGE = "satiation_dist", "satiation_hinge"
 SATIATION_EXTRAS: Tuple[str, ...] = (SATIATION_DIST, SATIATION_HINGE)
+#: The reserves ratio R, in percentage points, and the scarcity state S over `STATE_MAX`, both as the decision row reads them (#1526, `repo_model.s3c_rs`):
+#: continuous states of the decision row, not 0/1 flags. (s3c-ann-net) reads neither; its scarcity state is held at its maximum.
+RS_RATIO, RS_STATE = "rs_ratio", "rs_state"
+RS_EXTRAS: Tuple[str, ...] = (RS_RATIO, RS_STATE)
 #: Every `extra` term: it is read from `pair.extras` and not from the flags.
 EXTRA_TERMS: Tuple[str, ...] = (
-    IORB_EXTRAS + SIZE_EXTRAS + CMB_EXTRAS + OPS_EXTRAS + MISSING_EXTRAS + PRICE_EXTRAS + (H9_FORECAST,) + SATIATION_EXTRAS
+    IORB_EXTRAS + SIZE_EXTRAS + CMB_EXTRAS + OPS_EXTRAS + MISSING_EXTRAS + PRICE_EXTRAS + (H9_FORECAST,) + SATIATION_EXTRAS + RS_EXTRAS
 )
 #: An IORB change that is not a multiple of 25 bp is a technical adjustment: the rule of `setup_diagnostic`.
 technical = setup_diagnostic.is_technical
