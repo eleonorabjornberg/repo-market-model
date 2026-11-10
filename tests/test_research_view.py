@@ -585,7 +585,8 @@ class CandidateStandings(unittest.TestCase):
 
     def test_the_candidate_file_is_a_page_input(self):
         self.assertIn(self.CANDIDATE, research_view.INPUTS)
-        self.assertIn("docs/research/state-calendar-1145/result.json", research_view.INPUTS)
+        # the scores are read from the record the file names (#1532), so that record is an input through the file
+        self.assertIn(self.record()["scores"]["record"], research_view.input_files(ROOT))
 
 
 class Sources(unittest.TestCase):
