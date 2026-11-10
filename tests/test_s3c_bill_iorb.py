@@ -215,7 +215,7 @@ class FitTests(unittest.TestCase):
         self.assertEqual(sc.IORB_EXTRAS, ("iorb_signed", "iorb_technical"))
         self.assertEqual(sc.SIZE_EXTRAS, ("net_coupon", "net_bill", "gross_coupon"))
         self.assertEqual(sc.PRICE_EXTRAS, (sc.BILL_LESS_IORB,))
-        self.assertEqual(sc.EXTRA_TERMS, sc.IORB_EXTRAS + sc.SIZE_EXTRAS + sc.CMB_EXTRAS + sc.OPS_EXTRAS + sc.MISSING_EXTRAS + sc.PRICE_EXTRAS + (sc.H9_FORECAST,) + sc.SATIATION_EXTRAS)  # #1345 adds the H9 forecast, #1507 the satiation extras
+        self.assertEqual(sc.EXTRA_TERMS, sc.IORB_EXTRAS + sc.SIZE_EXTRAS + sc.CMB_EXTRAS + sc.OPS_EXTRAS + sc.MISSING_EXTRAS + sc.PRICE_EXTRAS + (sc.H9_FORECAST,) + sc.SATIATION_EXTRAS + sc.RS_EXTRAS)  # #1526 adds the R+S pair, #1345 adds the H9 forecast, #1507 the satiation extras
 
 
 class ArmTests(unittest.TestCase):

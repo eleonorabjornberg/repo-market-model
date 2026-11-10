@@ -7,10 +7,10 @@
     "H4": 3,
     "H5": 3,
     "H6": 3,
-    "H7": 2,
+    "H7": 3,
     "H8": 3,
     "H9": 3,
-    "H10": 3
+    "H10": 5
   },
   "milestones": {
     "H1.M1": {"evidence": "tests/test_scoring_protocol_synthetic.py", "pr": "eleonorabjornberg/repo-market-model#660"},

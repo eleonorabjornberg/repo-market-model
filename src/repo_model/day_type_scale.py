@@ -25,6 +25,8 @@ from .splits import LookAheadError
 TYPES = ("turn", "quarter_end_turn", "tax_date", "year_end", "ordinary")
 NON_ORDINARY = TYPES[:-1]
 ORDINARY = "ordinary"
+#: The quarter-end group of #1531: the target days of these two types (the last business day of a calendar quarter and the first after it).
+GROUP_TYPES = ("quarter_end_turn", "year_end")
 #: The fewest training pairs of a type, at one lead, that fit a multiplier; below it the multiplier is 1.
 MIN_ROWS = 10
 #: The multiplier is clamped to these.
@@ -113,3 +115,66 @@ def rescale_day(
     """
 
     return {h: rescaled(forecast[h], estimates[h].pool, scale, by_lead[h][target_types[h]]) for h in forecast}
+
+
+# -- the shrunk quarter-end-only arm of #1531 ------------------------------------------------------------------------------------
+
+
+def shrink_weight(n: int, k: float) -> float:
+    """`n / (n + k)`: the weight of the raw ratio when the group has `n` training pairs and the constant is `k` (0 when both are 0).
+
+    Raises:
+        ValueError: `n` or `k` is negative.
+    """
+
+    if n < 0 or k < 0:
+        raise ValueError(f"the shrinkage needs n >= 0 and k >= 0, got n = {n} and k = {k}")
+    return n / (n + k) if n + k > 0 else 0.0
+
+
+def shrunk(m_raw: float, n: int, k: float) -> float:
+    """`1 + w (m_raw - 1)` with `w = n / (n + k)`: the raw multiplier moved part of the way from 1."""
+
+    return 1.0 + shrink_weight(n, k) * (m_raw - 1.0)
+
+
+def group_multiplier(
+    estimate, labels: Mapping[int, str], anchor: int, *, k: float, group: Sequence[str] = GROUP_TYPES, minimum: int = MIN_ROWS,
+    bounds: Sequence[float] = BOUNDS,
+) -> Dict[str, float]:
+    """The shrunk multiplier of a group of types for one refit and lead (#1531): `{"m_raw", "n", "w", "m"}`.
+
+    `m_raw` is #1402's root-mean-square ratio (about the pool's median) of the group's training residuals, taken as one set, to all training
+    residuals, 1 when the group has fewer than `minimum` pairs or the refit has no spread, clamped to `bounds`; `n` is the group's pair count and
+    `m = 1 + w (m_raw - 1)`, `w = n / (n + k)`. `labels[row]` is the pressure-day type of a panel row; `anchor` the last row public at the decision.
+
+    Raises:
+        LookAheadError: a training target is after `anchor`.
+        ValueError: a target row has no label, a label is not in `TYPES`, or `k` is negative.
+    """
+
+    z, targets = estimate.residuals, estimate.targets
+    if len(z) != len(targets):
+        raise ValueError(f"{len(z)} residuals for {len(targets)} targets")
+    centre = pool_centre(estimate.pool)
+    inside, everything = 0.0, 0.0
+    n = 0
+    for value, target in zip(z, targets):
+        if target > anchor:
+            raise LookAheadError(f"training target row {target} is after the anchor row {anchor}: its residual is not public at the decision")
+        if target not in labels:
+            raise ValueError(f"training target row {target} has no pressure-day type")
+        label = labels[target]
+        if label not in TYPES:
+            raise ValueError(f"pressure-day type {label!r} is not one of {TYPES}")
+        square = (value - centre) ** 2
+        everything += square
+        if label in group:
+            inside += square
+            n += 1
+    m_raw = 1.0
+    if z and everything > 0.0 and n >= minimum:
+        low, high = bounds
+        m_raw = min(max(math.sqrt(inside / n / (everything / len(z))), low), high)
+    w = shrink_weight(n, k)
+    return {"m_raw": m_raw, "n": n, "w": w, "m": 1.0 + w * (m_raw - 1.0)}
