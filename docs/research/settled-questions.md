@@ -11,7 +11,7 @@
 - **excluded**: she ruled it out, with the ruling.
 - **untested**: never run.
 
-A study that ran but read undecided, or covered only part of its question, fits none of the four cleanly. Those entries are in the last section, with no status, and the pull request that added them raises each as a question for her. This page does not settle them.
+A study that ran but read undecided, or covered only part of its question, fits none of the four cleanly. Those entries are in the last section, with no status, and the pull request that added them raised each as a question for her. This page does not settle them.
 
 **Adding an entry.** Cite a page, not memory. Give the question in one sentence, the studies (issue and result page), the answer, and what would reopen it. If a page leaves the question open, say "open" and name what is missing. `tests/test_settled_questions_register.py` checks the statuses, the fields and that each entry cites an issue.
 
@@ -129,9 +129,25 @@ A study that ran but read undecided, or covered only part of its question, fits 
 - **Answer:** Never run.
 - **Would reopen it:** Nothing needs to; it is open to a directive. #1528 (open) decides how the coverage it would be judged on is read.
 
+### S15. Signed net settlement and the IORB sign
+
+- **Status:** untested
+- **Question:** Do the signed net settlement size, the announced IORB change with its sign, and the net-by-scarcity interaction improve the candidate?
+- **Studies:** #1273 (`docs/research/s3c-net-settlement-1273-result.md`), #1321 (`docs/research/s3c-flagnet-gross-1321-result.md`), #1227 (`docs/research/s3-iorbs-1227-result.md`), and the IORB row of #1483 (`docs/research/family-ablation-1483-result.md`).
+- **Answer:** The net by scarcity interaction is untested. Eleonora ruled so on 10 November 2026; the 30 October scope decision was not a verdict. The parts that ran: #1273: net in place of gross, 2026 days +0.5% [+0.0%, +1.0%] (a gain), development window -0.1% [-0.2%, +0.1%] (undecided), with a loss on upper-tail twCRPS and Brier on the development window. #1321: flag-plus-net against (s3c-ann-net) +0.6% [-0.4%, +1.4%] (undecided); the gross-sized arm +0.4% [-0.4%, +1.5%] on the development window and -3.5% [-8.9%, -0.9%] on the 2026 days. #1227: signed IORB change d +0.001 [-0.002, +0.005] against (s3), undecided, one regime loss (2024). #1483: IORB terms undecided in both windows. The interaction was left out of #1321 by her ruling of 30 October 2026 ("the net x scarcity interaction in #1318 is not part of this ruling; leave it out"), a scope decision.
+- **Would reopen it:** Nothing needs to; it is open to a directive. The narrower reading of the signed IORB change (target row alone, lead 1 only) was not tried (#1227). The net by scarcity interaction was never run as its own arm; #1350 built an (s3c-ann-net x state) arm for its H.4.1 comparison only, and S6 covers the state alone.
+
+### S16. The cash management bill term
+
+- **Status:** failed
+- **Question:** Does giving the cash management bill its own term, read from the announcement, remove the candidate's 2020 loss against (s3c) and improve it?
+- **Studies:** #1356 (`docs/research/s3c-ann-net-cmb-1356-result.md`), development window and 2026 days.
+- **Answer:** No. It did not remove the 2020 loss on the mean-d bound, and pooled it was undecided. Pooled grid CRPS against the candidate: flag form +0.0% [-0.2%, +0.6%] and size form +0.0% [-0.2%, +0.4%], both undecided, and undecided on the 2026 days. In 2020 against (s3c) the flag form is -1.4% [-3.2%, +0.4%] and the size form -1.5% [-3.1%, +0.0%], both still read as a loss on the mean-d bound. Both are read worse than the candidate in 2024.
+- **Would reopen it:** A different handling of the bill days than the announced term. The page ends with her question whether a form replaces the candidate (default no).
+
 ## Awaiting her classification
 
-Each entry below ran, but read undecided or covered only part of its question. Eleonora's ruling of 9 November 2026 says these are raised as questions, not settled. They carry no status until she answers on the pull request that added this page. "Open" names what is missing.
+Each entry below ran, but read undecided or covered only part of its question. Eleonora's ruling of 9 November 2026 says these are raised as questions, not settled. They carry no status until she classifies them. Q5 and Q6 were classified on 10 November 2026 and are S15 and S16; she ruled Q3 stays awaiting. "Open" names what is missing.
 
 ### Q1. The coverage test's size and power under the publication delay
 
@@ -152,7 +168,7 @@ Each entry below ran, but read undecided or covered only part of its question. E
 - **Question:** Does one residual-scale factor for the four non-ordinary pressure-day types together (ordinary days left as the candidate) improve the candidate?
 - **Studies:** #1402 (`docs/research/day-type-scale-1402-result.md`). The all-types-unshrunk arm of the same page is S2.
 - **Answer so far:** Pooled grid CRPS +0.8% [-0.2%, +2.8%], undecided. It gains on quarter_end_turn (+7.6% [+4.4%, +11.0%]), is undecided on turn, tax_date and on all non-ordinary days together (+2.7% [-0.0%, +6.8%]) and equals the candidate on ordinary days. On the 2026 days both arms lose on the non-ordinary target days.
-- **Open:** A reading on prospective quarter-end days; the 2026 days are too few to decide, and the page ends with her question on whether the result enters the registration's known limits.
+- **Open:** She ruled on 10 November 2026 that this stays awaiting. A reading on prospective quarter-end days; the 2026 days are too few to decide, and the page ends with her question on whether the result enters the registration's known limits.
 
 ### Q4. A shorter training window and a different refit cadence
 
@@ -161,25 +177,11 @@ Each entry below ran, but read undecided or covered only part of its question. E
 - **Answer so far:** Trailing one year: grid CRPS +0.9% [-0.2%, +2.0%], undecided, with a gain on upper-tail twCRPS (+0.9% [+0.0%, +1.9%]); refit every 63 loses slightly (about 0.6%); refit every 5 undecided on grid CRPS. None replaces the candidate. Where readings against the benchmarks change, it is by group (the one-year window most, in 2020 and 2021-23), with some chance flags.
 - **Open:** Her answer to the page's question on which reading of "expanding" she meant, and a prospective reading; the one-year window's gain sits on days already seen.
 
-### Q5. Signed net settlement and the IORB sign
-
-- **Question:** Do the signed net settlement size, the announced IORB change with its sign, and the net-by-scarcity interaction improve the candidate?
-- **Studies:** #1273 (`docs/research/s3c-net-settlement-1273-result.md`), #1321 (`docs/research/s3c-flagnet-gross-1321-result.md`), #1227 (`docs/research/s3-iorbs-1227-result.md`), and the IORB row of #1483 (`docs/research/family-ablation-1483-result.md`).
-- **Answer so far:** #1273: net in place of gross, 2026 days +0.5% [+0.0%, +1.0%] (a gain), development window -0.1% [-0.2%, +0.1%] (undecided), with a loss on upper-tail twCRPS and Brier on the development window. #1321: flag-plus-net against (s3c-ann-net) +0.6% [-0.4%, +1.4%] (undecided); the gross-sized arm +0.4% [-0.4%, +1.5%] on the development window and -3.5% [-8.9%, -0.9%] on the 2026 days. #1227: signed IORB change d +0.001 [-0.002, +0.005] against (s3), undecided, one regime loss (2024). #1483: IORB terms undecided in both windows. The net by scarcity interaction was left out of #1321 by her ruling of 30 October 2026 ("the net x scarcity interaction in #1318 is not part of this ruling; leave it out"), which is a scope decision, not a verdict.
-- **Open:** The narrower reading of the signed IORB change (target row alone, lead 1 only) was not tried (#1227). The net by scarcity interaction was never run as its own arm; #1350 built an (s3c-ann-net x state) arm for its H.4.1 comparison only, and S6 covers the state alone. Whether the 30 October exclusion makes the interaction excluded or untested is hers.
-
-### Q6. The cash management bill term
-
-- **Question:** Does giving the cash management bill its own term, read from the announcement, remove the candidate's 2020 loss against (s3c) and improve it?
-- **Studies:** #1356 (`docs/research/s3c-ann-net-cmb-1356-result.md`), development window and 2026 days.
-- **Answer so far:** Pooled grid CRPS against the candidate: flag form +0.0% [-0.2%, +0.6%] and size form +0.0% [-0.2%, +0.4%], both undecided, and undecided on the 2026 days. In 2020 against (s3c) the flag form is -1.4% [-3.2%, +0.4%] and the size form -1.5% [-3.1%, +0.0%], both still read as a loss on the mean-d bound. Both are read worse than the candidate in 2024. The arm does not remove the 2020 loss on the mean-d bound.
-- **Open:** The page ends with her question whether a form replaces the candidate (default no). The study read undecided pooled, so it is not classed as failed here.
-
 ### Q7. The candidate's 2020 losses against (s3c)
 
 - **Question:** Why does (s3c-ann-net) lose to (s3c) in 2020, and what removes it?
-- **Studies:** #1319 (`docs/research/s3c-ann-net-diagnosis-1319-result.md`), #1321 (`docs/research/s3c-flagnet-gross-1321-result.md`), #1344 (`docs/research/s3c-flagnet-diagnosis-1344-result.md`), #1356 (Q6).
-- **Answer so far:** #1319: both announced arms lose to (s3c) in 2020 (-4.1% flag, -2.0% net on grid CRPS), mostly March to June; the net arm's cash-management-bill dating is not ruled out (those days carry 67.5% of its 2020 loss, and without them it is -0.9%, undecided). #1344, for the flag-plus-net arm: the 2020 loss (-3.2%) is not an over-shift of the settlement term (the fitted +1.38 bp against a realised premium of +0.28 bp [-0.37, +1.16], bias interval containing zero) and stays with the immediate-release cash management bill days left out. #1356 (Q6) did not remove it.
+- **Studies:** #1319 (`docs/research/s3c-ann-net-diagnosis-1319-result.md`), #1321 (`docs/research/s3c-flagnet-gross-1321-result.md`), #1344 (`docs/research/s3c-flagnet-diagnosis-1344-result.md`), #1356 (S16).
+- **Answer so far:** #1319: both announced arms lose to (s3c) in 2020 (-4.1% flag, -2.0% net on grid CRPS), mostly March to June; the net arm's cash-management-bill dating is not ruled out (those days carry 67.5% of its 2020 loss, and without them it is -0.9%, undecided). #1344, for the flag-plus-net arm: the 2020 loss (-3.2%) is not an over-shift of the settlement term (the fitted +1.38 bp against a realised premium of +0.28 bp [-0.37, +1.16], bias interval containing zero) and stays with the immediate-release cash management bill days left out. #1356 (S16) did not remove it.
 - **Open:** The cause. Three hypotheses were tested and none supported or rejected cleanly (over-shift, bill dating, the cash management bill term). What is missing is a reading that separates March to June 2020 from the rest of the year.
 
 ### Q8. H10, the residual dominating the attribution of pressure episodes

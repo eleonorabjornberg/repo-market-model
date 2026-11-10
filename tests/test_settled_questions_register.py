@@ -174,6 +174,17 @@ class RegisterTests(unittest.TestCase):
         for word in SEED_WORDS:
             self.assertIn(word, self.text, "the seed term %r is missing from the register" % word)
 
+    def test_her_ruling_of_10_november_is_in_the_register(self):
+        """Q5 (net settlement x scarcity) untested, Q6 (CMB term, #1356) failed, Q3 (#1402) still awaiting."""
+        status = {title.split(".")[0]: STATUS_LINE.search(body).group(1) for title, body in self.classified}
+        self.assertEqual(status.get("S15"), "untested")
+        self.assertEqual(status.get("S16"), "failed")
+        titles = [title.split(".")[0] for title, _ in self.awaiting]
+        self.assertIn("Q3", titles)
+        self.assertNotIn("Q5", titles)
+        self.assertNotIn("Q6", titles)
+        self.assertNotRegex(self.text, r"\(Q6\)")
+
     def test_the_four_statuses_are_all_defined_in_the_register(self):
         for status in STATUSES:
             self.assertRegex(self.text, r"\*\*%s\*\*" % status)
