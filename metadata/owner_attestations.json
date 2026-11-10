@@ -293,6 +293,13 @@
       "comment_id": 6730682161,
       "phrase": "GO #1522",
       "what": "docs/decisions/scoring-protocol.md amendment 4 put in force as set, COVERAGE_REQUIREMENT_IN_FORCE on (PR #1524); her 8 November 2026 docket ruling 'bar' on #1520"
+    },
+    {
+      "kind": "claude-files",
+      "issue": 1534,
+      "comment_id": 6780785264,
+      "phrase": "GO #1534",
+      "what": ".claude/ agents and directive-orchestrator skill: the H5 candidate process (PR #1541); her 10 November 2026 docket answer 'go'"
     }
   ],
   "rule": "docs/decisions/drafts/owner-attestation.md",
