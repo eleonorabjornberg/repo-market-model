@@ -128,8 +128,8 @@ class AsOfTests(unittest.TestCase):
         self.assertEqual(a, b)
 
     def test_a_wide_realised_spread_widens_and_a_narrow_one_narrows(self):
-        wide = [cell("2020-01-01", f"2020-02-{i:02d}", y=(5.0 if i % 2 else -5.0)) for i in range(1, 28)]
-        narrow = [cell("2020-01-01", f"2020-02-{i:02d}", y=(0.1 if i % 2 else -0.1)) for i in range(1, 28)]
+        wide = [cell("2020-01-01", f"2020-02-{i:02d}", y=5.0 * (i - 14) / 13) for i in range(1, 28)]
+        narrow = [cell("2020-01-01", f"2020-02-{i:02d}", y=0.1 * (i - 14) / 13) for i in range(1, 28)]
         group_of = lambda c: ["dom_19_23"]  # noqa: E731
         w = script.walk_forward_factors(wide, ["2020-03-01"], group_of, k=10, min_train=5)["2020-03-01"]
         n = script.walk_forward_factors(narrow, ["2020-03-01"], group_of, k=10, min_train=5)["2020-03-01"]
