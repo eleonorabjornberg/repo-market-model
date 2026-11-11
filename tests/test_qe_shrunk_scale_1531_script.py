@@ -130,7 +130,7 @@ class EndToEndTests(unittest.TestCase):
     def test_the_page_carries_the_kill_the_event_count_and_ends_with_the_marked_question(self):
         text = self.page.read_text(encoding="utf-8")
         self.assertIn("**Against the declared kill:", text)
-        self.assertIn("roughly 30 to 44 is small", text)
+        self.assertIn("That is few, so every interval is wide.", text)
         self.assertIn("#1228 has not ruled", text)
         self.assertIn("### Coverage and tail misses on the group, candidate against arm", text)
         self.assertIn("### Against B3", text)
