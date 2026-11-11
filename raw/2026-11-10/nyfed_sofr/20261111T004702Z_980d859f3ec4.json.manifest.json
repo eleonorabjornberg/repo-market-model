@@ -1,0 +1,8 @@
+{
+  "byte_count": 218428,
+  "path": "nyfed_sofr/20261111T004702Z_980d859f3ec4.json",
+  "retrieved_at": "2026-11-11T00:47:02.615412+00:00",
+  "sha256": "980d859f3ec449de43d2c65ddeb0964ff9e6f91091a1904bafba902c600f6153",
+  "source_id": "nyfed_sofr",
+  "url": "https://markets.newyorkfed.org/api/rates/secured/sofr/search.json?startDate=2018-04-03&endDate=2026-11-10&type=volume"
+}
