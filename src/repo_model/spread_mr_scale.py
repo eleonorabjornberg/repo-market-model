@@ -40,7 +40,7 @@ from . import spread_mr_calendar as cal
 from . import spread_mr_fhs as fhs
 from .data import DailyObservation
 from .evaluation_splits import SplitDeclaration
-from .one_step_guard import guard_one_step_fit
+from .one_step_guard import guard_one_step_fit, guard_pair_stamp, stamp_pairs
 from .scoring_protocol import GRID, HORIZONS, ProtocolError
 from .splits import LookAheadError, SplitError
 
@@ -232,6 +232,7 @@ def type_of(flags: Mapping[str, Optional[int]]) -> Optional[str]:
     return None
 
 
+@guard_pair_stamp("pairs")
 @guard_one_step_fit
 def fit_type_factors(
     pairs: Sequence[Tuple[float, Optional[str]]], *, regressors: Sequence[str], training_pairs: str,
@@ -384,7 +385,7 @@ def fit(
             if not raw:
                 raise smr.InsufficientHistory(f"{dates[decision_index]}: no training pair of lead {h} has a scale")
             if arm.calendar:
-                factors[h] = fit_type_factors(list(zip(raw, kinds)), regressors=regressors_at(h), training_pairs="direct")
+                factors[h] = fit_type_factors(stamp_pairs(list(zip(raw, kinds)), direct=True), regressors=regressors_at(h), training_pairs="direct")
                 raw = [e / factors[h].get(t, 1.0) for e, t in zip(raw, kinds)]
             z[h], origin_of[h], types[h] = raw, kept, kinds
             left_out[h] = len(rows[h]) - len(raw)

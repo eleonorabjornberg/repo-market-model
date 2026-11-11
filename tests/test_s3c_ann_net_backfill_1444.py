@@ -41,6 +41,7 @@ script = importlib.util.module_from_spec(_spec)
 sys.modules["s3c_ann_net_backfill_1444"] = script
 _spec.loader.exec_module(script)
 
+from repo_model import one_step_guard as osg
 from repo_model import backfill, s3c_announced, spread_mr_calendar as cal, spread_mr_state_calendar as sc  # noqa: E402
 from repo_model.data import DailyObservation  # noqa: E402
 from repo_model.splits import LookAheadError  # noqa: E402
@@ -53,6 +54,10 @@ def pair(raw, target, *, quarter=0, coupon=0.0, scale=1.0):
     flags = dict(FLAGS, quarter_end=quarter, settlement_coupon=1 if coupon else 0)
     sizes = {"settlement_coupon": coupon, "settlement_bill": 0.0}
     return sc.StatePair(raw, scale, flags, 1.0, sizes, target - 1, target)
+
+
+def two_stage(pairs, *args):
+    return script.two_stage(osg.stamp_pairs(pairs, direct=True), *args)
 
 
 def many(n, start, **kw):
@@ -112,36 +117,36 @@ class TwoStageTests(unittest.TestCase):
             self.old[i] = pair(1.0, i, quarter=1)
 
     def test_the_extra_quarter_ends_let_the_term_enter(self):
-        published_only = script.two_stage(self.pub, 20, ARM, 1)
-        extended = script.two_stage(self.old + self.pub, 20, ARM, 1)
+        published_only = two_stage(self.pub, 20, ARM, 1)
+        extended = two_stage(self.old + self.pub, 20, ARM, 1)
         self.assertNotIn("quarter_end", published_only.effect)
         self.assertIn("quarter_end", extended.effect)
         self.assertEqual(extended.flagged["quarter_end"], 7)
 
     def test_the_settlement_effect_is_the_published_only_effect(self):
         alone = sc.fit_state_terms(
-            self.pub, regressors=cal.regressors_of(ARM, 1), terms=ARM.location, interact=False, robust=True, training_pairs="direct",
+            osg.stamp_pairs(self.pub, direct=True), regressors=cal.regressors_of(ARM, 1), terms=ARM.location, interact=False, robust=True, training_pairs="direct",
             ridge=ARM.ridge, sized=True)
-        extended = script.two_stage(self.old + self.pub, 20, ARM, 1)
+        extended = two_stage(self.old + self.pub, 20, ARM, 1)
         self.assertAlmostEqual(extended.effect["settlement_coupon"], alone.effect["settlement_coupon"], places=12)
 
     def test_a_back_filled_pair_does_not_move_the_settlement_effect(self):
-        a = script.two_stage(self.old + self.pub, 20, ARM, 1)
-        b = script.two_stage(many(30, -30) + self.old + self.pub, 20, ARM, 1)
+        a = two_stage(self.old + self.pub, 20, ARM, 1)
+        b = two_stage(many(30, -30) + self.old + self.pub, 20, ARM, 1)
         self.assertAlmostEqual(a.effect["settlement_coupon"], b.effect["settlement_coupon"], places=12)
         self.assertEqual(a.flagged["settlement_coupon"], 3)
 
     def test_the_estimate_counts_every_pair_and_keeps_the_arm_sized(self):
-        extended = script.two_stage(self.old + self.pub, 20, ARM, 1)
+        extended = two_stage(self.old + self.pub, 20, ARM, 1)
         self.assertEqual(extended.pairs, len(self.old) + len(self.pub))
         self.assertTrue(extended.sized)
         self.assertEqual(len(extended.residuals), len(self.old) + len(self.pub))
 
     def test_without_back_filled_pairs_it_is_the_arm_as_it_is(self):
         alone = sc.fit_state_terms(
-            self.pub, regressors=cal.regressors_of(ARM, 1), terms=ARM.location, interact=False, robust=True, training_pairs="direct",
+            osg.stamp_pairs(self.pub, direct=True), regressors=cal.regressors_of(ARM, 1), terms=ARM.location, interact=False, robust=True, training_pairs="direct",
             ridge=ARM.ridge, sized=True)
-        same = script.two_stage(self.pub, 20, ARM, 1)
+        same = two_stage(self.pub, 20, ARM, 1)
         self.assertEqual(set(same.effect), set(alone.effect))
         for name, value in alone.effect.items():
             self.assertAlmostEqual(same.effect[name], value, places=6)

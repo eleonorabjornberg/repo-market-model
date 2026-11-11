@@ -25,6 +25,7 @@ import unittest
 from datetime import date
 from unittest import mock
 
+from repo_model import one_step_guard as osg
 from repo_model import spread_mr_calendar as cal
 from repo_model import spread_mr_fhs as fhs
 from repo_model import spread_mr_s3_v4 as v4
@@ -41,7 +42,7 @@ S1, S3 = sc.ARMS[0], sc.ARMS[2]
 
 def fit(pairs, *, arm, terms=("quarter_end",), regressors=("quarter_end",)):
     return sc.fit_state_terms(
-        pairs, regressors=regressors, terms=terms, interact=arm.interact, robust=arm.robust, ridge=arm.ridge, sized=arm.sized,
+        osg.stamp_pairs(pairs, direct=True), regressors=regressors, terms=terms, interact=arm.interact, robust=arm.robust, ridge=arm.ridge, sized=arm.sized,
         training_pairs="direct",
     )
 
@@ -112,7 +113,7 @@ class SettlementSizeTests(unittest.TestCase):
 
     def fit(self, pairs, **kw):
         return sc.fit_state_terms(
-            pairs, regressors=("treasury_settlement_coupons",), terms=self.TERMS, interact=False, robust=False, ridge=0.01,
+            osg.stamp_pairs(pairs, direct=True), regressors=("treasury_settlement_coupons",), terms=self.TERMS, interact=False, robust=False, ridge=0.01,
             sized=True, training_pairs="direct", **kw,
         )
 
@@ -135,10 +136,10 @@ class SettlementSizeTests(unittest.TestCase):
 
     def test_the_flag_arm_ignores_the_size_and_the_sized_arm_ignores_the_flag_alone(self):
         pairs = sized_pairs(coefficient=4.0)
-        flag_fit = sc.fit_state_terms(pairs, regressors=("treasury_settlement_coupons",), terms=self.TERMS, interact=False,
+        flag_fit = sc.fit_state_terms(osg.stamp_pairs(pairs, direct=True), regressors=("treasury_settlement_coupons",), terms=self.TERMS, interact=False,
                                       robust=False, training_pairs="direct")
         bigger = [p._replace(sizes={"settlement_coupon": 5.0 * p.sizes["settlement_coupon"], "settlement_bill": 0.0}) for p in pairs]
-        again = sc.fit_state_terms(bigger, regressors=("treasury_settlement_coupons",), terms=self.TERMS, interact=False,
+        again = sc.fit_state_terms(osg.stamp_pairs(bigger, direct=True), regressors=("treasury_settlement_coupons",), terms=self.TERMS, interact=False,
                                    robust=False, training_pairs="direct")
         self.assertEqual(flag_fit.effect, again.effect)
         floor = [p._replace(state=0.0) for p in pairs]

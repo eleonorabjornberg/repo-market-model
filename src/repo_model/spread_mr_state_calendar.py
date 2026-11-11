@@ -49,7 +49,7 @@ from . import spread_mr_fhs as fhs
 from . import turn_days
 from .data import DailyObservation
 from .evaluation_splits import SplitDeclaration
-from .one_step_guard import guard_one_step_fit
+from .one_step_guard import guard_one_step_fit, guard_pair_stamp, stamp_pairs
 from .scoring_protocol import HORIZONS, ProtocolError
 from .splits import LookAheadError, SplitError
 
@@ -462,6 +462,7 @@ def _entering(
     return tuple(n for n in cal.ALL_TERMS if n in counts and counts[n] >= min_flagged), counts
 
 
+@guard_pair_stamp("pairs")
 @guard_one_step_fit
 def fit_state_terms(
     pairs: Sequence[StatePair],
@@ -648,7 +649,7 @@ def refit(
             if not pairs:
                 raise smr.InsufficientHistory(f"{dates[decision_index]}: no training pair of lead {h} has a scale")
             per_lead[h] = fit_state_terms(
-                pairs, regressors=cal.regressors_of(arm, h), terms=arm.location, interact=arm.interact, robust=arm.robust,
+                stamp_pairs(pairs, direct=training_pairs == "direct"), regressors=cal.regressors_of(arm, h), terms=arm.location, interact=arm.interact, robust=arm.robust,
                 training_pairs=training_pairs, ridge=arm.ridge, sized=arm.sized, extra=arm.extra,
                 calendar_k=arm.calendar_k,
             )
