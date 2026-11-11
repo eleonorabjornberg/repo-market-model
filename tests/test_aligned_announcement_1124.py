@@ -278,7 +278,7 @@ class DirectArmTests(NeedsExtra):
             ml.fit_gradient_boosted_quantiles(panel(), regressors=names, levels=ac.GRID, minimum_history=20)
         self.assertEqual(
             sorted(one_step_guard.ONE_STEP_ALLOW_LIST),
-            ["aligned_calendar_1027_h1", "aligned_calendar_1027_h2_to_h5", "gbm_funding_634", "pressure_model_v2", "published_distribution_crps"],
+            ["gbm_funding_634", "pressure_model_v2", "published_distribution_crps"],
         )
         arm_regressors = {tuple(ac.regressors(script.arm_features(a, h))) for a in script.ARMS for h in (2, 3, 4, 5)}
         listed = {e.regressors for e in one_step_guard.ONE_STEP_ALLOW_LIST.values()}

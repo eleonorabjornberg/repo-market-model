@@ -22,9 +22,10 @@ The only difference between the variants is the pairing; the leaf, seed, fold gr
 grid are `gbm_funding`'s and #951's. The scratch panel is #951's `AUG3` (`gbm_funding`'s published columns plus the net-settlement columns).
 
 **The #947 guard.** `repo_model.one_step_guard` refuses a calendar or scheduled regressor on any one-step fit, whether or not the frame was aligned, and its
-allow-list is pinned and Eleonora's. Variant (ii) passes it (direct pairs are not checked). Variant (i) is admitted by two entries (lead 1; leads 2 to 5,
-which share one set of inputs), allowed by Eleonora on 21 October 2026 and ending on 15 November 2026. An entry matches the fitter and the regressors, not
-the frame, so before every fit `require_aligned` refuses a frame whose target-row columns are not the next row's: the exemption covers the aligned fit only.
+allow-list is pinned and Eleonora's. Variant (ii) passes it (direct pairs are not checked). Variant (i) was admitted by two entries (lead 1; leads 2 to 5) until 15 November 2026; Eleonora's ruling of 11 November 2026 (#1556, option a)
+removed both, so `variant_fit(ALIGNED, ...)` now raises the guard's `ValueError` citing that ruling and `walk` writes nothing. Its published figures
+(the result page, `docs/research/aligned-calendar-1027/`) stand as records and can no longer be reproduced from main. `require_aligned` still refuses an
+unaligned frame, for the stand-in tests of the alignment itself.
 
 The walks are long (`needs-mac`, #46); `score` reads them. The reference walks of `gbm_funding` are #634's (`spread_distribution_634.py walk`).
 
@@ -65,7 +66,7 @@ def _load(name: str):
     return module
 
 
-from repo_model import ml, scoring_protocol as sp  # noqa: E402
+from repo_model import ml, one_step_guard, scoring_protocol as sp  # noqa: E402
 from repo_model.baseline import panel_sha256  # noqa: E402
 from repo_model.data import DailyObservation, audit_panel, load_daily_panel  # noqa: E402
 from repo_model.evaluation_splits import load_split_declaration  # noqa: E402
@@ -223,6 +224,14 @@ def variant_fit(variant: str, features: Sequence[str]):
         raise ValueError(f"{variant!r} is not a declared variant")
 
     def fit(train_frame, minimum_history):
+        try:
+            one_step_guard.check_one_step_regressors("fit_gradient_boosted_quantiles", names)
+        except ValueError as error:
+            raise ValueError(
+                f"{ALIGNED} cannot be re-run: Eleonora's ruling of 11 November 2026 (#1556, option a) removed the two #1027 one-step exemptions from "
+                f"repo_model.one_step_guard.ONE_STEP_ALLOW_LIST, so this one-step fit is refused and nothing falls back to another fit. The published "
+                f"figures stand as records. {error}"
+            ) from error
         aligned = align_columns(train_frame)
         require_aligned(train_frame, aligned)
         return ml.fit_gradient_boosted_quantiles(
@@ -410,7 +419,7 @@ def _task(job):
 def scored_variants(walks: Path) -> Tuple[List[str], Dict[str, str]]:
     """The variants whose five walks exist, and why any other is not run.
 
-    The aligned one-step variant may be absent: `repo_model.one_step_guard` (#947) refuses it until Eleonora admits it by an allow-list entry, so its walks
+    The aligned one-step variant may be absent: `repo_model.one_step_guard` (#947) refuses it (Eleonora's ruling of 11 November 2026, #1556, removed its allow-list entries), so its walks
     write nothing. The direct variant may not be absent, and a variant with some leads walked and others not is an error, never a silent drop (Eleonora,
     21 October 2026: score the direct variant against the control, the aligned one reported as not run).
     """
@@ -423,7 +432,7 @@ def scored_variants(walks: Path) -> Tuple[List[str], Dict[str, str]]:
         elif present:
             raise ValueError(f"{variant} has walks for leads {present} only; walk every lead or none")
         elif variant == ALIGNED:
-            not_run[variant] = "not run: refused by repo_model.one_step_guard (#947) until Eleonora admits it by an allow-list entry per lead"
+            not_run[variant] = "not run: refused by repo_model.one_step_guard (#947); Eleonora's ruling of 11 November 2026 (#1556) removed its allow-list entries"
         else:
             raise ValueError(f"{variant} has no walks; the direct variant is the one calendar first asks for and must be scored")
     return scored, not_run
