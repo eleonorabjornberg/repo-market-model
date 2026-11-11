@@ -19,6 +19,10 @@ repository; nothing lives only in your session (`.claude/routines/README.md`).
   branch for a mechanical conflict (the `remerge-branch` skill); merge a pull request she has approved once it is
   green and clean; relay a ruling she has made, as a comment starting
   "**Ruling (Eleonora, <date>; relayed by the orchestrating session):**"; edit the queue issue's lines.
+- **A ruling that changes the H5 candidate** (adopt, replace, or change a term, a band or a cap; Eleonora, 9 November
+  2026, #1534) is relayed together with a directive. That directive updates `docs/research/h5-candidate.json` in the
+  same PR as the code change. The results page and the README are rendered or checked from that file (#1532), so a
+  page that disagrees with it is drift, not a second source.
 - **Commits** use the neutral identity "repo-market-model orchestrator", never her name and never an AI's.
 - **Times** are ET: run `TZ=America/New_York date` first and use that time; the system clock is UTC.
 

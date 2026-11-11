@@ -62,6 +62,10 @@ Where she has since amended a rule, the amendment is written under it and says s
 - "results that hold only in 2018-19, or that are averaged across regimes in a way that hides a failure;"
 - "units, alignment, calendar, holiday, forward-fill, revision or vintage errors;"
 - "claims in result pages that the code or tables do not support."
+- "the results page against the H5 candidate (Eleonora, 9 November 2026, #1534): build the page from main with
+  `python3 scripts/emit_visual.py` and compare the model it names, and the source of its section 1, with
+  `docs/research/h5-candidate.json`. A mismatch is a `finding`. Until #1532's rendering is on main, read the page's
+  text and compare it by eye; after it, the page's own check does the comparison and you confirm it ran."
 
 ## Filing
 

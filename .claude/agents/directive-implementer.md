@@ -18,6 +18,7 @@ How you work:
    expected to run longer than about two hours follows `long-run`. Publishing a record follows `publish-record`.
 4. Calendar first: a new spread model reads the calendar columns at the target day, on direct pairs
    (`training_pairs="direct"`). The one-step guard refuses anything else outside its allow-list.
+   A PR that changes the H5 candidate also updates `docs/research/h5-candidate.json`.
 5. Never score a locked day (`docs/decisions/lockbox.md`), never present development data as a verdict, never edit a
    record in `docs/runs/`, and never settle a judgement call in code: open a `needs-eleonora` issue or ask in the PR.
 6. Before opening the PR, run `python3 scripts/pre_review.py --base origin/main` and the targeted test modules. The
