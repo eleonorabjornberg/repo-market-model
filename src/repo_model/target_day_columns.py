@@ -19,6 +19,7 @@ __all__ = [
     "BALANCE_SHEET_TARGET_DAY_COLUMNS",
     "DOM_TARGET_DAY_COLUMNS",
     "FOMC_TARGET_DAY_COLUMNS",
+    "PATCHED_CALENDAR_COLUMNS",
     "TARGET_DAY_COLUMNS",
 ]
 
@@ -34,4 +35,16 @@ DOM_TARGET_DAY_COLUMNS = frozenset({"dom_bucket"})
 #: function of the row's own date, so a forecast of that day reads it from its row; not in `CALENDAR_FEATURES` (no published panel reads them).
 BALANCE_SHEET_TARGET_DAY_COLUMNS = frozenset(CODED_COLUMNS) | frozenset(TURN_COLUMNS)
 
-TARGET_DAY_COLUMNS = CALENDAR_FEATURES | FOMC_TARGET_DAY_COLUMNS | BALANCE_SHEET_TARGET_DAY_COLUMNS | DOM_TARGET_DAY_COLUMNS
+#: The four columns that scripts patch into `asof.CALENDAR_FEATURES` for one run (finding #1553, ruling of 11 November 2026):
+#: `dow`, `bday_of_month` and `maint_period_day` (`scripts/derived_features_631.py`, `CALENDAR`) and `post_month_end_window`
+#: (`scripts/near_threshold_688.py`, `FLAG`). Each is a function of the row's own date, read from the target row, so a one-step
+#: fit of any of them learns it a row off. `tests/test_one_step_guard.py` scans `scripts/` and fails on a patched column missing here.
+PATCHED_CALENDAR_COLUMNS = frozenset({"dow", "bday_of_month", "maint_period_day", "post_month_end_window"})
+
+TARGET_DAY_COLUMNS = (
+    CALENDAR_FEATURES
+    | FOMC_TARGET_DAY_COLUMNS
+    | BALANCE_SHEET_TARGET_DAY_COLUMNS
+    | DOM_TARGET_DAY_COLUMNS
+    | PATCHED_CALENDAR_COLUMNS
+)
