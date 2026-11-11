@@ -525,9 +525,16 @@ def short_of_nominal(group: Mapping[str, object]) -> str:
             f"it stays {100 * (0.9 - m['arm']):.1f} percentage points short of 90%.")
 
 
-def kill_sentence(kill: Mapping[str, object]) -> str:
+def kill_sentence(kill: Mapping[str, object], *, events: Optional[int] = None, read: bool = True) -> str:
+    """The declared kill in words. `read=False` (the 2026 days, which decide nothing, #1572): the figures and the interval with the number of events, and no call."""
+
     gain = (f"coverage {_signed(kill['coverage_gain'])} {_siv(kill['coverage_gain_interval'])} (arm minus candidate, event-cluster 90% interval): "
             + ("improves beyond its interval" if kill["coverage_improves_beyond_interval"] else "does not improve beyond its interval"))
+    if not read:
+        low, high = kill["group_crps_diff_interval"]
+        spans = "an interval that spans zero" if low <= 0.0 <= high else "an interval that does not span zero"
+        return (f"{gain}; group grid CRPS {_signed(kill['group_crps_diff'])} {_siv(kill['group_crps_diff_interval'])} over {events} events "
+                f"(arm minus candidate): {spans}. **The declared kill is read on the development window only; it is not called on these days.**")
     crps = (f"group grid CRPS {_signed(kill['group_crps_diff'])} {_siv(kill['group_crps_diff_interval'])} (arm minus candidate): "
             + ("the arm loses" if kill["group_crps_loses"] else "the arm does not lose"))
     return f"{gain}; {crps}. **Against the declared kill: {'killed' if kill['killed'] else 'not killed'}.**"
@@ -609,7 +616,7 @@ def window_section(window: str, w: Mapping[str, object], context: Optional[Mappi
            "### Coverage and tail misses on the group, candidate against arm", ""] + rates_table(group_rows(g)) + [
            "", f"**{short_of_nominal(g)}**", "",
            "### Accuracy of the distribution on the group (paired, same cells)", ""] + scores_table(group_rows(g)) + [
-           "", "### The declared kill" + ("" if window == "development" else " (shown apart; the kill is read on the development window only, and these days decide nothing)"), "", kill_sentence(g["kill"]), "",
+           "", "### The declared kill" + ("" if window == "development" else " (shown apart; the kill is read on the development window only, and these days decide nothing)"), "", kill_sentence(g["kill"], events=g["pooled"]["events"], read=window == "development"), "",
            "### The event pools, over the window's refits", "", "The event pool is the empirical distribution of the refit's training residuals whose target is a quarter-end turn or year-end day; a positive median shift means the "
            "events' residuals sit above the pool's (the location shift of #1533).", ""] + pool_table(w["pools"]) + [""]
     ctx = context_table(window, g["pooled"], context)
@@ -653,7 +660,9 @@ def question() -> List[str]:
         "3. **Extend the event model to another event type** (a new declaration). 4. **Stop the family here.**", ""]
 
 
-def render(r: dict) -> str:
+def render(r: dict, addendum: Sequence[str] = ()) -> str:
+    """The page. `addendum` is a dated section placed before "What this does and does not show" (#1572 adds one; nothing else of the page changes)."""
+
     dev = r["windows"]["development"]["group"]
     out = [
         "# Event-conditional quarter-end residual distribution beside the frozen candidate (s3c-ann-net), at the 18:00 decision (#1548)", "",
@@ -683,6 +692,7 @@ def render(r: dict) -> str:
         w = r["windows"].get(window)
         if w is not None:
             out += window_section(window, w, r.get("context_1531", {}).get(window))
+    out += list(addendum)
     out += ["## What this does and does not show", "",
             "It shows what an event-conditional residual distribution on the quarter-end group does to the candidate's coverage, tail misses and CRPS on development "
             "days, with the event's own shape and location. It does not show a verdict, an adoption, or that this arm beats #1531's (no test between them is run). "
