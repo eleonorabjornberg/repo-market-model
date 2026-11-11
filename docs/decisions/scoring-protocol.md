@@ -235,7 +235,7 @@ draft, their efficacy values are superseded.
 
 ## Draft amendment 4: passing the coverage tests is a registration requirement (#1130)
 
-**Status: In force as set (#1522; GO #1522 once she posts it and merges this change).** The amendment was recorded on
+**Status: In force as set (#1522; GO #1522 once she posts it and merges this change). A draft amendment (#1527) moves its spacing to h + 1 and is in force only when she merges it with her own `GO #1527`.** The amendment was recorded on
 23 October 2026 (GO #1130, PR #1137; §13: this record is merged by her, not under delegated review; the change is of kind (a), a
 demonstration), and its requirement was held off until a size simulation cleared the design. Her docket ruling of 8 November
 2026 on PR #1520 ("bar") puts it in force as set: a directive turns the flag on, and a directive diagnoses the lead-1
@@ -261,6 +261,34 @@ edited.
 - the candidate in that study, (s3c-ann-net), fails the requirement as set: 11 Holm rejections across its family (10 independence
   tests, mostly at lead 1, and one Kupiec test, q0.99 in 2021-23). Its registration (#1510, PR #1511) cannot proceed until a
   model change passes. The lead-1 diagnosis is a separate directive.
+
+**Draft amendment to answers 1 and 3 (#1527): both tests are read at spacing h + 1.** This part is a draft for her to review. It is in
+force only when she merges it with her own `GO #1527` and the `metadata/owner_attestations.json` entry (§13: not under delegated review).
+Until then the design above, spacing h, is the one in force. It follows her rulings of 8 November 2026 on #1525 ("spacing") and of
+10 November 2026 on #1545 ("both"), relayed by the orchestrating session; a relayed ruling does not authorise the merge.
+
+- **Why.** A forecast for D + h reads data only to the panel day D - 1 (`docs/decisions/information-set.md`, rule 1), so two forecasts
+  kept h days apart share one unknown innovation and their hits are dependent; forecasts h + 1 days apart do not. Answer 3's size
+  condition was met on an iid control, which has no such delay (1.7% in PR #1520). #1528 simulated correct forecasters over the real
+  development calendar with the publication delay, volatility clustering and calendar effects
+  (`docs/research/coverage-test-delay-power-1528-result.md`, development data, no verdict). A correct forecaster is rejected in
+  99.3% [98.6%, 99.7%] of paths under answer 1 as set (both tests at spacing h), in 7.0% [5.6%, 8.8%] with independence at h + 1 and
+  Kupiec at h (above the 5% that answer 3 allows, the excess being Kupiec's), and in 1.1% [0.6%, 2.0%] with both at h + 1. #1525 found
+  83% to 100% in a simpler AR(1) world at spacing h, and 4% to 8% for independence at h + 1.
+- **The amendment.** Answer 1 reads: Kupiec and independence on every (h + 1)-th decision day at lead h (`method="spaced"`). The
+  requirement reads `scoring_protocol.COVERAGE_REQUIREMENT_METHOD`, which is `"spaced"`. Everything else in "In force as set" stands:
+  Holm over the family at 5%, the `strict` hit rule, lead x regime cells at q05/q95 and q01/q99. `method="thinned"` and `method="hac"`
+  (spacing h; lag h - 1) stay as reported designs, so that #1512, #1516 and #1528 reproduce.
+- **The HAC variant** (#1545, point 4): `method="spaced_hac"` computes the Newey-West variance at lag h, not h - 1: lead-h errors overlap
+  for h days under the delay, and at lead 1 a lag of 0 made no correction. Its independence test is read at spacing h + 1. It is
+  reported only and decides nothing. #1516's separate fault in it (the variance is centred at the nominal rate) is not touched here.
+- **Section 7 stands.** Quarter-end coverage is reported, not gated (her 10 November 2026 ruling on #1545, point 2). #1528 shows that a
+  fault confined to quarter-end days is not detected at any spacing; this amendment does not change that.
+- **Her answer 3 re-met, on a simulation that has the delay.** The 1.1% [0.6%, 2.0%] of #1528 is the size of this design on a
+  world fitted to the development spreads, not the candidate. It replaces the iid control as the figure that meets point 3.
+- **What it does not do.** It changes no model, registers nothing, scores no confirmation day and edits no published record. The
+  candidate's coverage report at the new spacing is `docs/research/coverage-spacing-1527-result.md` (development data, no verdict).
+  Registration (#1510) stays her attested action.
 
 **Marked question for her: the hit-rule naming (point 4).** This record names `strict`. Options: (1) name `strict`, as PR #1520
 measured, noting that `tie_counts` and the randomised rule coincide on this data (default if she has not answered by the next
