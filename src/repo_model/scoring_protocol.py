@@ -1096,9 +1096,15 @@ COVERAGE_RULES: Tuple[str, ...] = ("strict", "tie_counts")
 #: the forecast's own distribution assigns (`coverage_tests.tie_hit_probability`). Reported by `coverage_cells` only when
 #: the caller supplies the tie probabilities and the draws; it is not in `COVERAGE_RULES` because it needs them.
 RANDOMISED_RULE = "randomised"
-#: How Kupiec is applied at leads above 1 (a marked question of the record): on every h-th decision day, or on every
-#: day with a Newey-West variance at lag h - 1.
-COVERAGE_METHODS: Tuple[str, ...] = ("thinned", "hac")
+#: How the two tests are read at leads above 1. "thinned" and "hac" are the design as set by #1522 (spacing h; lag h - 1): they stay
+#: reported, because #1512, #1516 and #1528 reproduce on them, but the requirement does not read them (#1527). "spaced" reads both
+#: tests on every (h + 1)-th decision day; "spaced_hac" reads Kupiec on every day with a Newey-West variance at lag h, and
+#: independence on every (h + 1)-th day (reported only). The reason for h + 1: a forecast for D + h reads data only to D - 1, so two
+#: forecasts h days apart share one unknown innovation (`docs/research/coverage-test-delay-power-1528-result.md`).
+COVERAGE_METHODS: Tuple[str, ...] = ("thinned", "hac", "spaced", "spaced_hac")
+#: The method the requirement reads: the cells `enforce_coverage_requirement` is meant to be given (amendment 4 as amended by #1527;
+#: the record names it). Which design a cell carries is `CoverageCell.method`.
+COVERAGE_REQUIREMENT_METHOD = "spaced"
 COVERAGE_FAMILIES: Tuple[str, ...] = ("per_cell", "holm")
 
 
@@ -1156,9 +1162,10 @@ def coverage_cells(
     Args:
         forecasts, outcomes, calendar: as `day_scores`.
         regimes: decision day -> regime label; every forecast day needs one.
-        method: required, no default. "thinned" reads every h-th decision day of the ordered list at lead h, for
-            both tests; "hac" reads Kupiec on every day with a Newey-West variance at lag h - 1, and
-            independence still on every h-th day.
+        method: required, no default. "spaced" (the requirement, `COVERAGE_REQUIREMENT_METHOD`) reads every (h + 1)-th
+            decision day of the ordered list at lead h, for both tests; "spaced_hac" reads Kupiec on every day with a
+            Newey-West variance at lag h and independence on every (h + 1)-th day. "thinned" (every h-th day, both
+            tests) and "hac" (lag h - 1, independence on every h-th day) are the design as set by #1522, reported only.
         tie_probabilities, draws: optional, and only together (#1156). Decision day -> lead -> one value per grid
             level (aligned with `GRID`; only the four levels of `COVERAGE_LEVELS` are read). With them the cells also
             carry the randomised tie rule (`rule="randomised"`): a tie (y == q) counts as a hit when its draw, in
@@ -1211,7 +1218,8 @@ def coverage_cells(
     for h in HORIZONS:
         for regime in sorted({row[2] for row in rows[h]}):
             in_regime = [row for row in rows[h] if row[2] == regime]
-            kept = [row for row in in_regime if row[0] % h == 0]
+            spacing = h + 1 if method in ("spaced", "spaced_hac") else h
+            kept = [row for row in in_regime if row[0] % spacing == 0]
             for level in COVERAGE_LEVELS:
                 p = min(level, 1.0 - level)
                 index = GRID.index(level)
@@ -1234,12 +1242,13 @@ def coverage_cells(
                         )
 
                     thinned = hits_of(kept) if kept else []
-                    if method == "thinned":
+                    if method in ("thinned", "spaced"):
                         sample = thinned
                         kupiec_p = coverage_tests.kupiec(sample, p).p_value if sample else 1.0
                     else:
                         sample = hits_of(in_regime) if in_regime else []
-                        kupiec_p = _hac_kupiec_p(sample, p, h - 1) if sample else 1.0
+                        lag = h if method == "spaced_hac" else h - 1
+                        kupiec_p = _hac_kupiec_p(sample, p, lag) if sample else 1.0
                     independence = (
                         coverage_tests.christoffersen_independence(thinned).p_value if len(thinned) >= 2 else None
                     )
@@ -1252,7 +1261,10 @@ def coverage_cells(
 def enforce_coverage_requirement(
     cells: Sequence[CoverageCell], *, alpha: float, family: str, rule: str
 ) -> List[CoverageCell]:
-    """The registration requirement of amendment 4 (in force from #1522): no cell of `rule` fails either test.
+    """The registration requirement of amendment 4 (in force from #1522; read at spacing h + 1 from #1527): no cell of `rule` fails either test.
+
+    The requirement reads cells made with `method=COVERAGE_REQUIREMENT_METHOD` ("spaced"). The function tests whatever cells it is given, so
+    a study can still put "thinned" cells through it to measure the design as set; a spacing of h rejects a calibrated forecaster (#1528).
 
     Inert while `COVERAGE_REQUIREMENT_IN_FORCE` is False: returns an empty list whatever the cells say. Once on,
     raises `CoverageRequirementFailed` naming the failing cells, and returns an empty list when none fails.
