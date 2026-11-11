@@ -1,8 +1,8 @@
 # Settled questions
 
-**What this is.** One entry per question a study has already answered, so that a new directive starts from what is known and does not re-run it. Process, no hypothesis; the science is unchanged. Started by #1529 on Eleonora's ruling of 9 November 2026 (docket answer "both" on process-settled-1109); the `.claude/` rule that points directives here is a separate issue.
+**What this is.** One entry per question a study has already answered, so that a new directive starts from what is known and does not re-run it. Terms such as candidate, arm, kill rule, grid CRPS and B1 are defined in the [glossary](glossary.md).
 
-**How to read it.** Every figure below is copied from the cited result page or log entry, development data on days already seen, never a verdict. An entry does not say a question can never be reopened; its last field says what would. A result from a model that did not read the calendar at the target day is provisional (`docs/research/provisional-calendar-register.md`), and the entry says so where it applies.
+**How to read it.** Every figure below is copied from the cited result page or log entry, development data on days already seen, never a verdict. An entry does not say a question can never be reopened; its last field says what would. A result from a model that did not read the calendar at the target day is provisional (`docs/research/provisional-calendar-register.md`), and the entry says so where it applies. Inside an entry a study is named in words; its issue number and its page are in the entry's Studies line.
 
 **The four statuses** (Eleonora, 9 November 2026: "Those statuses carry different implications, and collapsing them is what made my original recommendations too broad"). A classified entry carries exactly one.
 
@@ -15,6 +15,8 @@ A study that ran but read undecided, or covered only part of its question, fits 
 
 **Adding an entry.** Cite a page, not memory. Give the question in one sentence, the studies (issue and result page), the answer, and what would reopen it. If a page leaves the question open, say "open" and name what is missing. `tests/test_settled_questions_register.py` checks the statuses, the fields and that each entry cites an issue.
 
+**Record.** Process, no hypothesis; the science is unchanged. Started by #1529 on Eleonora's ruling of 9 November 2026 (docket answer "both" on process-settled-1109); the `.claude/` rule that points directives here is a separate issue.
+
 ## Classified
 
 ### S1. A faster, dispersion-scaled or spell-switching scale removes the runs in the candidate's band misses
@@ -22,8 +24,8 @@ A study that ran but read undecided, or covered only part of its question, fits 
 - **Status:** failed
 - **Question:** Does a scale that reacts faster to recent errors, is read from SOFR's own dispersion, or switches between calm and stress spells remove the runs in the misses of the H5 candidate's 90% band?
 - **Studies:** #1153 (`docs/research/faster-scale-1153-result.md`), #1175 (`docs/research/sofr-dispersion-1175-result.md`), #1182 (`docs/research/regime-spells-1182-result.md`). The observation that started the line is Lens D of the five-lens review of 19 October 2026 (`docs/reviews/2026-10-19-five-lens/lens-D-model-validator.md`): the published model's misses cluster and every record fails independence.
-- **Answer:** No. Christoffersen independence of the 90% band's misses stays at p = 0.000 at every lead, under every hit rule, for the base and for every arm of all three studies. Mean run of misses (closed rule, five leads pooled), against 1.11 if misses at 10% were independent: #1153 base 2.205, best arms 1.96 to 2.00; #1175 base 2.083, arms 1.968 to 2.039; #1182 base 2.126, episode-state arms 1.891 and 1.903 (10.5% and 11.1% shorter), Markov-switching arms longer (2.283 and 2.233). #1182's kill rule is met (no arm leaves p = 0.000 at any lead and none cuts the mean run by more than 15%). Two caveats on the page: #1153's arms v1 to v3 read no calendar column, so they are provisional, and #1182's Markov arms have bands too narrow (miss rate above 0.15), so they are weaker evidence than the episode-state arms. The #1182 page recommends reporting the clustering as a known limit and says adopting that is her decision.
-- **Would reopen it:** A mechanism none of the three tried. The #1153 page names a state variable for stress spells and a persistent scale shock; #1182 has since tried a spell state. Or a result from #1528 (open) showing that the independence reading itself misstates the clustering under the publication delay (see the entry on the lead-1 hit dependence below).
+- **Answer:** No. Christoffersen independence of the 90% band's misses stays at p = 0.000 at every lead, under every hit rule, for the base and for every arm of all three studies. Mean run of misses (closed rule, five leads pooled), against 1.11 if misses at 10% were independent: the faster-scale study, base 2.205, best arms 1.96 to 2.00; the SOFR-dispersion study, base 2.083, arms 1.968 to 2.039; the regime-spells study, base 2.126, episode-state arms 1.891 and 1.903 (10.5% and 11.1% shorter), Markov-switching arms longer (2.283 and 2.233). The regime-spells study's kill rule is met (no arm leaves p = 0.000 at any lead and none cuts the mean run by more than 15%). Two caveats on the page: the faster-scale study's arms v1 to v3 read no calendar column, so they are provisional, and the regime-spells study's Markov arms have bands too narrow (miss rate above 0.15), so they are weaker evidence than the episode-state arms. The regime-spells study's page recommends reporting the clustering as a known limit and says adopting that is her decision.
+- **Would reopen it:** A mechanism none of the three tried. The faster-scale study's page names a state variable for stress spells and a persistent scale shock; the regime-spells study has since tried a spell state. Or a result from the queued study of the test under the delay (#1528, open) showing that the independence reading itself misstates the clustering under the publication delay (see the entry on the lead-1 hit dependence below).
 
 ### S2. A residual scale for every pressure-day type at once, unshrunk
 
@@ -38,8 +40,8 @@ A study that ran but read undecided, or covered only part of its question, fits 
 - **Status:** failed
 - **Question:** Does a pooled, walk-forward correction of the predictive quantiles (a split-conformal correction of each of the 23 levels, or an online recentre or rescale from recent public errors) improve the scaled mean reversion?
 - **Studies:** #1133 (`docs/research/walk-calibration-1133-result.md`; re-read on the mean-d bound in `docs/research/walk-calibration-1133-mean-d-1167-result.md`). Also the five online recentre and rescale rules of #1525, an open pull request whose page (`hit-dependence-1523-result.md`) is not on main at the time of writing; its pooled figures point the same way, and they count only once it merges.
-- **Answer:** No. #1133: pooled grid CRPS 1.525 for the base and 1.550 for the corrected law, skill -1.7% [-2.9%, -0.3%]; upper-tail twCRPS -2.2% [-5.0%, +2.0%], read as a loss on the mean-d bound. The base's 90% band already covered 0.890 pooled. The correction helps quarter-ends (90% coverage 0.608 to 0.669) and costs ordinary days. The base reads no calendar column, so every #1133 figure is provisional under the calendar-first rule. #1525 (pull request body): every pooled point estimate of its five adjustments is a loss on grid CRPS.
-- **Would reopen it:** A re-run of #1133's arm on a calendar-aware base (the page says it is a function of a base's laws and can be re-run unchanged), or the merge of #1525 with a different reading.
+- **Answer:** No. The walk-forward calibration study: pooled grid CRPS 1.525 for the base and 1.550 for the corrected law, skill -1.7% [-2.9%, -0.3%]; upper-tail twCRPS -2.2% [-5.0%, +2.0%], read as a loss on the mean-d bound. The base's 90% band already covered 0.890 pooled. The correction helps quarter-ends (90% coverage 0.608 to 0.669) and costs ordinary days. The base reads no calendar column, so every figure of the walk-forward calibration study is provisional under the calendar-first rule. The hit-dependence pull request (its body): every pooled point estimate of its five adjustments is a loss on grid CRPS.
+- **Would reopen it:** A re-run of the walk-forward calibration study's arm on a calendar-aware base (the page says it is a function of a base's laws and can be re-run unchanged), or the merge of the hit-dependence pull request with a different reading.
 
 ### S4. A plain linear quantile regression as a wholesale replacement
 
@@ -94,8 +96,8 @@ A study that ran but read undecided, or covered only part of its question, fits 
 - **Status:** untested
 - **Question:** Does an adaptive or day-type conformal calibration layer improve the current candidate (s3c-ann-net)?
 - **Studies:** none on the candidate. The earlier work is on the gradient-boosted model at h = 1 and on its interior band only: #243 (`docs/interior_calibration_243.md`) and its 2026 confirmation #408 (`docs/interior_confirmation_408.md`); conformal_aci did not meet the declared test on the development days (+0.014 [-0.004, +0.033]), conformal_pid_calendar, conformal_by_day_type and conformal_group_regime met it on both windows. The arithmetic for the online and group-conditional methods is `src/repo_model/recalibration.py` (#116). #1366 (`docs/research/calibration-masking-candidate-1366-result.md`) found that the candidate has no calibration subfit.
-- **Answer:** Never run on the candidate. The gradient-boosted evidence does not transfer: a different model, h = 1 only, the interior band only. The pooled split-conformal correction of #1133 (S3) is a different layer and lost.
-- **Would reopen it:** Nothing needs to; it is open to a directive. The natural form is the delayed-feedback one below, since #1525 shows the forecast reads the spread only to the day before.
+- **Answer:** Never run on the candidate. The gradient-boosted evidence does not transfer: a different model, h = 1 only, the interior band only. The pooled split-conformal correction of the walk-forward calibration study (#1133, S3) is a different layer and lost.
+- **Would reopen it:** Nothing needs to; it is open to a directive. The natural form is the delayed-feedback one below, since the hit-dependence pull request (#1525) shows the forecast reads the spread only to the day before.
 
 ### S11. A quantile correction around the forecast
 
@@ -111,7 +113,7 @@ A study that ran but read undecided, or covered only part of its question, fits 
 - **Question:** Does weighting the residual pool of the candidate toward recent rows improve its bands?
 - **Studies:** none found for the candidate. Recency weights were tried on the pressure classifiers (#411, `metadata/recency_adaptive_training.json`), and a trailing-window rescale is one of #1525's adjustments (an open pull request); neither weights the candidate's residuals.
 - **Answer:** Never run.
-- **Would reopen it:** Nothing needs to; it is open to a directive. #1153 (S1) already shows that a faster scale alone does not remove the runs.
+- **Would reopen it:** Nothing needs to; it is open to a directive. The faster-scale study (#1153, S1) already shows that a faster scale alone does not remove the runs.
 
 ### S13. Partially pooled day-type shapes
 
@@ -127,15 +129,15 @@ A study that ran but read undecided, or covered only part of its question, fits 
 - **Question:** Does a conformal update that uses only outcomes already public at the decision instant (a feedback delayed by the publication lag) calibrate the candidate?
 - **Studies:** none found. #1525 (open) measures why the delay matters: a forecast for D + h reads the spread to D - 1.
 - **Answer:** Never run.
-- **Would reopen it:** Nothing needs to; it is open to a directive. #1528 (open) decides how the coverage it would be judged on is read.
+- **Would reopen it:** Nothing needs to; it is open to a directive. The queued study of the test under the delay (#1528, open) decides how the coverage it would be judged on is read.
 
 ### S15. Signed net settlement and the IORB sign
 
 - **Status:** untested
 - **Question:** Do the signed net settlement size, the announced IORB change with its sign, and the net-by-scarcity interaction improve the candidate?
 - **Studies:** #1273 (`docs/research/s3c-net-settlement-1273-result.md`), #1321 (`docs/research/s3c-flagnet-gross-1321-result.md`), #1227 (`docs/research/s3-iorbs-1227-result.md`), and the IORB row of #1483 (`docs/research/family-ablation-1483-result.md`).
-- **Answer:** The net by scarcity interaction is untested. Eleonora ruled so on 10 November 2026; the 30 October scope decision was not a verdict. The parts that ran: #1273: net in place of gross, 2026 days +0.5% [+0.0%, +1.0%] (a gain), development window -0.1% [-0.2%, +0.1%] (undecided), with a loss on upper-tail twCRPS and Brier on the development window. #1321: flag-plus-net against (s3c-ann-net) +0.6% [-0.4%, +1.4%] (undecided); the gross-sized arm +0.4% [-0.4%, +1.5%] on the development window and -3.5% [-8.9%, -0.9%] on the 2026 days. #1227: signed IORB change d +0.001 [-0.002, +0.005] against (s3), undecided, one regime loss (2024). #1483: IORB terms undecided in both windows. The interaction was left out of #1321 by her ruling of 30 October 2026 ("the net x scarcity interaction in #1318 is not part of this ruling; leave it out"), a scope decision.
-- **Would reopen it:** Nothing needs to; it is open to a directive. The narrower reading of the signed IORB change (target row alone, lead 1 only) was not tried (#1227). The net by scarcity interaction was never run as its own arm; #1350 built an (s3c-ann-net x state) arm for its H.4.1 comparison only, and S6 covers the state alone.
+- **Answer:** The net by scarcity interaction is untested. Eleonora ruled so on 10 November 2026; the 30 October scope decision was not a verdict. The parts that ran: the net-settlement study: net in place of gross, 2026 days +0.5% [+0.0%, +1.0%] (a gain), development window -0.1% [-0.2%, +0.1%] (undecided), with a loss on upper-tail twCRPS and Brier on the development window. The flag-plus-net study: flag-plus-net against (s3c-ann-net) +0.6% [-0.4%, +1.4%] (undecided); the gross-sized arm +0.4% [-0.4%, +1.5%] on the development window and -3.5% [-8.9%, -0.9%] on the 2026 days. The signed-IORB study: signed IORB change d +0.001 [-0.002, +0.005] against (s3), undecided, one regime loss (2024). The family ablation: IORB terms undecided in both windows. The interaction was left out of the flag-plus-net study by her ruling of 30 October 2026 ("the net x scarcity interaction in #1318 is not part of this ruling; leave it out"), a scope decision.
+- **Would reopen it:** Nothing needs to; it is open to a directive. The narrower reading of the signed IORB change (target row alone, lead 1 only) was not tried (the signed-IORB study). The net by scarcity interaction was never run as its own arm; the H.4.1 per-release study (#1350) built an (s3c-ann-net x state) arm for its H.4.1 comparison only, and S6 covers the state alone.
 
 ### S16. The cash management bill term
 
@@ -153,15 +155,15 @@ Each entry below ran, but read undecided or covered only part of its question. E
 
 - **Question:** What are the size and power of amendment 4's coverage requirement under the real one-day publication delay, read at spacing h and at spacing h + 1?
 - **Studies:** #1156 (`docs/research/coverage-size-1156-result.md`: AR(1) data, no delay), #1516 (`docs/research/coverage-size-1516-result.md`: bootstrap of the candidate's own PIT ranks, no delay), #1525 (open pull request: one regime, normal errors, the delay), #1528 (queued, pull request #1535 open).
-- **Answer so far:** #1156: a calibrated forecaster fails the requirement on 100.0% of paths under `strict` and `tie_counts` and on 2.3% [1.7%, 3.1%] under the randomised tie rule. #1516: in the iid control the design rejects a calibrated forecaster in 1.7% of draws; a world that keeps the candidate's own dependence rejects in every draw, through the independence tests. #1525 (pull request body): with the delay, a calibrated AR(1) forecaster is rejected in 83% to 100% of paths at spacing h and in 4% to 8% at spacing h + 1.
-- **Open:** Volatility clustering and calendar effects together with the delay, and power at spacing h + 1; both are #1528. Until it reports, the size of the test under the delay is not established.
+- **Answer so far:** The AR(1) coverage-size study: a calibrated forecaster fails the requirement on 100.0% of paths under `strict` and `tie_counts` and on 2.3% [1.7%, 3.1%] under the randomised tie rule. The bootstrap coverage-size study: in the iid control the design rejects a calibrated forecaster in 1.7% of draws; a world that keeps the candidate's own dependence rejects in every draw, through the independence tests. The hit-dependence pull request (its body): with the delay, a calibrated AR(1) forecaster is rejected in 83% to 100% of paths at spacing h and in 4% to 8% at spacing h + 1.
+- **Open:** Volatility clustering and calendar effects together with the delay, and power at spacing h + 1; both are the queued study of the test under the delay. Until it reports, the size of the test under the delay is not established.
 
 ### Q2. Is the candidate's lead-1 hit dependence a model defect?
 
 - **Question:** Does the serial dependence of (s3c-ann-net)'s quantile hits, which fails amendment 4's independence reading, point to a defect the model can be changed to remove?
 - **Studies:** #1363 (`docs/research/candidate-calibration-1363-result.md`), #1400 (`docs/research/clustering-thinned-1400-result.md`), #1516 (`docs/research/coverage-size-1516-result.md`), #1523 and its pull request #1525 (open; its page is not on main). The runs-of-misses fixes are S1.
-- **Answer so far:** #1363: every one of the candidate's hit sequences at every lead reads as serially dependent, inside regimes too, as do those of B1, B1' and B2. #1400: on the thinned reading the sequences still cluster at every lead over the whole window, mainly in 2021-23, and not on the 2026 days. #1516: 11 rejections under the iid Kupiec family, 10 under HAC. #1525 (pull request body, in review with changes requested): most of the lag-1 dependence is not a defect the candidate can be changed to remove, since two forecasts the design keeps h days apart share one unknown innovation; at spacing h + 1 the independence rejections go from 10 to 0; what remains is a miss rate that moves in time.
-- **Open:** The merge of #1525 and her answer to its question on which model change, if any, is next; and #1528, which fixes how the test is judged.
+- **Answer so far:** The candidate calibration study: every one of the candidate's hit sequences at every lead reads as serially dependent, inside regimes too, as do those of B1, B1' and B2. The thinned-clustering study: on the thinned reading the sequences still cluster at every lead over the whole window, mainly in 2021-23, and not on the 2026 days. The bootstrap coverage-size study: 11 rejections under the iid Kupiec family, 10 under HAC. The hit-dependence pull request (pull request body, in review with changes requested): most of the lag-1 dependence is not a defect the candidate can be changed to remove, since two forecasts the design keeps h days apart share one unknown innovation; at spacing h + 1 the independence rejections go from 10 to 0; what remains is a miss rate that moves in time.
+- **Open:** The merge of the hit-dependence pull request and her answer to its question on which model change, if any, is next; and the queued study of the test under the delay (#1528), which fixes how the test is judged.
 
 ### Q3. The pooled-scale arm for non-ordinary days
 
@@ -181,7 +183,7 @@ Each entry below ran, but read undecided or covered only part of its question. E
 
 - **Question:** Why does (s3c-ann-net) lose to (s3c) in 2020, and what removes it?
 - **Studies:** #1319 (`docs/research/s3c-ann-net-diagnosis-1319-result.md`), #1321 (`docs/research/s3c-flagnet-gross-1321-result.md`), #1344 (`docs/research/s3c-flagnet-diagnosis-1344-result.md`), #1356 (S16).
-- **Answer so far:** #1319: both announced arms lose to (s3c) in 2020 (-4.1% flag, -2.0% net on grid CRPS), mostly March to June; the net arm's cash-management-bill dating is not ruled out (those days carry 67.5% of its 2020 loss, and without them it is -0.9%, undecided). #1344, for the flag-plus-net arm: the 2020 loss (-3.2%) is not an over-shift of the settlement term (the fitted +1.38 bp against a realised premium of +0.28 bp [-0.37, +1.16], bias interval containing zero) and stays with the immediate-release cash management bill days left out. #1356 (S16) did not remove it.
+- **Answer so far:** The first 2020 diagnosis: both announced arms lose to (s3c) in 2020 (-4.1% flag, -2.0% net on grid CRPS), mostly March to June; the net arm's cash-management-bill dating is not ruled out (those days carry 67.5% of its 2020 loss, and without them it is -0.9%, undecided). The flag-plus-net diagnosis, for the flag-plus-net arm: the 2020 loss (-3.2%) is not an over-shift of the settlement term (the fitted +1.38 bp against a realised premium of +0.28 bp [-0.37, +1.16], bias interval containing zero) and stays with the immediate-release cash management bill days left out. The cash-management-bill study (S16) did not remove it.
 - **Open:** The cause. Three hypotheses were tested and none supported or rejected cleanly (over-shift, bill dating, the cash management bill term). What is missing is a reading that separates March to June 2020 from the rest of the year.
 
 ### Q8. H10, the residual dominating the attribution of pressure episodes
