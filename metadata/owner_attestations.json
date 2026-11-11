@@ -302,6 +302,13 @@
       "what": ".claude/ agents and directive-orchestrator skill: the H5 candidate process (PR #1541); her 10 November 2026 docket answer 'go'"
     },
     {
+      "kind": "claude-files",
+      "issue": 1530,
+      "comment_id": 6787826004,
+      "phrase": "GO #1530",
+      "what": ".claude/ agents and skills: a directive cites the settled-questions register before it is queued (PR #1552); her 11 November 2026 docket answer 'Done' on the GO #1530 card"
+    },
+    {
       "kind": "decisions",
       "issue": 1527,
       "comment_id": 6787805666,

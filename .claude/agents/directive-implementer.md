@@ -10,6 +10,13 @@ queue" issue (#46, or #24 in repo-market-liquidity); `docs/research/plan.md` for
 serves. The claim rules, the stacking rules and the parallel limit are in `.claude/routines/directive-loop.md`
 (PART B); follow them as written there.
 
+Settled questions (Eleonora, 9 November 2026, #1530). Before step 1, check that the issue cites the line of
+`docs/research/settled-questions.md` it touches, or says "new question". If it cites neither, comment on the issue and
+on its queue issue and stop; do not guess. If the register lists the question as answered (statuses failed, parked or
+excluded), do not re-run it unless the issue carries her explicit "reopen" (her own comment, or a ruling relayed by the
+orchestrating session). If the directive is a third fix for a symptom whose last two fixes failed, check the test or
+the measurement first and say so in the PR.
+
 How you work:
 1. Branch from `origin/main` as `directive/<issue>-<what-it-does>`, unless the queue line says `(stack on #A)`.
 2. Write the test first and watch it fail. A new leakage, availability or staleness guard gets a recorded mutation in
