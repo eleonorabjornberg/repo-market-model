@@ -449,6 +449,14 @@ def page(r: Mapping[str, object]) -> str:
         rows.append([name, years, f"{v['last']:.2f}", f"{v['min']:.2f} to {v['max']:.2f}"])
     L += table(["group, tail", "first decision day of each year", "last day", "range"], rows)
     w("")
+    pc, pt = dev["pooled"]["grid_crps"]["pairs"]["arm_vs_candidate"], dev["pooled"]["twcrps"]["pairs"]["arm_vs_candidate"]
+    flag_rows = {k: v for k, v in dev["splits"]["by_flag"].items() if k in ARM_GROUPS}
+    w("## Reading")
+    w("")
+    w(f"Pooled over the development window the arm's grid CRPS is {pc[0]:+.3f} [{pc[1]:+.3f}, {pc[2]:+.3f}] against the candidate and its upper-tail twCRPS {pt[0]:+.3f} [{pt[1]:+.3f}, {pt[2]:+.3f}] "
+      f"(positive favours the arm): by the declared rule the pooled reading is: {dev['pooled_reading']}. By flag, grid CRPS against the candidate: "
+      + "; ".join(f"{k} {v['d_cand_crps'][0]:+.3f} [{v['d_cand_crps'][1]:+.3f}, {v['d_cand_crps'][2]:+.3f}]" for k, v in flag_rows.items()) + ".")
+    w("")
     w("## Pooled, on scoring protocol v1's studentized stationary bootstrap")
     w("")
     w("One score per decision day (the mean over h = 1 to 5), development window. d = reference score - arm score: positive favours the arm. Two-sided 90% intervals read from the studentized draws of "
@@ -464,7 +472,7 @@ def page(r: Mapping[str, object]) -> str:
                 ["candidate (unchanged)", "-", iv(p["pairs"]["candidate_vs_B1"]), iv(p["pairs"]["candidate_vs_B1_prime"]), iv(p["pairs"]["candidate_vs_B2"])]]
         L += table(["", "vs candidate", "vs B1", "vs B1'", "vs B2"], rows)
         w("")
-    w(f"**Pooled reading by the declared rule: the arm {dev['pooled_reading']}** (loses when the pooled grid-CRPS difference candidate - arm is not above 0, wins when its 90% interval lies wholly above 0). "
+    w(f"**Pooled reading by the declared rule: {dev['pooled_reading']}** (loses when the pooled grid-CRPS difference candidate - arm is not above 0, wins when its 90% interval lies wholly above 0). "
       "The rule is marked as a question in the pull request.")
     w("")
     w("## Splits")
