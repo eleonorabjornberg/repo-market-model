@@ -43,6 +43,7 @@ from . import spread_mr_state_calendar as sc
 from .asof import InformationRule
 from .data import DailyObservation
 from .evaluation_splits import SplitDeclaration
+from .one_step_guard import stamp_like, stamp_pairs
 from .scoring_protocol import HORIZONS, ProtocolError
 from .splits import LookAheadError, SplitError
 
@@ -245,7 +246,7 @@ def fit_lead(
             return LeadFit(0.0, first, True, mean_ratio)
         scaled = [e / factor(x, gamma) if e > 0.0 else e for e, x in zip(residuals, ratios)]
         return LeadFit(gamma, replace(first, pool=pb.empirical_quantiles(sorted(scaled))), True, mean_ratio)
-    rescaled = [sc.StatePair(p.raw, p.scale * factor(x, gamma), p.flags, None) for p, x in zip(pairs, ratios)]
+    rescaled = stamp_like([sc.StatePair(p.raw, p.scale * factor(x, gamma), p.flags, None) for p, x in zip(pairs, ratios)], pairs)
     return LeadFit(gamma, terms(rescaled), False, mean_ratio)
 
 
@@ -310,7 +311,7 @@ def refit(
                 ratios.append(series[arm.numerator].at(origin))
             if not pairs:
                 raise smr.InsufficientHistory(f"{dates[decision_index]}: no training pair of lead {h} has a scale")
-            per_lead[h] = fit_lead(pairs, ratios, arm, regressors=cal.regressors_of(BASE_ARM, h), training_pairs=training_pairs)
+            per_lead[h] = fit_lead(stamp_pairs(pairs, direct=training_pairs == "direct"), ratios, arm, regressors=cal.regressors_of(BASE_ARM, h), training_pairs=training_pairs)
         out[arm.name] = per_lead
     return out
 

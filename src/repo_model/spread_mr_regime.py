@@ -52,7 +52,7 @@ from . import spread_mr_fhs as fhs
 from . import spread_mr_state_calendar as sc
 from .data import DailyObservation
 from .evaluation_splits import SplitDeclaration
-from .one_step_guard import guard_one_step_fit
+from .one_step_guard import guard_one_step_fit, guard_pair_stamp, stamp_pairs
 from .scoring_protocol import GRID, HORIZONS, ProtocolError
 from .splits import LookAheadError, SplitError
 
@@ -283,6 +283,7 @@ def _degenerate(z: Sequence[Optional[float]]) -> Params:
     return Params((s, s), _logit(ENTRY_START), (0.0,) * len(ENTRY_TERMS), STAY_START, float("nan"), 0, True)
 
 
+@guard_pair_stamp("xs")
 @guard_one_step_fit
 def fit_regimes(
     z: Sequence[Optional[float]],
@@ -677,7 +678,7 @@ def refit(
         chains["m2_markov"] = (params["m2_markov"], False)
     if "markov_calendar" in wanted:
         xs = [source.x(j) for j in range(start, anchor + 1)]
-        params["m3_markov_calendar"] = fit_regimes(zs, xs, regressors=ENTRY_REGRESSORS, training_pairs=training_pairs)
+        params["m3_markov_calendar"] = fit_regimes(zs, stamp_pairs(xs, direct=True), regressors=ENTRY_REGRESSORS, training_pairs=training_pairs)
         chains["m3_markov_calendar"] = (params["m3_markov_calendar"], True)
     track.calibrate(band, chains, source)
     episode: Dict[str, Dict[int, EpisodeLead]] = {}

@@ -89,7 +89,7 @@ def planted(effect=3.0, scales=(1.0,), flagged=12, n=80, outlier=None, state=Non
 
 
 def fit(pairs, *, interact=False, robust=False, terms=("quarter_end",), regressors=("quarter_end",)):
-    return sc.fit_state_terms(pairs, regressors=regressors, terms=terms, interact=interact, robust=robust, training_pairs="direct")
+    return sc.fit_state_terms(osg.stamp_pairs(pairs, direct=True), regressors=regressors, terms=terms, interact=interact, robust=robust, training_pairs="direct")
 
 
 class StandardisedUnitsTests(unittest.TestCase):
