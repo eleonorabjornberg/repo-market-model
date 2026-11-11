@@ -674,7 +674,8 @@ def answer(dev: Mapping[str, object]) -> str:
     first = ("Not on the development data: the" if m["arm"] < 0.9 else "On the development data the") + short_of_nominal(dev)[len("The"):]
     gained = "improved on the candidate's coverage beyond its interval" if kill["coverage_improves_beyond_interval"] else "did not improve on the candidate's coverage beyond its interval"
     lost = "scored worse on grid CRPS" if kill["group_crps_loses"] else "did not score worse on grid CRPS"
-    second = f"The arm {gained} and {lost}, so under the rule declared before the run it is {'killed' if kill['killed'] else 'not killed'}."
+    joiner = "but" if kill["coverage_improves_beyond_interval"] == kill["group_crps_loses"] else "and"
+    second = f"The arm {gained} {joiner} {lost}, so under the rule declared before the run it is {'killed' if kill['killed'] else 'not killed'}."
     return f"{first} {second}"
 
 

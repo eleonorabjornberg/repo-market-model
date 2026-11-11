@@ -172,7 +172,7 @@ class CommittedRecordTests(unittest.TestCase):
         record = json.loads(self.RECORD.read_text(encoding="utf-8"))
         self.assertEqual(sorted(record["context_1531"]), sorted(script.WINDOWS))
         text = self.PAGE.read_text(encoding="utf-8")
-        self.assertIn("### Beside #1531's arm A", text)
+        self.assertIn("### Beside the width-only arm", text)
         there = {"development": {"events": 1, "cells": 1, "measures": {m: {"candidate": 0.5, "arm_1531": 0.4} for m in script.MEASURES}}}
         here = {"measures": {m: {"candidate": 0.6, "arm": 0.3} for m in script.MEASURES}}
         with self.assertRaises(ValueError):
