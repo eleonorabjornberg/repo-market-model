@@ -23,21 +23,17 @@ On the 2026 days (shown apart, 169 target days) the 50% band covers 46.2% [36.2%
 
 ## Data
 
-The candidate, (s3c-ann-net), at the 18:00 decision instant, walked unchanged, with B1, B1' and B2 beside it. The development window (decision days whose five targets are on or before 2025-12-31) decides what is said here; the 2026 days (targets 2026-01-02 to 2026-09-03) had already been seen by earlier studies, are shown apart and decide nothing.
+The candidate, (s3c-ann-net), at the 18:00 decision instant, walked unchanged, with B1, B1' and B2 beside it. The answer rests on the development window (decision days whose five targets are on or before 2025-12-31); the 2026 days (targets 2026-01-02 to 2026-09-03) had already been seen by earlier studies, are shown at the end and decide nothing.
 
 ## Method
 
-**Intervals.** Intervals are 90% stationary-bootstrap percentile intervals of a rate (mean block 10 target days, 2000 resamples, seed 1363) over the group's target days in date order. This is the current method; it has been questioned and a ruling on it is pending, so no reading of a day-type group is a finding.
+For every group of days, the study counts how often the outcome fell inside the candidate's 50% and 90% bands and below its q05 and q95, and sets that against the share each one names. A band or quantile is read as off only when the whole 90% interval of its rate lies on one side of that share. Each sequence of hits and misses is then tested for runs: if misses were independent, a miss would be no more likely after a miss than after a hit.
 
-**Readings.** Groups of fewer than 20 target days are listed with their rates and not read. A band is read 'under-covers' or 'over-covers' when its interval lies wholly below or above the nominal; a quantile is read 'too high' when the interval of the share of outcomes strictly below it lies wholly above its level and 'too low' when the interval of the share at or below it lies wholly below. Nothing is corrected for the number of readings.
-
-## The development window
+## Result on the development window
 
 1855 decision days (2018-07-19 to 2025-12-23), 9275 cells, last target 2025-12-31.
 
-### Pooled and by lead
-
-Each band cell gives the coverage, its 90% interval and the reading. Each quantile cell gives the share of outcomes strictly below the quantile and the share at or below it, to be compared with the quantile's level, and then the reading. The first table sets the candidate beside the benchmarks; the second splits the candidate by lead.
+The table shows, for the candidate and the three benchmarks over all cells, how often each band held the outcome (with its 90% interval and reading) and the share of outcomes below q05 and q95.
 
 | group | target days | cells | model | 50% band | 90% band | q05 strict / at-or-below | q95 strict / at-or-below |
 |---|---|---|---|---|---|---|---|
@@ -45,6 +41,24 @@ Each band cell gives the coverage, its 90% interval and the reading. Each quanti
 | all cells | 1859 | 9275 | B1 | 53.1% [48.7%, 57.6%] consistent | 84.3% [81.5%, 86.9%] under-covers | 7.5% / 8.7% quantile too high | 90.7% / 91.7% quantile too low |
 | all cells | 1859 | 9275 | B1' | 53.1% [48.6%, 57.7%] consistent | 83.3% [80.2%, 86.2%] under-covers | 7.1% / 9.1% quantile too high | 89.2% / 90.4% quantile too low |
 | all cells | 1859 | 9275 | B2 | 46.3% [41.0%, 51.4%] consistent | 80.6% [77.3%, 83.8%] under-covers | 8.7% / 23.8% quantile too high | 85.2% / 89.4% quantile too low |
+
+## What it means, and its limits
+
+It shows how the candidate's bands and quantiles hold on seen days, by regime and by day type, and whether its tail and band misses are serially dependent. It does not show that any group is miscalibrated for the next days, nothing here is a verdict, and a miss rate that moves with the regime would also reject independence: the regime rows and the day-type tables are there to tell the two apart. B4 is not compared.
+
+## Details
+
+**Intervals.** Intervals are 90% stationary-bootstrap percentile intervals of a rate (mean block 10 target days, 2000 resamples, seed 1363) over the group's target days in date order. This is the current method; it has been questioned and a ruling on it is pending, so no reading of a day-type group is a finding.
+
+**Readings.** Groups of fewer than 20 target days are listed with their rates and not read. A band is read 'under-covers' or 'over-covers' when its interval lies wholly below or above the nominal; a quantile is read 'too high' when the interval of the share of outcomes strictly below it lies wholly above its level and 'too low' when the interval of the share at or below it lies wholly below. Nothing is corrected for the number of readings.
+
+## Other tables
+
+### Development window
+
+#### By lead
+
+The candidate alone, one row per lead.
 
 | group | target days | cells | model | 50% band | 90% band | q05 strict / at-or-below | q95 strict / at-or-below |
 |---|---|---|---|---|---|---|---|
@@ -54,7 +68,7 @@ Each band cell gives the coverage, its 90% interval and the reading. Each quanti
 | h=4 | 1855 | 1855 | (s3c-ann-net) | 47.7% [43.9%, 51.5%] consistent | 86.9% [84.4%, 89.2%] under-covers | 6.9% / 6.9% quantile too high | 93.8% / 93.8% consistent |
 | h=5 | 1855 | 1855 | (s3c-ann-net) | 47.0% [43.2%, 50.9%] consistent | 87.2% [84.7%, 89.6%] under-covers | 6.7% / 6.7% consistent | 93.9% / 93.9% consistent |
 
-### By regime of the target day
+#### By regime of the target day
 
 The same columns for all four models, one block per regime.
 
@@ -81,7 +95,7 @@ The same columns for all four models, one block per regime.
 | 2025-26 | 249 | 1235 | B1' | 22.8% [19.0%, 26.2%] under-covers | 60.2% [54.8%, 65.4%] under-covers | 19.2% / 22.8% quantile too high | 77.3% / 79.4% quantile too low |
 | 2025-26 | 249 | 1235 | B2 | 28.7% [18.5%, 38.2%] under-covers | 72.2% [63.0%, 80.5%] under-covers | 10.0% / 16.2% consistent | 79.6% / 82.2% quantile too low |
 
-### By day type of the target day (the types overlap; ordinary is none of them)
+#### By day type of the target day (the types overlap; ordinary is none of them)
 
 These day types are calendar flags, and one day can carry several, so the rows do not add up to the whole. The candidate is shown beside B1'.
 
@@ -108,7 +122,7 @@ These day types are calendar flags, and one day can carry several, so the rows d
 | ordinary | 507 | 2530 | (s3c-ann-net) | 55.0% [49.8%, 60.8%] consistent | 92.5% [90.3%, 94.4%] over-covers | 4.3% / 4.3% consistent | 96.8% / 96.8% quantile too high |
 | ordinary | 507 | 2530 | B1' | 57.0% [50.0%, 64.2%] over-covers | 87.0% [82.9%, 90.9%] consistent | 7.2% / 8.6% quantile too high | 93.0% / 94.2% consistent |
 
-### By pressure-day type of the target day
+#### By pressure-day type of the target day
 
 The same comparison on the pressure-day labels the quarter-end studies use.
 
@@ -125,7 +139,7 @@ The same comparison on the pressure-day labels the quarter-end studies use.
 | year_end | 15 | 71 | (s3c-ann-net) | 42.3% not tested | 64.8% not tested | 12.7% / 12.7% not tested | 77.5% / 77.5% not tested |
 | year_end | 15 | 71 | B1' | 47.9% not tested | 62.0% not tested | 4.2% / 4.2% not tested | 66.2% / 66.2% not tested |
 
-### Every grid quantile, all cells (candidate)
+#### Every grid quantile, all cells (candidate)
 
 For a calibrated model each share, read as a fraction, equals the level in the first column.
 
@@ -155,9 +169,9 @@ For a calibrated model each share, read as a fraction, equals the level in the f
 | 0.975 | 96.86% | 96.86% |
 | 0.99 | 98.38% | 98.38% |
 
-### Randomized PIT (seed 1363; the range is over seeds 1364 to 1383)
+#### Randomized PIT (seed 1363; the range is over seeds 1364 to 1383)
 
-The PIT is the probability the forecast gave to outcomes at or below the one that happened; it is randomized where the outcome ties a quantile. For a calibrated model the six bins hold ten, fifteen, twenty-five, twenty-five, fifteen and ten percent of the cells. The last two columns give the two outer bins with their range over 20 other seeds, which shows how far the randomization moves them.
+The PIT is the probability the forecast gave to outcomes at or below the one that happened; for a calibrated model the six bins hold ten, fifteen, twenty-five, twenty-five, fifteen and ten percent of the cells.
 
 pooled, candidate:
 
@@ -220,7 +234,7 @@ B2:
 |---|---|---|---|---|
 | all cells | 9275 | 19.4 12.1 16.7 20.8 12.6 18.5 | 19.4% (18.9% to 19.6%) | 18.5% (18.4% to 18.9%) |
 
-### Readings that are not 'consistent' (candidate)
+#### Readings that are not 'consistent' (candidate)
 
 The full list behind the summary in the answer, largest first.
 
@@ -309,9 +323,9 @@ The full list behind the summary in the answer, largest first.
 | pooled | all cells | 1859 | q0.99 | quantile too low | -0.6 pp |
 | lead | h=2 | 1855 | q0.99 | quantile too low | -0.6 pp |
 
-### Do the misses cluster in time?
+#### Do the misses cluster in time?
 
-A hit sequence records, day by day, whether the outcome fell outside a quantile or a band. If misses were independent, a miss would be no more likely after a miss than after a hit. The first table counts, for each model, how many of its sequences are read as serially dependent; the table after it gives the detail.
+The first table counts, for each model, how many of its hit sequences are read as serially dependent; the second gives the detail.
 
 Christoffersen's independence test on each lead's sequence over the scored decision days (no transition across a gap or, for the regime rows, a regime change); the permutation p is the reading, Holm-adjusted at 0.05 over the 40 sequences of a model and window (per regime for the regime rows).
 
@@ -385,7 +399,7 @@ Christoffersen's independence test on each lead's sequence over the scored decis
 | B2 | 5 | band90/strict | 374 (20.2%) | 67.0% | 8.4% | 25 | 0.0000 | 0.0001 | yes |
 | B2 | 5 | band50/strict | 1007 (54.3%) | 82.9% | 20.4% | 149 | 0.0000 | 0.0001 | yes |
 
-#### The protocol's own reading (thinned: every h-th decision day at lead h; regime of the decision day), q05 and q95, strict rule
+##### The protocol's own reading (thinned: every h-th decision day at lead h; regime of the decision day), q05 and q95, strict rule
 
 These are the two tests the scoring protocol applies: a Kupiec test of the hit rate and an independence test, each with its p-value.
 
@@ -492,13 +506,13 @@ These are the two tests the scoring protocol applies: a Kupiec test of the hit r
 | B1' | 5 | q0.05 | 2025-26 | 48 | 8 | 0.003 | 0.700 |
 | B1' | 5 | q0.95 | 2025-26 | 48 | 11 | 0.000 | 0.732 |
 
-## The 2026 development days (shown apart; decide nothing)
+### The 2026 development days (shown apart; decide nothing)
 
 165 decision days (2025-12-31 to 2026-08-27), 825 cells, last target 2026-09-03.
 
-### Pooled and by lead
+#### Pooled
 
-Each band cell gives the coverage, its 90% interval and the reading. Each quantile cell gives the share of outcomes strictly below the quantile and the share at or below it, to be compared with the quantile's level, and then the reading. The first table sets the candidate beside the benchmarks; the second splits the candidate by lead.
+The table shows, for the candidate and the three benchmarks over all cells, how often each band held the outcome (with its 90% interval and reading) and the share of outcomes below q05 and q95.
 
 | group | target days | cells | model | 50% band | 90% band | q05 strict / at-or-below | q95 strict / at-or-below |
 |---|---|---|---|---|---|---|---|
@@ -506,6 +520,10 @@ Each band cell gives the coverage, its 90% interval and the reading. Each quanti
 | all cells | 169 | 825 | B1 | 46.4% [41.3%, 52.3%] consistent | 89.6% [85.0%, 93.4%] consistent | 5.5% / 5.8% consistent | 94.3% / 95.0% consistent |
 | all cells | 169 | 825 | B1' | 43.9% [37.3%, 51.5%] consistent | 88.7% [84.3%, 93.0%] consistent | 5.6% / 7.8% consistent | 93.8% / 94.3% consistent |
 | all cells | 169 | 825 | B2 | 77.2% [69.5%, 83.7%] over-covers | 96.8% [93.5%, 99.4%] over-covers | 3.0% / 3.6% consistent | 99.9% / 99.9% quantile too high |
+
+#### By lead
+
+The candidate alone, one row per lead.
 
 | group | target days | cells | model | 50% band | 90% band | q05 strict / at-or-below | q95 strict / at-or-below |
 |---|---|---|---|---|---|---|---|
@@ -515,7 +533,7 @@ Each band cell gives the coverage, its 90% interval and the reading. Each quanti
 | h=4 | 165 | 165 | (s3c-ann-net) | 48.5% [35.8%, 59.4%] consistent | 89.1% [82.4%, 94.5%] consistent | 7.9% / 7.9% consistent | 97.0% / 97.0% consistent |
 | h=5 | 165 | 165 | (s3c-ann-net) | 46.7% [35.2%, 57.6%] consistent | 87.9% [81.2%, 93.9%] consistent | 9.1% / 9.1% consistent | 97.0% / 97.0% consistent |
 
-### By regime of the target day
+#### By regime of the target day
 
 The same columns for all four models, one block per regime.
 
@@ -526,7 +544,7 @@ The same columns for all four models, one block per regime.
 | 2025-26 | 169 | 825 | B1' | 43.9% [37.3%, 51.5%] consistent | 88.7% [84.3%, 93.0%] consistent | 5.6% / 7.8% consistent | 93.8% / 94.3% consistent |
 | 2025-26 | 169 | 825 | B2 | 77.2% [69.5%, 83.7%] over-covers | 96.8% [93.5%, 99.4%] over-covers | 3.0% / 3.6% consistent | 99.9% / 99.9% quantile too high |
 
-### By day type of the target day (the types overlap; ordinary is none of them)
+#### By day type of the target day (the types overlap; ordinary is none of them)
 
 These day types are calendar flags, and one day can carry several, so the rows do not add up to the whole. The candidate is shown beside B1'.
 
@@ -551,7 +569,7 @@ These day types are calendar flags, and one day can carry several, so the rows d
 | ordinary | 44 | 219 | (s3c-ann-net) | 37.9% [27.7%, 48.3%] under-covers | 83.6% [73.6%, 92.7%] consistent | 9.6% / 9.6% consistent | 93.2% / 93.2% consistent |
 | ordinary | 44 | 219 | B1' | 36.5% [29.5%, 43.6%] under-covers | 86.3% [81.6%, 90.5%] consistent | 7.8% / 9.1% quantile too high | 94.1% / 94.1% consistent |
 
-### By pressure-day type of the target day
+#### By pressure-day type of the target day
 
 The same comparison on the pressure-day labels the quarter-end studies use.
 
@@ -568,7 +586,7 @@ The same comparison on the pressure-day labels the quarter-end studies use.
 | year_end | 1 | 1 | (s3c-ann-net) | 0.0% not tested | 0.0% not tested | 0.0% / 0.0% not tested | 0.0% / 0.0% not tested |
 | year_end | 1 | 1 | B1' | 0.0% not tested | 100.0% not tested | 0.0% / 0.0% not tested | 100.0% / 100.0% not tested |
 
-### Every grid quantile, all cells (candidate)
+#### Every grid quantile, all cells (candidate)
 
 For a calibrated model each share, read as a fraction, equals the level in the first column.
 
@@ -598,9 +616,9 @@ For a calibrated model each share, read as a fraction, equals the level in the f
 | 0.975 | 98.55% | 98.55% |
 | 0.99 | 99.64% | 99.64% |
 
-### Randomized PIT (seed 1363; the range is over seeds 1364 to 1383)
+#### Randomized PIT (seed 1363; the range is over seeds 1364 to 1383)
 
-The PIT is the probability the forecast gave to outcomes at or below the one that happened; it is randomized where the outcome ties a quantile. For a calibrated model the six bins hold ten, fifteen, twenty-five, twenty-five, fifteen and ten percent of the cells. The last two columns give the two outer bins with their range over 20 other seeds, which shows how far the randomization moves them.
+The PIT is the probability the forecast gave to outcomes at or below the one that happened; for a calibrated model the six bins hold ten, fifteen, twenty-five, twenty-five, fifteen and ten percent of the cells.
 
 pooled, candidate:
 
@@ -658,7 +676,7 @@ B2:
 |---|---|---|---|---|
 | all cells | 825 | 5.7 9.2 36.4 37.2 10.1 1.5 | 5.7% (5.7% to 5.7%) | 1.5% (1.3% to 1.6%) |
 
-### Readings that are not 'consistent' (candidate)
+#### Readings that are not 'consistent' (candidate)
 
 The full list behind the summary in the answer, largest first.
 
@@ -688,9 +706,9 @@ The full list behind the summary in the answer, largest first.
 | target_day_type | post_month_end_window | 27 | q0.01 | quantile too low | -1.0 pp |
 | pressure_day_type | ordinary | 146 | q0.99 | quantile too high | +0.7 pp |
 
-### Do the misses cluster in time?
+#### Do the misses cluster in time?
 
-A hit sequence records, day by day, whether the outcome fell outside a quantile or a band. If misses were independent, a miss would be no more likely after a miss than after a hit. The first table counts, for each model, how many of its sequences are read as serially dependent; the table after it gives the detail.
+The first table counts, for each model, how many of its hit sequences are read as serially dependent; the second gives the detail.
 
 Christoffersen's independence test on each lead's sequence over the scored decision days (no transition across a gap or, for the regime rows, a regime change); the permutation p is the reading, Holm-adjusted at 0.05 over the 40 sequences of a model and window (per regime for the regime rows).
 
@@ -764,7 +782,7 @@ Christoffersen's independence test on each lead's sequence over the scored decis
 | B2 | 5 | band90/strict | 5 (3.0%) | 60.0% | 1.3% | 3 | 0.0000 | 0.0002 | yes |
 | B2 | 5 | band50/strict | 35 (21.2%) | 57.1% | 11.6% | 7 | 0.0000 | 0.0001 | yes |
 
-#### The protocol's own reading (thinned: every h-th decision day at lead h; regime of the decision day), q05 and q95, strict rule
+##### The protocol's own reading (thinned: every h-th decision day at lead h; regime of the decision day), q05 and q95, strict rule
 
 These are the two tests the scoring protocol applies: a Kupiec test of the hit rate and an independence test, each with its p-value.
 
@@ -790,10 +808,6 @@ These are the two tests the scoring protocol applies: a Kupiec test of the hit r
 | B1' | 4 | q0.95 | 2025-26 | 42 | 3 | 0.548 | 0.491 |
 | B1' | 5 | q0.05 | 2025-26 | 33 | 1 | 0.577 | 0.799 |
 | B1' | 5 | q0.95 | 2025-26 | 33 | 1 | 0.577 | 0.799 |
-
-## What it means, and its limits
-
-It shows how the candidate's bands and quantiles hold on seen days, by regime and by day type, and whether its tail and band misses are serially dependent. It does not show that any group is miscalibrated for the next days, nothing here is a verdict, and a miss rate that moves with the regime would also reject independence: the regime rows and the day-type tables are there to tell the two apart. B4 is not compared.
 
 ## Record
 
