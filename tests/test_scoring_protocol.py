@@ -9,6 +9,7 @@ verdict.
 
 from __future__ import annotations
 
+import dataclasses
 import json
 import math
 import random
@@ -34,6 +35,32 @@ def weekdays(start, count):
             out.append(day)
         day += timedelta(days=1)
     return out
+
+
+def bound_verdict(against_b1, against_b2, **settings):
+    """`sp.verdict` as protocol v1 binds it (#1567): the tests are labelled as B1 and B2, the days are the registration's
+    own, and the coverage requirement was checked and passed. The binding itself is tested in `test_verdict_binds_1567.py`."""
+
+    from test_verdict_binds_1567 import FIRST_DAY, passed_coverage
+
+    settings.setdefault("first_confirmation_day", FIRST_DAY)
+    settings.setdefault("coverage", passed_coverage())
+    return sp.verdict(
+        dataclasses.replace(against_b1, benchmark="B1"), dataclasses.replace(against_b2, benchmark="B2"), **settings
+    )
+
+
+def bound_report(against_b1, against_b2, against_b3, **settings):
+    from test_verdict_binds_1567 import FIRST_DAY, passed_coverage
+
+    settings.setdefault("first_confirmation_day", FIRST_DAY)
+    settings.setdefault("coverage", passed_coverage())
+    return sp.report(
+        dataclasses.replace(against_b1, benchmark="B1"),
+        dataclasses.replace(against_b2, benchmark="B2"),
+        dataclasses.replace(against_b3, benchmark="B3"),
+        **settings,
+    )
 
 
 def flat(value):
@@ -654,8 +681,8 @@ class VerdictTests(unittest.TestCase):
             [(self.b1, self.strong), (self.b2, self.strong), (self.b1, self.weak), (self.b2, self.weak)],
             seed=1, draws=200,
         )
-        self.assertEqual(sp.verdict(tests[0], tests[1], look=3), sp.SUPPORTED)
-        self.assertEqual(sp.verdict(tests[2], tests[3], look=3), sp.KILLED)
+        self.assertEqual(bound_verdict(tests[0], tests[1], look=3), sp.SUPPORTED)
+        self.assertEqual(bound_verdict(tests[2], tests[3], look=3), sp.KILLED)
 
     def test_the_verdict_reads_the_grid_comparisons_value(self):
         """Supported under a small value for the grid comparison and not under one that puts the bound
@@ -666,9 +693,9 @@ class VerdictTests(unittest.TestCase):
         grid = dict(sp.CRITICAL_VALUES[sp.GRID_COMPARISON])
         with mock.patch.dict(sp.CRITICAL_VALUES, {sp.GRID_COMPARISON: {**grid, 250: t_stat * 0.9},
                                                   sp.FIVE_LEVEL_COMPARISON: {60: None, 125: 1e9, 250: 1e9}}):
-            self.assertEqual(sp.verdict(tests[0], tests[1], look=3), sp.SUPPORTED)
+            self.assertEqual(bound_verdict(tests[0], tests[1], look=3), sp.SUPPORTED)
         with mock.patch.dict(sp.CRITICAL_VALUES, {sp.GRID_COMPARISON: {**grid, 250: t_stat * 1.1}}):
-            self.assertNotEqual(sp.verdict(tests[0], tests[1], look=3), sp.SUPPORTED)
+            self.assertNotEqual(bound_verdict(tests[0], tests[1], look=3), sp.SUPPORTED)
 
     def test_each_leg_reads_its_own_critical_value(self):
         """#929 (finding #913): the leg against B1 reads `CRITICAL_VALUES`, the leg against B2 reads
@@ -686,14 +713,14 @@ class VerdictTests(unittest.TestCase):
         grid = dict(sp.CRITICAL_VALUES[sp.GRID_COMPARISON])
         low = {**grid, 250: min(t_b1, t_b2) * 0.9}
         with mock.patch.dict(sp.CRITICAL_VALUES, {sp.GRID_COMPARISON: low}):
-            self.assertEqual(sp.verdict(tests[0], tests[1], look=3), sp.SUPPORTED)
+            self.assertEqual(bound_verdict(tests[0], tests[1], look=3), sp.SUPPORTED)
             with mock.patch.dict(sp.B2_LEG_CRITICAL_VALUES, {sp.GRID_COMPARISON: {**low, 250: t_b2 * 1.1}}):
-                self.assertNotEqual(sp.verdict(tests[0], tests[1], look=3), sp.SUPPORTED)
+                self.assertNotEqual(bound_verdict(tests[0], tests[1], look=3), sp.SUPPORTED)
             with mock.patch.dict(sp.B2_LEG_CRITICAL_VALUES, {sp.GRID_COMPARISON: {**low, 250: t_b2 * 0.9}}):
-                self.assertEqual(sp.verdict(tests[0], tests[1], look=3), sp.SUPPORTED)
+                self.assertEqual(bound_verdict(tests[0], tests[1], look=3), sp.SUPPORTED)
         with mock.patch.dict(sp.CRITICAL_VALUES, {sp.GRID_COMPARISON: {**grid, 250: t_b1 * 1.1}}):
             with mock.patch.dict(sp.B2_LEG_CRITICAL_VALUES, {sp.GRID_COMPARISON: {**grid, 250: t_b2 * 0.9}}):
-                self.assertNotEqual(sp.verdict(tests[0], tests[1], look=3), sp.SUPPORTED)
+                self.assertNotEqual(bound_verdict(tests[0], tests[1], look=3), sp.SUPPORTED)
 
     def test_no_per_leg_value_is_in_force_yet(self):
         """#929 draws the amendment; the values are applied only after Eleonora merges the record."""
@@ -707,8 +734,8 @@ class VerdictTests(unittest.TestCase):
         strong = {day: 0.5 + 0.05 * rng.random() for day in days}
         weak = {day: b[day] + 0.001 * rng.gauss(0, 1) for day in days}
         tests = sp.paired_tests([(b, strong), (b, strong), (b, weak), (b, weak)], seed=1, draws=100)
-        self.assertEqual(sp.verdict(tests[0], tests[1], look=1), sp.INCONCLUSIVE)
-        self.assertEqual(sp.verdict(tests[2], tests[3], look=1), sp.KILLED)
+        self.assertEqual(bound_verdict(tests[0], tests[1], look=1), sp.INCONCLUSIVE)
+        self.assertEqual(bound_verdict(tests[2], tests[3], look=1), sp.KILLED)
 
     def test_futility_reads_the_calibrated_upper_bound(self):
         tests = sp.paired_tests([(self.b1, self.weak), (self.b2, self.weak)], seed=1, draws=200)
@@ -717,13 +744,13 @@ class VerdictTests(unittest.TestCase):
         futility = dict(sp.FUTILITY_CRITICAL_VALUES[sp.GRID_COMPARISON])
         needed = (sp.MME - tests[0].skill) / tests[0].skill_standard_error
         with mock.patch.dict(sp.FUTILITY_CRITICAL_VALUES, {sp.GRID_COMPARISON: {**futility, 250: needed * 1.01}}):
-            self.assertEqual(sp.verdict(tests[0], tests[1], look=3), sp.NOT_SHOWN)
+            self.assertEqual(bound_verdict(tests[0], tests[1], look=3), sp.NOT_SHOWN)
 
     def test_only_the_protocols_futility_level_is_read(self):
         tests = sp.paired_tests([(self.b1, self.weak), (self.b2, self.weak)], seed=1, draws=200)
-        self.assertEqual(sp.verdict(tests[0], tests[1], look=3, futility_level=0.05), sp.KILLED)
+        self.assertEqual(bound_verdict(tests[0], tests[1], look=3, futility_level=0.05), sp.KILLED)
         with self.assertRaises(sp.ProtocolError):
-            sp.verdict(tests[0], tests[1], look=3, futility_level=0.10)
+            bound_verdict(tests[0], tests[1], look=3, futility_level=0.10)
 
     def test_a_test_off_the_checkpoint_is_refused(self):
         days = weekdays(date(2015, 1, 2), 100)
@@ -731,7 +758,7 @@ class VerdictTests(unittest.TestCase):
         c = {day: 0.9 + 0.02 * (i % 3) for i, day in enumerate(days)}
         tests = sp.paired_tests([(b, c), (b, c)], seed=1, draws=100)
         with self.assertRaises(sp.ProtocolError):
-            sp.verdict(tests[0], tests[1], look=3)
+            bound_verdict(tests[0], tests[1], look=3)
 
 
 class B3ReportTests(unittest.TestCase):
@@ -759,7 +786,7 @@ class B3ReportTests(unittest.TestCase):
 
     def test_the_output_prints_the_b3_comparison_and_its_bound_beside_the_verdict(self):
         b1, b2, b3 = self.paired(self.strong, self.five_strong)
-        out = sp.report(b1, b2, b3, look=3)
+        out = bound_report(b1, b2, b3, look=3)
         text = str(out)
         self.assertEqual(out.verdict, sp.SUPPORTED)
         self.assertIn(sp.SUPPORTED, text)
@@ -780,7 +807,7 @@ class B3ReportTests(unittest.TestCase):
         b = {day: 1 + 0.05 * rng.random() for day in days}
         c = {day: 0.9 + 0.05 * rng.random() for day in days}
         b1, b2, b3 = sp.paired_tests([(b, c), (b, c), (b, c)], seed=1, draws=100)
-        out = sp.report(b1, b2, b3, look=1)
+        out = bound_report(b1, b2, b3, look=1)
         self.assertIsNone(out.b3.critical_value)
         self.assertIsNone(out.b3.lower_bound)
         self.assertIn("no bound at look 1", str(out))
@@ -792,14 +819,14 @@ class B3ReportTests(unittest.TestCase):
         import inspect
 
         for candidate, expected in ((self.strong, sp.SUPPORTED), (self.weak, sp.KILLED)):
-            alone = sp.verdict(*self.paired(candidate, self.five_strong)[:2], look=3)
+            alone = bound_verdict(*self.paired(candidate, self.five_strong)[:2], look=3)
             self.assertEqual(alone, expected)
             for five in (self.five_strong, self.five_weak):
                 for value in (1e-9, 1e9):
                     with mock.patch.dict(sp.CRITICAL_VALUES, {sp.FIVE_LEVEL_COMPARISON: {60: None, 125: value, 250: value}}):
                         b1, b2, b3 = self.paired(candidate, five)
-                        self.assertEqual(sp.report(b1, b2, b3, look=3).verdict, expected)
-                        self.assertEqual(sp.verdict(b1, b2, look=3), expected)
+                        self.assertEqual(bound_report(b1, b2, b3, look=3).verdict, expected)
+                        self.assertEqual(bound_verdict(b1, b2, look=3), expected)
         self.assertEqual(list(inspect.signature(sp.verdict).parameters)[:2], ["against_b1", "against_b2"])
         self.assertNotIn("b3", inspect.signature(sp.verdict).parameters)
         self.assertNotIn("FIVE_LEVEL_COMPARISON", inspect.getsource(sp.verdict))
@@ -811,7 +838,7 @@ class B3ReportTests(unittest.TestCase):
         cand = {day: 0.9 + 0.01 * (i % 5) for i, day in enumerate(short)}
         wrong = sp.paired_test(other, cand, seed=1, draws=100)
         with self.assertRaises(sp.ProtocolError):
-            sp.report(b1, b2, wrong, look=3)
+            bound_report(b1, b2, wrong, look=3)
 
 
 class SecondaryLevelsTests(unittest.TestCase):

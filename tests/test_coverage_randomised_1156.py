@@ -180,9 +180,10 @@ class EnforceStaysInertTests(unittest.TestCase):
         with mock.patch.object(sp, "COVERAGE_REQUIREMENT_IN_FORCE", True):
             with self.assertRaises(sp.CoverageRequirementFailed):
                 sp.enforce_coverage_requirement(cells, alpha=0.05, family="holm", rule="randomised")
-            # With no randomised cells in the list the rule reads nothing and cannot fail.
+            # With no randomised cells in the list there is nothing to pass: refused, not passed (#1567).
             kept = [c for c in cells if c.rule != "randomised"]
-            self.assertEqual(sp.enforce_coverage_requirement(kept, alpha=0.05, family="holm", rule="randomised"), [])
+            with self.assertRaises(ValueError):
+                sp.enforce_coverage_requirement(kept, alpha=0.05, family="holm", rule="randomised")
 
     def test_an_unknown_rule_is_still_refused(self):
         with self.assertRaises(sp.ProtocolError):
