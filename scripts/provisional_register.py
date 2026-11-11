@@ -50,11 +50,14 @@ CALENDAR_COLUMNS = (
     "iorb_days_to_announced_change",
 )
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-from repo_model.target_day_columns import TARGET_DAY_COLUMNS  # noqa: E402
+from repo_model.target_day_columns import PATCHED_CALENDAR_COLUMNS, TARGET_DAY_COLUMNS  # noqa: E402
 
 #: Every column written about the target day (#1070): the shared declaration, `target_day_columns.TARGET_DAY_COLUMNS` (calendar and
 #: FOMC columns), with the scheduled fields above. The scan of the declarations reads this.
 CALENDAR_COLUMNS = tuple(dict.fromkeys(CALENDAR_COLUMNS + tuple(sorted(TARGET_DAY_COLUMNS))))
+#: The four patched columns (#1564) are short words (`dow` sits inside `window`), so they match as whole names only: not preceded or
+#: followed by a letter, digit or underscore. The other columns keep the substring match above.
+_WHOLE_NAME = re.compile(r"(?<![A-Za-z0-9_])(?:%s)(?![A-Za-z0-9_])" % "|".join(sorted(PATCHED_CALENDAR_COLUMNS)))
 #: The fitters whose default training pairs are one-step.
 FITTER = re.compile(r"fit_(?:gradient_boosted|depth_limited)_quantiles")
 CLASSES = ("a", "b", "a+b", "series", "aligned")
@@ -274,7 +277,7 @@ def declarations_naming_a_calendar_column(repo):
     found = []
     for path in sorted((Path(repo) / "metadata").glob("*.json")):
         text = path.read_text(encoding="utf-8")
-        if any(column in text for column in CALENDAR_COLUMNS):
+        if _WHOLE_NAME.search(text) or any(column in text for column in CALENDAR_COLUMNS if column not in PATCHED_CALENDAR_COLUMNS):
             json.loads(text)
             found.append(f"metadata/{path.name}")
     return found

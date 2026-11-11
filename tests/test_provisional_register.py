@@ -271,6 +271,25 @@ class TestEveryDeclarationIsClassified(unittest.TestCase):
         self.assertEqual(sorted(cleared & elsewhere), [], "a declaration is either in the class or cleared, not both")
 
 
+class TestPatchedColumnsMatchAsWholeNames(unittest.TestCase):
+    """`dow` is inside `window`: the four patched columns (#1564) match as whole names, so a declaration that only says
+    "window" is not swept in, and one that names `dow` or `post_month_end_window` is."""
+
+    def scan(self, text):
+        with tempfile.TemporaryDirectory() as root:
+            (Path(root) / "metadata").mkdir()
+            (Path(root) / "metadata" / "x.json").write_text(json.dumps({"t": text}))
+            return register.declarations_naming_a_calendar_column(root)
+
+    def test_window_is_not_dow(self):
+        self.assertEqual(self.scan("a rolling window of days"), [])
+
+    def test_a_whole_name_is_found(self):
+        for text in ("reads dow at the target", "the post_month_end_window flag", "bday_of_month, maint_period_day"):
+            with self.subTest(text=text):
+                self.assertEqual(self.scan(text), ["metadata/x.json"])
+
+
 class TestThePageMark(unittest.TestCase):
     ENTRY = {"date": "2026-10-19", "step": 3, "groundwork": None, "ref": "eleonorabjornberg/repo-market-model#984", "line": 1,
              "fields": {"Tier": "development", "Result": "a figure", "Against kill": "none"}, "file": "x.md"}
