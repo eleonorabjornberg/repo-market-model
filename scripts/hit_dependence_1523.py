@@ -52,6 +52,17 @@ from repo_model import coverage_tests as ct, metrics, scoring_protocol as sp  # 
 from repo_model.splits import LookAheadError  # noqa: E402
 
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_CRPS = {
+    "cell_scores": (
+        "delegates",
+        "the loss of every cell of a window `coverage_size_1516.load_window_doc` returns, which calls "
+        "`refuse_beyond` on every decision and target day against 2025-12-31 and refuses another window (#1523, "
+        "#1568)",
+    ),
+}
+
+
 def _load(name: str, alias: str):
     spec = importlib.util.spec_from_file_location(alias, REPO / "scripts" / f"{name}.py")
     module = importlib.util.module_from_spec(spec)

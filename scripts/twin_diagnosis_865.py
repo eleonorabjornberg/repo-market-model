@@ -81,6 +81,16 @@ ARMS = (("train_k", 3, 1), ("train_k", 3, 2), ("train_k", 5, 1), ("train_k", 5, 
 REPRODUCTION_TOLERANCE = 1e-6
 
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_CRPS = {
+    "score_command": (
+        "guard",
+        "the twin diagnosis's scores: `require_unlocked` on the last target and `refuse_locked` on every scored day "
+        "and its targets before any score (#865, #1568)",
+    ),
+}
+
+
 def _load(name: str):
     spec = importlib.util.spec_from_file_location(f"{name}_script", REPO / "scripts" / f"{name}.py")
     module = importlib.util.module_from_spec(spec)

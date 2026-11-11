@@ -72,6 +72,17 @@ RULES = ("strict", "weak")
 SEQUENCES = tuple(f"{e}/{r}" for e in EVENTS for r in RULES)
 
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_CRPS = {
+    "reproduction_check": (
+        "delegates",
+        "scores the cells of the walk files `walk_command` wrote; `walk_command` calls `require_exploratory_window` "
+        "and `refuse_beyond` on every panel day, decision day and target day before it writes a file, and "
+        "`score_command` reads those files back without a second check (#1363, #1568)",
+    ),
+}
+
+
 def refuse_beyond(days: Sequence[date], last: date, *, where: str = "candidate_calibration_1363") -> None:
     """Refuse a day after `last` (the window's declared end) and a day of a tier that is still locked: raises `LookAheadError`."""
 
