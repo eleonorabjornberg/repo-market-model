@@ -3131,10 +3131,11 @@ def _check_fitter_stayed_inside(
     """Raise unless the fitted model read only what the caller declared.
 
     The as-of rule reads, masks and guards the declared features and no
-    others. A column the fitter read outside that set reached it from a row
-    nobody checked -- `InformationRule.observation` hands it `None`, and the
-    training frame hands it values no availability check was run on. The error
-    is in the flattering direction, so it is refused rather than tolerated.
+    others. A column the fitter read outside that set was never checked:
+    `InformationRule.observation` hands it `None` (#1565), but the training
+    frame (`InformationRule.frame`) still carries the panel's value for it,
+    on which no availability check was run. The error is in the flattering
+    direction, so it is refused rather than tolerated.
 
     `LookAheadError`, not `ValueError`: this is a leakage condition. Set
     containment, not order or multiplicity: a model may read fewer columns
