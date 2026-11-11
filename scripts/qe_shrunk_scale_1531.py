@@ -521,7 +521,7 @@ def rates_table(rows: Sequence[Tuple[str, Optional[dict]]]) -> List[str]:
 
 
 def scores_table(rows: Sequence[Tuple[str, Optional[dict]]]) -> List[str]:
-    out = ["| set | grid CRPS: candidate | arm | arm minus candidate (negative favours the arm) | upper-tail twCRPS: candidate | arm "
+    out = ["| set | grid CRPS (bp): candidate | arm | arm minus candidate (negative favors the arm) | upper-tail twCRPS (bp): candidate | arm "
            "| arm minus candidate |", "|---|---|---|---|---|---|---|"]
     for label, s in rows:
         if s is None:
@@ -534,21 +534,22 @@ def scores_table(rows: Sequence[Tuple[str, Optional[dict]]]) -> List[str]:
 
 def group_rows(group: Mapping[str, object]) -> List[Tuple[str, Optional[dict]]]:
     rows = [("group, pooled over h = 1-5", group["pooled"])] + [(f"group, h = {h}", group["by_lead"][str(h)]) for h in LEADS]
-    return rows + [(f"group, {t} only", group["by_type"][t]) for t in GROUP_TYPES] + [("#1363 `quarter_end` days (49.3% figure's group)", group["quarter_end_1363"])]
+    return rows + [(f"group, {t} only", group["by_type"][t]) for t in GROUP_TYPES] + [("`quarter_end` days of the calibration study (the group behind its 49.3% figure)", group["quarter_end_1363"])]
 
 
 def short_of_nominal(group: Mapping[str, object]) -> str:
     m = group["pooled"]["measures"]["cover90"]
     return (f"The arm's 90% band covers {_f(m['arm'])} {_iv(m['arm_interval'])} of the group's cells against {_f(m['candidate'])} for the candidate; "
-            f"it stays {100 * (0.9 - m['arm']):.1f} percentage points short of 90%.")
+            f"the gap to 90% is {100 * (0.9 - m['arm']):.1f} percentage points" + ("." if m["arm"] < 0.9 else " (negative: the band covers more than 90%)."))
 
 
 def kill_sentence(kill: Mapping[str, object]) -> str:
-    gain = (f"coverage {_signed(kill['coverage_gain'])} {_siv(kill['coverage_gain_interval'])} (arm minus candidate, event-cluster 90% interval): "
-            + ("improves beyond its interval" if kill["coverage_improves_beyond_interval"] else "does not improve beyond its interval"))
-    crps = (f"group grid CRPS {_signed(kill['group_crps_diff'])} {_siv(kill['group_crps_diff_interval'])} (arm minus candidate): "
-            + ("the arm loses" if kill["group_crps_loses"] else "the arm does not lose"))
-    return f"{gain}; {crps}. **Against the declared kill: {'killed' if kill['killed'] else 'not killed'}.**"
+    gain = (f"Coverage on the group: {_signed(kill['coverage_gain'])} {_siv(kill['coverage_gain_interval'])} (arm minus candidate, event-cluster 90% interval). "
+            + ("The lower end of the interval is above zero, so the arm improves beyond its interval."
+               if kill["coverage_improves_beyond_interval"] else "The lower end of the interval is not above zero, so the arm does not improve beyond its interval."))
+    crps = (f"Grid CRPS on the group: {_signed(kill['group_crps_diff'])} {_siv(kill['group_crps_diff_interval'])} bp (arm minus candidate). "
+            + ("The arm's is above the candidate's, so the arm loses." if kill["group_crps_loses"] else "The arm's is not above the candidate's, so the arm does not lose."))
+    return f"{gain} {crps} **Against the declared kill: {'killed' if kill['killed'] else 'not killed'}.**"
 
 
 def multiplier_table(record: Mapping[str, object]) -> List[str]:
@@ -586,32 +587,64 @@ def b3_table(b3: Mapping[str, object]) -> List[str]:
     return out
 
 
+GLOSSARY = "glossary.md"
+RESULT_TITLES = {"development": "Result on the development window (targets up to 2025-12-31)",
+                 "2026": "The 2026 development days (targets 2026-01-02 to 2026-09-03)"}
+CELL_GUIDE = ("Each cell gives the skill (the share of the benchmark's score the model removes) and then mean d in bp, both with a 90% interval, and "
+              "ends with the reading taken from the interval of d: **gain** when it lies above zero, **undecided** when it includes zero. A note in brackets "
+              "says where the interval of the skill reads differently.")
+
+
 def window_section(window: str, w: Mapping[str, object]) -> List[str]:
     g, n = w["group"], w["notes"]
-    out = [f"## {WINDOW_TITLES[window]}", "",
-           f"Scored decision days: {n['scored_decision_days']:,} ({n['first']} to {n['last']}); {n['refits']} refits. "
-           f"Group cells: {w['outside_the_group']['group_cells']:,}, of which the arm changes {w['outside_the_group']['group_cells_changed']:,}; "
-           f"cells outside the group: {w['outside_the_group']['other_cells']:,}, every one identical to the candidate (the walk fails otherwise). "
-           f"The group holds {g['pooled']['events']} turn events and {g['pooled']['cells']} cells; **roughly 30 to 44 events is small.**", "",
-           "### Coverage and tail misses on the group, candidate against arm", ""] + rates_table(group_rows(g)) + [
-           "", f"**{short_of_nominal(g)}**", "",
-           "### Accuracy of the distribution on the group (paired, same cells)", ""] + scores_table(group_rows(g)) + [
-           "", "### The declared kill" + ("" if window == "development" else " (shown apart; the kill is read on the development window only, and these days decide nothing)"), "", kill_sentence(g["kill"]), "",
-           "### The multipliers (shrunk), over the window's refits", ""] + multiplier_table(w["multipliers"]) + [""]
+    development = window == "development"
+    out = [f"## {RESULT_TITLES[window]}", ""]
+    if not development:
+        out += ["These days are kept apart from the development window. The kill rule is not read on them and they decide nothing.", ""]
+    out += [f"Scored decision days: {n['scored_decision_days']:,} ({n['first']} to {n['last']}); {n['refits']} refits. "
+            f"Group cells: {w['outside_the_group']['group_cells']:,}, of which the arm changes {w['outside_the_group']['group_cells_changed']:,}; "
+            f"cells outside the group: {w['outside_the_group']['other_cells']:,}, every one identical to the candidate (the walk fails otherwise). "
+            f"The group holds {g['pooled']['events']} turn events and {g['pooled']['cells']} cells; **roughly 30 to 44 events is small.**", "",
+            "### Coverage and tail misses on the group, candidate against arm", "",
+            "Read the first row, and in it the column \"arm minus candidate\": that difference and its interval are what the kill rule reads. A 90% band "
+            "that works covers 90% of the cells, so the two coverage columns show how far each model is from that. The four tail columns give the share of "
+            "cells whose outcome fell outside a quantile, candidate first and arm second, with the share a calibrated model would show in brackets in the "
+            "column head. The rows by lead and by day type hold fewer cells, and their intervals are wider.", ""] + rates_table(group_rows(g)) + [
+            "", f"**{short_of_nominal(g)}**", "",
+            "### Accuracy of the distribution on the group (paired, same cells)", "",
+            "Both scores are in bp and lower is better, so a negative difference favors the arm. The first row holds the grid CRPS difference the kill rule "
+            "reads.", ""] + scores_table(group_rows(g)) + [
+            "", "### The declared kill" + ("" if development else " (shown apart; the kill is read on the development window only, and these days decide nothing)"), "",
+            kill_sentence(g["kill"]), "",
+            "### The multipliers (shrunk), over the window's refits", "",
+            "The table shows how large the adjustment was at each lead. `m_raw` is the ratio before shrinkage, `w` the weight it receives and `m` the "
+            "multiplier applied; an `m` above 1 widens the band. The fallback is the `m_raw` of 1 used below 10 pairs, and a bound is 0.5 or 4.", ""
+            ] + multiplier_table(w["multipliers"]) + [""]
     pooled = w["groups"]["pooled"]["all decision days"]
     out += ["### Pooled, against B1, B1' and B2 (studentized stationary bootstrap)", "",
-            "Everything outside the group is identical, so the arm and the candidate differ against a benchmark only through the group.", ""]
+            "This table places both models in the scoring protocol's frame, on all decision days. " + CELL_GUIDE + " Everything outside the group is "
+            "identical, so the arm and the candidate differ against a benchmark only through the group, and their rows are close: the comparison that "
+            "separates them is the group's, above.", ""]
     out += against_table(pooled) + [""]
+    splits = []
     for split, title in (("regime", "By regime"), ("pressure_day_type", "By pressure-day type of the target day")):
         for ref in REFERENCES:
             for cand in (ANNNET, ARM):
                 t = split_table(w, split, cand, ref)
                 if t:
-                    out += [f"### {title}: {LABELS[cand]} against {LABELS[ref]}", ""] + t + [""]
+                    splits += [f"#### {title}: {LABELS[cand]} against {LABELS[ref]}", ""] + t + [""]
+    if splits:
+        out += ["### The same comparison, split", "",
+                "A pooled development figure is not a result on its own, so the comparison is repeated by regime and by pressure-day type of the target day. "
+                "These are reference tables. For each benchmark the candidate's table comes first and the arm's second; the two differ only through the "
+                "group's cells, so look at the rows that hold quarter-end and year-end days. The cells read as in the pooled table.", ""] + splits
     t = split_table(w, "pressure_day_type", ARM, ANNNET)
     if t:
-        out += ["### By pressure-day type: the arm against the candidate (identical outside the group)", ""] + t + [""]
-    out += ["### Against B3 (the published record's five levels, grid CRPS on those five)", ""] + b3_table(w["b3"]) + [""]
+        out += ["### By pressure-day type: the arm against the candidate (identical outside the group)", "",
+                "Here the candidate takes the benchmark's place, so a positive d favors the arm. A row reads \"identical\" where the arm changes nothing.", ""] + t + [""]
+    out += ["### Against B3 (the published record's five levels, grid CRPS on those five)", "",
+            "B3 is the published model. It forecasts five quantile levels, so grid CRPS (bp) is computed on those five for all three models. The comparison "
+            "is reported and carries no decision rule.", ""] + b3_table(w["b3"]) + [""]
     if w["skipped_groups"]:
         out += ["Groups of fewer than 20 days, listed and not tested: " + ", ".join(f"{x} ({n_})" for x, n_ in sorted(w["skipped_groups"].items())) + ".", ""]
     return out
@@ -622,53 +655,94 @@ def question() -> List[str]:
         "## Question for Eleonora (marked; the default changes no claim)", "",
         "**Question 1. What is the shrinkage constant k?** The rule is `w = n / (n + k)`, `n` the group's training pairs at a refit and lead (a turn gives two "
         "pairs per lead). It is written in the declaration before any score and was not tuned on scores: this page uses k = 20, ten turns' worth of pairs, "
-        "where the raw ratio is trusted by half. It is a judgement call, so it is yours.", "",
+        "where the raw ratio is trusted by half. It is a judgment call, so it is yours.", "",
         "**Options** (the default applies if you have not answered by the next 5 pm batch):", "",
         "1. **k = 20** (default). Half weight at ten turns, three fifths at thirty. This page.",
         "2. **k = 10.** Less shrinkage: half weight at five turns. A fresh run with a fresh declaration.",
         "3. **k = 40.** More shrinkage: half weight at twenty turns, about two fifths at thirty. A fresh run with a fresh declaration.", "",
-        "**Question 2. Does the arm go on?** #1533's Mechanism section reads the failure as a shape problem with a location shift, and says no single "
-        "multiplier fits every level. The design was run as ruled and not revised. Whether a width-only arm closes anything, or the work moves to B or to "
-        "an event-conditional distribution model, is yours; adopting the arm is not in scope and the 2 November freeze holds.", "",
+        "**Question 2. Does the arm go on?** The Mechanism section of the quarter-end diagnosis reads the failure as a shape problem with a location shift, "
+        "and says no single multiplier fits every level. The design was run as ruled and not revised. Whether a width-only arm closes anything, or the work "
+        "moves to B or to an event-conditional distribution model, is yours; adopting the arm is not in scope and the 2 November freeze holds.", "",
         "**Options:** 1. **Read this page, then decide B or the event-conditional model** (default; no claim changes). 2. **Re-run with k = 10 or 40** "
         "(option 2 or 3 above). 3. **Stop the family here.**", ""]
+
+
+def answer(dev: Mapping[str, object]) -> str:
+    """The answer in two sentences: where the band stands against 90%, and how the arm reads against the declared kill."""
+
+    m, kill = dev["pooled"]["measures"]["cover90"], dev["kill"]
+    first = ("Not on the development data: the" if m["arm"] < 0.9 else "On the development data the") + short_of_nominal(dev)[len("The"):]
+    gained = "improved on the candidate's coverage beyond its interval" if kill["coverage_improves_beyond_interval"] else "did not improve on the candidate's coverage beyond its interval"
+    lost = "scored worse on grid CRPS" if kill["group_crps_loses"] else "did not score worse on grid CRPS"
+    second = f"The arm {gained} and {lost}, so under the rule declared before the run it is {'killed' if kill['killed'] else 'not killed'}."
+    return f"{first} {second}"
+
+
+def record(r: dict) -> List[str]:
+    """The footer: the issue numbers, the files and the digests a reader needs to trace the page, kept out of the prose above."""
+
+    out = ["## Record", "",
+           "- Study: #1531. Hypothesis and step: H5 (primary goal), step 3, arm A of her ruling of 9 November 2026.",
+           "- Status: **development data, not a verdict** (scoring protocol v1, #640). (s3c-ann-net) stays frozen; nothing is adopted, registered or "
+           "published and no claim changes.",
+           f"- Generated by `scripts/qe_shrunk_scale_1531.py page` from `docs/research/qe-shrunk-scale-1531/result.json`, not edited by hand; declared in "
+           f"`{r['declaration']}` before any score.",
+           f"- Panel digest `{r['panel_sha256']}`."]
+    if r.get("reproduction"):
+        out += ["- Reproduction: the candidate's pooled mean grid CRPS equals #1314's 18:00 record to 1e-9 (development "
+                f"{r['reproduction']['development']['here']:.6f}, 2026 {r['reproduction']['2026']['here']:.6f}), or the script refused to write this record."]
+    out += ["- Where the parts come from: the target-day labels, #959; the raw multiplier, #1402; the quarter-end diagnosis, #1533; the `quarter_end` "
+            "group and its 49.3% figure, #1363; the development window, #1145 and #1241; the 2026 development days, #1229 and #1252.",
+            "- Open or inherited rulings: the day-type interval method, where #1228 has not ruled; the reading from the mean-d bound, her ruling on #1009; "
+            "the understated HAC standard error, #958.", ""]
+    return out
 
 
 def render(r: dict) -> str:
     dev = r["windows"]["development"]["group"]
     out = [
-        "# Shrunk quarter-end-only scale beside the frozen candidate (s3c-ann-net), at the 18:00 decision (#1531)", "",
-        "**Does a shrunk residual multiplier on quarter-end target days alone repair the candidate's quarter-end bands?** On the development window "
-        + short_of_nominal(dev).replace("The arm's", "the arm's", 1) + " " + kill_sentence(dev["kill"]), "",
-        "**Hypothesis and step:** H5 (primary goal), step 3, arm A of her ruling of 9 November 2026. **Development data, not a verdict** (scoring protocol "
-        "v1, #640). (s3c-ann-net) stays frozen; nothing is adopted, registered or published and no claim changes. Generated by "
-        f"`scripts/qe_shrunk_scale_1531.py page` from `docs/research/qe-shrunk-scale-1531/result.json`, not edited by hand; declared in `{r['declaration']}` "
-        "before any score.", "",
-        "**What changed.** On a target day whose type is `quarter_end_turn` or `year_end` (the last business day of each calendar quarter and the first after "
-        "it, #959's labels) the candidate's residual pool is rescaled about its median by `m = 1 + w (m_raw - 1)`, `w = n / (n + k)`, `k = " + str(r["k"]) +
-        "`; `m_raw` is #1402's root-mean-square ratio of the group's training residuals to all of them (per refit and lead, 1 below 10 pairs, clamped to "
-        "[0.5, 4]). On every other target day every quantile equals the candidate's, bit for bit, and the walk fails if it does not. The centre, the calendar "
-        "terms, the scale and the fit are the candidate's, on direct pairs; the SRF cap is applied after.", "",
-        "**Design not revised.** #1533's Mechanism section was read before this run. It gives a reason to doubt a single multiplier (shape, not width alone) "
-        "but none to change the declared group or shrinkage rule, so the arm was run as ruled; the doubt is Question 2 below.", "",
-        f"**Related observations.** The h = 1-5 forecasts aimed at one turn, and the turn's two days, are one cluster. Intervals on the group are 90% "
+        "# A shrunk quarter-end scale beside the frozen candidate", "",
+        f"Terms such as arm, cell, kill rule, grid CRPS and B1 are defined in the [glossary]({GLOSSARY}). Issue numbers and files are in the Record at the "
+        "end.", "",
+        "## The question", "",
+        "**Does a shrunk residual multiplier on quarter-end target days alone repair the candidate's quarter-end bands?** The candidate's 90% band "
+        "covers too few outcomes around quarter-ends. This study tests one repair: rescale the band on those days only, and leave every other forecast as it is.", "",
+        "## The answer", "",
+        answer(dev), "",
+        "## Data", "",
+        "The published panel, with every forecast made at the 18:00 decision. Two sets of days are scored and kept apart: the development window, where the "
+        "kill rule is read, and the 2026 development days, which are shown separately and decide nothing. Each section below opens with its count of days, "
+        "cells and turn events.", "",
+        "## Method", "",
+        "**The change.** The group is every target day whose type is `quarter_end_turn` or `year_end`: the last business day of each calendar quarter and "
+        "the first after it. On those days the candidate's residual pool is rescaled about its median by `m = 1 + w (m_raw - 1)`, `w = n / (n + k)`, `k = "
+        + str(r["k"]) + "`. `m_raw` is the root-mean-square ratio of the group's training residuals to all of them (per refit and lead, 1 below 10 pairs, "
+        "clamped to [0.5, 4]), and `n` is the number of the group's training pairs, so a group with few pairs is pulled toward a multiplier of 1. On every "
+        "other target day every quantile equals the candidate's, bit for bit, and the walk fails if it does not. The center, the calendar terms, the scale "
+        "and the fit are the candidate's, on direct pairs; the SRF cap is applied after.", "",
+        "**The kill rule.** Declared before any score: the arm is killed if its 90% coverage on the group does not improve on the candidate's beyond its "
+        "interval (the lower end of the 90% event-cluster interval of the paired difference, arm minus candidate, is not above zero), or if the arm's mean "
+        "grid CRPS on the group is above the candidate's. Pooled figures cannot pass or fail it alone, since everything outside the group is identical.", "",
+        f"**The intervals.** The h = 1-5 forecasts aimed at one turn, and the turn's two days, are one cluster. Intervals on the group are 90% "
         f"percentile intervals of a cluster bootstrap over turn events ({r['event_reps']:,} resamples, seed {r['seed']}). The development window holds "
-        f"{dev['pooled']['events']} events: roughly 30 to 44 is small, so every interval is wide. Day-type interval method: #1228 has not ruled; this page "
-        "uses the event-cluster method on the group and the studentized stationary bootstrap (mean block "
-        f"{sp.BLOCK_LENGTH} business days, {r['draws']:,} draws, seed {r['seed']}, two-sided 90% interval, the reading taken from the mean-d bound, her "
-        "ruling on #1009) elsewhere, and the reading carries that caveat (and #958's: the HAC standard error is understated about 2x after 2020).", "",
-        f"Panel digest `{r['panel_sha256']}`. Positive mean d favours the arm in the paired tables against a benchmark.", ""]
-    if r.get("reproduction"):
-        out += ["**Reproduction.** The candidate's pooled mean grid CRPS equals #1314's 18:00 record to 1e-9 (development "
-                f"{r['reproduction']['development']['here']:.6f}, 2026 {r['reproduction']['2026']['here']:.6f}), or the script refused to write this record.", ""]
+        f"{dev['pooled']['events']} events: roughly 30 to 44 is small, so every interval is wide. Against the benchmarks the interval is the studentized "
+        f"stationary bootstrap (mean block {sp.BLOCK_LENGTH} business days, {r['draws']:,} draws, seed {r['seed']}, two-sided 90% interval), and the "
+        "reading is taken from the bound on mean d. Two caveats carry over: which interval method applies to day types has not been ruled on, and the HAC "
+        "standard error is understated about 2x after 2020. In the paired tables against a benchmark, a positive mean d favors the model named first.", "",
+        "**Design not revised.** The Mechanism section of the quarter-end diagnosis was read before this run. It gives a reason to doubt a single "
+        "multiplier (the failure is one of shape as well as width) but none to change the declared group or shrinkage rule, so the arm was run as ruled; "
+        "the doubt is Question 2 below.", ""]
     for window in WINDOWS:
         w = r["windows"].get(window)
         if w is not None:
             out += window_section(window, w)
-    out += ["## What this does and does not show", "",
-            "It shows what one width multiplier on the quarter-end group does to the candidate's coverage, tail misses and CRPS on development days. It does "
-            "not show a verdict, an adoption, or what a distribution with its own shape on those days would do. The 2026 days are shown apart and decide nothing.", ""]
+    out += ["## What it means, and its limits", "",
+            "The page shows what one width multiplier on the quarter-end group does to the candidate's coverage, tail misses and CRPS on development days. "
+            "It does not show a verdict, an adoption, or what a distribution with its own shape on those days would do. \"Not killed\" means the arm did not "
+            "fail the declared rule; the candidate stays frozen and nothing is adopted, registered or published. The 2026 days are shown apart and decide "
+            "nothing.", ""]
     out += question()
+    out += record(r)
     return "\n".join(out).rstrip() + "\n"
 
 
