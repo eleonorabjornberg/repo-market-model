@@ -1,4 +1,10 @@
 {
+ "added": {
+  "1548": {
+   "source": "docs/research/qe-event-model-1548-result.md",
+   "why": "Question 2 now links the page of the study she ruled for on 10 November 2026 (stale fact fixed under her ruling of 11 November 2026 on #1575)"
+  }
+ },
  "path": "docs/research/qe-shrunk-scale-1531-result.md",
  "ref": "8e870a0bfddb72e1e2a33089c4f2b075a8e4f487",
  "tokens": [

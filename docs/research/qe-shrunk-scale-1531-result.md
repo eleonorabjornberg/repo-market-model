@@ -8,7 +8,7 @@ Terms such as arm, cell, kill rule, grid CRPS and B1 are defined in the [glossar
 
 ## The answer
 
-Not on the development data: the arm's 90% band covers 0.646 [0.557, 0.733] of the group's cells against 0.601 for the candidate; the gap to 90% is 25.4 percentage points. The arm improved on the candidate's coverage beyond its interval and did not score worse on grid CRPS, so under the rule declared before the run it is not killed.
+The arm's 90% band is still 25.4 percentage points short of 90% (it covers 0.646 [0.557, 0.733] of the group's cells, the candidate's 0.601), but the arm beat the candidate under the rule declared before the run (it covered more than the candidate beyond its interval and scored no worse on grid CRPS), so it was not killed.
 
 ## Data
 
@@ -48,19 +48,11 @@ Coverage on the group: +0.045 [+0.004, +0.087] (arm minus candidate, event-clust
 
 The page shows what one width multiplier on the quarter-end group does to the candidate's coverage, tail misses and CRPS on development days. It does not show a verdict, an adoption, or what a distribution with its own shape on those days would do. "Not killed" means the arm did not fail the declared rule; the candidate stays frozen and nothing is adopted, registered or published. The 2026 days are shown apart and decide nothing.
 
-## Question for Eleonora (marked; the default changes no claim)
+## Questions for Eleonora (both answered on 10 November 2026)
 
-**Question 1. What is the shrinkage constant k?** The rule is `w = n / (n + k)`, `n` the group's training pairs at a refit and lead (a turn gives two pairs per lead). It is written in the declaration before any score and was not tuned on scores: this page uses k = 20, ten turns' worth of pairs, where the raw ratio is trusted by half. It is a judgment call, so it is yours.
+**Question 1. What is the shrinkage constant k?** The rule is `w = n / (n + k)`, `n` the group's training pairs at a refit and lead (a turn gives two pairs per lead). It is written in the declaration before any score and was not tuned on scores: this page uses k = 20, ten turns' worth of pairs, where the raw ratio is trusted by half. It was a judgment call, so it was yours. The options were k = 20 (half weight at ten turns, three fifths at thirty), k = 10 (less shrinkage: half weight at five turns) and k = 40 (more shrinkage: half weight at twenty turns, about two fifths at thirty); the last two each needed a fresh run with a fresh declaration. Neither was run. The event-conditional quarter-end page carries k = 20 forward as this arm's constant and cites your 10 November answer.
 
-**Options** (the default applies if you have not answered by the next 5 pm batch):
-
-1. **k = 20** (default). Half weight at ten turns, three fifths at thirty. This page.
-2. **k = 10.** Less shrinkage: half weight at five turns. A fresh run with a fresh declaration.
-3. **k = 40.** More shrinkage: half weight at twenty turns, about two fifths at thirty. A fresh run with a fresh declaration.
-
-**Question 2. Does the arm go on?** The Mechanism section of the quarter-end diagnosis reads the failure as a shape problem with a location shift, and says no single multiplier fits every level. The design was run as ruled and not revised. Whether a width-only arm closes anything, or the work moves to B or to an event-conditional distribution model, is yours; adopting the arm is not in scope and the 2 November freeze holds.
-
-**Options:** 1. **Read this page, then decide B or the event-conditional model** (default; no claim changes). 2. **Re-run with k = 10 or 40** (option 2 or 3 above). 3. **Stop the family here.**
+**Question 2. Does the arm go on?** The Mechanism section of the quarter-end diagnosis reads the failure as a shape problem with a location shift, and says no single multiplier fits every level. The design was run as ruled and not revised. The question was whether a width-only arm closes anything, or the work moves to B or to an event-conditional distribution model. You ruled on 10 November 2026 for an event-conditional distribution model in place of B; its result is on its own page (`docs/research/qe-event-model-1548-result.md`). Adopting the arm was not in scope and the 2 November freeze holds.
 
 ## Details
 

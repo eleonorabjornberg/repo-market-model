@@ -112,28 +112,30 @@
   },
   "candidate": {
     "name": "the current best candidate",
-    "description": "a model in which the spread drifts back to its usual level, with calendar effects read on the day being forecast (quarter-ends, tax dates and Treasury settlements), fitted so that single extreme days count for less, and with its forecasts capped at the rate at which the Fed lends cash against Treasuries on demand (its standing repo facility). Its two settlement terms use the size of the day's Treasury settlement as announced the business day before",
+    "description": "a model in which the spread drifts back to its usual level. It reads calendar effects (quarter-ends, tax dates and Treasury settlements) on the day being forecast, is fitted so that single extreme days count for less, and caps its forecasts at the rate at which the Fed lends cash against Treasuries on demand (its standing repo facility). Its two settlement terms use the size of the day's Treasury settlement as announced the business day before",
     "replaces": "the same model without the announced settlement size",
-    "base": "The tables are not the candidate's own: they are for its base, the same model without the announced settlement size or the cap, scored on the record below; the candidate's own scores are on the last study page."
+    "base": "The tables are for the candidate's base: the same model without the announced settlement size or the cap, scored on the record below. The candidate's own scores are on the last study page."
   },
   "current_model": {
-    "about": "The wording of the current-model paragraph, the limits and what comes next on the results page, rendered with docs/research/h5-candidate.json (which model, whether it is frozen or registered, its open failures with the figures of their result records). Draft for Eleonora's review (Q2 of the pull request that adds it). The checker refuses a failure of the candidate file without a line here.",
-    "incumbent": "The published model is the project's forecast that learns from many inputs at once and corrects its range from its own recent misses. The scoring rules compare any candidate with it.",
+    "about": "The wording of the current-model paragraph, the limits and what comes next on the results page, rendered with docs/research/h5-candidate.json (which model, whether it is frozen or registered, the checks it passes and its open failures, each with the figures of its result records). 'passes' has a line for each entry of 'passed' in that file, 'failures' for each open failure, 'waiting' for what registration waits on and 'next' for each next step, completing 'the next steps are to'. No figure of a record is typed here: a line names it in braces and the candidate file gives its path. Draft for Eleonora's review. The checker refuses a failure, a passed check, a wait or a next step of the candidate file without a line here.",
+    "incumbent": "The published model is the project's forecast that learns from many inputs at once and corrects its range from its own recent misses. Every candidate is compared with it.",
     "candidate": "The research candidate is {description}.",
     "frozen": "It was frozen on {frozen}, so it does not change while its limits are measured.",
     "not_registered": "It is not registered: registering is Eleonora's own act, and it waits on {waiting}.",
     "registered": "It was registered on {registered}.",
     "waiting": {
-      "amendment4_coverage": "a coverage report that passes. The fourth amendment to the scoring rules requires that report before registration: a check that the forecast\u2019s stated ranges held the outcome as often as they claimed, and that its misses did not come in runs"
+      "quarter_end_family": "her ruling on the two quarter-end repairs described below"
+    },
+    "passes": {
+      "amendment4_coverage": "It passes the coverage report that the scoring rules require before registration: a check that its stated ranges held the outcome as often as they claimed, and that its misses did not come in runs. As the rules now read, with the checked forecasts spaced one day further apart, {now} of the report\u2019s {tests} checks on past days are rejected. Under the earlier spacing {before} were rejected, but that spacing rejects a correct forecast in {size} of simulated cases."
     },
     "failures": {
-      "amendment4_coverage": "It fails the coverage report that the fourth amendment to the scoring rules requires before registration: some of the report\u2019s checks on past days are rejected.",
-      "quarter_end_band": "Its 90% range holds the outcome in a share of {qend} of quarter-end turns (the last business day of a quarter and the first after it) and {yend} of year-end days, on past days, where 0.900 is claimed."
+      "quarter_end_band": "Its 90% range is too narrow around quarter-ends: on past days it held the outcome in a share of {qend} of quarter-end turns (the last business day of a quarter and the first after it) and {yend} of year-end days, where 0.900 is claimed. Two repairs were tried on past days: rescaling the range on those days improved on the candidate and still held too few outcomes, and a separate model for those days failed its test."
     },
     "failure_mark": "Figures from past days, development, not a verdict.",
     "next": {
-      "quarter_end_band": "test a narrower range for quarter-end days on the candidate, with every other forecast unchanged",
-      "registration": "decide the registration once the coverage report passes"
+      "quarter_end_family": "wait for Eleonora\u2019s ruling on the two quarter-end repairs, which follows one more table on the second of them",
+      "registration": "then prepare the registration for her decision"
     },
     "limits": ["The final test on past data was near-blind, since its days had appeared in earlier results, and the forecast\u2019s central range is not yet fully calibrated (it is still too narrow)."]
   }

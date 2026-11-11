@@ -79,6 +79,33 @@ class TokeniserTest(unittest.TestCase):
         self.assertEqual((result["removed"], result["added"]), ([], []))
 
 
+class SourcedAdditionTest(unittest.TestCase):
+    """A new number is accepted only when a cited source carries it (Eleonora's ruling of 11 November 2026 on #1575)."""
+
+    def test_a_token_its_source_carries_is_accepted(self):
+        self.assertEqual(cnt.unsourced({"99.3%", "7"}, ["a 99.3% b", "c 7 d"]), [])
+
+    def test_a_token_no_source_carries_is_refused(self):
+        self.assertEqual(cnt.unsourced({"99.3%", "98.1%"}, ["a 99.3% b"]), ["98.1%"])
+
+    def test_a_near_miss_is_refused(self):
+        self.assertEqual(cnt.unsourced({"99.3%"}, ["0.993 and 99.30% and 99.3"]), ["99.3%"])
+
+    def test_an_issue_number_counts_only_where_it_is_cited_as_one(self):
+        self.assertEqual(cnt.uncited({"1572"}, "see #1572, then #1572.", {"1572"}), [])
+        self.assertEqual(cnt.uncited({"1572"}, "see #1572 and 1572 rows", {"1572"}), ["1572"])
+        self.assertEqual(cnt.uncited({"1572"}, "see #1572", set()), ["1572"])
+
+    def test_a_stored_addition_must_name_a_source_that_carries_it(self):
+        record = {"tokens": ["1"], "added": {"2": {"source": "s.md", "why": "w"}}}
+        ok = cnt.check_record(record, "1 and 2", lambda rel: "table: 2")
+        self.assertEqual((ok["removed"], ok["added"]), ([], []))
+        bad = cnt.check_record(record, "1 and 2", lambda rel: "table: 3")
+        self.assertEqual(bad["added"], ["2"])
+        unlisted = cnt.check_record(record, "1 and 2 and 4", lambda rel: "table: 2 4")
+        self.assertEqual(unlisted["added"], ["4"])
+
+
 class BaselineTest(unittest.TestCase):
     def test_every_page_keeps_its_numbers(self):
         directory = ROOT / cnt.BASELINES
@@ -86,9 +113,8 @@ class BaselineTest(unittest.TestCase):
         for file in files:
             record = json.loads(file.read_text(encoding="utf-8"))
             with self.subTest(page=record["path"]):
-                now = set(cnt.tokens((ROOT / record["path"]).read_text(encoding="utf-8")))
-                before = set(record["tokens"])
-                self.assertEqual((sorted(before - now), sorted(now - before)), ([], []))
+                result = cnt.check_record(record, (ROOT / record["path"]).read_text(encoding="utf-8"))
+                self.assertEqual((result["removed"], result["added"]), ([], []))
 
 
 if __name__ == "__main__":

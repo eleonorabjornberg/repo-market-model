@@ -646,31 +646,34 @@ def other_tables(window: str, w: Mapping[str, object]) -> List[str]:
 
 def question() -> List[str]:
     return [
-        "## Question for Eleonora (marked; the default changes no claim)", "",
+        "## Questions for Eleonora (both answered on 10 November 2026)", "",
         "**Question 1. What is the shrinkage constant k?** The rule is `w = n / (n + k)`, `n` the group's training pairs at a refit and lead (a turn gives two "
         "pairs per lead). It is written in the declaration before any score and was not tuned on scores: this page uses k = 20, ten turns' worth of pairs, "
-        "where the raw ratio is trusted by half. It is a judgment call, so it is yours.", "",
-        "**Options** (the default applies if you have not answered by the next 5 pm batch):", "",
-        "1. **k = 20** (default). Half weight at ten turns, three fifths at thirty. This page.",
-        "2. **k = 10.** Less shrinkage: half weight at five turns. A fresh run with a fresh declaration.",
-        "3. **k = 40.** More shrinkage: half weight at twenty turns, about two fifths at thirty. A fresh run with a fresh declaration.", "",
+        "where the raw ratio is trusted by half. It was a judgment call, so it was yours. The options were k = 20 (half weight at ten turns, three fifths at "
+        "thirty), k = 10 (less shrinkage: half weight at five turns) and k = 40 (more shrinkage: half weight at twenty turns, about two fifths at thirty); "
+        "the last two each needed a fresh run with a fresh declaration. Neither was run. The event-conditional quarter-end page carries k = 20 forward as "
+        "this arm's constant and cites your 10 November answer.", "",
         "**Question 2. Does the arm go on?** The Mechanism section of the quarter-end diagnosis reads the failure as a shape problem with a location shift, "
-        "and says no single multiplier fits every level. The design was run as ruled and not revised. Whether a width-only arm closes anything, or the work "
-        "moves to B or to an event-conditional distribution model, is yours; adopting the arm is not in scope and the 2 November freeze holds.", "",
-        "**Options:** 1. **Read this page, then decide B or the event-conditional model** (default; no claim changes). 2. **Re-run with k = 10 or 40** "
-        "(option 2 or 3 above). 3. **Stop the family here.**", ""]
+        "and says no single multiplier fits every level. The design was run as ruled and not revised. The question was whether a width-only arm closes "
+        "anything, or the work moves to B or to an event-conditional distribution model. You ruled on 10 November 2026 for an event-conditional distribution "
+        "model in place of B; its result is on its own page (`docs/research/qe-event-model-1548-result.md`). Adopting the arm was not in scope and the "
+        "2 November freeze holds.", ""]
 
 
 def answer(dev: Mapping[str, object]) -> str:
-    """The answer in two sentences: where the band stands against 90%, and how the arm reads against the declared kill."""
+    """The answer in one sentence: where the band stands against 90%, and how the arm reads against the declared kill."""
 
     m, kill = dev["pooled"]["measures"]["cover90"], dev["kill"]
-    first = ("Not on the development data: the" if m["arm"] < 0.9 else "On the development data the") + short_of_nominal(dev)[len("The"):]
-    gained = "improved on the candidate's coverage beyond its interval" if kill["coverage_improves_beyond_interval"] else "did not improve on the candidate's coverage beyond its interval"
-    lost = "scored worse on grid CRPS" if kill["group_crps_loses"] else "did not score worse on grid CRPS"
-    joiner = "but" if kill["coverage_improves_beyond_interval"] == kill["group_crps_loses"] else "and"
-    second = f"The arm {gained} {joiner} {lost}, so under the rule declared before the run it is {'killed' if kill['killed'] else 'not killed'}."
-    return f"{first} {second}"
+    covers = f"it covers {_f(m['arm'])} {_iv(m['arm_interval'])} of the group's cells, the candidate's {_f(m['candidate'])}"
+    gap = f"{100 * (0.9 - m['arm']):.1f} percentage points"
+    first = (f"The arm's 90% band is still {gap} short of 90% ({covers})" if m["arm"] < 0.9
+             else f"The arm's 90% band reaches 90% ({covers}; the gap to 90% is {gap}, negative because the band covers more than 90%)")
+    gained = "covered more than the candidate beyond its interval" if kill["coverage_improves_beyond_interval"] else "did not cover more than the candidate beyond its interval"
+    lost = "scored worse on grid CRPS" if kill["group_crps_loses"] else "scored no worse on grid CRPS"
+    if kill["killed"]:
+        return f"{first}, and the arm did not beat the candidate under the rule declared before the run (it {gained} and {lost}), so it was killed."
+    joiner = ", but" if m["arm"] < 0.9 else ", and"
+    return f"{first}{joiner} the arm beat the candidate under the rule declared before the run (it {gained} and {lost}), so it was not killed."
 
 
 def record(r: dict) -> List[str]:

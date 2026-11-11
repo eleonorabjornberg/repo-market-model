@@ -3,8 +3,8 @@
 A development study, never a verdict. It measures (s3c-ann-net), the H5 candidate, at the 18:00 decision instant: the empirical
 coverage of the 50% and 90% bands, every grid quantile's hit rate, the randomised PIT of #970, by regime and by day type with each
 group's size, and the serial dependence of the hit sequences at each lead (Christoffersen's independence test, its permutation
-p-value and the protocol's own thinned reading), beside B1, B1' and B2. Nothing is adopted. B4 (#1360) is not on main and is not
-compared.
+p-value and the protocol's own thinned reading), beside B1, B1' and B2. Nothing is adopted. B4 (#1360) was not on main when the study ran and is
+not compared.
 
 Every choice is in `metadata/candidate_calibration_1363.json`, which `walk` and `score` refuse to read unless it is committed and
 unchanged. The only slow step is `walk`: it re-walks (s3c-ann-net) with the code of `scripts/s3c_announced_settlement_1288.py`
@@ -899,7 +899,8 @@ def render(r: dict) -> str:
               f"- Panel digest `{r['panel_sha256']}`.",
               "- Reproduction: each walk's mean grid CRPS (candidate, B1, B1' and B2, all cells) equals the 18:00 record of #1314 "
               "(`docs/research/s3c-ann-net-1800-1314/announced-settlement-1800.json`) to 1e-9, or the script refused to write this record.",
-              f"- {r['b4']}.",
+              "- B4 (#1360, a plain quantile regression on reserves and calendar days) is not compared on this page: it was not on main when the study "
+              "ran. It has merged since, and its own page compares it with the candidate (`docs/research/b4-quantile-regression-1360-result.md`).",
               "- The 2026 days were already seen by #845, #1229, #1255, #1273, #1288 and #1321.",
               "- The interval method: #1221 questions it and #1228 will decide.", ""]
     return "\n".join(lines)
