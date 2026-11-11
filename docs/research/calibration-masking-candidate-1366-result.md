@@ -10,29 +10,17 @@ Terms such as candidate, cell, grid CRPS and refit are defined in the [glossary]
 
 **The bias is exactly zero for the candidate.** On the development window (1855 decision days, 9275 cells) the honest filter would drop 0 of 207580 training pairs over 89 refits (163 fit attempts), and 0 cells differ between the two versions (largest quantile difference 0.0e+00 bp). The paired difference in grid CRPS (honest minus as run) is +0.0000, in upper-tail twCRPS +0.0000, in the coverage of the 90% band +0.00 pp.
 
-**Why.** The candidate has no calibration subfit of the kind the note describes. Its bands come from one step, the refit of its residual pool and term effects every 21 decision days, on the pairs of `spread_mean_reversion.training_rows`, whose targets are at or before the refit's anchor (the last row public at its decision instant) by construction, and a forecast on a later day reads that older fit, never a fit made after its own decision. Its state interaction, where read, is the state of each pair's own decision day (`spread_mr_state_calendar.pair_state`). The closure audit below confirms that nothing in the candidate's import graph is a conformal or cross-conformal calibration or carries `calibration_masking`.
-
-## Data
-
-The candidate, (s3c-ann-net), at the 18:00 decision instant, on the published panel. The development window carries the answer; the 2026 days are shown apart and decide nothing.
+**Why.** The candidate has no calibration subfit of the kind the note describes. Its bands come from one step, the refit of its residual pool and term effects every 21 decision days, on the pairs of `spread_mean_reversion.training_rows`, whose targets are at or before the refit's anchor (the last row public at its decision instant) by construction, and a forecast on a later day reads that older fit, never a fit made after its own decision. Its state interaction, where read, is the state of each pair's own decision day (`spread_mr_state_calendar.pair_state`). The closure audit, in the Details, confirms that nothing in the candidate's import graph is a conformal or cross-conformal calibration or carries `calibration_masking`.
 
 ## Method
 
-The directive: re-run the calibration step with every subfit restricted to pairs whose targets were observable at that subfit's own decision instant, score both versions, and report the size of the bias. The two versions are AS RUN, the candidate as it has been scored, and HONEST, the same walk under that restriction; the bias is HONEST minus AS RUN on the same cells. A second check uses no scores: the closure audit lists every module the candidate can import and searches it for calibration code.
+The candidate, (s3c-ann-net), was scored twice on the same days: as it has been scored (AS RUN), and with every fit restricted to pairs whose targets were observable at that fit's own decision instant (HONEST). The bias is the difference between the two. A second check uses no scores: it lists every module the candidate can import and searches it for calibration code.
 
-## Closure audit
-
-35 `repo_model` modules are reachable by import from `s3c_announced`, `s3c_candidate`, `spread_mr_state_calendar` and from the `repo_model` imports of `s3c_announced_settlement_1288`, `s3c_net_settlement_1273`, `s3c_candidate_1255`. Forbidden modules: `ml`, `calibrated_stack`, `walk_calibration`, `group_calibration`, `recalibration`, `probability_calibration`; found: none. Forbidden text: `calibration_masking`, `cross_conformal`; found: none. Conclusion: the candidate has no calibration subfit.
-
-Modules: `announced_iorb`, `asof`, `b2_pool`, `balance_sheet_days`, `baseline`, `contract`, `coverage_tests`, `data`, `decision_instant`, `derived_features`, `evaluation_splits`, `exploration`, `fomc_calendar`, `lockbox`, `metrics`, `net_settlement`, `one_step_guard`, `onset`, `policy_events`, `protocol_benchmarks`, `registry`, `s3c_announced`, `s3c_candidate`, `s3c_net`, `scoring_protocol`, `settlement_dating`, `setup_diagnostic`, `splits`, `spread_mean_reversion`, `spread_mr_calendar`, `spread_mr_fhs`, `spread_mr_state_calendar`, `srf_line`, `target_day_columns`, `turn_days`.
-
-## Development window
+## Result on the development window
 
 1855 decision days, 9275 cells. The AS RUN mean grid CRPS equals the earlier 18:00 record (1.601162) to 1e-9.
 
-Pair audit: 163 fit attempts (89 of them the walk's refits; the others are early days that were skipped for lack of history after their pairs were drawn), 207580 training pairs; pairs the honest filter would drop: 0; pairs it dropped in the honest walk: 0; the latest target of every refit is at or before its anchor: True; scored days whose fit was made after them: 0.
-
-Read the last column first: it counts the cells where the two versions differ. Each other cell shows AS RUN / HONEST and, for the two scores (in bp, lower is better), honest minus as run in brackets. The band columns are coverage, to be read against 50% and 90%.
+The table shows each score for the candidate as it has been scored (AS RUN) and with the restriction (HONEST), and in brackets honest minus as run; the last column counts the cells where the two differ.
 
 | group | cells | grid CRPS (bp) | upper-tail twCRPS (bp) | 50% band | 90% band | cells differing |
 |---|---|---|---|---|---|---|
@@ -55,13 +43,41 @@ Read the last column first: it counts the cells where the two versions differ. E
 
 Both versions are one computation here, so each paired difference is exactly 0 and its interval is the degenerate [0, 0]; no bootstrap interval is printed.
 
-## 2026 days (shown apart, decide nothing)
+## Limits
+
+- The note describes conformal and cross-conformal calibration of the gradient-boosted records (the gradient-boosted quantile fitter in `ml`, `calibration_masking`). Those are not the candidate. `scripts/calibration_masking_effect.py` is the tool that measures them and is not run here.
+- The candidate's bands are not corrected in any other way here. Whether they cover (the 90% band under-covers on the development window) is the question of the calibration study.
+- Refitting every day, instead of every 21 decision days, is a different sensitivity (a fresher fit). It does not measure the masking bias and is not run.
+
+## Question for Eleonora
+
+**Q1. The candidate has no calibration subfit, so the masking bias on its bands is zero by construction and by measurement. Should the registration say so in one sentence, and should the sensitivity also be measured on the gradient-boosted records the note is about?**
+
+1. Say so in one sentence in the registration's known-limits section; do not measure the gradient-boosted records (they are not the registered candidate). **Default.**
+2. As 1, and also run `scripts/calibration_masking_effect.py` on the gradient-boosted cross-conformal records (a long run, on her Mac), so the size of the note's bias is on file.
+3. Do not mention it.
+
+The default changes no claim.
+
+## Details
+
+The candidate is scored at the 18:00 decision instant on the published panel. The directive: re-run the calibration step with every subfit restricted to pairs whose targets were observable at that subfit's own decision instant, score both versions, and report the size of the bias.
+
+**Closure audit.** 35 `repo_model` modules are reachable by import from `s3c_announced`, `s3c_candidate`, `spread_mr_state_calendar` and from the `repo_model` imports of `s3c_announced_settlement_1288`, `s3c_net_settlement_1273`, `s3c_candidate_1255`. Forbidden modules: `ml`, `calibrated_stack`, `walk_calibration`, `group_calibration`, `recalibration`, `probability_calibration`; found: none. Forbidden text: `calibration_masking`, `cross_conformal`; found: none. Conclusion: the candidate has no calibration subfit.
+
+Modules: `announced_iorb`, `asof`, `b2_pool`, `balance_sheet_days`, `baseline`, `contract`, `coverage_tests`, `data`, `decision_instant`, `derived_features`, `evaluation_splits`, `exploration`, `fomc_calendar`, `lockbox`, `metrics`, `net_settlement`, `one_step_guard`, `onset`, `policy_events`, `protocol_benchmarks`, `registry`, `s3c_announced`, `s3c_candidate`, `s3c_net`, `scoring_protocol`, `settlement_dating`, `setup_diagnostic`, `splits`, `spread_mean_reversion`, `spread_mr_calendar`, `spread_mr_fhs`, `spread_mr_state_calendar`, `srf_line`, `target_day_columns`, `turn_days`.
+
+Pair audit, development window: 163 fit attempts (89 of them the walk's refits; the others are early days that were skipped for lack of history after their pairs were drawn), 207580 training pairs; pairs the honest filter would drop: 0; pairs it dropped in the honest walk: 0; the latest target of every refit is at or before its anchor: True; scored days whose fit was made after them: 0.
+
+Pair audit, 2026 days: 171 fit attempts (97 of them the walk's refits; the others are early days that were skipped for lack of history after their pairs were drawn), 227455 training pairs; pairs the honest filter would drop: 0; pairs it dropped in the honest walk: 0; the latest target of every refit is at or before its anchor: True; scored days whose fit was made after them: 0.
+
+## Other tables
+
+### 2026 days (shown apart, decide nothing)
 
 165 decision days, 825 cells. The AS RUN mean grid CRPS equals the earlier 18:00 record (1.668524) to 1e-9.
 
-Pair audit: 171 fit attempts (97 of them the walk's refits; the others are early days that were skipped for lack of history after their pairs were drawn), 227455 training pairs; pairs the honest filter would drop: 0; pairs it dropped in the honest walk: 0; the latest target of every refit is at or before its anchor: True; scored days whose fit was made after them: 0.
-
-Read the last column first: it counts the cells where the two versions differ. Each other cell shows AS RUN / HONEST and, for the two scores (in bp, lower is better), honest minus as run in brackets. The band columns are coverage, to be read against 50% and 90%.
+The table shows each score for the candidate as it has been scored (AS RUN) and with the restriction (HONEST), and in brackets honest minus as run; the last column counts the cells where the two differ.
 
 | group | cells | grid CRPS (bp) | upper-tail twCRPS (bp) | 50% band | 90% band | cells differing |
 |---|---|---|---|---|---|---|
@@ -79,22 +95,6 @@ Read the last column first: it counts the cells where the two versions differ. E
 | pressure-day type year_end | 1 | 3.0569 / 3.0569 (+0.0000) | 3.0238 / 3.0238 (+0.0000) | 0.0% / 0.0% | 0.0% / 0.0% | 0 |
 
 Both versions are one computation here, so each paired difference is exactly 0 and its interval is the degenerate [0, 0]; no bootstrap interval is printed.
-
-## Limits
-
-- The note describes conformal and cross-conformal calibration of the gradient-boosted records (the gradient-boosted quantile fitter in `ml`, `calibration_masking`). Those are not the candidate. `scripts/calibration_masking_effect.py` is the tool that measures them and is not run here.
-- The candidate's bands are not corrected in any other way here. Whether they cover (the 90% band under-covers on the development window) is the question of the calibration study.
-- Refitting every day, instead of every 21 decision days, is a different sensitivity (a fresher fit). It does not measure the masking bias and is not run.
-
-## Question for Eleonora
-
-**Q1. The candidate has no calibration subfit, so the masking bias on its bands is zero by construction and by measurement. Should the registration say so in one sentence, and should the sensitivity also be measured on the gradient-boosted records the note is about?**
-
-1. Say so in one sentence in the registration's known-limits section; do not measure the gradient-boosted records (they are not the registered candidate). **Default.**
-2. As 1, and also run `scripts/calibration_masking_effect.py` on the gradient-boosted cross-conformal records (a long run, on her Mac), so the size of the note's bias is on file.
-3. Do not mention it.
-
-The default changes no claim.
 
 ## Record
 

@@ -508,26 +508,61 @@ def render(r: dict) -> str:
             "pool and term effects every 21 decision days, on the pairs of `spread_mean_reversion.training_rows`, whose targets are at or before "
             "the refit's anchor (the last row public at its decision instant) by construction, and a forecast on a later day reads that older fit, "
             "never a fit made after its own decision. Its state interaction, where read, is the state of each pair's own decision day "
-            "(`spread_mr_state_calendar.pair_state`). The closure audit below confirms that nothing in the candidate's import graph is a conformal "
+            "(`spread_mr_state_calendar.pair_state`). The closure audit, in the Details, confirms that nothing in the candidate's import graph is a conformal "
             "or cross-conformal calibration or carries `calibration_masking`.",
             "",
         ]
+    def window_block(name: str, w: dict, level: str) -> Tuple[List[str], List[str]]:
+        """One window: its heading, counts and score table, and (apart) its pair audit."""
+
+        body = [
+            f"{level} {'Result on the development window' if name == 'development' else '2026 days (shown apart, decide nothing)'}",
+            "",
+            f"{w['decision_days']} decision days, {w['cells']} cells. The AS RUN mean grid CRPS equals the earlier 18:00 record "
+            f"({_n(r['reproduction'][name]['mean_grid_crps'], 6)}) to 1e-9.",
+            "",
+            "The table shows each score for the candidate as it has been scored (AS RUN) and with the restriction (HONEST), and in brackets honest minus "
+            "as run; the last column counts the cells where the two differ.",
+            "",
+            "| group | cells | grid CRPS (bp) | upper-tail twCRPS (bp) | 50% band | 90% band | cells differing |",
+            "|---|---|---|---|---|---|---|",
+            _row("pooled", w["scores"]["pooled"]),
+        ]
+        for lead, sc in w["scores"]["by_lead"].items():
+            body.append(_row(f"h = {lead}", sc))
+        for label, sc in w["scores"]["by_regime"].items():
+            body.append(_row(f"regime {label}", sc))
+        for label, sc in w["scores"]["by_pressure_day_type"].items():
+            body.append(_row(f"pressure-day type {label}", sc))
+        body += ["", "Both versions are one computation here, so each paired difference is exactly 0 and its interval is the degenerate [0, 0]; no bootstrap interval is printed.", ""]
+        audit_line = [
+            f"Pair audit, {'development window' if name == 'development' else '2026 days'}: {w['as_run']['fit_attempts']} fit attempts ({w['walk_refits']} of them the walk's refits; the others are early days that were "
+            f"skipped for lack of history after their pairs were drawn), {w['as_run']['training_pairs']} training pairs; pairs the honest filter would drop: "
+            f"{w['as_run']['pairs_the_filter_would_drop']}; pairs it dropped in the honest walk: {w['honest']['pairs_dropped']}; the latest target of "
+            f"every refit is at or before its anchor: {w['as_run']['latest_target_is_the_anchor_at_every_refit']}; scored days whose fit was made after "
+            f"them: {len(w['fits_after_their_day']['as_run']) + len(w['fits_after_their_day']['honest'])}.",
+            "",
+        ]
+        return body, audit_line
+
+    blocks = {name: window_block(name, r["windows"][name], "##" if name == "development" else "###") for name in WINDOWS if r["windows"].get(name)}
     lines += [
-        "## Data",
-        "",
-        "The candidate, (s3c-ann-net), at the 18:00 decision instant, on the published panel. The development window carries the answer; the 2026 days "
-        "are shown apart and decide nothing.",
-        "",
         "## Method",
         "",
-        "The directive: re-run the calibration step with every subfit restricted to pairs whose targets were observable at that subfit's own decision "
-        "instant, score both versions, and report the size of the bias. The two versions are AS RUN, the candidate as it has been scored, and HONEST, "
-        "the same walk under that restriction; the bias is HONEST minus AS RUN on the same cells. A second check uses no scores: the closure audit "
-        "lists every module the candidate can import and searches it for calibration code.",
+        "The candidate, (s3c-ann-net), was scored twice on the same days: as it has been scored (AS RUN), and with every fit restricted to pairs whose "
+        "targets were observable at that fit's own decision instant (HONEST). The bias is the difference between the two. A second check uses no scores: "
+        "it lists every module the candidate can import and searches it for calibration code.",
         "",
-        "## Closure audit",
+    ]
+    if "development" in blocks:
+        lines += blocks["development"][0]
+    details = [
+        "## Details",
         "",
-        f"{audit['module_count']} `repo_model` modules are reachable by import from {', '.join('`' + s + '`' for s in audit['start'])} and from the "
+        "The candidate is scored at the 18:00 decision instant on the published panel. The directive: re-run the calibration step with every subfit "
+        "restricted to pairs whose targets were observable at that subfit's own decision instant, score both versions, and report the size of the bias.",
+        "",
+        f"**Closure audit.** {audit['module_count']} `repo_model` modules are reachable by import from {', '.join('`' + s + '`' for s in audit['start'])} and from the "
         f"`repo_model` imports of {', '.join('`' + s + '`' for s in audit['scripts'])}. Forbidden modules: "
         f"{', '.join('`' + m + '`' for m in audit['forbidden_modules'])}; found: {audit['forbidden_modules_found'] or 'none'}. Forbidden text: "
         f"{', '.join('`' + t + '`' for t in audit['forbidden_tokens'])}; found: {audit['forbidden_tokens_found'] or 'none'}. "
@@ -536,38 +571,10 @@ def render(r: dict) -> str:
         "Modules: " + ", ".join(f"`{m}`" for m in audit["modules"]) + ".",
         "",
     ]
-    for name in WINDOWS:
-        w = r["windows"].get(name)
-        if not w:
-            continue
-        lines += [
-            f"## {'Development window' if name == 'development' else '2026 days (shown apart, decide nothing)'}",
-            "",
-            f"{w['decision_days']} decision days, {w['cells']} cells. The AS RUN mean grid CRPS equals the earlier 18:00 record "
-            f"({_n(r['reproduction'][name]['mean_grid_crps'], 6)}) to 1e-9.",
-            "",
-            f"Pair audit: {w['as_run']['fit_attempts']} fit attempts ({w['walk_refits']} of them the walk's refits; the others are early days that were "
-            f"skipped for lack of history after their pairs were drawn), {w['as_run']['training_pairs']} training pairs; pairs the honest filter would drop: "
-            f"{w['as_run']['pairs_the_filter_would_drop']}; pairs it dropped in the honest walk: {w['honest']['pairs_dropped']}; the latest target of "
-            f"every refit is at or before its anchor: {w['as_run']['latest_target_is_the_anchor_at_every_refit']}; scored days whose fit was made after "
-            f"them: {len(w['fits_after_their_day']['as_run']) + len(w['fits_after_their_day']['honest'])}.",
-            "",
-            "Read the last column first: it counts the cells where the two versions differ. Each other cell shows AS RUN / HONEST and, for the two "
-            "scores (in bp, lower is better), honest minus as run in brackets. The band columns are coverage, to be read against 50% and 90%.",
-            "",
-            "| group | cells | grid CRPS (bp) | upper-tail twCRPS (bp) | 50% band | 90% band | cells differing |",
-            "|---|---|---|---|---|---|---|",
-            _row("pooled", w["scores"]["pooled"]),
-        ]
-        for lead, s in w["scores"]["by_lead"].items():
-            lines.append(_row(f"h = {lead}", s))
-        for label, s in w["scores"]["by_regime"].items():
-            lines.append(_row(f"regime {label}", s))
-        for label, s in w["scores"]["by_pressure_day_type"].items():
-            lines.append(_row(f"pressure-day type {label}", s))
-        lines.append("")
-        lines.append("Both versions are one computation here, so each paired difference is exactly 0 and its interval is the degenerate [0, 0]; no bootstrap interval is printed.")
-        lines.append("")
+    for name in blocks:
+        details += blocks[name][1]
+    if "2026" in blocks:
+        details += ["## Other tables", ""] + blocks["2026"][0]
     lines += [
         "## Limits",
         "",
@@ -591,6 +598,9 @@ def render(r: dict) -> str:
         "",
         "The default changes no claim.",
         "",
+    ]
+    lines += details
+    lines += [
         "## Record",
         "",
         "- Study: #1366. Hypothesis and step: H5 (primary goal), registration design (calibration).",
