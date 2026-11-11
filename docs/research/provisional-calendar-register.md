@@ -41,9 +41,12 @@ test's frozen command and the live record) and `gbm_funding_634` (the control of
 class a+b at lead 1 and are the first rows of the results table. A third, `pressure_model_v2` (depth-3 trees on the same
 inputs, logged in the live record), is exempt only until the live record's first scoring date (Eleonora, 20 October 2026,
 on PR #1042); its producer, `scripts/pressure_model_v2.py`, is class a+b below. Two more, `aligned_calendar_1027_h1` and
-`aligned_calendar_1027_h2_to_h5`, admit #1027's aligned variant (`scripts/aligned_calendar_1027.py`), whose one-step pairs read the
-calendar and scheduled columns from the target row, so it is neither class a nor class b; the script refuses a frame that is not so
-aligned, and both entries carry an end date (Eleonora, 21 October 2026, on PR #1036). The guard names the fitters and makes no fit, so it is not a
+`aligned_calendar_1027_h2_to_h5`, admitted #1027's aligned variant (`scripts/aligned_calendar_1027.py`), whose one-step pairs read the
+calendar and scheduled columns from the target row, so it is neither class a nor class b (Eleonora, 21 October 2026, on PR #1036, with an
+end date). **Both were removed on Eleonora's ruling of 11 November 2026 (#1556, option a).** The aligned one-step
+variant's figures (`docs/research/aligned-calendar-1027.md` and its log entry, and the arms of #1031, #1032, #1087 and #1124 that report
+beside it) stand as published, and can no longer be reproduced from main: `scripts/aligned_calendar_1027.py` raises the guard's `ValueError`
+citing the ruling when asked to fit it. The direct variant is unaffected. The guard names the fitters and makes no fit, so it is not a
 producer. Rows in the tables below whose fit the guard would now refuse (the one-step calendar arms and variants (a) and (b)) are
 the results of a fit that can no longer be repeated unchanged; their figures stand as published and are marked.
 

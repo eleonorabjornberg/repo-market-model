@@ -214,7 +214,7 @@ class AlignedArmTests(NeedsExtra):
         rows, framed = design_panel(h)
         return [DailyObservation(r.date, {**r.values, **f.values}) for r, f in zip(rows, framed)]
 
-    def test_the_guard_refuses_the_aligned_arm_until_the_allow_list_admits_it(self):
+    def test_the_guard_refuses_the_aligned_arm_and_no_allow_list_entry_admits_it(self):
         features = script.arm_features(script.ALIGNED_FOMC, 2)
         with self.assertRaises(ValueError):
             script.arm_fit(script.ALIGNED_FOMC, features)(self.frame(2), 20)
