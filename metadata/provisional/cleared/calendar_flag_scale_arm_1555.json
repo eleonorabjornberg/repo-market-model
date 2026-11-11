@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/calendar_flag_scale_arm_1555.json",
+  "script": "scripts/calendar_flag_scale_arm_1555.py",
+  "pairing": "direct",
+  "why": "(s3c-ann-net) with, on target days in four calendar-flag groups, its quantiles on one side of the median scaled by a walk-forward, shrunk factor. The arm fits no model and calls no gradient-boosted or one-step fitter: it reads the candidate's own walk (spread_mr_state_calendar.walk with training_pairs = direct, guarded by one_step_guard with no allow-list entry, regenerated bit-identical from the 1363 walk by scripts/qe_diagnosis_1533.py) and the realised outcomes of cells whose target day is strictly before the decision day (a LookAheadError guard, mutation-tested). The flags are read from the target day's own calendar row, so no calendar or scheduled column is learned one day off; every forecast outside the arm groups equals the candidate's, and the run fails otherwise, so the study is not provisional"
+}
