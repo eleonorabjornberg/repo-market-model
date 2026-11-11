@@ -300,6 +300,13 @@
       "comment_id": 6780785264,
       "phrase": "GO #1534",
       "what": ".claude/ agents and directive-orchestrator skill: the H5 candidate process (PR #1541); her 10 November 2026 docket answer 'go'"
+    },
+    {
+      "kind": "decisions",
+      "issue": 1527,
+      "comment_id": 6787805666,
+      "phrase": "GO #1527",
+      "what": "docs/decisions/scoring-protocol.md amendment 4 drafted to read Kupiec and independence at spacing h + 1 (PR #1549); her 11 November 2026 docket answer 'Done' on the GO #1527 card"
     }
   ],
   "rule": "docs/decisions/drafts/owner-attestation.md",
