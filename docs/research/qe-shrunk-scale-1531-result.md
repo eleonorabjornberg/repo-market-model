@@ -370,6 +370,8 @@ It shows what one width multiplier on the quarter-end group does to the candidat
 2. **k = 10.** Less shrinkage: half weight at five turns. A fresh run with a fresh declaration.
 3. **k = 40.** More shrinkage: half weight at twenty turns, about two fifths at thirty. A fresh run with a fresh declaration.
 
+**Dated note, 11 November 2026 (finding #1559; her ruling of 11 November, decision docket, card f1559-k-1111, option (a) "note").** Beside the options above, which stay as written. The candidate trains on a trailing two-year window, so at a refit the group holds at most eight quarter-end turns, which is 16 training pairs per lead (the table of the development window above: group pairs n, 14.1 on average, 2 to 16). With k = 20 the weight w = n / (n + k) therefore never passed 16 / 36 = 0.444, and the runs' mean weight was 0.403. "Half weight at ten turns, three fifths at thirty" describes weights no refit could reach. Her ruling: k = 20 stands; no figure on this page is re-run or changed; how much history the fit may use is taken up through #1561.
+
 **Question 2. Does the arm go on?** #1533's Mechanism section reads the failure as a shape problem with a location shift, and says no single multiplier fits every level. The design was run as ruled and not revised. Whether a width-only arm closes anything, or the work moves to B or to an event-conditional distribution model, is yours; adopting the arm is not in scope and the 2 November freeze holds.
 
 **Options:** 1. **Read this page, then decide B or the event-conditional model** (default; no claim changes). 2. **Re-run with k = 10 or 40** (option 2 or 3 above). 3. **Stop the family here.**
