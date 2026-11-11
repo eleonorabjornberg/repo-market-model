@@ -23,6 +23,12 @@ repository; nothing lives only in your session (`.claude/routines/README.md`).
   2026, #1534) is relayed together with a directive. That directive updates `docs/research/h5-candidate.json` in the
   same PR as the code change. The results page and the README are rendered or checked from that file (#1532), so a
   page that disagrees with it is drift, not a second source.
+- **A directive cites the settled-questions register before it is queued** (Eleonora, 9 November 2026, docket answer
+  "both" on process-settled-1109; #1530). Before you add a directive to a queue, its body cites the line of
+  `docs/research/settled-questions.md` it touches (`S<n>`, or the heading under which the entry stands), or says
+  "new question". A directive that does neither is not queued. A question the register lists as answered is reopened
+  only on her explicit "reopen", relayed with the directive. After two failed fixes for the same symptom, the next
+  directive checks the test or the measurement that produced the symptom, not a third fix.
 - **Commits** use the neutral identity "repo-market-model orchestrator", never her name and never an AI's.
 - **Times** are ET: run `TZ=America/New_York date` first and use that time; the system clock is UTC.
 
