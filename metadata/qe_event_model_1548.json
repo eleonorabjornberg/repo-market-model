@@ -1,0 +1,110 @@
+{
+ "status": "declared by the pull request that closes #1548 before any score was computed; a development study, never a verdict. (s3c-ann-net) stays the frozen H5 candidate (her ruling of 2 November 2026): nothing is adopted, registered or published, no record in docs/runs/ is edited, the live record and its pin do not change, docs/research/h5-candidate.json and scripts/final_test_preregistration.py do not change, no day after 2026-09-03 is scored and no lockbox day is scored.",
+ "issue": 1548,
+ "ruling": "Eleonora, 10 November 2026, docket answer \"1\" on #1538, relayed on #1548: take #1533's reading as stated (a shape problem with a location shift); the next arm is an event-conditional distribution model in place of B (regularized quantile corrections), on calendar-event target days only, from residuals conditioned on the event; every other forecast of (s3c-ann-net) stays bit-identical. #1531 (arm A, PR #1542, k = 20) stands as run and is reviewed on its own; this arm does not wait for it. Her 9 November rulings on #1531 and #1533 (related observations; direct pairs; the lockbox) apply.",
+ "hypothesis": "H5 (primary goal): the SOFR - IORB spread distribution in bp. Step 3, one arm on the candidate (s3c-ann-net): an event-conditional residual distribution on quarter-end target days only. Development tier",
+ "target": "spread_bps at the scored day, in basis points, as a 23-quantile distribution at each lead h = 1..5 (scoring_protocol.GRID)",
+ "why": "#1533 (Mechanism): on the quarter-end group the 90% band covers 0.601 against 0.90, the upper tail misses 0.309 against 0.05, and the realised distance from the median over the forecast's differs by level (q01 1.45, q05 1.74, q25 2.50, q75 3.87, q95 3.14, q99 1.54) with a location shift of 0.19 span units: a shape problem with a location shift, not a width problem alone. The pool that sets the tails holds quarter-end residuals only 3.1% of the time, though their root-mean-square is 1.45 to 1.72 times the pool's. #1402 and #1531 rescale the ordinary pool by one multiplier; this arm gives the event days their own residual distribution, level by level, shrunk toward the pool.",
+ "decision_instant": "18:00 America/New_York on the decision day (repo_model.decision_instant.DECISION_TIME, amended on 29 October 2026, #1312). Every walk of this study is made at that instant and the instant is pinned for the run; no record made at 16:00 is edited.",
+ "group": {
+  "definition": "the event set: a TARGET day whose repo_model.turn_days.reporting_day_type (the record in force, #959 labels) is quarter_end_turn or year_end, the last business day of each calendar quarter and the first business day after it. It is #1531's group, fixed here before any score, so that the two arms are read on the same cells. Other calendar-event types (turn, tax_date) are not in the event set: #1533 diagnosed the quarter-end group, and they stay the candidate's bit for bit. A function of the date alone, read at the target day (calendar first).",
+  "types": [
+   "quarter_end_turn",
+   "year_end"
+  ],
+  "reported_separately": [
+   "quarter_end_turn",
+   "year_end",
+   "the #1363 quarter_end subset (calendar target-day type quarter_end, the 49.3% figure's group)"
+  ],
+  "event": "the cluster of the h = 1..5 forecasts aimed at one turn and of the two days of a turn: scripts/qe_diagnosis_1533.quarter_end_event(target day), the YYYY-MM of the quarter-end"
+ },
+ "form": {
+  "what": "On a target day in the event set, the candidate's 23 pool quantiles pool_j are replaced by pool'_j = (1 - w) * pool_j + w * event_j, quantile by quantile, where event_j are the 23 empirical quantiles (repo_model.protocol_benchmarks.empirical_quantiles, the function that builds the candidate's pool) of the refit's training residuals z whose TARGET day is in the event set, at that lead. The arm's quantiles are q_j + scale * (pool'_j - pool_j), i.e. centre + scale * (shift + pool'_j): the centre, the shift, the scale at the anchor and the Huber fit are the candidate's, and the SRF cap is applied after, as to the candidate. On every other target day the candidate's quantiles are used as they are, bit for bit.",
+  "module": "repo_model.event_conditional.event_pool and conditioned_quantiles",
+  "conditioning": "on the event: the residuals z are those the candidate's direct-pair fit leaves after its calendar, settlement and state terms; the event pool is the empirical distribution of those whose target day is in the event set. Because a residual is the part of the target the calendar terms did not explain, the event pool carries the event's own location shift (its median is not the pool's) and its own shape (each level has its own correction, not one multiplier). Training pairs are the refit's own, targets at or before the anchor (LookAheadError otherwise).",
+  "pooling": "shrinkage toward the pool the candidate already uses at that refit and lead (all training residuals; quarter-end targets are about 3% of it, #1533), by quantile averaging: w = n / (n + k), n the event set's training pairs at that refit and lead. At w = 0 the arm is the candidate. A convex combination of two non-decreasing sequences is non-decreasing, so the quantiles never cross.",
+  "k": 20,
+  "k_reason": "the same constant as #1531 (her 10 November answer: k = 20): n = 20 is ten turns, since a turn has two days, so at ten turns each level is moved half of the way from the pool's quantile to the event's, and the event's own quantile is trusted most only well beyond the roughly thirty turns the development window holds. It was chosen from the count of turns, as #1531's was, and is not tuned on scores; the same constant keeps the two arms comparable. There is one arm and no sweep.",
+  "k_is_fixed": "k is written here before any score. The study reads it from this declaration and does not vary it.",
+  "fallback_for_thin_events": "an event set with fewer than 10 training pairs at a refit and lead (the minimum #1402 and #1531 use) gets w = 0: the arm's quantiles for that refit and lead are the candidate's, bit for bit. Above 10 pairs the shrinkage alone regularizes; the outer levels (q01, q99) of an event pool of about 20 to 60 residuals are near its extremes and are moved by w only. The study reports, per lead and over the refits, n, w and the share of refits at the fallback.",
+  "minimum_rows": 10,
+  "not_in_the_form": "no recency weighting (arm C), no separate tail recalibration (arm D), no bound on the correction (the shrinkage and the pool's own range are the only regularizers), no change to the scale: only the shape and location of the residual distribution on the event set change"
+ },
+ "arms": [
+  {
+   "name": "sc_s3c_ann_net",
+   "role": "(s3c-ann-net), the frozen candidate; reference",
+   "margin_bp": 0.0
+  },
+  {
+   "name": "sc_s3c_ann_net_qeevent",
+   "role": "(s3c-ann-net-ev): the candidate with the event-conditional residual distribution (k = 20) on target days of type quarter_end_turn or year_end; every other forecast identical",
+   "margin_bp": 0.0
+  }
+ ],
+ "models": [
+  "sc_s3c_ann_net",
+  "sc_s3c_ann_net_qeevent",
+  "B1",
+  "B1_prime",
+  "B2"
+ ],
+ "references": [
+  {
+   "name": "sc_s3c_ann_net",
+   "role": "the candidate, re-run at 18:00 in the same run; the reference the arm is measured against on the group"
+  },
+  {
+   "name": "B1",
+   "role": "the protocol's B1, grid CRPS"
+  },
+  {
+   "name": "B1_prime",
+   "role": "B1' (#960)"
+  },
+  {
+   "name": "B2",
+   "role": "the protocol's B2, grid CRPS"
+  },
+  {
+   "name": "B3",
+   "role": "the incumbent: the published v1 record's five levels (0.05, 0.25, 0.5, 0.75, 0.95), scored on those five against the arm read at the same five, on the decision days where the record holds all five leads (ruling of 13 October 2026, PR #660); pooled and by regime of the decision day"
+  }
+ ],
+ "pairs": "direct: the fit is spread_mr_state_calendar.fit_state_terms with training_pairs = 'direct' (guarded by one_step_guard with no allow-list entry; ONE_STEP_ALLOW_LIST is not changed). The arm adds no fit: it re-reads the pool from the fit's own residuals on event-set targets. The provisional-register row is metadata/provisional/cleared/qe_event_model_1548.json",
+ "frame": {
+  "windows": "the two windows of #1255: the development window (decision days whose five targets fall on or before 2025-12-31) and the 2026 development days (targets from 2026-01-02 to 2026-09-03). The 2026 days are shown apart and decide nothing",
+  "walk": "(s3c-ann-net) is walked as #1363, #1402 and #1531 walk it (refit every 21 decision days, direct pairs); the study refuses to write a record unless the candidate's pooled mean grid CRPS equals #1314's 18:00 record to 1e-9, and unless, on every cell whose target is outside the event set, every quantile of the arm equals the candidate's (the walk fails otherwise)",
+  "guards": "a scored decision day or target day passes lockbox.require_unlocked through spread_mean_reversion_686.require_scored_days with the last day of the window; the blind tier (from 2026-09-04) and every lockbox day are refused"
+ },
+ "scoring": {
+  "scorer": "repo_model.scoring_protocol (#655), the development tier: no verdict, no registration. Primary: grid CRPS over h = 1..5; key secondary: upper-tail twCRPS; against B1, B1' and B2 and, on the five levels, B3",
+  "on_the_group": "by horizon h = 1..5 and pooled: 90% coverage (q05 to q95, closed), the lower-tail miss rate (below q05) and the upper-tail miss rate (above q95) each against 5%, the q01 and q99 miss rates against 1%, grid CRPS and upper-tail twCRPS, the arm against the candidate on the same cells (paired). Also for quarter_end_turn, year_end and the #1363 quarter_end subset.",
+  "interval_on_the_group": "a cluster bootstrap over turn events (quarter_end_event of the target day): whole events resampled with replacement, 2,000 resamples, seed 1548, 90% percentile interval. The page states the number of events and says plainly that roughly 30 to 44 events is small, and that the day-type interval method of #1228 has not ruled (#1221's caveat).",
+  "against_benchmarks": "pooled and by regime and by pressure-day type: grid CRPS and upper-tail twCRPS of the arm and of the candidate against B1, B1' and B2, and grid CRPS on B3's five levels against B3, on scoring_protocol.paired_tests, the studentized stationary bootstrap (ruling 1), mean block 10 business days, 10,000 draws, seed 1548, two-sided 90% interval, the reading taken from the mean-d bound (ruling on #1009). Because every cell outside the event set is identical, the arm and the candidate differ against a benchmark only through the event set.",
+  "context_not_a_test": "#1531's group figures (its published result.json, the same cells) are quoted beside, as context and not as a paired test: no arm of #1531 is re-run here and no comparison of the two arms carries an interval",
+  "seed": 1548
+ },
+ "read_out": "One table: coverage and tail misses on the event set, by horizon, candidate against arm. A plain sentence on how far short of 90% the arm still is, and on whether the lower and upper tails and the median shift move as #1533's shape reading predicts.",
+ "kill": "The arm's group 90% coverage does not improve on the candidate's beyond its interval (the lower end of the 90% event-cluster interval of the paired coverage difference, arm minus candidate, is not above zero), or the group's mean grid CRPS of the arm is above the candidate's (the arm loses). Pooled figures cannot pass or fail it alone, since everything outside the event set is identical. A kill applies to a result that is not provisional; this one reads calendar columns at the target day on direct pairs.",
+ "reading_rules": [
+  "A figure is a check on days that were already seen. Nothing here is a verdict, nothing is registered and no choice is made on it; (s3c-ann-net) stays the frozen H5 candidate. Adopting the arm is hers; the 2 November freeze holds.",
+  "The group's intervals are event-cluster intervals over roughly 30 to 44 events: small. A pooled figure is never read alone: it is shown beside the group, the regime and the pressure-day type splits.",
+  "Even if coverage improves, the page says how far it stays short of 90%, and whether any gain rests on a few events (it reports the arm's gain by regime of the event).",
+  "Whether this arm beats #1531's is not tested here and is not claimed; the figures of #1531 are quoted beside as context only."
+ ],
+ "limits": {
+  "last_day": "2026-09-03",
+  "named_candidate": "unchanged; docs/research/h5-candidate.json is not changed",
+  "preregistration": "scripts/final_test_preregistration.py is not touched",
+  "allow_list": "repo_model.one_step_guard.ONE_STEP_ALLOW_LIST is not changed",
+  "sources": "no source, no declaration already merged and no page already merged is changed; docs/runs/ is not touched",
+  "long_run": "two walks of the candidate per window, cloud first (minutes each, as #1531's); well under the two-hour line of the long-run skill"
+ },
+ "not_in_scope": "adopting the arm; registration, the live record; other calendar-event types (turn, tax_date, month-end, mid-month settlement) as event sets; arms C (recency-weighted residuals) and D (separate tail recalibration); any sweep over k; whether anything further of #1531 runs (hers)",
+ "variants": {
+  "sc_s3c_ann_net_qeevent": "the only arm: one event-conditional residual distribution on the quarter-end event set, k = 20, minimum 10 pairs, written above before any score; nothing else varies (one variant, no sweep)"
+ },
+ "amendments": []
+}
