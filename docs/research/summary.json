@@ -124,11 +124,11 @@
     "not_registered": "It is not registered: registering is Eleonora's own act, and it waits on {waiting}.",
     "registered": "It was registered on {registered}.",
     "waiting": {
-      "amendment4_coverage": "a coverage report that passes the fourth amendment to the scoring rules"
+      "amendment4_coverage": "a coverage report that passes. The fourth amendment to the scoring rules requires that report before registration: a check that the forecast\u2019s stated ranges held the outcome as often as they claimed, and that its misses did not come in runs"
     },
     "failures": {
-      "amendment4_coverage": "It fails the coverage report that the fourth amendment to the scoring rules requires before registration: the report rejects some of its coverage checks on past days.",
-      "quarter_end_band": "Its 90% range holds the outcome in a share of {qend} of quarter-end turns and {yend} of year-end days, where 0.900 is claimed (past days)."
+      "amendment4_coverage": "It fails the coverage report that the fourth amendment to the scoring rules requires before registration: some of the report\u2019s checks on past days are rejected.",
+      "quarter_end_band": "Its 90% range holds the outcome in a share of {qend} of quarter-end turns (the last business day of a quarter and the first after it) and {yend} of year-end days, on past days, where 0.900 is claimed."
     },
     "failure_mark": "Figures from past days, development, not a verdict.",
     "next": {
