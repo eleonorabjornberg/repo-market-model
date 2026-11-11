@@ -28,6 +28,7 @@ mutation confirmed applied by diff and reverted; unmutated control green before 
 from __future__ import annotations
 
 import importlib.util
+import itertools
 import sys
 import unittest
 from datetime import date, timedelta
@@ -167,6 +168,137 @@ class TargetDayColumnsTests(unittest.TestCase):
             one_step_guard.one_step_refusals(("fomc_days_to_next_meeting",)),
             {"fomc_days_to_next_meeting": "calendar column 'fomc_days_to_next_meeting'"},
         )
+
+
+class PatchedCalendarColumnsTests(unittest.TestCase):
+    """Every column a script patches into `asof.CALENDAR_FEATURES` is in the guard's set (#1564, finding #1553).
+
+    `scripts/derived_features_631.py`, `scripts/near_threshold_688.py` and `scripts/balance_sheet_nested_1031.py` serve
+    their own columns as calendar columns for one run with `mock.patch.object(asof, "CALENDAR_FEATURES", ...)`. The guard
+    reads `target_day_columns.TARGET_DAY_COLUMNS`, so a patched column missing there lets a one-step fit learn it a row off.
+    The scan finds each patch call in `scripts/`, evaluates the patched value in the script's own namespace (a function's
+    parameters are tried over the script's module-level string constants and the members of its string tuples; a binding the
+    function rejects is skipped), and fails on any column not in the set. A patch it cannot evaluate fails the test too.
+
+    Mutation record (#1564)
+    -----------------------
+
+    Run on CPython 3.11 (`/opt/rmm-venv`), `-B`, in a disposable copy; applied by diff and reverted; control green before
+    and after.
+
+    1. **`post_month_end_window` dropped from the declaration** -- in `target_day_columns.py`,
+       `PATCHED_CALENDAR_COLUMNS = frozenset({"dow", "bday_of_month", "maint_period_day", "post_month_end_window"})` ->
+       the same without `"post_month_end_window"`. Killed by `test_every_patched_calendar_column_is_declared`,
+       `AssertionError: 'post_month_end_window' not found in frozenset(...)` (subtest `scripts/near_threshold_688.py`), and by
+       `test_a_one_step_fit_of_a_patched_column_is_refused` (subtest `post_month_end_window`), `AssertionError: ValueError not raised`.
+    """
+
+    @staticmethod
+    def _is_patch(node):
+        import ast
+
+        if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Attribute):
+            return None
+        if node.func.attr == "object" and len(node.args) >= 3:
+            target = node.args[1]
+            if isinstance(target, ast.Constant) and target.value == "CALENDAR_FEATURES":
+                return node.args[2]
+        if node.func.attr == "multiple":
+            for keyword in node.keywords:
+                if keyword.arg == "CALENDAR_FEATURES":
+                    return keyword.value
+        return None
+
+    @staticmethod
+    def _candidates(module):
+        found = []
+        for value in vars(module).values():
+            if isinstance(value, str):
+                found.append(value)
+            elif isinstance(value, (tuple, list)) and value and all(isinstance(item, str) for item in value):
+                found.extend(value)
+        return sorted(set(found))
+
+    def patched_columns(self, path):
+        """The columns `path` patches into `CALENDAR_FEATURES`, or `None` when it patches nothing."""
+        import ast
+
+        tree = ast.parse(path.read_text(), filename=str(path))
+        sites = []
+        for function in ast.walk(tree):
+            if isinstance(function, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                for node in ast.walk(function):
+                    value = self._is_patch(node)
+                    if value is not None:
+                        sites.append((function, value))
+        if not sites:
+            return None
+        spec = importlib.util.spec_from_file_location(f"_scan_{path.stem}", path)
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = module
+        try:
+            spec.loader.exec_module(module)
+        finally:
+            sys.modules.pop(spec.name, None)
+        columns = set()
+        for function, value in sites:
+            local = {}
+            for node in ast.walk(function):
+                if isinstance(node, ast.Assign) and len(node.targets) == 1 and isinstance(node.targets[0], ast.Name):
+                    local[node.targets[0].id] = node.value
+            local = dict(sorted(local.items(), key=lambda item: item[1].lineno))
+            imports = {}
+            for node in ast.walk(function):
+                if isinstance(node, ast.ImportFrom) and node.module:
+                    for alias in node.names:
+                        try:
+                            imports[alias.asname or alias.name] = importlib.import_module(f"{node.module}.{alias.name}")
+                        except ImportError:
+                            pass
+            names = [a.arg for a in function.args.args + function.args.kwonlyargs]
+            expression = ast.Expression(value)
+            resolved = set()
+            for binding in itertools.product(self._candidates(module), repeat=len(names)):
+                scope = dict(vars(module))
+                scope.update(imports)
+                scope.update(zip(names, binding))
+                for name, assigned in local.items():
+                    try:  # only the names the patched value needs have to evaluate
+                        scope[name] = eval(compile(ast.Expression(assigned), str(path), "eval"), scope)
+                    except Exception:
+                        continue
+                try:
+                    patched = eval(compile(expression, str(path), "eval"), scope)
+                except Exception:  # a binding the function would reject
+                    continue
+                resolved |= set(patched)
+            if not resolved:
+                self.fail(f"{path.name}: cannot evaluate the value patched into CALENDAR_FEATURES; extend this scan")
+            columns |= resolved - set(contract.CALENDAR_FEATURES)
+        return columns
+
+    def scan(self):
+        scripts = Path(__file__).parents[1] / "scripts"
+        return {path.name: columns for path in sorted(scripts.glob("*.py")) if (columns := self.patched_columns(path))}
+
+    def test_the_scan_finds_the_known_patching_scripts(self):
+        found = self.scan()
+        self.assertEqual(found["derived_features_631.py"], {"dow", "bday_of_month", "maint_period_day"})
+        self.assertEqual(found["near_threshold_688.py"], {"post_month_end_window"})
+        self.assertIn("balance_sheet_nested_1031.py", found)
+
+    def test_every_patched_calendar_column_is_declared(self):
+        for script, columns in self.scan().items():
+            for column in columns:
+                with self.subTest(script=script, column=column):
+                    self.assertIn(column, target_day_columns.TARGET_DAY_COLUMNS)
+
+    def test_a_one_step_fit_of_a_patched_column_is_refused(self):
+        with self.assertRaises(ValueError):  # the reproduction in #1553
+            one_step_guard.check_one_step_regressors("fit_gradient_boosted_quantiles", ("dow", "post_month_end_window"))
+        for column in ("dow", "bday_of_month", "maint_period_day", "post_month_end_window"):
+            with self.subTest(column=column), self.assertRaisesRegex(ValueError, f"'{column}'"):
+                one_step_guard.check_one_step_regressors("fit_gradient_boosted_quantiles", (column,))
 
 
 class AllowListTests(unittest.TestCase):
