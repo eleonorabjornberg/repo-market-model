@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/calendar_tail_diagnostic_1547.json",
+  "script": "scripts/calendar_tail_diagnostic_1547.py",
+  "pairing": "direct",
+  "why": "a diagnosis of the candidate's own forecasts: the walk of scripts/candidate_calibration_1363.py is regenerated unchanged through scripts/qe_diagnosis_1533.py (direct pairs, every calendar and scheduled column read at the target day, checked by its sha256 against the 1363 record) and only read; no gradient-boosted fitter is called and nothing is fitted"
+}
