@@ -252,7 +252,7 @@ class FitTests(unittest.TestCase):
 
     def test_a_one_step_fit_of_the_iorb_column_is_refused_by_the_guard(self):
         with self.assertRaisesRegex(ValueError, r"one-step pairs.*served from the scored row"):
-            sc.fit_state_terms(osg.stamp_pairs(planted(), direct=True), regressors=("iorb_announced_change_bps",), terms=("iorb_window",), interact=False, robust=True,
+            sc.fit_state_terms(planted(), regressors=("iorb_announced_change_bps",), terms=("iorb_window",), interact=False, robust=True,
                                ridge=5.0, extra=EXTRAS, training_pairs="one_step")
 
 
