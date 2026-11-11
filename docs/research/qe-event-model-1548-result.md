@@ -12,23 +12,19 @@ Not on the development data: the arm's 90% band covers 0.663 [0.574, 0.747] of t
 
 ## Data
 
-The published panel, with every forecast made at the 18:00 decision. Two sets of days are scored and kept apart: the development window, where the kill rule is read, and the 2026 development days, which are shown separately and decide nothing. Each section below opens with its count of days, cells and turn events.
+The published panel, with every forecast made at the 18:00 decision. The answer rests on the development window; the 2026 development days are shown at the end and decide nothing.
 
 ## Method
 
-**The change.** The event set is every target day whose type is `quarter_end_turn` or `year_end`: the last business day of each calendar quarter and the first after it. On those days the candidate's 23 pool quantiles are replaced by `(1 - w) pool_j + w event_j`, where `event_j` is the empirical quantile of the refit's training residuals whose own target day is in that event set (at that lead), `w = n / (n + k)` and `k = 20`. Each level has its own correction, so the arm carries the event's shape and location shift, where the width-only arm applied one multiplier. With fewer than 10 such residuals the pool is the candidate's, exactly. On every other target day every quantile equals the candidate's, bit for bit, and the walk fails if it does not. The center, the calendar terms, the scale and the fit are the candidate's, on direct pairs; the SRF cap is applied after.
-
-**The kill rule.** Declared before any score: the arm is killed if its 90% coverage on the group does not improve on the candidate's beyond its interval (the lower end of the 90% event-cluster interval of the paired difference, arm minus candidate, is not above zero), or if the arm's mean grid CRPS on the group is above the candidate's. Pooled figures cannot pass or fail it alone, since everything outside the event set is identical.
-
-**The intervals.** The h = 1-5 forecasts aimed at one turn, and the turn's two days, are one cluster. Intervals on the group are 90% percentile intervals of a cluster bootstrap over turn events (2,000 resamples, seed 1548). The development window holds 30 events: roughly 30 to 44 is small, so every interval is wide. Against the benchmarks the interval is the studentized stationary bootstrap (mean block 10 business days, 10,000 draws, seed 1548, two-sided 90% interval), and the reading is taken from the bound on mean d. Two caveats carry over: which interval method applies to day types has not been ruled on, and the HAC standard error is understated about 2x after 2020. In the paired tables against a benchmark, a positive mean d favors the model named first.
+On quarter-end and year-end target days the arm replaces the candidate's band with a blend of that band and one built from past quarter-end errors alone, so the band can shift and change shape as well as widen. The fewer past quarter-ends there are, the less weight they get. Every other forecast is the candidate's, unchanged. The arm fails (is killed) if its 90% band does not cover more of the quarter-end outcomes than the candidate's by a margin that excludes chance, or if its forecasts on those days score worse than the candidate's.
 
 ## Result on the development window (targets up to 2025-12-31)
 
-Scored decision days: 1,855 (2018-07-19 to 2025-12-23); 89 refits. Group cells: 291, of which the arm changes 251; cells outside the group: 8,984, every one identical to the candidate (the walk fails otherwise). The group holds 30 turn events and 291 cells; **roughly 30 to 44 events is small.**
+Scored decision days: 1,855 (2018-07-19 to 2025-12-23); 89 refits. Group cells: 291, of which the arm changes 251; cells outside the group: 8,984, every one identical to the candidate (the walk fails otherwise). The group holds 30 turn events and 291 cells. **That is few, so every interval is wide.**
 
 ### Coverage and tail misses on the group, candidate against arm
 
-Read the first row, and in it the column "arm minus candidate": that difference and its interval are what the kill rule reads. A 90% band that works covers 90% of the cells, so the two coverage columns show how far each model is from that. The four tail columns give the share of cells whose outcome fell outside a quantile, candidate first and arm second, with the share a calibrated model would show in brackets in the column head. The rows by lead and by day type hold fewer cells, and their intervals are wider.
+The table shows how often each model's 90% band held the outcome on the group and how often the outcome fell outside a tail quantile; the kill rule reads the first row's "arm minus candidate".
 
 | set | cells | events | 90% coverage: candidate | arm | arm minus candidate | below q05 (5%): cand. / arm | above q95 (5%): cand. / arm | below q01 (1%): cand. / arm | above q99 (1%): cand. / arm |
 |---|---|---|---|---|---|---|---|---|---|
@@ -44,383 +40,9 @@ Read the first row, and in it the column "arm minus candidate": that difference 
 
 **The arm's 90% band covers 0.663 [0.574, 0.747] of the group's cells against 0.601 for the candidate; the gap to 90% is 23.7 percentage points.**
 
-### Accuracy of the distribution on the group (paired, same cells)
-
-Both scores are in bp and lower is better, so a negative difference favors the arm. The first row holds the grid CRPS difference the kill rule reads.
-
-| set | grid CRPS (bp): candidate | arm | arm minus candidate (negative favors the arm) | upper-tail twCRPS (bp): candidate | arm | arm minus candidate |
-|---|---|---|---|---|---|---|
-| group, pooled over h = 1-5 | 4.722 | 4.723 | +0.001 [-0.287, +0.352] | 3.511 | 3.662 | +0.151 [-0.076, +0.438] |
-| group, h = 1 | 4.509 | 4.533 | +0.024 [-0.253, +0.354] | 3.449 | 3.593 | +0.144 [-0.059, +0.385] |
-| group, h = 2 | 4.490 | 4.604 | +0.114 [-0.159, +0.449] | 3.527 | 3.727 | +0.200 [-0.010, +0.470] |
-| group, h = 3 | 4.724 | 4.777 | +0.053 [-0.268, +0.437] | 3.526 | 3.716 | +0.191 [-0.054, +0.507] |
-| group, h = 4 | 4.932 | 4.867 | -0.064 [-0.391, +0.343] | 3.522 | 3.650 | +0.128 [-0.121, +0.465] |
-| group, h = 5 | 4.949 | 4.832 | -0.117 [-0.420, +0.247] | 3.530 | 3.623 | +0.093 [-0.134, +0.399] |
-| group, quarter_end_turn only | 3.512 | 3.397 | -0.115 [-0.477, +0.301] | 2.136 | 2.201 | +0.065 [-0.199, +0.397] |
-| group, year_end only | 8.469 | 8.833 | +0.363 [-0.000, +0.761] | 7.771 | 8.187 | +0.416 [+0.060, +0.788] |
-| `quarter_end` days of the calibration study (the group behind its 49.3% figure) | 5.153 | 4.933 | -0.220 [-0.804, +0.297] | 3.964 | 3.840 | -0.124 [-0.690, +0.376] |
-
 ### The declared kill
 
 Coverage on the group: +0.062 [+0.010, +0.121] (arm minus candidate, event-cluster 90% interval). The lower end of the interval is above zero, so the arm improves beyond its interval. Grid CRPS on the group: +0.001 [-0.287, +0.352] bp (arm minus candidate). The arm's is above the candidate's, so the arm loses. **Against the declared kill: killed.**
-
-### The event pools, over the window's refits
-
-The table shows how much the events had to say at each lead. The event pool is the empirical distribution of the refit's training residuals whose target is a quarter-end turn or year-end day; `w` is the weight it receives. A positive median shift means the events' residuals sit above the pool's, which is the location shift the quarter-end diagnosis found; a span ratio above 1 means they are also more spread out.
-
-| lead | event pairs n: mean (least to greatest) | w: mean (least to greatest) | share of refits at the fallback | event pool's median minus the pool's (standardised units): mean | event pool's 90% span over the pool's: mean |
-|---|---|---|---|---|---|
-| h=1 | 14.1 (2 to 16) | 0.376 (0.000 to 0.444) | 0.13 | +1.116 | 1.655 |
-| h=2 | 14.1 (2 to 16) | 0.376 (0.000 to 0.444) | 0.13 | +1.137 | 1.354 |
-| h=3 | 14.1 (2 to 16) | 0.376 (0.000 to 0.444) | 0.13 | +1.678 | 1.476 |
-| h=4 | 14.1 (2 to 16) | 0.376 (0.000 to 0.444) | 0.13 | +1.882 | 1.592 |
-| h=5 | 14.1 (2 to 16) | 0.376 (0.000 to 0.444) | 0.13 | +1.777 | 1.592 |
-
-### Beside the width-only arm (context only, same cells, no test between the arms)
-
-The width-only arm (a single shrunk width multiplier, k = 20) was run and reviewed on its own. Its figures are copied from its published result and the candidate's column is checked to equal it. No interval or test compares the two arms here, so the table shows where each arm moves a measure and cannot say which arm is better.
-
-| measure (event set, pooled over h = 1-5) | candidate | width-only arm (k = 20) | this arm (event-conditional) |
-|---|---|---|---|
-| 90% coverage | 0.601 | 0.646 | 0.663 |
-| below q05 (5%) | 0.089 | 0.082 | 0.096 |
-| above q95 (5%) | 0.309 | 0.271 | 0.241 |
-| below q01 (1%) | 0.045 | 0.024 | 0.069 |
-| above q99 (1%) | 0.127 | 0.107 | 0.113 |
-| grid CRPS (bp) | 4.722 | 4.616 | 4.723 |
-| upper-tail twCRPS (bp) | 3.511 | 3.451 | 3.662 |
-
-### Pooled, against B1, B1' and B2 (studentized stationary bootstrap)
-
-This table places both models in the scoring protocol's frame, on all decision days. Each cell gives the skill (the share of the benchmark's score the model removes) and then mean d in bp, both with a 90% interval, and ends with the reading taken from the interval of d: **gain** when it lies above zero, **undecided** when it includes zero. A note in brackets says where the interval of the skill reads differently. Everything outside the group is identical, so the arm and the candidate differ against a benchmark only through the group, and their rows are close: the comparison that separates them is the group's, above.
-
-| model against | grid CRPS | upper-tail twCRPS |
-|---|---|---|
-| (s3c-ann-net) against B1 | +30.0% [+24.0%, +42.5%]; d +0.688 [+0.424, +1.597]: **gain** | +38.6% [+31.0%, +51.9%]; d +0.530 [+0.268, +1.611]: **gain** |
-| (s3c-ann-net) against B1' | +13.5% [+8.4%, +17.9%]; d +0.249 [+0.161, +0.353]: **gain** | +15.5% [+6.3%, +23.6%]; d +0.154 [+0.079, +0.264]: **gain** |
-| (s3c-ann-net) against B2 | +36.3% [+25.7%, +45.4%]; d +0.913 [+0.668, +1.229]: **gain** | +25.4% [+10.8%, +38.1%]; d +0.288 [+0.166, +0.458]: **gain** |
-| (s3c-ann-net-ev) against B1 | +30.0% [+23.8%, +42.2%]; d +0.688 [+0.422, +1.582]: **gain** | +38.2% [+30.5%, +52.0%]; d +0.526 [+0.262, +1.605]: **gain** |
-| (s3c-ann-net-ev) against B1' | +13.5% [+8.1%, +18.0%]; d +0.249 [+0.157, +0.354]: **gain** | +15.0% [+6.2%, +22.9%]; d +0.150 [+0.074, +0.257]: **gain** |
-| (s3c-ann-net-ev) against B2 | +36.3% [+25.8%, +45.3%]; d +0.913 [+0.669, +1.224]: **gain** | +25.0% [+10.9%, +37.3%]; d +0.283 [+0.162, +0.452]: **gain** |
-
-### The same comparison, split
-
-A pooled development figure is not a result on its own, so the comparison is repeated by regime and by pressure-day type of the target day. These are reference tables. For each benchmark the candidate's table comes first and the arm's second; the two differ only through the group's cells, so look at the rows that hold quarter-end and year-end days. The cells read as in the pooled table.
-
-#### By regime: (s3c-ann-net) against B1
-
-| regime | days | grid CRPS | upper-tail twCRPS | Brier P(> +5 bp) |
-|---|---|---|---|---|
-| 2018-19 | 361 | +37.1% [+28.0%, +57.4%]; d +2.149 [+0.977, +9.098]: **gain** | +39.3% [+29.2%, +58.7%]; d +2.074 [+0.891, +8.932]: **gain** | n/a |
-| 2020 | 251 | +9.6% [-18.0%, +21.2%]; d +0.158 [-0.144, +0.398]: **undecided** | +21.9% [+6.0%, +44.9%]; d +0.162 [-0.004, +0.918]: **undecided (skill interval: gain)** | n/a |
-| 2021-23 | 748 | +9.2% [+3.7%, +13.8%]; d +0.064 [+0.031, +0.096]: **gain** | +23.0% [-32.3%, +47.9%]; d +0.002 [-0.001, +0.004]: **undecided** | n/a |
-| 2024 | 250 | +33.4% [+26.7%, +42.1%]; d +0.539 [+0.284, +1.189]: **gain** | +39.6% [+22.0%, +79.0%]; d +0.111 [+0.011, +1.224]: **gain** | n/a |
-| 2025-26 | 249 | +33.6% [+25.9%, +41.7%]; d +1.128 [+0.727, +1.685]: **gain** | +42.2% [+31.0%, +53.3%]; d +0.676 [+0.236, +1.665]: **gain** | n/a |
-
-#### By regime: (s3c-ann-net-ev) against B1
-
-| regime | days | grid CRPS | upper-tail twCRPS | Brier P(> +5 bp) |
-|---|---|---|---|---|
-| 2018-19 | 361 | +37.1% [+27.9%, +57.7%]; d +2.147 [+0.973, +9.083]: **gain** | +39.3% [+29.1%, +58.9%]; d +2.072 [+0.886, +8.923]: **gain** | n/a |
-| 2020 | 251 | +6.8% [-30.2%, +20.0%]; d +0.112 [-0.309, +0.359]: **undecided** | +16.2% [-6.4%, +40.1%]; d +0.120 [-0.050, +0.667]: **undecided** | n/a |
-| 2021-23 | 748 | +9.3% [+3.8%, +13.9%]; d +0.065 [+0.031, +0.098]: **gain** | +17.7% [-42.0%, +44.0%]; d +0.002 [-0.001, +0.003]: **undecided** | n/a |
-| 2024 | 250 | +34.7% [+27.2%, +43.8%]; d +0.560 [+0.292, +1.242]: **gain** | +42.0% [+23.4%, +84.2%]; d +0.118 [+0.011, +1.015]: **gain** | n/a |
-| 2025-26 | 249 | +34.4% [+26.6%, +42.4%]; d +1.153 [+0.749, +1.703]: **gain** | +42.5% [+31.2%, +53.6%]; d +0.681 [+0.239, +1.670]: **gain** | n/a |
-
-#### By regime: (s3c-ann-net) against B1'
-
-| regime | days | grid CRPS | upper-tail twCRPS | Brier P(> +5 bp) |
-|---|---|---|---|---|
-| 2018-19 | 361 | +10.0% [+0.5%, +17.9%]; d +0.406 [+0.145, +0.728]: **gain** | +10.7% [-0.9%, +19.9%]; d +0.384 [+0.118, +0.729]: **gain (skill interval: undecided)** | n/a |
-| 2020 | 251 | +7.7% [-17.6%, +22.8%]; d +0.125 [-0.167, +0.475]: **undecided** | +24.3% [+7.6%, +52.2%]; d +0.186 [-0.025, +1.347]: **undecided (skill interval: gain)** | n/a |
-| 2021-23 | 748 | +4.6% [-1.3%, +9.8%]; d +0.030 [-0.006, +0.067]: **undecided** | +2.2% [-38.1%, +24.9%]; d +0.000 [-0.003, +0.002]: **undecided** | n/a |
-| 2024 | 250 | +22.0% [+13.8%, +33.2%]; d +0.302 [+0.126, +0.733]: **gain** | +18.4% [-0.0%, +56.6%]; d +0.038 [-0.002, +0.543]: **undecided** | n/a |
-| 2025-26 | 249 | +25.5% [+17.9%, +33.3%]; d +0.764 [+0.497, +1.097]: **gain** | +29.3% [+17.4%, +44.1%]; d +0.383 [+0.109, +1.029]: **gain** | n/a |
-
-#### By regime: (s3c-ann-net-ev) against B1'
-
-| regime | days | grid CRPS | upper-tail twCRPS | Brier P(> +5 bp) |
-|---|---|---|---|---|
-| 2018-19 | 361 | +10.0% [+0.8%, +17.6%]; d +0.404 [+0.141, +0.728]: **gain** | +10.6% [-0.6%, +19.6%]; d +0.382 [+0.113, +0.727]: **gain (skill interval: undecided)** | n/a |
-| 2020 | 251 | +4.9% [-28.9%, +21.1%]; d +0.078 [-0.295, +0.397]: **undecided** | +18.8% [-5.1%, +47.4%]; d +0.144 [-0.067, +1.010]: **undecided** | n/a |
-| 2021-23 | 748 | +4.7% [-1.1%, +10.0%]; d +0.031 [-0.005, +0.068]: **undecided** | -4.5% [-45.5%, +19.1%]; d -0.000 [-0.004, +0.001]: **undecided** | n/a |
-| 2024 | 250 | +23.4% [+15.7%, +33.1%]; d +0.323 [+0.140, +0.756]: **gain** | +21.6% [+10.7%, +39.4%]; d +0.045 [+0.001, +0.667]: **gain** | n/a |
-| 2025-26 | 249 | +26.4% [+18.2%, +34.3%]; d +0.789 [+0.513, +1.126]: **gain** | +29.6% [+17.7%, +45.3%]; d +0.387 [+0.114, +1.046]: **gain** | n/a |
-
-#### By regime: (s3c-ann-net) against B2
-
-| regime | days | grid CRPS | upper-tail twCRPS | Brier P(> +5 bp) |
-|---|---|---|---|---|
-| 2018-19 | 361 | +17.6% [+3.0%, +30.8%]; d +0.779 [+0.318, +1.305]: **gain** | +14.9% [+1.0%, +27.3%]; d +0.561 [+0.185, +0.995]: **gain** | n/a |
-| 2020 | 251 | +48.8% [+25.5%, +69.3%]; d +1.421 [+0.619, +2.910]: **gain** | +56.2% [-4.5%, +82.6%]; d +0.743 [+0.375, +1.187]: **gain (skill interval: undecided)** | n/a |
-| 2021-23 | 748 | +56.9% [+44.4%, +68.4%]; d +0.837 [+0.546, +1.208]: **gain** | -133.3% [-551.0%, -38.1%]; d -0.004 [-0.035, +0.000]: **undecided (skill interval: loss)** | n/a |
-| 2024 | 250 | +20.6% [+8.6%, +30.7%]; d +0.279 [+0.086, +0.516]: **gain** | skill undefined; d +0.016 [-0.006, +0.307]: **undecided (skill interval: skill undefined)** | n/a |
-| 2025-26 | 249 | +40.2% [+18.4%, +57.6%]; d +1.496 [+0.396, +3.437]: **gain** | +39.6% [+29.0%, +55.1%]; d +0.607 [+0.112, +2.410]: **gain** | n/a |
-
-#### By regime: (s3c-ann-net-ev) against B2
-
-| regime | days | grid CRPS | upper-tail twCRPS | Brier P(> +5 bp) |
-|---|---|---|---|---|
-| 2018-19 | 361 | +17.6% [+3.2%, +30.4%]; d +0.778 [+0.317, +1.294]: **gain** | +14.9% [+1.3%, +26.9%]; d +0.559 [+0.186, +0.990]: **gain** | n/a |
-| 2020 | 251 | +47.2% [+23.5%, +68.8%]; d +1.375 [+0.601, +2.838]: **gain** | +53.1% [-6.5%, +81.2%]; d +0.701 [+0.345, +1.146]: **gain (skill interval: undecided)** | n/a |
-| 2021-23 | 748 | +57.0% [+44.5%, +68.5%]; d +0.838 [+0.547, +1.210]: **gain** | -149.4% [-523.1%, -60.8%]; d -0.004 [-0.036, -0.000]: **loss** | n/a |
-| 2024 | 250 | +22.1% [+10.1%, +31.7%]; d +0.299 [+0.104, +0.542]: **gain** | skill undefined; d +0.023 [-0.003, +0.420]: **undecided (skill interval: skill undefined)** | n/a |
-| 2025-26 | 249 | +40.8% [+19.6%, +57.9%]; d +1.521 [+0.431, +3.473]: **gain** | +39.9% [+29.2%, +55.4%]; d +0.611 [+0.117, +2.447]: **gain** | n/a |
-
-#### By pressure-day type of the target day: (s3c-ann-net) against B1
-
-| pressure day type | days | grid CRPS | upper-tail twCRPS | Brier P(> +5 bp) |
-|---|---|---|---|---|
-| ordinary | 1591 | +34.1% [+24.2%, +59.6%]; d +0.666 [+0.389, +1.678]: **gain** | +49.9% [+36.4%, +76.7%]; d +0.537 [+0.259, +1.682]: **gain** | n/a |
-| quarter_end_turn | 44 | +19.5% [-18.1%, +30.7%]; d +0.849 [-0.268, +2.007]: **undecided** | skill undefined; d +0.537 [-0.004, +2.530]: **undecided (skill interval: skill undefined)** | n/a |
-| tax_date | 89 | +7.5% [-5.3%, +18.3%]; d +0.414 [-0.016, +1.129]: **undecided** | +6.4% [-8.8%, +17.1%]; d +0.298 [+0.006, +1.408]: **gain (skill interval: undecided)** | n/a |
-| turn | 120 | +35.2% [+21.1%, +50.8%]; d +0.916 [+0.220, +2.129]: **gain** | +31.5% [+12.5%, +52.6%]; d +0.458 [-0.005, +2.058]: **undecided (skill interval: gain)** | n/a |
-| year_end | 15 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
-
-#### By pressure-day type of the target day: (s3c-ann-net-ev) against B1
-
-| pressure day type | days | grid CRPS | upper-tail twCRPS | Brier P(> +5 bp) |
-|---|---|---|---|---|
-| ordinary | 1591 | +34.1% [+24.2%, +59.6%]; d +0.666 [+0.389, +1.678]: **gain** | +49.9% [+36.4%, +76.7%]; d +0.537 [+0.259, +1.682]: **gain** | n/a |
-| quarter_end_turn | 44 | +22.1% [-63.9%, +43.3%]; d +0.964 [-0.896, +2.648]: **undecided** | skill undefined; d +0.472 [-0.264, +1.723]: **undecided (skill interval: skill undefined)** | n/a |
-| tax_date | 89 | +7.5% [-5.3%, +18.3%]; d +0.414 [-0.016, +1.129]: **undecided** | +6.4% [-8.8%, +17.1%]; d +0.298 [+0.006, +1.408]: **gain (skill interval: undecided)** | n/a |
-| turn | 120 | +35.2% [+21.1%, +50.8%]; d +0.916 [+0.220, +2.129]: **gain** | +31.5% [+12.5%, +52.6%]; d +0.458 [-0.005, +2.058]: **undecided (skill interval: gain)** | n/a |
-| year_end | 15 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
-
-#### By pressure-day type of the target day: (s3c-ann-net) against B1'
-
-| pressure day type | days | grid CRPS | upper-tail twCRPS | Brier P(> +5 bp) |
-|---|---|---|---|---|
-| ordinary | 1591 | +12.3% [+6.8%, +17.1%]; d +0.180 [+0.094, +0.278]: **gain** | +15.8% [+3.2%, +25.8%]; d +0.101 [+0.022, +0.203]: **gain** | n/a |
-| quarter_end_turn | 44 | +17.0% [-22.6%, +28.8%]; d +0.721 [-0.383, +1.789]: **undecided** | skill undefined; d +0.493 [-0.007, +2.321]: **undecided (skill interval: skill undefined)** | n/a |
-| tax_date | 89 | +5.9% [-0.2%, +11.6%]; d +0.320 [-0.032, +1.043]: **undecided** | +6.1% [-4.4%, +12.8%]; d +0.281 [+0.008, +1.407]: **gain (skill interval: undecided)** | n/a |
-| turn | 120 | +29.5% [+18.6%, +40.1%]; d +0.705 [+0.190, +1.485]: **gain** | +31.8% [+9.4%, +44.0%]; d +0.466 [+0.082, +1.393]: **gain** | n/a |
-| year_end | 15 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
-
-#### By pressure-day type of the target day: (s3c-ann-net-ev) against B1'
-
-| pressure day type | days | grid CRPS | upper-tail twCRPS | Brier P(> +5 bp) |
-|---|---|---|---|---|
-| ordinary | 1591 | +12.3% [+6.8%, +17.1%]; d +0.180 [+0.094, +0.278]: **gain** | +15.8% [+3.2%, +25.8%]; d +0.101 [+0.022, +0.203]: **gain** | n/a |
-| quarter_end_turn | 44 | +19.8% [-70.2%, +41.8%]; d +0.836 [-1.025, +2.448]: **undecided** | skill undefined; d +0.428 [-0.281, +1.563]: **undecided (skill interval: skill undefined)** | n/a |
-| tax_date | 89 | +5.9% [-0.2%, +11.6%]; d +0.320 [-0.032, +1.043]: **undecided** | +6.1% [-4.4%, +12.8%]; d +0.281 [+0.008, +1.407]: **gain (skill interval: undecided)** | n/a |
-| turn | 120 | +29.5% [+18.6%, +40.1%]; d +0.705 [+0.190, +1.485]: **gain** | +31.8% [+9.4%, +44.0%]; d +0.466 [+0.082, +1.393]: **gain** | n/a |
-| year_end | 15 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
-
-#### By pressure-day type of the target day: (s3c-ann-net) against B2
-
-| pressure day type | days | grid CRPS | upper-tail twCRPS | Brier P(> +5 bp) |
-|---|---|---|---|---|
-| ordinary | 1591 | +36.2% [+26.5%, +44.9%]; d +0.731 [+0.485, +1.028]: **gain** | +21.9% [+5.6%, +34.5%]; d +0.151 [+0.041, +0.284]: **gain** | n/a |
-| quarter_end_turn | 44 | +30.0% [-10.8%, +48.5%]; d +1.502 [-0.014, +2.871]: **undecided** | skill undefined; d +0.670 [-0.089, +4.716]: **undecided (skill interval: skill undefined)** | n/a |
-| tax_date | 89 | +34.3% [-69.4%, +59.4%]; d +2.655 [+1.475, +4.923]: **gain (skill interval: undecided)** | skill undefined; d +1.295 [+0.091, +4.495]: **gain (skill interval: skill undefined)** | n/a |
-| turn | 120 | +49.2% [+29.5%, +68.8%]; d +1.634 [+0.809, +3.999]: **gain** | +50.4% [-4.9%, +86.5%]; d +1.013 [+0.234, +4.061]: **gain (skill interval: undecided)** | n/a |
-| year_end | 15 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
-
-#### By pressure-day type of the target day: (s3c-ann-net-ev) against B2
-
-| pressure day type | days | grid CRPS | upper-tail twCRPS | Brier P(> +5 bp) |
-|---|---|---|---|---|
-| ordinary | 1591 | +36.2% [+26.5%, +44.9%]; d +0.731 [+0.485, +1.028]: **gain** | +21.9% [+5.6%, +34.5%]; d +0.151 [+0.041, +0.284]: **gain** | n/a |
-| quarter_end_turn | 44 | +32.3% [+11.6%, +46.2%]; d +1.618 [+0.832, +2.376]: **gain** | skill undefined; d +0.605 [+0.066, +2.889]: **gain (skill interval: skill undefined)** | n/a |
-| tax_date | 89 | +34.3% [-69.4%, +59.4%]; d +2.655 [+1.475, +4.923]: **gain (skill interval: undecided)** | skill undefined; d +1.295 [+0.091, +4.495]: **gain (skill interval: skill undefined)** | n/a |
-| turn | 120 | +49.2% [+29.5%, +68.8%]; d +1.634 [+0.809, +3.999]: **gain** | +50.4% [-4.9%, +86.5%]; d +1.013 [+0.234, +4.061]: **gain (skill interval: undecided)** | n/a |
-| year_end | 15 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
-
-### By pressure-day type: the arm against the candidate (identical outside the group)
-
-Here the candidate takes the benchmark's place, so a positive d favors the arm. A row reads "identical" where the arm changes nothing.
-
-| pressure day type | days | grid CRPS | upper-tail twCRPS | Brier P(> +5 bp) |
-|---|---|---|---|---|
-| ordinary | 1591 | identical | identical | n/a |
-| quarter_end_turn | 44 | +3.3% [-40.7%, +24.0%]; d +0.115 [-0.721, +0.753]: **undecided** | skill undefined; d -0.065 [-0.831, +0.218] (5 of 10000 resamples dropped): **undecided (skill interval: skill undefined)** | n/a |
-| tax_date | 89 | identical | identical | n/a |
-| turn | 120 | identical | identical | n/a |
-| year_end | 15 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
-
-### Against B3 (the published record's five levels, grid CRPS on those five)
-
-B3 is the published model. It forecasts five quantile levels, so grid CRPS (bp) is computed on those five for all three models. The comparison is reported and carries no decision rule.
-
-| decision days | days | B3 | (s3c-ann-net) | (s3c-ann-net-ev) | (s3c-ann-net) against B3 | (s3c-ann-net-ev) against B3 |
-|---|---|---|---|---|---|---|
-| 2018-19 | 362 | 4.078 | 3.635 | 3.642 | +10.9% [+0.5%, +18.4%]; d +0.443 [+0.215, +0.681]: **gain** | +10.7% [+0.8%, +18.1%]; d +0.436 [+0.206, +0.677]: **gain** |
-| 2020 | 251 | 1.437 | 1.490 | 1.530 | -3.7% [-25.7%, +7.3%]; d -0.053 [-0.372, +0.101]: **undecided** | -6.5% [-37.6%, +6.0%]; d -0.093 [-0.559, +0.086]: **undecided** |
-| 2021-23 | 748 | 0.741 | 0.646 | 0.644 | +12.8% [+3.3%, +22.3%]; d +0.095 [+0.025, +0.191]: **gain** | +13.1% [+3.6%, +22.5%]; d +0.097 [+0.027, +0.194]: **gain** |
-| 2024 | 250 | 1.356 | 1.117 | 1.101 | +17.6% [+11.4%, +22.8%]; d +0.239 [+0.118, +0.479]: **gain** | +18.8% [+10.9%, +26.2%]; d +0.255 [+0.124, +0.533]: **gain** |
-| 2025-26 | 244 | 2.581 | 2.112 | 2.077 | +18.2% [+10.3%, +25.2%]; d +0.469 [+0.247, +0.714]: **gain** | +19.5% [+11.3%, +26.5%]; d +0.504 [+0.272, +0.752]: **gain** |
-| all decision days | 1855 | 1.811 | 1.600 | 1.599 | +11.7% [+6.5%, +16.0%]; d +0.212 [+0.136, +0.291]: **gain** | +11.7% [+6.3%, +16.1%]; d +0.212 [+0.132, +0.295]: **gain** |
-
-Groups of fewer than 20 days, listed and not tested: pressure_day_type/year_end (15).
-
-## The 2026 development days (targets 2026-01-02 to 2026-09-03)
-
-These days are kept apart from the development window. The kill rule is not read on them and they decide nothing.
-
-Scored decision days: 165 (2025-12-31 to 2026-08-27); 97 refits. Group cells: 21, of which the arm changes 21; cells outside the group: 804, every one identical to the candidate (the walk fails otherwise). The group holds 3 turn events and 21 cells; **roughly 30 to 44 events is small.**
-
-### Coverage and tail misses on the group, candidate against arm
-
-Read the first row, and in it the column "arm minus candidate": that difference and its interval are what the kill rule reads. A 90% band that works covers 90% of the cells, so the two coverage columns show how far each model is from that. The four tail columns give the share of cells whose outcome fell outside a quantile, candidate first and arm second, with the share a calibrated model would show in brackets in the column head. The rows by lead and by day type hold fewer cells, and their intervals are wider.
-
-| set | cells | events | 90% coverage: candidate | arm | arm minus candidate | below q05 (5%): cand. / arm | above q95 (5%): cand. / arm | below q01 (1%): cand. / arm | above q99 (1%): cand. / arm |
-|---|---|---|---|---|---|---|---|---|---|
-| group, pooled over h = 1-5 | 21 | 3 | 0.952 [0.833, 1.000] | 0.952 [0.833, 1.000] | +0.000 [+0.000, +0.000] | 0.000 / 0.000 | 0.048 / 0.048 | 0.000 / 0.000 | 0.048 / 0.048 |
-| group, h = 1 | 5 | 3 | 0.800 [0.500, 1.000] | 0.800 [0.500, 1.000] | +0.000 [+0.000, +0.000] | 0.000 / 0.000 | 0.200 / 0.200 | 0.000 / 0.000 | 0.200 / 0.200 |
-| group, h = 2 | 4 | 2 | 1.000 [1.000, 1.000] | 1.000 [1.000, 1.000] | +0.000 [+0.000, +0.000] | 0.000 / 0.000 | 0.000 / 0.000 | 0.000 / 0.000 | 0.000 / 0.000 |
-| group, h = 3 | 4 | 2 | 1.000 [1.000, 1.000] | 1.000 [1.000, 1.000] | +0.000 [+0.000, +0.000] | 0.000 / 0.000 | 0.000 / 0.000 | 0.000 / 0.000 | 0.000 / 0.000 |
-| group, h = 4 | 4 | 2 | 1.000 [1.000, 1.000] | 1.000 [1.000, 1.000] | +0.000 [+0.000, +0.000] | 0.000 / 0.000 | 0.000 / 0.000 | 0.000 / 0.000 | 0.000 / 0.000 |
-| group, h = 5 | 4 | 2 | 1.000 [1.000, 1.000] | 1.000 [1.000, 1.000] | +0.000 [+0.000, +0.000] | 0.000 / 0.000 | 0.000 / 0.000 | 0.000 / 0.000 | 0.000 / 0.000 |
-| group, quarter_end_turn only | 20 | 2 | 1.000 [1.000, 1.000] | 1.000 [1.000, 1.000] | +0.000 [+0.000, +0.000] | 0.000 / 0.000 | 0.000 / 0.000 | 0.000 / 0.000 | 0.000 / 0.000 |
-| group, year_end only | 1 | 1 | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] | +0.000 [+0.000, +0.000] | 0.000 / 0.000 | 1.000 / 1.000 | 0.000 / 0.000 | 1.000 / 1.000 |
-| `quarter_end` days of the calibration study (the group behind its 49.3% figure) | 10 | 2 | 1.000 [1.000, 1.000] | 1.000 [1.000, 1.000] | +0.000 [+0.000, +0.000] | 0.000 / 0.000 | 0.000 / 0.000 | 0.000 / 0.000 | 0.000 / 0.000 |
-
-**The arm's 90% band covers 0.952 [0.833, 1.000] of the group's cells against 0.952 for the candidate; the gap to 90% is -5.2 percentage points (negative: the band covers more than 90%).**
-
-### Accuracy of the distribution on the group (paired, same cells)
-
-Both scores are in bp and lower is better, so a negative difference favors the arm. The first row holds the grid CRPS difference the kill rule reads.
-
-| set | grid CRPS (bp): candidate | arm | arm minus candidate (negative favors the arm) | upper-tail twCRPS (bp): candidate | arm | arm minus candidate |
-|---|---|---|---|---|---|---|
-| group, pooled over h = 1-5 | 1.011 | 1.198 | +0.187 [-0.418, +0.595] | 0.759 | 1.094 | +0.335 [-0.240, +0.691] |
-| group, h = 1 | 1.435 | 0.953 | -0.481 [-1.154, -0.033] | 1.002 | 0.776 | -0.227 [-0.965, +0.266] |
-| group, h = 2 | 0.889 | 1.060 | +0.172 [-0.202, +0.545] | 0.569 | 0.922 | +0.353 [+0.030, +0.677] |
-| group, h = 3 | 0.856 | 1.332 | +0.476 [+0.052, +0.900] | 0.698 | 1.260 | +0.563 [+0.191, +0.934] |
-| group, h = 4 | 0.875 | 1.375 | +0.500 [+0.036, +0.964] | 0.715 | 1.316 | +0.601 [+0.204, +0.999] |
-| group, h = 5 | 0.894 | 1.330 | +0.436 [-0.082, +0.955] | 0.752 | 1.276 | +0.524 [+0.064, +0.984] |
-| group, quarter_end_turn only | 0.909 | 1.195 | +0.286 [-0.143, +0.715] | 0.646 | 1.086 | +0.440 [+0.067, +0.814] |
-| group, year_end only | 3.057 | 1.265 | -1.791 [-1.791, -1.791] | 3.024 | 1.249 | -1.775 [-1.775, -1.775] |
-| `quarter_end` days of the calibration study (the group behind its 49.3% figure) | 0.845 | 1.391 | +0.546 [+0.135, +0.956] | 0.835 | 1.387 | +0.552 [+0.146, +0.957] |
-
-### The declared kill (shown apart; the kill is read on the development window only, and these days decide nothing)
-
-Coverage on the group: +0.000 [+0.000, +0.000] (arm minus candidate, event-cluster 90% interval). The lower end of the interval is not above zero, so the arm does not improve beyond its interval. Grid CRPS on the group: +0.187 [-0.418, +0.595] bp (arm minus candidate). The arm's is above the candidate's, so the arm loses. **Against the declared kill: killed.**
-
-### The event pools, over the window's refits
-
-The table shows how much the events had to say at each lead. The event pool is the empirical distribution of the refit's training residuals whose target is a quarter-end turn or year-end day; `w` is the weight it receives. A positive median shift means the events' residuals sit above the pool's, which is the location shift the quarter-end diagnosis found; a span ratio above 1 means they are also more spread out.
-
-| lead | event pairs n: mean (least to greatest) | w: mean (least to greatest) | share of refits at the fallback | event pool's median minus the pool's (standardised units): mean | event pool's 90% span over the pool's: mean |
-|---|---|---|---|---|---|
-| h=1 | 14.2 (2 to 16) | 0.382 (0.000 to 0.444) | 0.12 | +1.230 | 1.671 |
-| h=2 | 14.2 (2 to 16) | 0.382 (0.000 to 0.444) | 0.12 | +1.233 | 1.393 |
-| h=3 | 14.2 (2 to 16) | 0.382 (0.000 to 0.444) | 0.12 | +1.733 | 1.500 |
-| h=4 | 14.2 (2 to 16) | 0.382 (0.000 to 0.444) | 0.12 | +1.906 | 1.603 |
-| h=5 | 14.2 (2 to 16) | 0.382 (0.000 to 0.444) | 0.12 | +1.809 | 1.606 |
-
-### Beside the width-only arm (context only, same cells, no test between the arms)
-
-The width-only arm (a single shrunk width multiplier, k = 20) was run and reviewed on its own. Its figures are copied from its published result and the candidate's column is checked to equal it. No interval or test compares the two arms here, so the table shows where each arm moves a measure and cannot say which arm is better.
-
-| measure (event set, pooled over h = 1-5) | candidate | width-only arm (k = 20) | this arm (event-conditional) |
-|---|---|---|---|
-| 90% coverage | 0.952 | 0.952 | 0.952 |
-| below q05 (5%) | 0.000 | 0.000 | 0.000 |
-| above q95 (5%) | 0.048 | 0.048 | 0.048 |
-| below q01 (1%) | 0.000 | 0.000 | 0.000 |
-| above q99 (1%) | 0.048 | 0.048 | 0.048 |
-| grid CRPS (bp) | 1.011 | 1.162 | 1.198 |
-| upper-tail twCRPS (bp) | 0.759 | 0.849 | 1.094 |
-
-### Pooled, against B1, B1' and B2 (studentized stationary bootstrap)
-
-This table places both models in the scoring protocol's frame, on all decision days. Each cell gives the skill (the share of the benchmark's score the model removes) and then mean d in bp, both with a 90% interval, and ends with the reading taken from the interval of d: **gain** when it lies above zero, **undecided** when it includes zero. A note in brackets says where the interval of the skill reads differently. Everything outside the group is identical, so the arm and the candidate differ against a benchmark only through the group, and their rows are close: the comparison that separates them is the group's, above.
-
-| model against | grid CRPS | upper-tail twCRPS |
-|---|---|---|
-| (s3c-ann-net) against B1 | +22.7% [-0.2%, +35.8%]; d +0.491 [+0.133, +0.814]: **gain (skill interval: undecided)** | +37.7% [+23.8%, +51.8%]; d +0.311 [+0.134, +0.681]: **gain** |
-| (s3c-ann-net) against B1' | +10.7% [-12.9%, +22.7%]; d +0.200 [-0.143, +0.428]: **undecided** | +17.2% [+4.4%, +27.9%]; d +0.107 [+0.016, +0.224]: **gain** |
-| (s3c-ann-net) against B2 | +22.6% [+3.9%, +41.4%]; d +0.486 [+0.120, +0.940]: **gain** | +19.1% [-6.4%, +36.9%]; d +0.122 [-0.041, +0.240]: **undecided** |
-| (s3c-ann-net-ev) against B1 | +22.5% [+0.1%, +35.7%]; d +0.486 [+0.132, +0.811]: **gain** | +36.7% [+22.2%, +52.0%]; d +0.303 [+0.124, +0.687]: **gain** |
-| (s3c-ann-net-ev) against B1' | +10.5% [-13.0%, +22.2%]; d +0.196 [-0.145, +0.422]: **undecided** | +15.9% [+3.1%, +26.7%]; d +0.099 [+0.008, +0.213]: **gain** |
-| (s3c-ann-net-ev) against B2 | +22.3% [+3.6%, +41.5%]; d +0.481 [+0.114, +0.939]: **gain** | +17.8% [-6.8%, +35.5%]; d +0.113 [-0.044, +0.233]: **undecided** |
-
-### The same comparison, split
-
-A pooled development figure is not a result on its own, so the comparison is repeated by regime and by pressure-day type of the target day. These are reference tables. For each benchmark the candidate's table comes first and the arm's second; the two differ only through the group's cells, so look at the rows that hold quarter-end and year-end days. The cells read as in the pooled table.
-
-#### By pressure-day type of the target day: (s3c-ann-net) against B1
-
-| pressure day type | days | grid CRPS | upper-tail twCRPS | Brier P(> +5 bp) |
-|---|---|---|---|---|
-| ordinary | 146 | +20.1% [-7.3%, +38.3%]; d +0.432 [+0.023, +0.871]: **gain (skill interval: undecided)** | +41.5% [+23.9%, +61.9%]; d +0.342 [+0.120, +1.048]: **gain** | n/a |
-| quarter_end_turn | 4 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
-| tax_date | 6 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
-| turn | 12 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
-| year_end | 1 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
-
-#### By pressure-day type of the target day: (s3c-ann-net-ev) against B1
-
-| pressure day type | days | grid CRPS | upper-tail twCRPS | Brier P(> +5 bp) |
-|---|---|---|---|---|
-| ordinary | 146 | +20.1% [-7.3%, +38.3%]; d +0.432 [+0.023, +0.871]: **gain (skill interval: undecided)** | +41.5% [+23.9%, +61.9%]; d +0.342 [+0.120, +1.048]: **gain** | n/a |
-| quarter_end_turn | 4 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
-| tax_date | 6 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
-| turn | 12 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
-| year_end | 1 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
-
-#### By pressure-day type of the target day: (s3c-ann-net) against B1'
-
-| pressure day type | days | grid CRPS | upper-tail twCRPS | Brier P(> +5 bp) |
-|---|---|---|---|---|
-| ordinary | 146 | +5.8% [-23.1%, +19.3%]; d +0.105 [-0.326, +0.352]: **undecided** | +11.0% [-7.6%, +25.2%]; d +0.059 [-0.042, +0.191]: **undecided** | n/a |
-| quarter_end_turn | 4 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
-| tax_date | 6 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
-| turn | 12 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
-| year_end | 1 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
-
-#### By pressure-day type of the target day: (s3c-ann-net-ev) against B1'
-
-| pressure day type | days | grid CRPS | upper-tail twCRPS | Brier P(> +5 bp) |
-|---|---|---|---|---|
-| ordinary | 146 | +5.8% [-23.1%, +19.3%]; d +0.105 [-0.326, +0.352]: **undecided** | +11.0% [-7.6%, +25.2%]; d +0.059 [-0.042, +0.191]: **undecided** | n/a |
-| quarter_end_turn | 4 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
-| tax_date | 6 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
-| turn | 12 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
-| year_end | 1 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
-
-#### By pressure-day type of the target day: (s3c-ann-net) against B2
-
-| pressure day type | days | grid CRPS | upper-tail twCRPS | Brier P(> +5 bp) |
-|---|---|---|---|---|
-| ordinary | 146 | +19.6% [-0.6%, +38.8%]; d +0.419 [+0.015, +0.866]: **gain (skill interval: undecided)** | -1.7% [-44.2%, +22.4%]; d -0.008 [-0.213, +0.111]: **undecided** | n/a |
-| quarter_end_turn | 4 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
-| tax_date | 6 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
-| turn | 12 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
-| year_end | 1 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
-
-#### By pressure-day type of the target day: (s3c-ann-net-ev) against B2
-
-| pressure day type | days | grid CRPS | upper-tail twCRPS | Brier P(> +5 bp) |
-|---|---|---|---|---|
-| ordinary | 146 | +19.6% [-0.6%, +38.8%]; d +0.419 [+0.015, +0.866]: **gain (skill interval: undecided)** | -1.7% [-44.2%, +22.4%]; d -0.008 [-0.213, +0.111]: **undecided** | n/a |
-| quarter_end_turn | 4 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
-| tax_date | 6 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
-| turn | 12 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
-| year_end | 1 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
-
-### By pressure-day type: the arm against the candidate (identical outside the group)
-
-Here the candidate takes the benchmark's place, so a positive d favors the arm. A row reads "identical" where the arm changes nothing.
-
-| pressure day type | days | grid CRPS | upper-tail twCRPS | Brier P(> +5 bp) |
-|---|---|---|---|---|
-| ordinary | 146 | identical | identical | n/a |
-| quarter_end_turn | 4 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
-| tax_date | 6 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
-| turn | 12 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
-| year_end | 1 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
-
-### Against B3 (the published record's five levels, grid CRPS on those five)
-
-B3 is the published model. It forecasts five quantile levels, so grid CRPS (bp) is computed on those five for all three models. The comparison is reported and carries no decision rule.
-
-The published record holds no decision day of this window with all five leads, so B3 is not scored here.
-
-
-Groups of fewer than 20 days, listed and not tested: pressure_day_type/quarter_end_turn (4), pressure_day_type/tax_date (6), pressure_day_type/turn (12), pressure_day_type/year_end (1).
 
 ## What it means, and its limits
 
@@ -439,6 +61,392 @@ The page shows what an event-conditional residual distribution on the quarter-en
 **Question 2. What goes on from here?** This page is one arm of the family on the quarter-end event set. Whether the event model is read against the width-only arm with a paired test (a further run), whether it is extended to the other calendar-event types (turn, tax date, month-end), or whether the family stops, is yours; adopting the arm is not in scope and the 2 November freeze holds.
 
 **Options:** 1. **Read this page and rule on the family** (default; no claim changes). 2. **Run a paired test of this arm against the width-only arm.** 3. **Extend the event model to another event type** (a new declaration). 4. **Stop the family here.**
+
+## Details
+
+**The change.** The event set is every target day whose type is `quarter_end_turn` or `year_end`: the last business day of each calendar quarter and the first after it. On those days the candidate's 23 pool quantiles are replaced by `(1 - w) pool_j + w event_j`, where `event_j` is the empirical quantile of the refit's training residuals whose own target day is in that event set (at that lead), `w = n / (n + k)` and `k = 20`. Each level has its own correction, so the arm carries the event's shape and location shift, where the width-only arm applied one multiplier. With fewer than 10 such residuals the pool is the candidate's, exactly. On every other target day every quantile equals the candidate's, bit for bit, and the walk fails if it does not. The center, the calendar terms, the scale and the fit are the candidate's, on direct pairs; the SRF cap is applied after.
+
+**The kill rule, as declared.** The arm is killed if its 90% coverage on the group does not improve on the candidate's beyond its interval (the lower end of the 90% event-cluster interval of the paired difference, arm minus candidate, is not above zero), or if the arm's mean grid CRPS on the group is above the candidate's. Pooled figures cannot pass or fail it alone, since everything outside the event set is identical.
+
+**The intervals.** The h = 1-5 forecasts aimed at one turn, and the turn's two days, are one cluster. Intervals on the group are 90% percentile intervals of a cluster bootstrap over turn events (2,000 resamples, seed 1548). Against the benchmarks the interval is the studentized stationary bootstrap (mean block 10 business days, 10,000 draws, seed 1548, two-sided 90% interval), and the reading is taken from the bound on mean d. Two caveats carry over: which interval method applies to day types has not been ruled on, and the HAC standard error is understated about 2x after 2020.
+
+## Other tables
+
+### Development window
+
+#### Accuracy of the distribution on the group (paired, same cells)
+
+Grid CRPS and upper-tail twCRPS on the group, in bp; lower is better, so a negative difference favors the arm.
+
+| set | grid CRPS (bp): candidate | arm | arm minus candidate (negative favors the arm) | upper-tail twCRPS (bp): candidate | arm | arm minus candidate |
+|---|---|---|---|---|---|---|
+| group, pooled over h = 1-5 | 4.722 | 4.723 | +0.001 [-0.287, +0.352] | 3.511 | 3.662 | +0.151 [-0.076, +0.438] |
+| group, h = 1 | 4.509 | 4.533 | +0.024 [-0.253, +0.354] | 3.449 | 3.593 | +0.144 [-0.059, +0.385] |
+| group, h = 2 | 4.490 | 4.604 | +0.114 [-0.159, +0.449] | 3.527 | 3.727 | +0.200 [-0.010, +0.470] |
+| group, h = 3 | 4.724 | 4.777 | +0.053 [-0.268, +0.437] | 3.526 | 3.716 | +0.191 [-0.054, +0.507] |
+| group, h = 4 | 4.932 | 4.867 | -0.064 [-0.391, +0.343] | 3.522 | 3.650 | +0.128 [-0.121, +0.465] |
+| group, h = 5 | 4.949 | 4.832 | -0.117 [-0.420, +0.247] | 3.530 | 3.623 | +0.093 [-0.134, +0.399] |
+| group, quarter_end_turn only | 3.512 | 3.397 | -0.115 [-0.477, +0.301] | 2.136 | 2.201 | +0.065 [-0.199, +0.397] |
+| group, year_end only | 8.469 | 8.833 | +0.363 [-0.000, +0.761] | 7.771 | 8.187 | +0.416 [+0.060, +0.788] |
+| `quarter_end` days of the calibration study (the group behind its 49.3% figure) | 5.153 | 4.933 | -0.220 [-0.804, +0.297] | 3.964 | 3.840 | -0.124 [-0.690, +0.376] |
+
+#### The event pools, over the window's refits
+
+How much the events had to say at each lead: `w` is the weight the event pool receives, a positive median shift means the events' residuals sit above the pool's, and a span ratio above 1 means they are more spread out.
+
+| lead | event pairs n: mean (least to greatest) | w: mean (least to greatest) | share of refits at the fallback | event pool's median minus the pool's (standardised units): mean | event pool's 90% span over the pool's: mean |
+|---|---|---|---|---|---|
+| h=1 | 14.1 (2 to 16) | 0.376 (0.000 to 0.444) | 0.13 | +1.116 | 1.655 |
+| h=2 | 14.1 (2 to 16) | 0.376 (0.000 to 0.444) | 0.13 | +1.137 | 1.354 |
+| h=3 | 14.1 (2 to 16) | 0.376 (0.000 to 0.444) | 0.13 | +1.678 | 1.476 |
+| h=4 | 14.1 (2 to 16) | 0.376 (0.000 to 0.444) | 0.13 | +1.882 | 1.592 |
+| h=5 | 14.1 (2 to 16) | 0.376 (0.000 to 0.444) | 0.13 | +1.777 | 1.592 |
+
+#### Beside the width-only arm (context only, same cells, no test between the arms)
+
+The width-only arm's figures (k = 20) are copied from its published result and the candidate's column is checked to equal it; no interval or test compares the two arms.
+
+| measure (event set, pooled over h = 1-5) | candidate | width-only arm (k = 20) | this arm (event-conditional) |
+|---|---|---|---|
+| 90% coverage | 0.601 | 0.646 | 0.663 |
+| below q05 (5%) | 0.089 | 0.082 | 0.096 |
+| above q95 (5%) | 0.309 | 0.271 | 0.241 |
+| below q01 (1%) | 0.045 | 0.024 | 0.069 |
+| above q99 (1%) | 0.127 | 0.107 | 0.113 |
+| grid CRPS (bp) | 4.722 | 4.616 | 4.723 |
+| upper-tail twCRPS (bp) | 3.511 | 3.451 | 3.662 |
+
+#### Pooled, against B1, B1' and B2 (studentized stationary bootstrap)
+
+Both models against each benchmark on all decision days: each cell gives the skill (the share of the benchmark's score the model removes) and then mean d in bp, both with a 90% interval, and ends with the reading taken from the interval of d: **gain** when it lies above zero, **undecided** when it includes zero.
+
+| model against | grid CRPS | upper-tail twCRPS |
+|---|---|---|
+| (s3c-ann-net) against B1 | +30.0% [+24.0%, +42.5%]; d +0.688 [+0.424, +1.597]: **gain** | +38.6% [+31.0%, +51.9%]; d +0.530 [+0.268, +1.611]: **gain** |
+| (s3c-ann-net) against B1' | +13.5% [+8.4%, +17.9%]; d +0.249 [+0.161, +0.353]: **gain** | +15.5% [+6.3%, +23.6%]; d +0.154 [+0.079, +0.264]: **gain** |
+| (s3c-ann-net) against B2 | +36.3% [+25.7%, +45.4%]; d +0.913 [+0.668, +1.229]: **gain** | +25.4% [+10.8%, +38.1%]; d +0.288 [+0.166, +0.458]: **gain** |
+| (s3c-ann-net-ev) against B1 | +30.0% [+23.8%, +42.2%]; d +0.688 [+0.422, +1.582]: **gain** | +38.2% [+30.5%, +52.0%]; d +0.526 [+0.262, +1.605]: **gain** |
+| (s3c-ann-net-ev) against B1' | +13.5% [+8.1%, +18.0%]; d +0.249 [+0.157, +0.354]: **gain** | +15.0% [+6.2%, +22.9%]; d +0.150 [+0.074, +0.257]: **gain** |
+| (s3c-ann-net-ev) against B2 | +36.3% [+25.8%, +45.3%]; d +0.913 [+0.669, +1.224]: **gain** | +25.0% [+10.9%, +37.3%]; d +0.283 [+0.162, +0.452]: **gain** |
+
+#### The same comparison, split
+
+The pooled comparison repeated by regime and by pressure-day type, the candidate's table first and the arm's second for each benchmark; the two differ only through the group's cells.
+
+##### By regime: (s3c-ann-net) against B1
+
+| regime | days | grid CRPS | upper-tail twCRPS | Brier P(> +5 bp) |
+|---|---|---|---|---|
+| 2018-19 | 361 | +37.1% [+28.0%, +57.4%]; d +2.149 [+0.977, +9.098]: **gain** | +39.3% [+29.2%, +58.7%]; d +2.074 [+0.891, +8.932]: **gain** | n/a |
+| 2020 | 251 | +9.6% [-18.0%, +21.2%]; d +0.158 [-0.144, +0.398]: **undecided** | +21.9% [+6.0%, +44.9%]; d +0.162 [-0.004, +0.918]: **undecided (skill interval: gain)** | n/a |
+| 2021-23 | 748 | +9.2% [+3.7%, +13.8%]; d +0.064 [+0.031, +0.096]: **gain** | +23.0% [-32.3%, +47.9%]; d +0.002 [-0.001, +0.004]: **undecided** | n/a |
+| 2024 | 250 | +33.4% [+26.7%, +42.1%]; d +0.539 [+0.284, +1.189]: **gain** | +39.6% [+22.0%, +79.0%]; d +0.111 [+0.011, +1.224]: **gain** | n/a |
+| 2025-26 | 249 | +33.6% [+25.9%, +41.7%]; d +1.128 [+0.727, +1.685]: **gain** | +42.2% [+31.0%, +53.3%]; d +0.676 [+0.236, +1.665]: **gain** | n/a |
+
+##### By regime: (s3c-ann-net-ev) against B1
+
+| regime | days | grid CRPS | upper-tail twCRPS | Brier P(> +5 bp) |
+|---|---|---|---|---|
+| 2018-19 | 361 | +37.1% [+27.9%, +57.7%]; d +2.147 [+0.973, +9.083]: **gain** | +39.3% [+29.1%, +58.9%]; d +2.072 [+0.886, +8.923]: **gain** | n/a |
+| 2020 | 251 | +6.8% [-30.2%, +20.0%]; d +0.112 [-0.309, +0.359]: **undecided** | +16.2% [-6.4%, +40.1%]; d +0.120 [-0.050, +0.667]: **undecided** | n/a |
+| 2021-23 | 748 | +9.3% [+3.8%, +13.9%]; d +0.065 [+0.031, +0.098]: **gain** | +17.7% [-42.0%, +44.0%]; d +0.002 [-0.001, +0.003]: **undecided** | n/a |
+| 2024 | 250 | +34.7% [+27.2%, +43.8%]; d +0.560 [+0.292, +1.242]: **gain** | +42.0% [+23.4%, +84.2%]; d +0.118 [+0.011, +1.015]: **gain** | n/a |
+| 2025-26 | 249 | +34.4% [+26.6%, +42.4%]; d +1.153 [+0.749, +1.703]: **gain** | +42.5% [+31.2%, +53.6%]; d +0.681 [+0.239, +1.670]: **gain** | n/a |
+
+##### By regime: (s3c-ann-net) against B1'
+
+| regime | days | grid CRPS | upper-tail twCRPS | Brier P(> +5 bp) |
+|---|---|---|---|---|
+| 2018-19 | 361 | +10.0% [+0.5%, +17.9%]; d +0.406 [+0.145, +0.728]: **gain** | +10.7% [-0.9%, +19.9%]; d +0.384 [+0.118, +0.729]: **gain (skill interval: undecided)** | n/a |
+| 2020 | 251 | +7.7% [-17.6%, +22.8%]; d +0.125 [-0.167, +0.475]: **undecided** | +24.3% [+7.6%, +52.2%]; d +0.186 [-0.025, +1.347]: **undecided (skill interval: gain)** | n/a |
+| 2021-23 | 748 | +4.6% [-1.3%, +9.8%]; d +0.030 [-0.006, +0.067]: **undecided** | +2.2% [-38.1%, +24.9%]; d +0.000 [-0.003, +0.002]: **undecided** | n/a |
+| 2024 | 250 | +22.0% [+13.8%, +33.2%]; d +0.302 [+0.126, +0.733]: **gain** | +18.4% [-0.0%, +56.6%]; d +0.038 [-0.002, +0.543]: **undecided** | n/a |
+| 2025-26 | 249 | +25.5% [+17.9%, +33.3%]; d +0.764 [+0.497, +1.097]: **gain** | +29.3% [+17.4%, +44.1%]; d +0.383 [+0.109, +1.029]: **gain** | n/a |
+
+##### By regime: (s3c-ann-net-ev) against B1'
+
+| regime | days | grid CRPS | upper-tail twCRPS | Brier P(> +5 bp) |
+|---|---|---|---|---|
+| 2018-19 | 361 | +10.0% [+0.8%, +17.6%]; d +0.404 [+0.141, +0.728]: **gain** | +10.6% [-0.6%, +19.6%]; d +0.382 [+0.113, +0.727]: **gain (skill interval: undecided)** | n/a |
+| 2020 | 251 | +4.9% [-28.9%, +21.1%]; d +0.078 [-0.295, +0.397]: **undecided** | +18.8% [-5.1%, +47.4%]; d +0.144 [-0.067, +1.010]: **undecided** | n/a |
+| 2021-23 | 748 | +4.7% [-1.1%, +10.0%]; d +0.031 [-0.005, +0.068]: **undecided** | -4.5% [-45.5%, +19.1%]; d -0.000 [-0.004, +0.001]: **undecided** | n/a |
+| 2024 | 250 | +23.4% [+15.7%, +33.1%]; d +0.323 [+0.140, +0.756]: **gain** | +21.6% [+10.7%, +39.4%]; d +0.045 [+0.001, +0.667]: **gain** | n/a |
+| 2025-26 | 249 | +26.4% [+18.2%, +34.3%]; d +0.789 [+0.513, +1.126]: **gain** | +29.6% [+17.7%, +45.3%]; d +0.387 [+0.114, +1.046]: **gain** | n/a |
+
+##### By regime: (s3c-ann-net) against B2
+
+| regime | days | grid CRPS | upper-tail twCRPS | Brier P(> +5 bp) |
+|---|---|---|---|---|
+| 2018-19 | 361 | +17.6% [+3.0%, +30.8%]; d +0.779 [+0.318, +1.305]: **gain** | +14.9% [+1.0%, +27.3%]; d +0.561 [+0.185, +0.995]: **gain** | n/a |
+| 2020 | 251 | +48.8% [+25.5%, +69.3%]; d +1.421 [+0.619, +2.910]: **gain** | +56.2% [-4.5%, +82.6%]; d +0.743 [+0.375, +1.187]: **gain (skill interval: undecided)** | n/a |
+| 2021-23 | 748 | +56.9% [+44.4%, +68.4%]; d +0.837 [+0.546, +1.208]: **gain** | -133.3% [-551.0%, -38.1%]; d -0.004 [-0.035, +0.000]: **undecided (skill interval: loss)** | n/a |
+| 2024 | 250 | +20.6% [+8.6%, +30.7%]; d +0.279 [+0.086, +0.516]: **gain** | skill undefined; d +0.016 [-0.006, +0.307]: **undecided (skill interval: skill undefined)** | n/a |
+| 2025-26 | 249 | +40.2% [+18.4%, +57.6%]; d +1.496 [+0.396, +3.437]: **gain** | +39.6% [+29.0%, +55.1%]; d +0.607 [+0.112, +2.410]: **gain** | n/a |
+
+##### By regime: (s3c-ann-net-ev) against B2
+
+| regime | days | grid CRPS | upper-tail twCRPS | Brier P(> +5 bp) |
+|---|---|---|---|---|
+| 2018-19 | 361 | +17.6% [+3.2%, +30.4%]; d +0.778 [+0.317, +1.294]: **gain** | +14.9% [+1.3%, +26.9%]; d +0.559 [+0.186, +0.990]: **gain** | n/a |
+| 2020 | 251 | +47.2% [+23.5%, +68.8%]; d +1.375 [+0.601, +2.838]: **gain** | +53.1% [-6.5%, +81.2%]; d +0.701 [+0.345, +1.146]: **gain (skill interval: undecided)** | n/a |
+| 2021-23 | 748 | +57.0% [+44.5%, +68.5%]; d +0.838 [+0.547, +1.210]: **gain** | -149.4% [-523.1%, -60.8%]; d -0.004 [-0.036, -0.000]: **loss** | n/a |
+| 2024 | 250 | +22.1% [+10.1%, +31.7%]; d +0.299 [+0.104, +0.542]: **gain** | skill undefined; d +0.023 [-0.003, +0.420]: **undecided (skill interval: skill undefined)** | n/a |
+| 2025-26 | 249 | +40.8% [+19.6%, +57.9%]; d +1.521 [+0.431, +3.473]: **gain** | +39.9% [+29.2%, +55.4%]; d +0.611 [+0.117, +2.447]: **gain** | n/a |
+
+##### By pressure-day type of the target day: (s3c-ann-net) against B1
+
+| pressure day type | days | grid CRPS | upper-tail twCRPS | Brier P(> +5 bp) |
+|---|---|---|---|---|
+| ordinary | 1591 | +34.1% [+24.2%, +59.6%]; d +0.666 [+0.389, +1.678]: **gain** | +49.9% [+36.4%, +76.7%]; d +0.537 [+0.259, +1.682]: **gain** | n/a |
+| quarter_end_turn | 44 | +19.5% [-18.1%, +30.7%]; d +0.849 [-0.268, +2.007]: **undecided** | skill undefined; d +0.537 [-0.004, +2.530]: **undecided (skill interval: skill undefined)** | n/a |
+| tax_date | 89 | +7.5% [-5.3%, +18.3%]; d +0.414 [-0.016, +1.129]: **undecided** | +6.4% [-8.8%, +17.1%]; d +0.298 [+0.006, +1.408]: **gain (skill interval: undecided)** | n/a |
+| turn | 120 | +35.2% [+21.1%, +50.8%]; d +0.916 [+0.220, +2.129]: **gain** | +31.5% [+12.5%, +52.6%]; d +0.458 [-0.005, +2.058]: **undecided (skill interval: gain)** | n/a |
+| year_end | 15 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
+
+##### By pressure-day type of the target day: (s3c-ann-net-ev) against B1
+
+| pressure day type | days | grid CRPS | upper-tail twCRPS | Brier P(> +5 bp) |
+|---|---|---|---|---|
+| ordinary | 1591 | +34.1% [+24.2%, +59.6%]; d +0.666 [+0.389, +1.678]: **gain** | +49.9% [+36.4%, +76.7%]; d +0.537 [+0.259, +1.682]: **gain** | n/a |
+| quarter_end_turn | 44 | +22.1% [-63.9%, +43.3%]; d +0.964 [-0.896, +2.648]: **undecided** | skill undefined; d +0.472 [-0.264, +1.723]: **undecided (skill interval: skill undefined)** | n/a |
+| tax_date | 89 | +7.5% [-5.3%, +18.3%]; d +0.414 [-0.016, +1.129]: **undecided** | +6.4% [-8.8%, +17.1%]; d +0.298 [+0.006, +1.408]: **gain (skill interval: undecided)** | n/a |
+| turn | 120 | +35.2% [+21.1%, +50.8%]; d +0.916 [+0.220, +2.129]: **gain** | +31.5% [+12.5%, +52.6%]; d +0.458 [-0.005, +2.058]: **undecided (skill interval: gain)** | n/a |
+| year_end | 15 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
+
+##### By pressure-day type of the target day: (s3c-ann-net) against B1'
+
+| pressure day type | days | grid CRPS | upper-tail twCRPS | Brier P(> +5 bp) |
+|---|---|---|---|---|
+| ordinary | 1591 | +12.3% [+6.8%, +17.1%]; d +0.180 [+0.094, +0.278]: **gain** | +15.8% [+3.2%, +25.8%]; d +0.101 [+0.022, +0.203]: **gain** | n/a |
+| quarter_end_turn | 44 | +17.0% [-22.6%, +28.8%]; d +0.721 [-0.383, +1.789]: **undecided** | skill undefined; d +0.493 [-0.007, +2.321]: **undecided (skill interval: skill undefined)** | n/a |
+| tax_date | 89 | +5.9% [-0.2%, +11.6%]; d +0.320 [-0.032, +1.043]: **undecided** | +6.1% [-4.4%, +12.8%]; d +0.281 [+0.008, +1.407]: **gain (skill interval: undecided)** | n/a |
+| turn | 120 | +29.5% [+18.6%, +40.1%]; d +0.705 [+0.190, +1.485]: **gain** | +31.8% [+9.4%, +44.0%]; d +0.466 [+0.082, +1.393]: **gain** | n/a |
+| year_end | 15 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
+
+##### By pressure-day type of the target day: (s3c-ann-net-ev) against B1'
+
+| pressure day type | days | grid CRPS | upper-tail twCRPS | Brier P(> +5 bp) |
+|---|---|---|---|---|
+| ordinary | 1591 | +12.3% [+6.8%, +17.1%]; d +0.180 [+0.094, +0.278]: **gain** | +15.8% [+3.2%, +25.8%]; d +0.101 [+0.022, +0.203]: **gain** | n/a |
+| quarter_end_turn | 44 | +19.8% [-70.2%, +41.8%]; d +0.836 [-1.025, +2.448]: **undecided** | skill undefined; d +0.428 [-0.281, +1.563]: **undecided (skill interval: skill undefined)** | n/a |
+| tax_date | 89 | +5.9% [-0.2%, +11.6%]; d +0.320 [-0.032, +1.043]: **undecided** | +6.1% [-4.4%, +12.8%]; d +0.281 [+0.008, +1.407]: **gain (skill interval: undecided)** | n/a |
+| turn | 120 | +29.5% [+18.6%, +40.1%]; d +0.705 [+0.190, +1.485]: **gain** | +31.8% [+9.4%, +44.0%]; d +0.466 [+0.082, +1.393]: **gain** | n/a |
+| year_end | 15 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
+
+##### By pressure-day type of the target day: (s3c-ann-net) against B2
+
+| pressure day type | days | grid CRPS | upper-tail twCRPS | Brier P(> +5 bp) |
+|---|---|---|---|---|
+| ordinary | 1591 | +36.2% [+26.5%, +44.9%]; d +0.731 [+0.485, +1.028]: **gain** | +21.9% [+5.6%, +34.5%]; d +0.151 [+0.041, +0.284]: **gain** | n/a |
+| quarter_end_turn | 44 | +30.0% [-10.8%, +48.5%]; d +1.502 [-0.014, +2.871]: **undecided** | skill undefined; d +0.670 [-0.089, +4.716]: **undecided (skill interval: skill undefined)** | n/a |
+| tax_date | 89 | +34.3% [-69.4%, +59.4%]; d +2.655 [+1.475, +4.923]: **gain (skill interval: undecided)** | skill undefined; d +1.295 [+0.091, +4.495]: **gain (skill interval: skill undefined)** | n/a |
+| turn | 120 | +49.2% [+29.5%, +68.8%]; d +1.634 [+0.809, +3.999]: **gain** | +50.4% [-4.9%, +86.5%]; d +1.013 [+0.234, +4.061]: **gain (skill interval: undecided)** | n/a |
+| year_end | 15 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
+
+##### By pressure-day type of the target day: (s3c-ann-net-ev) against B2
+
+| pressure day type | days | grid CRPS | upper-tail twCRPS | Brier P(> +5 bp) |
+|---|---|---|---|---|
+| ordinary | 1591 | +36.2% [+26.5%, +44.9%]; d +0.731 [+0.485, +1.028]: **gain** | +21.9% [+5.6%, +34.5%]; d +0.151 [+0.041, +0.284]: **gain** | n/a |
+| quarter_end_turn | 44 | +32.3% [+11.6%, +46.2%]; d +1.618 [+0.832, +2.376]: **gain** | skill undefined; d +0.605 [+0.066, +2.889]: **gain (skill interval: skill undefined)** | n/a |
+| tax_date | 89 | +34.3% [-69.4%, +59.4%]; d +2.655 [+1.475, +4.923]: **gain (skill interval: undecided)** | skill undefined; d +1.295 [+0.091, +4.495]: **gain (skill interval: skill undefined)** | n/a |
+| turn | 120 | +49.2% [+29.5%, +68.8%]; d +1.634 [+0.809, +3.999]: **gain** | +50.4% [-4.9%, +86.5%]; d +1.013 [+0.234, +4.061]: **gain (skill interval: undecided)** | n/a |
+| year_end | 15 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
+
+#### By pressure-day type: the arm against the candidate (identical outside the group)
+
+The arm scored against the candidate, so a positive d favors the arm.
+
+| pressure day type | days | grid CRPS | upper-tail twCRPS | Brier P(> +5 bp) |
+|---|---|---|---|---|
+| ordinary | 1591 | identical | identical | n/a |
+| quarter_end_turn | 44 | +3.3% [-40.7%, +24.0%]; d +0.115 [-0.721, +0.753]: **undecided** | skill undefined; d -0.065 [-0.831, +0.218] (5 of 10000 resamples dropped): **undecided (skill interval: skill undefined)** | n/a |
+| tax_date | 89 | identical | identical | n/a |
+| turn | 120 | identical | identical | n/a |
+| year_end | 15 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
+
+#### Against B3 (the published record's five levels, grid CRPS on those five)
+
+Grid CRPS (bp) on the five quantile levels the published model forecasts; reported, with no decision rule.
+
+| decision days | days | B3 | (s3c-ann-net) | (s3c-ann-net-ev) | (s3c-ann-net) against B3 | (s3c-ann-net-ev) against B3 |
+|---|---|---|---|---|---|---|
+| 2018-19 | 362 | 4.078 | 3.635 | 3.642 | +10.9% [+0.5%, +18.4%]; d +0.443 [+0.215, +0.681]: **gain** | +10.7% [+0.8%, +18.1%]; d +0.436 [+0.206, +0.677]: **gain** |
+| 2020 | 251 | 1.437 | 1.490 | 1.530 | -3.7% [-25.7%, +7.3%]; d -0.053 [-0.372, +0.101]: **undecided** | -6.5% [-37.6%, +6.0%]; d -0.093 [-0.559, +0.086]: **undecided** |
+| 2021-23 | 748 | 0.741 | 0.646 | 0.644 | +12.8% [+3.3%, +22.3%]; d +0.095 [+0.025, +0.191]: **gain** | +13.1% [+3.6%, +22.5%]; d +0.097 [+0.027, +0.194]: **gain** |
+| 2024 | 250 | 1.356 | 1.117 | 1.101 | +17.6% [+11.4%, +22.8%]; d +0.239 [+0.118, +0.479]: **gain** | +18.8% [+10.9%, +26.2%]; d +0.255 [+0.124, +0.533]: **gain** |
+| 2025-26 | 244 | 2.581 | 2.112 | 2.077 | +18.2% [+10.3%, +25.2%]; d +0.469 [+0.247, +0.714]: **gain** | +19.5% [+11.3%, +26.5%]; d +0.504 [+0.272, +0.752]: **gain** |
+| all decision days | 1855 | 1.811 | 1.600 | 1.599 | +11.7% [+6.5%, +16.0%]; d +0.212 [+0.136, +0.291]: **gain** | +11.7% [+6.3%, +16.1%]; d +0.212 [+0.132, +0.295]: **gain** |
+
+Groups of fewer than 20 days, listed and not tested: pressure_day_type/year_end (15).
+
+### The 2026 development days (targets 2026-01-02 to 2026-09-03)
+
+These days are kept apart from the development window. The kill rule is not read on them and they decide nothing.
+
+Scored decision days: 165 (2025-12-31 to 2026-08-27); 97 refits. Group cells: 21, of which the arm changes 21; cells outside the group: 804, every one identical to the candidate (the walk fails otherwise). The group holds 3 turn events and 21 cells. **That is few, so every interval is wide.**
+
+#### Coverage and tail misses on the group, candidate against arm
+
+The table shows how often each model's 90% band held the outcome on the group and how often the outcome fell outside a tail quantile; the kill rule reads the first row's "arm minus candidate".
+
+| set | cells | events | 90% coverage: candidate | arm | arm minus candidate | below q05 (5%): cand. / arm | above q95 (5%): cand. / arm | below q01 (1%): cand. / arm | above q99 (1%): cand. / arm |
+|---|---|---|---|---|---|---|---|---|---|
+| group, pooled over h = 1-5 | 21 | 3 | 0.952 [0.833, 1.000] | 0.952 [0.833, 1.000] | +0.000 [+0.000, +0.000] | 0.000 / 0.000 | 0.048 / 0.048 | 0.000 / 0.000 | 0.048 / 0.048 |
+| group, h = 1 | 5 | 3 | 0.800 [0.500, 1.000] | 0.800 [0.500, 1.000] | +0.000 [+0.000, +0.000] | 0.000 / 0.000 | 0.200 / 0.200 | 0.000 / 0.000 | 0.200 / 0.200 |
+| group, h = 2 | 4 | 2 | 1.000 [1.000, 1.000] | 1.000 [1.000, 1.000] | +0.000 [+0.000, +0.000] | 0.000 / 0.000 | 0.000 / 0.000 | 0.000 / 0.000 | 0.000 / 0.000 |
+| group, h = 3 | 4 | 2 | 1.000 [1.000, 1.000] | 1.000 [1.000, 1.000] | +0.000 [+0.000, +0.000] | 0.000 / 0.000 | 0.000 / 0.000 | 0.000 / 0.000 | 0.000 / 0.000 |
+| group, h = 4 | 4 | 2 | 1.000 [1.000, 1.000] | 1.000 [1.000, 1.000] | +0.000 [+0.000, +0.000] | 0.000 / 0.000 | 0.000 / 0.000 | 0.000 / 0.000 | 0.000 / 0.000 |
+| group, h = 5 | 4 | 2 | 1.000 [1.000, 1.000] | 1.000 [1.000, 1.000] | +0.000 [+0.000, +0.000] | 0.000 / 0.000 | 0.000 / 0.000 | 0.000 / 0.000 | 0.000 / 0.000 |
+| group, quarter_end_turn only | 20 | 2 | 1.000 [1.000, 1.000] | 1.000 [1.000, 1.000] | +0.000 [+0.000, +0.000] | 0.000 / 0.000 | 0.000 / 0.000 | 0.000 / 0.000 | 0.000 / 0.000 |
+| group, year_end only | 1 | 1 | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] | +0.000 [+0.000, +0.000] | 0.000 / 0.000 | 1.000 / 1.000 | 0.000 / 0.000 | 1.000 / 1.000 |
+| `quarter_end` days of the calibration study (the group behind its 49.3% figure) | 10 | 2 | 1.000 [1.000, 1.000] | 1.000 [1.000, 1.000] | +0.000 [+0.000, +0.000] | 0.000 / 0.000 | 0.000 / 0.000 | 0.000 / 0.000 | 0.000 / 0.000 |
+
+**The arm's 90% band covers 0.952 [0.833, 1.000] of the group's cells against 0.952 for the candidate; the gap to 90% is -5.2 percentage points (negative: the band covers more than 90%).**
+
+#### The declared kill (shown apart; the kill is read on the development window only, and these days decide nothing)
+
+Coverage on the group: +0.000 [+0.000, +0.000] (arm minus candidate, event-cluster 90% interval). The lower end of the interval is not above zero, so the arm does not improve beyond its interval. Grid CRPS on the group: +0.187 [-0.418, +0.595] bp (arm minus candidate). The arm's is above the candidate's, so the arm loses. **Against the declared kill: killed.**
+
+#### Accuracy of the distribution on the group (paired, same cells)
+
+Grid CRPS and upper-tail twCRPS on the group, in bp; lower is better, so a negative difference favors the arm.
+
+| set | grid CRPS (bp): candidate | arm | arm minus candidate (negative favors the arm) | upper-tail twCRPS (bp): candidate | arm | arm minus candidate |
+|---|---|---|---|---|---|---|
+| group, pooled over h = 1-5 | 1.011 | 1.198 | +0.187 [-0.418, +0.595] | 0.759 | 1.094 | +0.335 [-0.240, +0.691] |
+| group, h = 1 | 1.435 | 0.953 | -0.481 [-1.154, -0.033] | 1.002 | 0.776 | -0.227 [-0.965, +0.266] |
+| group, h = 2 | 0.889 | 1.060 | +0.172 [-0.202, +0.545] | 0.569 | 0.922 | +0.353 [+0.030, +0.677] |
+| group, h = 3 | 0.856 | 1.332 | +0.476 [+0.052, +0.900] | 0.698 | 1.260 | +0.563 [+0.191, +0.934] |
+| group, h = 4 | 0.875 | 1.375 | +0.500 [+0.036, +0.964] | 0.715 | 1.316 | +0.601 [+0.204, +0.999] |
+| group, h = 5 | 0.894 | 1.330 | +0.436 [-0.082, +0.955] | 0.752 | 1.276 | +0.524 [+0.064, +0.984] |
+| group, quarter_end_turn only | 0.909 | 1.195 | +0.286 [-0.143, +0.715] | 0.646 | 1.086 | +0.440 [+0.067, +0.814] |
+| group, year_end only | 3.057 | 1.265 | -1.791 [-1.791, -1.791] | 3.024 | 1.249 | -1.775 [-1.775, -1.775] |
+| `quarter_end` days of the calibration study (the group behind its 49.3% figure) | 0.845 | 1.391 | +0.546 [+0.135, +0.956] | 0.835 | 1.387 | +0.552 [+0.146, +0.957] |
+
+#### The event pools, over the window's refits
+
+How much the events had to say at each lead: `w` is the weight the event pool receives, a positive median shift means the events' residuals sit above the pool's, and a span ratio above 1 means they are more spread out.
+
+| lead | event pairs n: mean (least to greatest) | w: mean (least to greatest) | share of refits at the fallback | event pool's median minus the pool's (standardised units): mean | event pool's 90% span over the pool's: mean |
+|---|---|---|---|---|---|
+| h=1 | 14.2 (2 to 16) | 0.382 (0.000 to 0.444) | 0.12 | +1.230 | 1.671 |
+| h=2 | 14.2 (2 to 16) | 0.382 (0.000 to 0.444) | 0.12 | +1.233 | 1.393 |
+| h=3 | 14.2 (2 to 16) | 0.382 (0.000 to 0.444) | 0.12 | +1.733 | 1.500 |
+| h=4 | 14.2 (2 to 16) | 0.382 (0.000 to 0.444) | 0.12 | +1.906 | 1.603 |
+| h=5 | 14.2 (2 to 16) | 0.382 (0.000 to 0.444) | 0.12 | +1.809 | 1.606 |
+
+#### Beside the width-only arm (context only, same cells, no test between the arms)
+
+The width-only arm's figures (k = 20) are copied from its published result and the candidate's column is checked to equal it; no interval or test compares the two arms.
+
+| measure (event set, pooled over h = 1-5) | candidate | width-only arm (k = 20) | this arm (event-conditional) |
+|---|---|---|---|
+| 90% coverage | 0.952 | 0.952 | 0.952 |
+| below q05 (5%) | 0.000 | 0.000 | 0.000 |
+| above q95 (5%) | 0.048 | 0.048 | 0.048 |
+| below q01 (1%) | 0.000 | 0.000 | 0.000 |
+| above q99 (1%) | 0.048 | 0.048 | 0.048 |
+| grid CRPS (bp) | 1.011 | 1.162 | 1.198 |
+| upper-tail twCRPS (bp) | 0.759 | 0.849 | 1.094 |
+
+#### Pooled, against B1, B1' and B2 (studentized stationary bootstrap)
+
+Both models against each benchmark on all decision days: each cell gives the skill (the share of the benchmark's score the model removes) and then mean d in bp, both with a 90% interval, and ends with the reading taken from the interval of d: **gain** when it lies above zero, **undecided** when it includes zero.
+
+| model against | grid CRPS | upper-tail twCRPS |
+|---|---|---|
+| (s3c-ann-net) against B1 | +22.7% [-0.2%, +35.8%]; d +0.491 [+0.133, +0.814]: **gain (skill interval: undecided)** | +37.7% [+23.8%, +51.8%]; d +0.311 [+0.134, +0.681]: **gain** |
+| (s3c-ann-net) against B1' | +10.7% [-12.9%, +22.7%]; d +0.200 [-0.143, +0.428]: **undecided** | +17.2% [+4.4%, +27.9%]; d +0.107 [+0.016, +0.224]: **gain** |
+| (s3c-ann-net) against B2 | +22.6% [+3.9%, +41.4%]; d +0.486 [+0.120, +0.940]: **gain** | +19.1% [-6.4%, +36.9%]; d +0.122 [-0.041, +0.240]: **undecided** |
+| (s3c-ann-net-ev) against B1 | +22.5% [+0.1%, +35.7%]; d +0.486 [+0.132, +0.811]: **gain** | +36.7% [+22.2%, +52.0%]; d +0.303 [+0.124, +0.687]: **gain** |
+| (s3c-ann-net-ev) against B1' | +10.5% [-13.0%, +22.2%]; d +0.196 [-0.145, +0.422]: **undecided** | +15.9% [+3.1%, +26.7%]; d +0.099 [+0.008, +0.213]: **gain** |
+| (s3c-ann-net-ev) against B2 | +22.3% [+3.6%, +41.5%]; d +0.481 [+0.114, +0.939]: **gain** | +17.8% [-6.8%, +35.5%]; d +0.113 [-0.044, +0.233]: **undecided** |
+
+#### The same comparison, split
+
+The pooled comparison repeated by regime and by pressure-day type, the candidate's table first and the arm's second for each benchmark; the two differ only through the group's cells.
+
+##### By pressure-day type of the target day: (s3c-ann-net) against B1
+
+| pressure day type | days | grid CRPS | upper-tail twCRPS | Brier P(> +5 bp) |
+|---|---|---|---|---|
+| ordinary | 146 | +20.1% [-7.3%, +38.3%]; d +0.432 [+0.023, +0.871]: **gain (skill interval: undecided)** | +41.5% [+23.9%, +61.9%]; d +0.342 [+0.120, +1.048]: **gain** | n/a |
+| quarter_end_turn | 4 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
+| tax_date | 6 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
+| turn | 12 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
+| year_end | 1 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
+
+##### By pressure-day type of the target day: (s3c-ann-net-ev) against B1
+
+| pressure day type | days | grid CRPS | upper-tail twCRPS | Brier P(> +5 bp) |
+|---|---|---|---|---|
+| ordinary | 146 | +20.1% [-7.3%, +38.3%]; d +0.432 [+0.023, +0.871]: **gain (skill interval: undecided)** | +41.5% [+23.9%, +61.9%]; d +0.342 [+0.120, +1.048]: **gain** | n/a |
+| quarter_end_turn | 4 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
+| tax_date | 6 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
+| turn | 12 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
+| year_end | 1 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
+
+##### By pressure-day type of the target day: (s3c-ann-net) against B1'
+
+| pressure day type | days | grid CRPS | upper-tail twCRPS | Brier P(> +5 bp) |
+|---|---|---|---|---|
+| ordinary | 146 | +5.8% [-23.1%, +19.3%]; d +0.105 [-0.326, +0.352]: **undecided** | +11.0% [-7.6%, +25.2%]; d +0.059 [-0.042, +0.191]: **undecided** | n/a |
+| quarter_end_turn | 4 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
+| tax_date | 6 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
+| turn | 12 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
+| year_end | 1 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
+
+##### By pressure-day type of the target day: (s3c-ann-net-ev) against B1'
+
+| pressure day type | days | grid CRPS | upper-tail twCRPS | Brier P(> +5 bp) |
+|---|---|---|---|---|
+| ordinary | 146 | +5.8% [-23.1%, +19.3%]; d +0.105 [-0.326, +0.352]: **undecided** | +11.0% [-7.6%, +25.2%]; d +0.059 [-0.042, +0.191]: **undecided** | n/a |
+| quarter_end_turn | 4 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
+| tax_date | 6 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
+| turn | 12 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
+| year_end | 1 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
+
+##### By pressure-day type of the target day: (s3c-ann-net) against B2
+
+| pressure day type | days | grid CRPS | upper-tail twCRPS | Brier P(> +5 bp) |
+|---|---|---|---|---|
+| ordinary | 146 | +19.6% [-0.6%, +38.8%]; d +0.419 [+0.015, +0.866]: **gain (skill interval: undecided)** | -1.7% [-44.2%, +22.4%]; d -0.008 [-0.213, +0.111]: **undecided** | n/a |
+| quarter_end_turn | 4 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
+| tax_date | 6 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
+| turn | 12 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
+| year_end | 1 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
+
+##### By pressure-day type of the target day: (s3c-ann-net-ev) against B2
+
+| pressure day type | days | grid CRPS | upper-tail twCRPS | Brier P(> +5 bp) |
+|---|---|---|---|---|
+| ordinary | 146 | +19.6% [-0.6%, +38.8%]; d +0.419 [+0.015, +0.866]: **gain (skill interval: undecided)** | -1.7% [-44.2%, +22.4%]; d -0.008 [-0.213, +0.111]: **undecided** | n/a |
+| quarter_end_turn | 4 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
+| tax_date | 6 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
+| turn | 12 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
+| year_end | 1 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
+
+#### By pressure-day type: the arm against the candidate (identical outside the group)
+
+The arm scored against the candidate, so a positive d favors the arm.
+
+| pressure day type | days | grid CRPS | upper-tail twCRPS | Brier P(> +5 bp) |
+|---|---|---|---|---|
+| ordinary | 146 | identical | identical | n/a |
+| quarter_end_turn | 4 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
+| tax_date | 6 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
+| turn | 12 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
+| year_end | 1 | not tested (fewer than 20 days) | not tested (fewer than 20 days) | not tested (fewer than 20 days) |
+
+#### Against B3 (the published record's five levels, grid CRPS on those five)
+
+Grid CRPS (bp) on the five quantile levels the published model forecasts; reported, with no decision rule.
+
+The published record holds no decision day of this window with all five leads, so B3 is not scored here.
+
+
+Groups of fewer than 20 days, listed and not tested: pressure_day_type/quarter_end_turn (4), pressure_day_type/tax_date (6), pressure_day_type/turn (12), pressure_day_type/year_end (1).
 
 ## Record
 
