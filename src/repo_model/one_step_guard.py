@@ -33,9 +33,14 @@ from .target_day_columns import TARGET_DAY_COLUMNS
 __all__ = [
     "FrozenDeclaration",
     "ONE_STEP_ALLOW_LIST",
+    "StampedPairs",
     "check_one_step_regressors",
+    "check_pair_stamp",
     "guard_one_step_fit",
+    "guard_pair_stamp",
     "one_step_refusals",
+    "stamp_like",
+    "stamp_pairs",
 ]
 
 _REGISTRY_PATHS = (
@@ -194,3 +199,92 @@ def guard_one_step_fit(function):
         return function(*args, **kwargs)
 
     return guarded
+
+
+class StampedPairs(list):
+    """A list of training pairs that carries how they were built: `built` is `"direct"` or `"one_step"` (#1566).
+
+    Slicing, a comprehension or `sorted` return a plain `list` and drop the stamp: a derived set is re-stamped with
+    `stamp_like`, which says in the code that its pairing is its source's.
+    """
+
+    built: str = ""
+
+
+_BUILT = ("direct", "one_step")
+
+
+def stamp_pairs(pairs: Sequence, *, direct: bool) -> StampedPairs:
+    """The pairs, stamped with how their builder paired them: `direct` when each flag was read at the pair's target row."""
+
+    stamped = StampedPairs(pairs)
+    stamped.built = "direct" if direct else "one_step"
+    return stamped
+
+
+def stamp_like(pairs: Sequence, source: Sequence) -> Sequence:
+    """`pairs`, derived from `source`, with `source`'s stamp; unchanged when `source` has none, so a missing stamp stays missing."""
+
+    built = getattr(source, "built", "")
+    if built not in _BUILT:
+        return pairs
+    stamped = StampedPairs(pairs)
+    stamped.built = built
+    return stamped
+
+
+def check_pair_stamp(fitter: str, pairs: Optional[Sequence], training_pairs: object, regressors: Sequence[str]) -> None:
+    """Raise `ValueError` when pre-built pairs are labelled other than they were built (#1566).
+
+    A stamp that disagrees with `training_pairs` is refused: the label `'direct'` on pairs built one-step would carry a
+    calendar column past the guard one row off (#914). Unstamped pairs are refused when a calendar or scheduled column
+    is read, since nothing then says how they were built. Unstamped pairs of no such column pass. `pairs` of `None` has
+    nothing to check.
+    """
+
+    if pairs is None:
+        return
+    built = getattr(pairs, "built", "")
+    wanted = "direct" if training_pairs == "direct" else "one_step"
+    if built in _BUILT:
+        if built != wanted:
+            raise ValueError(
+                f"{fitter} was given pairs built {built!r} but training_pairs={training_pairs!r} (#1566): the label must "
+                f"say how the pairs were built, or a calendar column is learned one row off the row it is served on (#914)"
+            )
+        return
+    if training_pairs != "direct":
+        return  # a one-step label: the fitter's own guard refuses it, with its own message
+    refused = one_step_refusals(tuple(str(name) for name in regressors))
+    if refused:
+        listed = "; ".join(f"{name!r} ({why})" for name, why in refused.items())
+        raise ValueError(
+            f"{fitter} was given pairs that carry no stamp of how they were built, and reads {listed} (#1566): build "
+            f"them with a pair builder that stamps them (one_step_guard.stamp_pairs), or drop the column"
+        )
+
+
+def guard_pair_stamp(pairs_argument: str):
+    """Decorate a fitter of pre-built pairs: check the stamp of its `pairs_argument` against `training_pairs` first.
+
+    Sits on the decorator line, outside the body, like `guard_one_step_fit`. Put it above `guard_one_step_fit`.
+    """
+
+    def decorate(function):
+        signature = inspect.signature(function)
+
+        @functools.wraps(function)
+        def guarded(*args, **kwargs):
+            try:
+                bound = signature.bind(*args, **kwargs)
+                names = tuple(str(name) for name in bound.arguments["regressors"])
+            except (TypeError, KeyError):
+                return function(*args, **kwargs)
+            check_pair_stamp(
+                function.__name__, bound.arguments.get(pairs_argument), bound.arguments.get("training_pairs"), names
+            )
+            return function(*args, **kwargs)
+
+        return guarded
+
+    return decorate
