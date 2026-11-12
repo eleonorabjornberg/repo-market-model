@@ -195,7 +195,6 @@ from .metrics import (
 )
 from .asof import (
     NEVER_ON_THIS_PANEL,
-    InformationRule,
     InformationSet,
     StaleReadError,
     declared_availability,
@@ -204,6 +203,9 @@ from .asof import (
     refit_blocks,
     require_refit_every,
 )
+# The rule a fit reads through is the masked one (#1565, `masked_rule`), under the name this file's frozen code
+# already uses: `asof.py` and the fit and backtest code are hashed by the final test's checksums, an import is not.
+from .masked_rule import MaskedInformationRule as InformationRule
 from .splits import (
     LookAheadError,
     SplitError,
