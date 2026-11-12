@@ -252,7 +252,8 @@ class KnownLimitsTests(unittest.TestCase):
     """The known-limits section of the rewrite (#1442): each limit is linked to the evidence that shows it."""
 
     REQUIRED = ("2020", "fomc-days", "upper-tail-against-a", "lead-1", "net-against-flag", "quarter-end-coverage",
-                "srf-cap-full-allotment", "regime-2018-19", "tax-date-label", "satiation-distance-split")
+                "srf-cap-full-allotment", "regime-2018-19", "tax-date-label", "satiation-distance-split",
+                "post-month-end-coverage")
 
     def setUp(self):
         self.candidate = json.loads((ROOT / "docs/model/candidate.json").read_text(encoding="utf-8"))

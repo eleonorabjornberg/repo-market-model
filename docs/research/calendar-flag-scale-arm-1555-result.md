@@ -186,3 +186,7 @@ Pooled point values, arm against candidate (positive favours the arm): grid CRPS
 ## Reproduction
 
 See the header of `scripts/calendar_flag_scale_arm_1555.py`; the test is `tests/test_calendar_flag_scale_arm_1555.py`. Seed 1555 throughout.
+
+## Note of 12 November 2026 (#1592)
+
+On `post_month_end_window` (business days 1 to 3, quarter-end days excluded) the arm is worse than the candidate: grid CRPS -0.014 [-0.026, -0.002] and upper-tail twCRPS -0.021 [-0.031, -0.011], the only two group intervals on this page wholly below zero. The share below q05 is 0.101 [0.064, 0.140] for the candidate and the same for the arm, and the 90% band holds 0.792 of outcomes, then 0.818. The arm scaled only q95 because #1547 read q05 as in line on its ratio alone; under her ruling of 12 November 2026 on #1592 that tail is not in line (its miss share excludes 0.05). Width repairs on these days (this arm and #1402's symmetric scale) have raised coverage and lost CRPS, so location or the timing of the spike within the three days is the open question; it is a later step. These figures are those of the tables above, unchanged.
