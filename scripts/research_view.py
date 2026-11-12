@@ -127,9 +127,17 @@ def scores_record(repo):
 
 
 def failure_records(repo):
-    """The `result.json` of each open failure the source lists (#1532); each is a page input."""
+    """The `result.json` of each open failure and each passed check the source lists (#1532, #1574), and of each
+    figure a line reads from another record; each is a page input."""
     try:
-        return [f["result_json"] for f in (candidate_source(repo) or {}).get("open_failures", ())]
+        src = candidate_source(repo) or {}
+        out = []
+        for entry in (*src.get("open_failures", ()), *src.get("passed", ())):
+            specs = [s for s in entry["values"].values() if isinstance(s, dict)]
+            for rel in (entry["result_json"], *(s["result_json"] for s in specs)):
+                if rel not in out:
+                    out.append(rel)
+        return out
     except (TypeError, KeyError):
         return []
 
@@ -430,6 +438,33 @@ def current_model_plain(repo):
     return src, load_plain(repo)["current_model"]
 
 
+def _record_lines(repo, entries, templates, kind, links):
+    """One (key, html) line per entry of the source, its figures copied from result records. A figure is a path into
+    the entry's own `result_json`, or `{"result_json": ..., "path": [...], "percent": true}` for a figure of another
+    record, shown as a percentage to one place when `percent` is set. Refused when an entry has no plain line or a
+    path is absent."""
+    lines = []
+    for entry in entries:
+        template = templates.get(entry["key"])
+        if not template:
+            raise ResearchError(f"{SUMMARY}: the {kind} {entry['key']} of {CANDIDATE} has no plain line")
+        values = {}
+        for name, spec in entry["values"].items():
+            rel, path, percent = entry["result_json"], spec, False
+            if isinstance(spec, dict):
+                rel, path, percent = spec["result_json"], spec["path"], bool(spec.get("percent"))
+            node = json.loads(read(repo, rel))
+            for step in path:
+                try:
+                    node = node[step]
+                except (KeyError, IndexError, TypeError):
+                    raise ResearchError(f"{rel}: no {'/'.join(map(str, path))} for {entry['key']}") from None
+            values[name] = f"{100 * node:.1f}%" if percent else format_value(node)
+        link = f' (<a href="{BLOB}{esc(entry["page"])}">the record</a>)' if links else ""
+        lines.append((entry["key"], esc(template.format(**values)) + link))
+    return lines
+
+
 def failure_lines(repo, links=False):
     """One (key, html) line for each open failure the source lists (#1532), its figures copied from the failure's own
     `result.json` through the paths the source gives. Refused when a failure has no plain line or a path is absent.
@@ -438,24 +473,17 @@ def failure_lines(repo, links=False):
     if not found:
         return []
     src, words = found
-    lines = []
-    for failure in src.get("open_failures", ()):
-        template = words["failures"].get(failure["key"])
-        if not template:
-            raise ResearchError(f"{SUMMARY}: the open failure {failure['key']} of {CANDIDATE} has no plain line")
-        record = json.loads(read(repo, failure["result_json"]))
-        values = {}
-        for name, path in failure["values"].items():
-            node = record
-            for step in path:
-                try:
-                    node = node[step]
-                except (KeyError, IndexError, TypeError):
-                    raise ResearchError(f"{failure['result_json']}: no {'/'.join(map(str, path))} for {failure['key']}") from None
-            values[name] = format_value(node)
-        link = f' (<a href="{BLOB}{esc(failure["page"])}">the record</a>)' if links else ""
-        lines.append((failure["key"], esc(template.format(**values)) + link))
-    return lines
+    return _record_lines(repo, src.get("open_failures", ()), words["failures"], "open failure", links)
+
+
+def passed_lines(repo, links=False):
+    """One (key, html) line for each check the candidate passes (`passed` of the source, #1574), built as
+    `failure_lines` builds a failure's: no figure is typed in the wording."""
+    found = current_model_plain(repo)
+    if not found:
+        return []
+    src, words = found
+    return _record_lines(repo, src.get("passed", ()), words.get("passes", {}), "passed check", links)
 
 
 def current_model_html(repo, links=False):
@@ -476,7 +504,8 @@ def current_model_html(repo, links=False):
         if not waiting:
             raise ResearchError(f"{SUMMARY}: {CANDIDATE} waits on {state['waiting_on']}, which has no plain line")
         parts.append(words["not_registered"].format(waiting=waiting))
-    body = " ".join(esc(x) for x in parts) + " " + " ".join(line for _, line in failure_lines(repo, links))
+    body = " ".join(esc(x) for x in parts) + " " + " ".join(
+        line for _, line in passed_lines(repo, links) + failure_lines(repo, links))
     return f'<p class="rs-current"><b>Current model.</b> {body} <span class="rs-tag">{esc(DEV_LABEL)}</span></p>'
 
 

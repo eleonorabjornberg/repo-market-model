@@ -136,7 +136,7 @@ class EndToEndTests(unittest.TestCase):
     def test_the_page_carries_the_kill_the_event_count_and_ends_with_the_marked_question(self):
         text = self.page.read_text(encoding="utf-8")
         self.assertIn("**Against the declared kill:", text)
-        self.assertIn("roughly 30 to 44 is small", text)
+        self.assertIn("That is few, so every interval is wide.", text)
         self.assertIn("#1228 has not ruled", text)
         self.assertIn("### Coverage and tail misses on the group, candidate against arm", text)
         self.assertIn("### Against B3", text)
@@ -172,7 +172,7 @@ class CommittedRecordTests(unittest.TestCase):
         record = json.loads(self.RECORD.read_text(encoding="utf-8"))
         self.assertEqual(sorted(record["context_1531"]), sorted(script.WINDOWS))
         text = self.PAGE.read_text(encoding="utf-8")
-        self.assertIn("### Beside #1531's arm A", text)
+        self.assertIn("### Beside the width-only arm", text)
         there = {"development": {"events": 1, "cells": 1, "measures": {m: {"candidate": 0.5, "arm_1531": 0.4} for m in script.MEASURES}}}
         here = {"measures": {m: {"candidate": 0.6, "arm": 0.3} for m in script.MEASURES}}
         with self.assertRaises(ValueError):
