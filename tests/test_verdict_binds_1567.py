@@ -46,7 +46,7 @@ def passed_coverage(method="spaced"):
 
     forecasts, outcomes, calendar, labels = world(n=2000, seed=5)
     cells = sp.coverage_cells(forecasts, outcomes, calendar, labels, method=method)
-    return sp.check_coverage_requirement(cells, alpha=0.001, family="per_cell", rule="strict")
+    return sp.check_coverage_requirement(cells, alpha=0.05, family="holm", rule="strict")
 
 
 def labelled_tests(days=None, seed=9):
@@ -139,6 +139,65 @@ class CoverageBindingTests(unittest.TestCase):
         cells = sp.coverage_cells(forecasts, outcomes, calendar, labels, method="spaced")
         with self.assertRaises(sp.CoverageRequirementFailed):
             sp.check_coverage_requirement(cells, alpha=0.05, family="holm", rule="strict")
+
+
+class VerdictBindsAmendment4Tests(unittest.TestCase):
+    """#1590 (H5.M5; Eleonora's ruling of 12 November 2026, docket card "#1590", option "bind"): `verdict` accepts only a coverage
+    check made exactly as amendment 4 sets it: Holm (`family="holm"`) at 5% (`alpha=0.05`), the `strict` rule, and every lead and
+    regime cell at q05/q95 and q01/q99. A check made at another level, family or rule, or on a subset of the cells, raises
+    `ValueError` (`ProtocolError`). #1567's own helper `passed_coverage` built its check at 0.001 per cell; it is corrected above.
+
+    One recorded mutation, made on this branch's tree and reverted (2026-11-12): in `_require_coverage_passed`, the condition
+    `if (coverage.alpha != COVERAGE_REQUIREMENT_ALPHA or coverage.family != ... or coverage.rule != ...)` became `if False and (...)`; `test_a_check_at_another_level_family_or_rule_is_refused` raised `AssertionError: ProtocolError not raised`
+    (for each of its four sub-tests), and `test_a_check_made_at_another_level_is_refused_by_the_verdict` raised `AssertionError: ValueError not raised`.
+    The cell-count line `if coverage.cells <= 0 or coverage.cells % per_regime:` became `if False:` and
+    `test_a_check_on_a_subset_of_the_cells_is_refused` raised `AssertionError: ProtocolError not raised`.
+    """
+
+    def verdict_with(self, coverage):
+        b1, b2 = labelled_tests()
+        return sp.verdict(b1, b2, look=3, first_confirmation_day=FIRST_DAY, coverage=coverage)
+
+    def test_a_check_at_another_level_family_or_rule_is_refused(self):
+        for changed in ({"alpha": 1e-9}, {"alpha": 0.10}, {"family": "per_cell"}, {"rule": "tie_counts"}):
+            with self.subTest(**changed):
+                with self.assertRaises(sp.ProtocolError):
+                    self.verdict_with(dataclasses.replace(passed_coverage(), **changed))
+
+    def test_a_check_made_at_another_level_is_refused_by_the_verdict(self):
+        # The audit's reproduction: a passing check at 1e-9 per cell, made through the public function.
+        forecasts, outcomes, calendar, labels = world(n=2000, seed=5)
+        cells = sp.coverage_cells(forecasts, outcomes, calendar, labels, method="spaced")
+        weak = sp.check_coverage_requirement(cells, alpha=1e-9, family="per_cell", rule="strict")
+        with self.assertRaises(ValueError):
+            self.verdict_with(weak)
+
+    def test_a_check_on_a_subset_of_the_cells_is_refused(self):
+        full = passed_coverage()
+        self.assertEqual(full.cells, len(sp.HORIZONS) * len(sp.COVERAGE_LEVELS))
+        for cells in (1, full.cells - 1, 0):
+            with self.subTest(cells=cells):
+                with self.assertRaises(sp.ProtocolError):
+                    self.verdict_with(dataclasses.replace(full, cells=cells))
+
+    def test_a_check_made_on_a_subset_of_the_cells_is_not_issued(self):
+        forecasts, outcomes, calendar, labels = world(n=2000, seed=5)
+        cells = sp.coverage_cells(forecasts, outcomes, calendar, labels, method="spaced")
+        subset = [c for c in cells if c.lead == 1]
+        with self.assertRaises(ValueError):
+            sp.check_coverage_requirement(subset, alpha=0.05, family="holm", rule="strict")
+
+    def test_every_regime_is_a_full_set_of_cells(self):
+        regimes = lambda day: "a" if (day.toordinal() // 200) % 2 else "b"
+        forecasts, outcomes, calendar, labels = world(n=2000, seed=5, regimes=regimes)
+        cells = sp.coverage_cells(forecasts, outcomes, calendar, labels, method="spaced")
+        check = sp.check_coverage_requirement(cells, alpha=0.05, family="holm", rule="strict")
+        self.assertEqual(check.cells, 2 * len(sp.HORIZONS) * len(sp.COVERAGE_LEVELS))
+        self.assertEqual(self.verdict_with(check), sp.SUPPORTED)
+        with self.assertRaises(ValueError):
+            sp.check_coverage_requirement(
+                [c for c in cells if not (c.regime == "b" and c.lead == 5)], alpha=0.05, family="holm", rule="strict"
+            )
 
 
 class EnforceRefusesNothingTests(unittest.TestCase):
