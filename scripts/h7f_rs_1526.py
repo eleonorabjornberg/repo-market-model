@@ -55,6 +55,16 @@ sys.path.insert(0, str(REPO / "src"))
 os.environ["RMM_DECISION_TIME"] = "18:00"
 
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_CRPS = {
+    "b3_scores": (
+        "delegates",
+        "B3's five-level loss on the days of the frame `_score` built after `require_exploratory_window` on every "
+        "panel day, and `prechecks` does the same (#1526, #1568)",
+    ),
+}
+
+
 def _load(name: str, alias: Optional[str] = None):
     alias = alias or name
     path = REPO / "scripts" / f"{name}.py"

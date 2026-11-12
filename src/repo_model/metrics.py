@@ -164,6 +164,28 @@ __all__ = [
 ]
 
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_CRPS = {
+    "crps_from_quantiles": (
+        "delegates",
+        "a pure loss of one vector at one outcome; chooses no day. The protocol's caller `day_scores` calls "
+        "`require_unlocked` on every decision and target day before it computes any, and every other caller is "
+        "classified in this table (#1568)",
+    ),
+    "crps_trapezoid_from_quantiles": (
+        "delegates",
+        "a pure loss of one vector at one outcome; chooses no day. `rolling_persistence_backtest` scores only the "
+        "folds `_as_of_folds` yields, which refuses a locked scored day, and every other caller is classified in "
+        "this table (#1568)",
+    ),
+    "brier_skill_score": (
+        "delegates",
+        "a pure skill of given probabilities and outcomes; chooses no day. `rolling_exceedance_backtest` calls it "
+        "through `_tau_metrics` on the folds `_as_of_folds` yields, which refuses a locked scored day (#1568)",
+    ),
+}
+
+
 class MetricError(ValueError):
     """Raised when a metric is asked for on data that cannot support it.
 

@@ -76,6 +76,21 @@ WINDOW_TITLES = {"development": "Development window (targets to 2025-12-31)", "2
 # -- the two guards ------------------------------------------------------------------------------------------------------
 
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_CRPS = {
+    "five_level_score": (
+        "delegates",
+        "one cell's five-level loss on the days of the walk `walk_windows` ran, which calls "
+        "`require_exploratory_window` on every panel day before any fit (#1314, #1568)",
+    ),
+    "b3_score": (
+        "delegates",
+        "B3's five-level loss at a target day of the walk `walk_windows` ran, which calls "
+        "`require_exploratory_window` on every panel day before any fit (#1314, #1568)",
+    ),
+}
+
+
 def require_instant(decision_time: time) -> None:
     """Refuse to make an 18:00 study at another decision instant.
 

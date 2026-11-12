@@ -89,6 +89,16 @@ REPRODUCTION_TOLERANCE = 1e-6
 MID_MONTH_COUPON = "mid_month_coupon"
 
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_CRPS = {
+    "score_command": (
+        "guard",
+        "scores the aligned-pairs walks' CRPS after `require_unlocked` on the last target and `refuse_locked` on "
+        "every scored day and its target (#931, #1568)",
+    ),
+}
+
+
 def _load(name: str):
     spec = importlib.util.spec_from_file_location(f"{name}_script", REPO / "scripts" / f"{name}.py")
     module = importlib.util.module_from_spec(spec)

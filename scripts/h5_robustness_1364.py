@@ -52,6 +52,17 @@ from repo_model import scoring_protocol as sp, spread_mean_reversion as smr  # n
 from repo_model.exploration import EXPLORATORY_END, require_exploratory_window  # noqa: E402
 
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_CRPS = {
+    "reproduction_check": (
+        "delegates",
+        "scores the cells of the walk files `walk_command` wrote; `walk_command` calls `require_exploratory_window` "
+        "and `refuse_beyond` on every panel day, decision day and target day before it writes a file, and "
+        "`score_command` reads those files back without a second check (#1364, #1568)",
+    ),
+}
+
+
 def _load(name: str, alias: str):
     spec = importlib.util.spec_from_file_location(alias, REPO / "scripts" / f"{name}.py")
     module = importlib.util.module_from_spec(spec)

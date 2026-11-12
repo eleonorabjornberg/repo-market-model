@@ -72,6 +72,7 @@ import importlib.util
 import json
 import math
 import random
+import statistics
 import unittest
 from datetime import date, timedelta
 from pathlib import Path
@@ -721,8 +722,9 @@ class FourthRoundDeclarationTests(unittest.TestCase):
             v2.quarter_end_choice({"base": outer}, [], {}, [], None, block=v2.INNER4)
         with self.assertRaisesRegex(ValueError, "inner block only"):
             v2.quarter_end_choice({"base": in_2023}, [], {}, [], None)  # 2023 is outside the old inner block
-        # 2023 passes the extended block's guard (it then fails for want of a v1 walk, not for the block).
-        with self.assertRaises(Exception) as caught:
+        # 2023 passes the extended block's guard (it then fails for want of a v1 walk, not for the block): the empty
+        # `v1_days` reach `statistics.fmean`, so that error is named, and a guard error would no longer pass here (#1568).
+        with self.assertRaises(statistics.StatisticsError) as caught:
             v2.quarter_end_choice({"base": in_2023}, [], {}, [], None, block=v2.INNER4)
         self.assertNotIn("inner block only", str(caught.exception))
 

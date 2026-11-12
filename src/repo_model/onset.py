@@ -53,7 +53,8 @@ from .splits import LookAheadError, SplitError
 LOCKBOX_CRPS = {
     "twcrps_above_from_quantiles": (
         "delegates",
-        "a pure metric of one vector and one outcome; chooses no day",
+        "a pure metric of one vector and one outcome; chooses no day. Its caller `_twcrps_above_at` is the loss "
+        "callback of `paired_model_comparison`, which walks `_as_of_folds`, which refuses a locked scored day (#1568)",
     ),
 }
 
