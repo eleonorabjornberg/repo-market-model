@@ -26,6 +26,7 @@ import dataclasses
 import unittest
 from datetime import date
 
+from repo_model import one_step_guard as osg
 from repo_model import spread_mr_dispersion as dsp
 from repo_model import spread_mr_calendar as cal
 from repo_model import spread_mr_state_calendar as sc
@@ -143,14 +144,14 @@ ARM_S3 = sc.ARMS[2]
 
 
 def s3_estimate(pairs):
-    return sc.fit_state_terms(pairs, regressors=("quarter_end",), terms=ARM_S3.location, interact=False, robust=True,
+    return sc.fit_state_terms(osg.stamp_pairs(pairs, direct=True), regressors=("quarter_end",), terms=ARM_S3.location, interact=False, robust=True,
                               training_pairs="direct")
 
 
 class LeadFitTests(unittest.TestCase):
 
     def fit(self, pairs, xs, arm):
-        return dsp.fit_lead(pairs, xs, arm, regressors=("quarter_end",))
+        return dsp.fit_lead(osg.stamp_pairs(pairs, direct=True), xs, arm, regressors=("quarter_end",))
 
     def test_a_ratio_of_one_everywhere_is_arm_s3(self):
         pairs = pairs_of()

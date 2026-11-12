@@ -62,6 +62,16 @@ REGIMES = ("calm", "stress")
 
 # ---------------------------------------------------------------- the world
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_CRPS = {
+    "mean_crps": (
+        "synthetic",
+        "the loss of a simulated series dated from 2001-01-02 for at most 5000 days (`START`, `DEMO_DAYS`, "
+        "`SIZE_DAYS`); it reads no panel day and so no day of any tier (#961, #1568)",
+    ),
+}
+
+
 def sigma_schedule(days):
     """Innovation sd on each day: calm and stress blocks of `BLOCK` days, calm first."""
 

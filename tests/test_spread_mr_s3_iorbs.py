@@ -29,6 +29,7 @@ import dataclasses
 import unittest
 from datetime import date, time
 
+from repo_model import one_step_guard as osg
 from repo_model import announced_iorb
 from repo_model import setup_diagnostic
 from repo_model import spread_mr_calendar as cal
@@ -48,7 +49,7 @@ ORDINARY_DAY = "2019-08-01"
 
 def fit(pairs, *, terms=("quarter_end", "iorb_window"), extra=EXTRAS, robust=True):
     return sc.fit_state_terms(
-        pairs, regressors=("iorb_announced_change_bps",), terms=terms, interact=False, robust=robust, ridge=5.0, extra=extra,
+        osg.stamp_pairs(pairs, direct=True), regressors=("iorb_announced_change_bps",), terms=terms, interact=False, robust=robust, ridge=5.0, extra=extra,
         training_pairs="direct",
     )
 
@@ -217,7 +218,7 @@ class FitTests(unittest.TestCase):
         plain = fit(pairs, extra=())
         self.assertNotIn("iorb_signed", plain.effect)
         self.assertNotIn("iorb_technical", plain.effect)
-        reference = sc.fit_state_terms(pairs, regressors=("iorb_announced_change_bps",), terms=("quarter_end", "iorb_window"),
+        reference = sc.fit_state_terms(osg.stamp_pairs(pairs, direct=True), regressors=("iorb_announced_change_bps",), terms=("quarter_end", "iorb_window"),
                                        interact=False, robust=True, ridge=5.0, training_pairs="direct")
         self.assertEqual(plain.effect, reference.effect)
         self.assertEqual(plain.pool, reference.pool)
@@ -246,7 +247,7 @@ class FitTests(unittest.TestCase):
 
     def test_the_state_interaction_is_refused_with_the_extras(self):
         with self.assertRaisesRegex(ValueError, "interact"):
-            sc.fit_state_terms(planted(), regressors=("iorb_announced_change_bps",), terms=("iorb_window",), interact=True, robust=True,
+            sc.fit_state_terms(osg.stamp_pairs(planted(), direct=True), regressors=("iorb_announced_change_bps",), terms=("iorb_window",), interact=True, robust=True,
                                ridge=5.0, extra=EXTRAS, training_pairs="direct")
 
     def test_a_one_step_fit_of_the_iorb_column_is_refused_by_the_guard(self):

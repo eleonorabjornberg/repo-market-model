@@ -95,6 +95,16 @@ READINGS = {
 ROLES = ("in_force", "new")
 
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_CRPS = {
+    "extract_command": (
+        "guard",
+        "the recalibration re-run's scores: `require_exploratory_window` on every panel day before any score is "
+        "computed (#1482, #1568)",
+    ),
+}
+
+
 def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 

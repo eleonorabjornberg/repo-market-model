@@ -58,6 +58,17 @@ NAMES: Tuple[str, ...] = ("spread_mr_ctx", "spread_mr_b2", "spread_mr_ctx_b2")
 BLENDS: Tuple[str, ...] = ("spread_mr_b2", "spread_mr_ctx_b2")
 
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_CRPS = {
+    "choose_weight": (
+        "delegates",
+        "scores the trailing decision days at or before the refit's anchor, each target required public "
+        "(`_require_public`); the walk's decision days come from callers that refuse a locked day, such as "
+        "`cell_table` of `calendar_mr_1115` and `state_calendar_1145` through `require_scored_days` (#1568)",
+    ),
+}
+
+
 class CalendarView(MappingABC):
     """A row's calendar columns and nothing else.
 

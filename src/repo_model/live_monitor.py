@@ -29,9 +29,9 @@ from .splits import LookAheadError
 LOCKBOX_CRPS = {
     "crps_ratio": (
         "delegates",
-        "a pure metric of rows the caller supplies; the replay refuses a day after 2025-12-31 and a "
-        "locked day before it builds rows, and the read of live outcomes refuses until the "
-        "monitoring decision record is merged (#969)",
+        "a pure metric of rows the caller supplies; the replay calls `require_development_window` on every day, "
+        "which refuses a day after 2025-12-31 and so every day of a locked tier, before it builds rows, and the "
+        "read of live outcomes refuses until the monitoring decision record is merged (#969, #1568)",
     ),
 }
 

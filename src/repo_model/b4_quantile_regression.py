@@ -34,7 +34,7 @@ from . import spread_mean_reversion as smr
 from . import spread_mr_calendar as cal
 from .asof import InformationRule
 from .data import DailyObservation
-from .one_step_guard import guard_one_step_fit
+from .one_step_guard import guard_one_step_fit, guard_pair_stamp, stamp_pairs
 from .scoring_protocol import GRID, HORIZONS, ProtocolError
 from .splits import LookAheadError, SplitError
 
@@ -197,6 +197,7 @@ def _entering(terms: Sequence[str], pairs: Sequence[Pair], min_flagged: int) -> 
     return tuple(name for name in terms if counts.get(name, 0) >= min_flagged), counts
 
 
+@guard_pair_stamp("pairs")
 @guard_one_step_fit
 def fit_quantile_regression(
     pairs: Sequence[Pair],
@@ -334,7 +335,7 @@ def refit(
             for origin, target in rows[h]
         ]
         out[h] = fit_quantile_regression(
-            pairs, regressors=regressors, terms=TERMS, training_pairs="direct", ridge=ridge, levels=levels
+            stamp_pairs(pairs, direct=True), regressors=regressors, terms=TERMS, training_pairs="direct", ridge=ridge, levels=levels
         )
     return out
 
