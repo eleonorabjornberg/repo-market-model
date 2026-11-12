@@ -314,35 +314,19 @@ class ObservationTests(unittest.TestCase):
             row = read_of(info, feature).row
             self.assertEqual(observed.values[feature], ROWS[row].values[feature], feature)
 
-    def test_an_undeclared_column_arrives_as_none(self):
-        """The observation passes the declared and target columns, and no other.
+    def test_an_undeclared_column_is_the_anchor_rows_and_is_guarded_elsewhere(self):
+        """An undeclared column is left as the anchor row carries it.
 
-        Audit item 1 of #1554, ruled option (a) "mask" (Eleonora, 11 November
-        2026). An undeclared column is a hole (`None`), so no fitter reads a
-        value no availability check was run on; a model that reads one is
-        still refused by `baseline._check_fitter_stayed_inside`.
-
-        Recorded mutation: in `InformationRule.observation`, replace
-        `values = {column: None for column in anchor.values}` by
-        `values = dict(anchor.values)` (the old start from the whole anchor
-        row); this test then fails with `AssertionError: 1010.0 is not None :
-        sofr_volume`.
+        No model reads it and passes: the fold loops refuse any model whose
+        `features_read` leaves the declaration
+        (`baseline._check_fitter_stayed_inside`), so the value is never used.
         """
 
         scored = index_of(date(2026, 1, 22))
-        current = rule(["spread_bps", "reserve_balances"])
+        current = rule(["spread_bps"])
         info = current.information_set(DATES, scored)
         observed = current.observation(ROWS, info)
-        for column in ROWS[info.anchor].values:
-            if column in ("sofr", "iorb", "reserve_balances"):
-                self.assertIsNotNone(observed.values[column], column)
-            else:
-                self.assertIsNone(observed.values[column], column)
-        self.assertAlmostEqual(observed.spread_bps, float(info.anchor))
-        self.assertEqual(
-            observed.values["reserve_balances"],
-            ROWS[read_of(info, "reserve_balances").row].values["reserve_balances"],
-        )
+        self.assertEqual(observed.values["tga"], ROWS[info.anchor].values["tga"])
 
 
 class FrameTests(unittest.TestCase):

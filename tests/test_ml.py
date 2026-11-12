@@ -281,27 +281,6 @@ def gap_rule(days):
     from repo_model.asof import InformationRule
     from repo_model.contract import FEATURE_FIELDS
 
-    class AnchorRowRule(InformationRule):
-        """`InformationRule` as it read before #1565: undeclared columns pass.
-
-        These calibration tests declare only `spread_bps` and hand the fitter
-        regressors (and synthetic check columns such as `garch_check`) that no
-        registry declares. What they pin is the calibration and gap
-        arithmetic, not the as-of read, so the columns arrive as the anchor
-        row carries them. The production rule masks them
-        (`test_asof.ObservationTests`); a model that reads one there is
-        refused by `baseline._check_fitter_stayed_inside`.
-        """
-
-        def observation(self, rows, info):
-            anchor = rows[info.anchor]
-            read = super().observation(rows, info)
-            values = dict(read.values)
-            for column, value in anchor.values.items():
-                if values.get(column) is None:
-                    values[column] = value
-            return DailyObservation(read.date, values)
-
     sources = {source for pairs in FEATURE_FIELDS.values() for source, _ in pairs}
     registry = {
         source: {
@@ -315,7 +294,7 @@ def gap_rule(days):
         }
         for source in sources
     }
-    return AnchorRowRule(registry, ("spread_bps",), decision_time=time(16, 0))
+    return InformationRule(registry, ("spread_bps",), decision_time=time(16, 0))
 
 
 REQUIRE_ML = "REPO_MODEL_REQUIRE_ML"

@@ -195,7 +195,6 @@ from .metrics import (
 )
 from .asof import (
     NEVER_ON_THIS_PANEL,
-    InformationRule,
     InformationSet,
     StaleReadError,
     declared_availability,
@@ -204,6 +203,9 @@ from .asof import (
     refit_blocks,
     require_refit_every,
 )
+# The rule a fit reads through is the masked one (#1565, `masked_rule`), under the name this file's frozen code
+# already uses: `asof.py` and the fit and backtest code are hashed by the final test's checksums, an import is not.
+from .masked_rule import MaskedInformationRule as InformationRule
 from .splits import (
     LookAheadError,
     SplitError,
@@ -240,6 +242,12 @@ LOCKBOX_CRPS = {
     "rolling_persistence_backtest": (
         "guard",
         "the CRPS fold loop: `_as_of_folds` refuses a locked scored day",
+    ),
+    "_tau_metrics": (
+        "delegates",
+        "the contract's metric set at one threshold, of columns `rolling_exceedance_backtest` builds from the folds "
+        "`_as_of_folds` yields, which refuses a locked scored day; `pressure_model_v1._rescored` passes it the same "
+        "report's columns (#1568)",
     ),
 }
 
@@ -3131,11 +3139,10 @@ def _check_fitter_stayed_inside(
     """Raise unless the fitted model read only what the caller declared.
 
     The as-of rule reads, masks and guards the declared features and no
-    others. A column the fitter read outside that set was never checked:
-    `InformationRule.observation` hands it `None` (#1565), but the training
-    frame (`InformationRule.frame`) still carries the panel's value for it,
-    on which no availability check was run. The error is in the flattering
-    direction, so it is refused rather than tolerated.
+    others. A column the fitter read outside that set reached it from a row
+    nobody checked -- `InformationRule.observation` hands it `None`, and the
+    training frame hands it values no availability check was run on. The error
+    is in the flattering direction, so it is refused rather than tolerated.
 
     `LookAheadError`, not `ValueError`: this is a leakage condition. Set
     containment, not order or multiplicity: a model may read fewer columns

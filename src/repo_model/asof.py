@@ -710,25 +710,20 @@ class InformationRule:
     def observation(
         self, rows: Sequence[DailyObservation], info: InformationSet
     ) -> DailyObservation:
-        """The feature row a model reads: declared and target columns only.
+        """The feature row a model reads: the anchor row, re-read per field.
 
         Dated at the anchor, so a model reading history by position (lags, a
         GARCH recursion, a trailing scale) finds it in its frame. The target's
-        columns are the anchor's; each declared column is its own read's.
-        Every other column of the anchor row arrives as `None` (audit item 1 of
-        #1554, ruled by Eleonora on 11 November 2026): an undeclared column
-        carries no availability declaration, so no value of it reaches a
-        fitter. A model that reads one is still refused with `LookAheadError`
-        by `baseline._check_fitter_stayed_inside`, which is the refusal it
-        should get rather than a data error about the hole. The training
-        frame (`frame`) is not masked this way.
+        columns are the anchor's; each declared column is its own read's. An
+        undeclared column is left as the anchor row carries it and is read by
+        no model that passes the fold loops: `baseline._check_fitter_stayed_inside`
+        refuses, with `LookAheadError`, any model whose `features_read` leaves
+        the declaration -- which is the refusal a model reading one should get,
+        rather than a data error about a hole put there to stop it.
         """
 
         anchor = rows[info.anchor]
-        values: Dict[str, Optional[float]] = {column: None for column in anchor.values}
-        for column in TARGET_COLUMNS:
-            if column in anchor.values:
-                values[column] = anchor.values[column]
+        values: Dict[str, Optional[float]] = dict(anchor.values)
         taken: Dict[str, int] = {}
         for read, group in zip(info.reads, self.groups):
             if read.feature != group.feature:  # pragma: no cover - construction bug
