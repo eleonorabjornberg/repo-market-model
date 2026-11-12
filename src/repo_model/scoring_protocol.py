@@ -987,6 +987,22 @@ def _require_coverage_passed(coverage: object) -> None:
         raise ProtocolError(
             f"the coverage check read method {coverage.method!r}; the requirement reads {COVERAGE_REQUIREMENT_METHOD!r}"
         )
+    if (
+        coverage.alpha != COVERAGE_REQUIREMENT_ALPHA
+        or coverage.family != COVERAGE_REQUIREMENT_FAMILY
+        or coverage.rule != COVERAGE_REQUIREMENT_RULE
+    ):
+        raise ProtocolError(
+            f"the coverage check was made at alpha={coverage.alpha!r}, family={coverage.family!r}, rule={coverage.rule!r}; "
+            f"amendment 4 requires alpha={COVERAGE_REQUIREMENT_ALPHA!r}, family={COVERAGE_REQUIREMENT_FAMILY!r}, "
+            f"rule={COVERAGE_REQUIREMENT_RULE!r} (#1590)"
+        )
+    per_regime = len(HORIZONS) * len(COVERAGE_LEVELS)
+    if coverage.cells <= 0 or coverage.cells % per_regime:
+        raise ProtocolError(
+            f"the coverage check covers {coverage.cells} cell(s); amendment 4 requires every lead and regime cell at "
+            f"q05/q95 and q01/q99, a whole number of regimes of {per_regime} cells (#1590)"
+        )
 
 
 def verdict(
@@ -1181,6 +1197,11 @@ COVERAGE_METHODS: Tuple[str, ...] = ("thinned", "hac", "spaced", "spaced_hac")
 #: the record names it). Which design a cell carries is `CoverageCell.method`.
 COVERAGE_REQUIREMENT_METHOD = "spaced"
 COVERAGE_FAMILIES: Tuple[str, ...] = ("per_cell", "holm")
+#: The requirement as amendment 4 sets it (#1522; bound into `verdict` by #1590, Eleonora's ruling of 12 November 2026): Holm over
+#: the family at 5%, the `strict` hit rule, every lead and regime cell at q05/q95 and q01/q99. A verdict accepts only a check made so.
+COVERAGE_REQUIREMENT_ALPHA = 0.05
+COVERAGE_REQUIREMENT_FAMILY = "holm"
+COVERAGE_REQUIREMENT_RULE = "strict"
 
 
 class CoverageRequirementFailed(ProtocolError):
@@ -1430,6 +1451,16 @@ def check_coverage_requirement(
         raise ProtocolError("the coverage requirement is not in force: nothing was checked, so nothing passed")
     enforce_coverage_requirement(cells, alpha=alpha, family=family, rule=rule)
     read = [c for c in cells if c.rule == rule]
+    regimes = {c.regime for c in read}
+    have = {(c.regime, c.lead, c.level) for c in read}
+    missing = [
+        (r, h, lv) for r in sorted(regimes) for h in HORIZONS for lv in COVERAGE_LEVELS if (r, h, lv) not in have
+    ]
+    if missing or len(read) != len(have):
+        raise ProtocolError(
+            f"the coverage cells are not exactly one per lead, regime and level (#1590): {len(missing)} missing, "
+            f"{len(read) - len(have)} repeated; first missing {missing[:3]}"
+        )
     method = read[0].method
     if method != COVERAGE_REQUIREMENT_METHOD:
         raise ProtocolError(f"the requirement reads cells of method {COVERAGE_REQUIREMENT_METHOD!r}, not {method!r}")
