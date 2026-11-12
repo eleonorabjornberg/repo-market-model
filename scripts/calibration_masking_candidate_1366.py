@@ -73,6 +73,17 @@ FORBIDDEN_TOKENS = ("calibration_masking", "cross_conformal")
 BAND = {"band50": (GRID.index(0.25), GRID.index(0.75)), "band90": (GRID.index(0.05), GRID.index(0.95))}
 
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_CRPS = {
+    "reproduction_check": (
+        "delegates",
+        "scores the cells of the walk files `walk_command` wrote; `walk_command` calls `require_exploratory_window` "
+        "and `refuse_beyond` on every panel day, decision day and target day before it writes a file, and "
+        "`score_command` reads those files back without a second check (#1366, #1568)",
+    ),
+}
+
+
 def refuse_beyond(days: Sequence[date], last: date, *, where: str = "calibration_masking_candidate_1366") -> None:
     """Refuse a day after `last` (the window's declared end) and a day of a tier that is still locked: raises `LookAheadError`."""
 

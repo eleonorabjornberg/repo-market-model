@@ -44,6 +44,21 @@ REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_CRPS = {
+    "b3_series": (
+        "delegates",
+        "B3's five-level loss on the frame's decision days; `_score` calls `require_exploratory_window` on every "
+        "panel day before any frame is built (#1531, #1568)",
+    ),
+    "group_cells": (
+        "delegates",
+        "the cells of the shrunk-scale arm on the frame's days; `_score` calls `require_exploratory_window` on every "
+        "panel day before any frame is built (#1531, #1568)",
+    ),
+}
+
+
 def _load(name: str, alias: Optional[str] = None):
     """Load `scripts/<name>.py` as a module registered under `alias` (default `name`)."""
 
