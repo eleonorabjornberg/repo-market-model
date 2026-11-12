@@ -69,6 +69,17 @@ CLUSTER_GAP = 5
 ZERO_BEFORE = "before the first regime"
 
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_CRPS = {
+    "cell_vector": (
+        "delegates",
+        "the metrics of one cell of a window `Window.__init__` has read: it calls `refuse_beyond` on every decision "
+        "and target day of the walk file against the window's declared last day, 2025-12-31 or 2026-09-03 (#1533, "
+        "#1568)",
+    ),
+}
+
+
 def committed_declaration(path: Path = DECLARATION) -> dict:
     """The declaration, refused unless it is committed and unchanged since `HEAD`."""
 

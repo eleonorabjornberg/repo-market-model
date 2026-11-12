@@ -100,6 +100,16 @@ FITS = ("reachable", "ceiling")
 ALL_FITS = FITS + ("memorised",)
 
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_CRPS = {
+    "score_command": (
+        "guard",
+        "the upper-bound study's scores: `require_unlocked` on every scored day before any score is computed (#635, "
+        "#1568)",
+    ),
+}
+
+
 def _load(name: str):
     spec = importlib.util.spec_from_file_location(f"{name}_script", REPO / "scripts" / f"{name}.py")
     module = importlib.util.module_from_spec(spec)

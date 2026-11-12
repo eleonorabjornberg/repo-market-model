@@ -48,6 +48,16 @@ REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_CRPS = {
+    "cell_values": (
+        "guard",
+        "the cells of the filtered-historical-simulation scale study: `require_scored_days` on every decision day "
+        "and target before any cell is computed (#941, #1568)",
+    ),
+}
+
+
 def _load(name: str):
     spec = importlib.util.spec_from_file_location(name, REPO / "scripts" / f"{name}.py")
     module = importlib.util.module_from_spec(spec)

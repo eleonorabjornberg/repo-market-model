@@ -102,6 +102,16 @@ SCENARIOS = (
 # -- the guard (§2) --------------------------------------------------------------------------------------------------
 
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_CRPS = {
+    "build_pool": (
+        "guard",
+        "the pool of the confirmation design's study: `require_study_window` on every target day, which refuses a "
+        "day after 2025-12-31 and so every day of the blind tier, before any cell is computed (#1394, #1568)",
+    ),
+}
+
+
 def require_study_window(days) -> None:
     """§2: the study reads no day after `STUDY_END`.
 

@@ -241,6 +241,12 @@ LOCKBOX_CRPS = {
         "guard",
         "the CRPS fold loop: `_as_of_folds` refuses a locked scored day",
     ),
+    "_tau_metrics": (
+        "delegates",
+        "the contract's metric set at one threshold, of columns `rolling_exceedance_backtest` builds from the folds "
+        "`_as_of_folds` yields, which refuses a locked scored day; `pressure_model_v1._rescored` passes it the same "
+        "report's columns (#1568)",
+    ),
 }
 
 
