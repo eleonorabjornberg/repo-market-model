@@ -604,7 +604,8 @@ CANDIDATE_SPLITS = (("regime", "by regime"), ("target_day_type", "by target-day 
 #: What the page calls each evidence page of the candidate record: the page is for a lay reader, so no issue number.
 EVIDENCE_NAMES = {1145: "state-scaled calendar study", 1115: "calendar-terms study",
                   1141: "walk-forward calibration study", 1255: "capped-candidate study", 1288: "announced-settlement study"}
-SPLIT_BENCHMARKS = (("B1", "B1"), ("B1_prime", "B1&prime;"))  # keys only: the page prints their plain names (#1355)
+#: The benchmarks of the second table, by key: the page prints their plain names (#1355). B2 joined them with #1578.
+SPLIT_BENCHMARKS = (("B1", "B1"), ("B1_prime", "B1&prime;"), ("B2", "B2"))
 
 
 def read_mean_d(interval):
@@ -631,13 +632,17 @@ def _pair(group, model, bench):
 def candidate_standings(root):
     """The standings of the candidate `CANDIDATE` names, scored from the committed record it points to, or None.
 
-    Nothing is computed: every mean, difference, skill and interval is copied from the record. None when the record
-    does not hold the model it names, or the candidate file cannot be read.
+    Nothing is computed: every mean, difference, skill and interval is copied from the record. `scores.window`, when
+    the file has one, names the window of a record that holds several (#1578). None when the record does not hold the
+    model it names, or the candidate file cannot be read.
     """
     try:
         rec = json.loads((root / CANDIDATE).read_text(encoding="utf-8"))
         scores_path = rec["scores"]["record"]
         score = json.loads((root / scores_path).read_text(encoding="utf-8"))
+        window = rec["scores"].get("window")
+        if window:  # a record of several windows (#1420's): the one the candidate file names, its groups and notes (#1578)
+            score = {**score, **score["windows"][window]}
         model = rec["scores"]["model"]
         name = rec["candidate"]
     except (OSError, ValueError, KeyError, TypeError):
@@ -755,7 +760,11 @@ def candidate_standings_html(st):
         return f'{100 * pair["skill"]:+.1f}%' + (f' [{100 * lo[0]:+.1f}%, {100 * lo[1]:+.1f}%]' if lo else "")
 
     def mean(x):
-        return NOT_MEASURED if x is None else f"{x:.2f}"
+        return NOT_MEASURED if x is None else f"{x:.3f}"
+
+    def both(pair):
+        """A split cell (#1578, #1112): the gain with its interval and reading, then the skill with its interval."""
+        return f"{mean_d(pair)}; {skill(pair)}" if pair else NOT_MEASURED
 
     head = "".join(f'<th scope="col">Accuracy score, {esc(g["caption"])} ({g["days"]} days)</th>'
                    f'<th scope="col">Gain over the comparison model, bp [90%], read</th>'
@@ -767,7 +776,7 @@ def candidate_standings_html(st):
         body.append(f'<tr><th scope="row">{esc(shown)}</th>{cells}</tr>')
     body.append(f'<tr><th scope="row">{own}</th>' + "".join(
         f'<td>{mean(g["own"])}</td><td>&mdash;</td><td>&mdash;</td>' for g in st["groups"]) + '</tr>')
-    split_head = "".join(f'<th scope="col">Gain over {esc(names[key].lower())} (bp) [90%], read</th>'
+    split_head = "".join(f'<th scope="col">Gain over {esc(names[key].lower())}, bp [90%], read; as a share of its score [90%]</th>'
                          for key, _ in SPLIT_BENCHMARKS)
     split_body = []
     for split in st["splits"]:
@@ -776,7 +785,7 @@ def candidate_standings_html(st):
         for row in split["rows"]:
             split_body.append(
                 f'<tr><th scope="row">{esc(row["label"])}</th><td>{row["days"]}</td><td>{mean(row["own"])}</td>'
-                + "".join(f'<td>{mean_d(row["pairs"][b])}</td>' for b, _ in SPLIT_BENCHMARKS) + '</tr>')
+                + "".join(f'<td>{both(row["pairs"][b])}</td>' for b, _ in SPLIT_BENCHMARKS) + '</tr>')
     beside = ", ".join(esc(shown) for _, shown in st["benchmarks"][:-1]) + " and " + esc(st["benchmarks"][-1][1])
     missing = ("".join(f"No row compares it with {esc(names.get(b, 'another model').lower())}: its forecasts were not supplied to the study that scored it. "
                        for b in st.get("missing") or ()))
