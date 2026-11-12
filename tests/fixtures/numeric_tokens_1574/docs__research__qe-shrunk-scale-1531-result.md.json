@@ -1,8 +1,28 @@
 {
  "added": {
+  "0.444": {
+   "source": "docs/research/log/2026-11-11-model-01571-H5-step3.md",
+   "why": "dated note of #1571 (her docket ruling of 11 November 2026 on finding #1559), carried into the generated page after #1575"
+  },
+  "1111": {
+   "source": "docs/research/log/2026-11-11-model-01571-H5-step3.md",
+   "why": "dated note of #1571 (her docket ruling of 11 November 2026 on finding #1559), carried into the generated page after #1575"
+  },
   "1548": {
    "source": "docs/research/qe-event-model-1548-result.md",
    "why": "Question 2 now links the page of the study she ruled for on 10 November 2026 (stale fact fixed under her ruling of 11 November 2026 on #1575)"
+  },
+  "1559": {
+   "source": "docs/research/log/2026-11-11-model-01571-H5-step3.md",
+   "why": "dated note of #1571 (her docket ruling of 11 November 2026 on finding #1559), carried into the generated page after #1575"
+  },
+  "1561": {
+   "source": "docs/research/log/2026-11-11-model-01571-H5-step3.md",
+   "why": "dated note of #1571 (her docket ruling of 11 November 2026 on finding #1559), carried into the generated page after #1575"
+  },
+  "36": {
+   "source": "docs/research/log/2026-11-11-model-01571-H5-step3.md",
+   "why": "dated note of #1571 (her docket ruling of 11 November 2026 on finding #1559), carried into the generated page after #1575"
   }
  },
  "path": "docs/research/qe-shrunk-scale-1531-result.md",

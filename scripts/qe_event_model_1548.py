@@ -687,6 +687,11 @@ def question() -> List[str]:
         "1. **k = 20** (default). Half weight at ten turns. This page.",
         "2. **k = 10.** Less shrinkage. A fresh run with a fresh declaration.",
         "3. **k = 40.** More shrinkage. A fresh run with a fresh declaration.", "",
+        "**Dated note, 11 November 2026 (finding #1559; her ruling of 11 November, decision docket, card f1559-k-1111, option (a) \"note\").** Beside "
+        "the options above, which stay as written. With at most 16 event pairs per lead (eight turns in the two-year window; the table of the development "
+        "window below, \"The event pools, over the window's refits\"), the weight w = n / (n + k) with k = 20 never passed 16 / 36 = 0.444, and its mean "
+        "was 0.376. \"Half weight at ten turns\" describes a weight no refit could reach. Her ruling: k = 20 stands; no figure on this page is re-run or "
+        "changed; how much history the fit may use is taken up through #1561.", "",
         "**Question 2. What goes on from here?** This page is one arm of the family on the quarter-end event set. Whether the event model is read against the "
         "width-only arm with a paired test (a further run), whether it is extended to the other calendar-event types (turn, tax date, month-end), or whether "
         "the family stops, is yours; adopting the arm is not in scope and the 2 November freeze holds.", "",
@@ -755,7 +760,11 @@ def render(r: dict) -> str:
             "development days, with the event's own shape and location. It does not show a verdict, an adoption, or that this arm beats the width-only arm "
             "(no test between them is run). Thin events are handled by shrinkage and the fallback only; the outer levels of an event pool of a few dozen "
             "residuals rest on a handful of events. The candidate stays frozen and nothing is adopted, registered or published. The 2026 days are shown "
-            "apart and decide nothing.", ""]
+            "apart and decide nothing.", "",
+            "**Dated note, 11 November 2026 (finding #1559; her ruling of 11 November, decision docket, card f1559-k-1111, option (a) \"note\").** "
+            "Beside the sentence above, which stays as written: \"an event pool of a few dozen residuals\" overstates what the fits held. The table of the "
+            "development window below (\"The event pools, over the window's refits\") gives the event pairs per lead as 14.1 on average and 2 to 16 at "
+            "most, because the candidate trains on a trailing two-year window that holds at most eight quarter-end turns.", ""]
     out += question()
     out += ["## Details", "",
         "**The change.** The event set is every target day whose type is `quarter_end_turn` or `year_end`: the last business day of each calendar quarter "

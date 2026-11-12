@@ -668,6 +668,12 @@ def question() -> List[str]:
         "thirty), k = 10 (less shrinkage: half weight at five turns) and k = 40 (more shrinkage: half weight at twenty turns, about two fifths at thirty); "
         "the last two each needed a fresh run with a fresh declaration. Neither was run. The event-conditional quarter-end page carries k = 20 forward as "
         "this arm's constant and cites your 10 November answer.", "",
+        "**Dated note, 11 November 2026 (finding #1559; her ruling of 11 November, decision docket, card f1559-k-1111, option (a) \"note\").** Beside "
+        "the options above, which stay as written. The candidate trains on a trailing two-year window, so at a refit the group holds at most eight "
+        "quarter-end turns, which is 16 training pairs per lead (the table of the development window below, \"The multipliers (shrunk), over the "
+        "window's refits\": group pairs n, 14.1 on average, 2 to 16). With k = 20 the weight w = n / (n + k) therefore never passed 16 / 36 = 0.444, "
+        "and the runs' mean weight was 0.403. \"Half weight at ten turns, three fifths at thirty\" describes weights no refit could reach. Her ruling: "
+        "k = 20 stands; no figure on this page is re-run or changed; how much history the fit may use is taken up through #1561.", "",
         "**Question 2. Does the arm go on?** The Mechanism section of the quarter-end diagnosis reads the failure as a shape problem with a location shift, "
         "and says no single multiplier fits every level. The design was run as ruled and not revised. The question was whether a width-only arm closes "
         "anything, or the work moves to B or to an event-conditional distribution model. You ruled on 10 November 2026 for an event-conditional distribution "
