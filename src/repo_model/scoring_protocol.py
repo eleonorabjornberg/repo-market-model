@@ -50,15 +50,16 @@ import math
 import random
 from itertools import islice
 from operator import mul
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import lru_cache
-from datetime import date
+from datetime import date, datetime
 from statistics import NormalDist
 from typing import Callable, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
 from . import coverage_tests, lockbox
 from .data import PointInTimeObservation
 from .metrics import _quantile, crps_from_quantiles, stationary_bootstrap_indices
+from .splits import LookAheadError
 
 # Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
 LOCKBOX_CRPS = {
@@ -461,6 +462,11 @@ def _bound(ordered: Sequence[float], level: float, draws: int) -> float:
     return _quantile(ordered, level)
 
 
+#: The protocol's benchmarks, by the names `protocol_benchmarks` gives them (B1, B2, B3 of §4). `verdict` and `report` read a
+#: test's `benchmark` against these (#1567).
+PROTOCOL_BENCHMARKS: Tuple[str, ...] = ("B1", "B2", "B3")
+
+
 @dataclass(frozen=True)
 class PairedTest:
     """One candidate against one benchmark on the same days (§5).
@@ -504,6 +510,9 @@ class PairedTest:
     #: draws, kept for the scripts that report percentile intervals from them (#686, #639).
     mean_difference_draws: Tuple[float, ...] = ()
     skill_draws: Tuple[float, ...] = ()
+    #: Which of `PROTOCOL_BENCHMARKS` the benchmark scores are, as the caller declared when making the test
+    #: (`paired_tests(..., benchmarks=...)`); `None` when undeclared. `verdict` refuses a test that is not the one it reads (#1567).
+    benchmark: Optional[str] = None
 
     @property
     def n(self) -> int:
@@ -606,6 +615,7 @@ def paired_tests(
     hac_lag: int = HAC_LAG,
     with_skill: bool = True,
     inner_draws: int = 0,
+    benchmarks: Optional[Sequence[str]] = None,
 ) -> Tuple[PairedTest, ...]:
     """§5: each (benchmark scores, candidate scores) pair, tested on one resample stream.
 
@@ -620,13 +630,23 @@ def paired_tests(
     block, from `random.Random(f"{seed}/{b}")`, shared across pairs, and its prepivot is the
     share of those inner t-draws at or below its outer t-draw. The outer draws are unchanged.
 
+    `benchmarks` names, pair by pair, which of `PROTOCOL_BENCHMARKS` each pair's benchmark scores are; it is stored on the
+    test as `PairedTest.benchmark`, and `verdict` and `report` refuse a test that does not carry the name they read (#1567).
+
     Raises:
-        ProtocolError: on pairs that do not cover the same days, a benchmark scoring zero
+        ProtocolError: on pairs that do not cover the same days, a name not in `PROTOCOL_BENCHMARKS` or a list of names
+            that is not one per pair, a benchmark scoring zero
             (skill is undefined), or a series or resample with no long-run variance.
     """
 
     if not pairs:
         raise ProtocolError("no pairs to test")
+    if benchmarks is not None:
+        if len(benchmarks) != len(pairs):
+            raise ProtocolError(f"{len(benchmarks)} benchmark names for {len(pairs)} pairs")
+        for name in benchmarks:
+            if name not in PROTOCOL_BENCHMARKS:
+                raise ProtocolError(f"{name!r} is not one of the protocol's benchmarks {PROTOCOL_BENCHMARKS}")
     if isinstance(seed, bool) or not isinstance(seed, int):
         raise ProtocolError(f"the seed must be an int fixed at registration, got {seed!r}")
     days = tuple(sorted(pairs[0][0]))
@@ -695,7 +715,7 @@ def paired_tests(
                 resampled_se = _standard_error(linear, hac_lag, "a resampled skill") / bench_mean
                 skill_out.append((resampled_skill - skill) / resampled_se)
     out = []
-    for bench, diff, mean, se, benchmark_mean, skill, skill_se, t_out, skill_out, pivots, means, skills in cells:
+    for position, (bench, diff, mean, se, benchmark_mean, skill, skill_se, t_out, skill_out, pivots, means, skills) in enumerate(cells):
         ordered = sorted(t_out)
         statistic = mean / se
         out.append(
@@ -719,6 +739,7 @@ def paired_tests(
                 inner_draws=inner_draws,
                 mean_difference_draws=tuple(sorted(means)),
                 skill_draws=tuple(sorted(skills)),
+                benchmark=None if benchmarks is None else benchmarks[position],
             )
         )
     return tuple(out)
@@ -939,11 +960,42 @@ def _nominal_levels(checkpoints: Tuple[int, ...], alpha: float) -> Tuple[float, 
     return tuple(1.0 - _NORMAL.cdf(bound) for bound in boundaries(checkpoints, alpha))
 
 
+def _require_prospective(days: Sequence[date], first_confirmation_day: date, where: str) -> None:
+    """Every day is on or after the registration's first confirmation day and in no locked tier (#1567)."""
+
+    if isinstance(first_confirmation_day, datetime) or not isinstance(first_confirmation_day, date):
+        raise ProtocolError(f"first_confirmation_day must be a date, got {first_confirmation_day!r}")
+    early = [day for day in days if day < first_confirmation_day]
+    if early:
+        raise LookAheadError(
+            f"{where}: scored day {min(early)} is before the first confirmation day {first_confirmation_day}; "
+            f"only prospective confirmation days give a verdict (docs/decisions/scoring-protocol.md, decision 1)"
+        )
+    lockbox.require_unlocked(days, where=where)
+
+
+def _require_coverage_passed(coverage: object) -> None:
+    """`coverage` is a `CoverageCheck` that `check_coverage_requirement` issued, on the method the requirement reads (#1567)."""
+
+    if not isinstance(coverage, CoverageCheck) or coverage._seal is not _COVERAGE_SEAL:
+        raise ProtocolError(
+            "a verdict needs the coverage requirement checked and passed: pass what check_coverage_requirement returned"
+        )
+    if not COVERAGE_REQUIREMENT_IN_FORCE:
+        raise ProtocolError("the coverage requirement is not in force; no check of it can bind a verdict")
+    if coverage.method != COVERAGE_REQUIREMENT_METHOD:
+        raise ProtocolError(
+            f"the coverage check read method {coverage.method!r}; the requirement reads {COVERAGE_REQUIREMENT_METHOD!r}"
+        )
+
+
 def verdict(
     against_b1: PairedTest,
     against_b2: PairedTest,
     *,
     look: int,
+    first_confirmation_day: date,
+    coverage: "CoverageCheck",
     futility_level: float = FUTILITY_LEVEL,
     checkpoints: Sequence[int] = CHECKPOINTS,
     alpha: float = ALPHA,
@@ -964,9 +1016,20 @@ def verdict(
       the MME. It is non-binding: Supported is read first.
     - Otherwise inconclusive, or "not shown" at the last checkpoint.
 
+    The verdict is read only on the evidence the protocol allows (Eleonora's ruling of 11 November 2026, #1554 item 3, #1567):
+
+    - the tests are the protocol's benchmarks by identity: `against_b1.benchmark` is "B1" and `against_b2.benchmark` is "B2"
+      (`paired_tests(..., benchmarks=...)`);
+    - every scored day is a prospective confirmation day, on or after `first_confirmation_day` (the registration's first
+      confirmation day), and none is in a locked lockbox tier;
+    - the coverage requirement of amendment 4 was checked and passed: `coverage` is what `check_coverage_requirement` returned,
+      on cells made with `COVERAGE_REQUIREMENT_METHOD`, with the requirement in force.
+
     Raises:
-        ProtocolError: the tests are not on the checkpoint's day count or the same days, or
-            `futility_level` is not the protocol's.
+        ProtocolError: the tests are not on the checkpoint's day count or the same days, `futility_level` is not the
+            protocol's, a test is not the benchmark's, or `coverage` is not a passed coverage check.
+        LookAheadError: a scored day is before `first_confirmation_day` (development data gives no verdict) or in a
+            locked lockbox tier.
     """
 
     if futility_level != FUTILITY_LEVEL:
@@ -981,6 +1044,14 @@ def verdict(
             raise ProtocolError(f"the test against {name} covers {test.n} days, not checkpoint {look}'s {days}")
     if against_b1.days != against_b2.days:
         raise ProtocolError("the tests against B1 and B2 must cover the same days")
+    for name, test in (("B1", against_b1), ("B2", against_b2)):
+        if test.benchmark != name:
+            raise ProtocolError(
+                f"the test read as the leg against {name} carries benchmark {test.benchmark!r}: a verdict reads the "
+                f"protocol's {name} by identity (paired_tests(..., benchmarks=...), #1567)"
+            )
+    _require_prospective(against_b1.days, first_confirmation_day, "scoring_protocol.verdict")
+    _require_coverage_passed(coverage)
     critical = CRITICAL_VALUES[GRID_COMPARISON].get(days)
     b2_critical = B2_LEG_CRITICAL_VALUES.get(GRID_COMPARISON, {}).get(days, critical)
     if (
@@ -1058,10 +1129,14 @@ def report(
     (`on_levels`, `level_crps`), on the same days as the other two tests. `settings` go to `verdict`.
 
     Raises:
-        ProtocolError: as `verdict`, or the B3 test is not on the checkpoint's days.
+        ProtocolError: as `verdict`, or the B3 test is not B3's or not on the checkpoint's days.
     """
 
     result = verdict(against_b1, against_b2, look=look, **settings)
+    if against_b3.benchmark != "B3":
+        raise ProtocolError(
+            f"the test read as the comparison with B3 carries benchmark {against_b3.benchmark!r}: it reads B3 by identity (#1567)"
+        )
     if against_b3.days != against_b1.days:
         raise ProtocolError("the test against B3 must cover the same days as the tests against B1 and B2")
     critical = CRITICAL_VALUES[FIVE_LEVEL_COMPARISON].get(against_b3.n)
@@ -1269,6 +1344,12 @@ def enforce_coverage_requirement(
     Inert while `COVERAGE_REQUIREMENT_IN_FORCE` is False: returns an empty list whatever the cells say. Once on,
     raises `CoverageRequirementFailed` naming the failing cells, and returns an empty list when none fails.
 
+    Once on, it refuses to pass on nothing (#1567, ruling of 11 November 2026): `ValueError` for an empty list of cells, for a
+    list with no cell of `rule` (cells scored under another rule only), for cells of `rule` made under more than one `method`
+    (the cells of one design are tested together), and for a cell of `rule` with no sample (`n == 0`), which `coverage_cells`
+    reports with `kupiec_p = 1.0` as a placeholder and which is not evidence of coverage. Cells of other rules beside the
+    rule's own are ignored, as before: `coverage_cells` returns both hit rules in one list.
+
     Args:
         alpha: the level of a cell's test (family "per_cell") or the family-wise level (family "holm"); required,
             the record's marked question sets it.
@@ -1284,11 +1365,22 @@ def enforce_coverage_requirement(
         raise ProtocolError(f"alpha must lie strictly between 0 and 1, got {alpha!r}")
     if not COVERAGE_REQUIREMENT_IN_FORCE:
         return []
+    cells = list(cells)
+    read = [c for c in cells if c.rule == rule]
+    if not read:
+        raise ValueError(
+            f"no coverage cell was scored under rule {rule!r} (the list carries rules {sorted({c.rule for c in cells})}): "
+            f"the requirement cannot be passed on an empty list or on another rule's cells (#1567)"
+        )
+    methods = sorted({c.method for c in read})
+    if len(methods) > 1:
+        raise ValueError(f"the cells of rule {rule!r} were made under several methods, {methods}; test one design at a time (#1567)")
+    empty = [c.label() for c in read if c.n == 0]
+    if empty:
+        raise ValueError(f"{len(empty)} cell(s) of rule {rule!r} have no sample and carry no evidence of coverage (#1567): " + "; ".join(empty[:20]))
     tests: Dict[str, float] = {}
     owner: Dict[str, CoverageCell] = {}
-    for c in cells:
-        if c.rule != rule:
-            continue
+    for c in read:
         tests[c.label() + " / kupiec"] = c.kupiec_p
         owner[c.label() + " / kupiec"] = c
         if c.independence_p is not None:
@@ -1303,3 +1395,42 @@ def enforce_coverage_requirement(
             f"{len(failing)} coverage test(s) fail at {alpha:g} ({family}): " + "; ".join(sorted(failing)[:20])
         )
     return []
+
+
+_COVERAGE_SEAL = object()
+
+
+@dataclass(frozen=True)
+class CoverageCheck:
+    """The record that the coverage requirement was checked and passed: what `verdict` takes as `coverage` (#1567).
+
+    Only `check_coverage_requirement` makes one that `verdict` accepts.
+    """
+
+    alpha: float
+    family: str
+    rule: str
+    method: str
+    cells: int
+    _seal: object = field(default=None, repr=False, compare=False)
+
+
+def check_coverage_requirement(
+    cells: Sequence[CoverageCell], *, alpha: float, family: str, rule: str
+) -> CoverageCheck:
+    """`enforce_coverage_requirement` on cells of the method the requirement reads, returning the proof a verdict takes.
+
+    Raises:
+        ProtocolError: the requirement is not in force (nothing would be checked), or the cells of `rule` were not made
+            with `COVERAGE_REQUIREMENT_METHOD`.
+        ValueError, CoverageRequirementFailed: as `enforce_coverage_requirement`.
+    """
+
+    if not COVERAGE_REQUIREMENT_IN_FORCE:
+        raise ProtocolError("the coverage requirement is not in force: nothing was checked, so nothing passed")
+    enforce_coverage_requirement(cells, alpha=alpha, family=family, rule=rule)
+    read = [c for c in cells if c.rule == rule]
+    method = read[0].method
+    if method != COVERAGE_REQUIREMENT_METHOD:
+        raise ProtocolError(f"the requirement reads cells of method {COVERAGE_REQUIREMENT_METHOD!r}, not {method!r}")
+    return CoverageCheck(alpha, family, rule, method, len(read), _COVERAGE_SEAL)

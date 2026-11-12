@@ -32,6 +32,7 @@ import unittest
 import unittest.mock
 from pathlib import Path
 
+from repo_model import one_step_guard as osg
 from repo_model import announced_iorb
 from repo_model import spread_mean_reversion as smr
 from repo_model import spread_mr_calendar as cal
@@ -158,19 +159,19 @@ class TypeTests(unittest.TestCase):
 
     def test_a_type_factor_is_the_shrunk_ratio_to_the_ordinary_mean(self):
         pairs = [(1.0, None)] * 30 + [(3.0, "quarter_end")] * 10 + [(1.0, "month_end")] * 2
-        out = sc.fit_type_factors(pairs, regressors=("quarter_end",), training_pairs="direct")
+        out = sc.fit_type_factors(osg.stamp_pairs(pairs, direct=True), regressors=("quarter_end",), training_pairs="direct")
         # ratio 3, n = 10, shrink n / (n + CAL_K): 1 + 10/20 * 2
         self.assertAlmostEqual(out["quarter_end"], 1.0 + 10.0 / (10.0 + sc.CAL_K) * 2.0)
         self.assertNotIn("month_end", out)  # two flagged pairs are fewer than MIN_FLAGGED
 
     def test_a_type_factor_is_floored(self):
         pairs = [(4.0, None)] * 20 + [(0.0, "tax_date")] * 200
-        out = sc.fit_type_factors(pairs, regressors=("tax_date",), training_pairs="direct")
+        out = sc.fit_type_factors(osg.stamp_pairs(pairs, direct=True), regressors=("tax_date",), training_pairs="direct")
         self.assertEqual(out["tax_date"], cal.M_MIN)
 
     def test_a_type_factor_is_capped(self):
         pairs = [(1e-12, None)] * 20 + [(5.0, "quarter_end")] * 200
-        out = sc.fit_type_factors(pairs, regressors=("quarter_end",), training_pairs="direct")
+        out = sc.fit_type_factors(osg.stamp_pairs(pairs, direct=True), regressors=("quarter_end",), training_pairs="direct")
         self.assertEqual(out["quarter_end"], sc.FACTOR_CAP)
 
     def test_a_one_step_fit_of_a_calendar_column_is_refused_by_the_guard(self):

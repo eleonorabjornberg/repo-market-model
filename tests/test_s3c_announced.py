@@ -37,6 +37,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
+from repo_model import one_step_guard as osg
 from repo_model import net_settlement as ns, s3c_announced, s3c_net, settlement_dating as sd  # noqa: E402
 from repo_model import spread_mr_calendar as cal, spread_mr_state_calendar as sc  # noqa: E402
 from repo_model.asof import InformationRule, StaleReadError  # noqa: E402
@@ -280,7 +281,7 @@ class FitTests(unittest.TestCase):
 
     def test_the_term_enters_at_lead_3_and_carries_its_effect(self):
         estimate = sc.fit_state_terms(
-            self.pairs(3), regressors=("treasury_settlement_coupons",), terms=cal.NO_FOMC_IORB, interact=False, robust=False,
+            osg.stamp_pairs(self.pairs(3), direct=True), regressors=("treasury_settlement_coupons",), terms=cal.NO_FOMC_IORB, interact=False, robust=False,
             training_pairs="direct", min_flagged=3)
         self.assertIn("settlement_coupon", estimate.terms)
         self.assertGreater(estimate.effect["settlement_coupon"], 1.0)

@@ -63,7 +63,7 @@ def pair(y, last=0.0, reserves=2.0, **flags):
 
 def fit(pairs, *, terms=("quarter_end",), ridge=b4.RIDGE, levels=GRID):
     return b4.fit_quantile_regression(
-        pairs, regressors=("quarter_end", "reserve_balances"), terms=terms, training_pairs="direct", ridge=ridge, levels=levels
+        osg.stamp_pairs(pairs, direct=True), regressors=("quarter_end", "reserve_balances"), terms=terms, training_pairs="direct", ridge=ridge, levels=levels
     )
 
 
