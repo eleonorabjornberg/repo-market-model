@@ -1,0 +1,12 @@
+{
+ "bytes": 27132266,
+ "error": null,
+ "et_date": "2026-11-12",
+ "fetched_at": "2026-11-12T21:46:26.883562+00:00",
+ "kind": "in_window",
+ "latest_date": "2026-11-04",
+ "sha256": "7bf36413452091b7a64fa9e642370c433558e898574f851f62f2c2b152b95d5a",
+ "source": "nyfed_fr2004_release",
+ "status": 200,
+ "url": "https://markets.newyorkfed.org/api/pd/get/all/timeseries.csv"
+}
