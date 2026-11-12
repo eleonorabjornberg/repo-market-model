@@ -54,6 +54,16 @@ MIN_CELLS = 30
 MEDIAN_INDEX = sp.GRID.index(0.5)
 
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_CRPS = {
+    "cell_vec": (
+        "delegates",
+        "the metrics of one cell of a window `qe_diagnosis_1533.load_window` loads, whose `Window.__init__` calls "
+        "`refuse_beyond` on every decision and target day; `build_cells` reads no other day (#1555, #1568)",
+    ),
+}
+
+
 def _load(name: str, alias: str):
     spec = importlib.util.spec_from_file_location(alias, REPO / "scripts" / f"{name}.py")
     module = importlib.util.module_from_spec(spec)

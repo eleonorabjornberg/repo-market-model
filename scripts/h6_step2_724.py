@@ -87,6 +87,16 @@ STRATUM_TEXT = {
 _STATE: Dict = {}
 
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_CRPS = {
+    "run_command": (
+        "guard",
+        "H6 step 2's scores: `require_scored_days` on every common target day and every decision day behind it "
+        "before any cell is computed (#724, #1568)",
+    ),
+}
+
+
 def _load(name: str):
     spec = importlib.util.spec_from_file_location(f"{name}_in_724", REPO / "scripts" / f"{name}.py")
     module = importlib.util.module_from_spec(spec)

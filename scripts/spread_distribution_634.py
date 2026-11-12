@@ -86,6 +86,11 @@ LOCKBOX_CRPS = {
         "every decision and target day before any score, and `day_scores` calls `require_unlocked` "
         "before using it (#634)",
     ),
+    "pinball": (
+        "delegates",
+        "one pinball loss at one outcome on cells of `score_command`, which calls `refuse_locked` on every decision "
+        "and target day before any score (#634, #1568)",
+    ),
 }
 
 DECLARATION = REPO / "metadata" / "spread_distribution_634.json"
