@@ -55,13 +55,17 @@ class PartsTests(unittest.TestCase):
         self.assertTrue(script.kill_reading(group(0.0, -0.1))["killed"])
         self.assertTrue(script.kill_reading(group(0.05, 0.1))["killed"])
 
-    def test_the_question_is_marked_numbered_and_carries_defaults(self):
+    def test_the_questions_are_numbered_and_say_how_she_answered(self):
+        """She answered on 10 November 2026, so the section records the options and her answer and offers no default."""
         text = "\n".join(script.question())
-        self.assertIn("Question for Eleonora", text)
+        self.assertIn("Questions for Eleonora (both answered on 10 November 2026)", text)
         self.assertIn("**Question 1.", text)
-        self.assertIn("1. **k = 20** (default)", text)
-        self.assertIn("2. **k = 10.**", text)
-        self.assertIn("3. **k = 40.**", text)
+        self.assertIn("**Question 2.", text)
+        for option in ("k = 20", "k = 10", "k = 40"):
+            self.assertIn(option, text)
+        self.assertIn("You ruled on 10 November 2026", text)
+        self.assertNotIn("default", text)
+        self.assertNotIn("5 pm batch", text)
         self.assertNotIn("GO #", text)
 
 
@@ -130,12 +134,11 @@ class EndToEndTests(unittest.TestCase):
     def test_the_page_carries_the_kill_the_event_count_and_ends_with_the_marked_question(self):
         text = self.page.read_text(encoding="utf-8")
         self.assertIn("**Against the declared kill:", text)
-        self.assertIn("roughly 30 to 44 is small", text)
+        self.assertIn("That is few, so every interval is wide.", text)
         self.assertIn("#1228 has not ruled", text)
         self.assertIn("### Coverage and tail misses on the group, candidate against arm", text)
         self.assertIn("### Against B3", text)
-        self.assertIn("## Question for Eleonora", text)
-        self.assertIn("**Options**", text)
+        self.assertIn("## Questions for Eleonora (both answered", text)
         self.assertNotIn("GO #", text)
         self.assertEqual(text.count("Closes #"), 0)
 

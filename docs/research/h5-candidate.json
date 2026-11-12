@@ -13,29 +13,32 @@
  "sizing": {"rule": "net settlement: the signed net of the target day (offering less maturing, as announced at the decision instant of the decision day, 18:00 America/New_York since #1312) in units of USD 100 bn, at every lead h = 1..5", "module": "repo_model.s3c_announced (ANN_NET_ARM, AnnouncedNetSizeTable)", "declaration": "metadata/s3c_announced_settlement_1288.json", "net_settlement": "metadata/net_settlement.json (#426, #1273)"},
  "earlier_candidate": {"date": "2026-10-26", "candidate": "sc_s3c", "ruling": "https://github.com/eleonorabjornberg/repo-market-model/pull/1256", "text": "(s3c) named the H5 candidate by #1259, her ruling of 26 October 2026 (chat, ledger item 61)"},
  "earlier_ruling": {"date": "2026-10-23", "url": "https://github.com/eleonorabjornberg/repo-market-model/issues/1151#issuecomment-6370128771", "text": "option 2 on #1151: (s3) of #1145 replaces #941's scaled mean reversion, arm (a) of #1115, as the H5 candidate"},
- "note": "Her ruling of 29 October 2026 (chat, about 12:15 am ET, relayed on #1310; option 1 of decision 1 in the 28 October message, ledger item 73): (s3c), with its settlement terms read at leads 2 to 5 from the auction announcement and sized by net settlement, is the H5 candidate, named (s3c-ann-net). #1293 (#1288) scored it against (s3c): +4.8% [+1.4%, +7.0%] on the 2026 days and +1.7% [+1.0%, +2.5%] on the development window, development figures, not a verdict. The tables below are still (s3)'s, from #1145, and (s3c)'s own scores and (s3c-ann-net)'s are on the last two evidence pages. Her ruling of 26 October 2026 (chat, ledger item 61; she merged #1256 that evening): (s3) carries the cap from full allotment onwards, and that is (s3c), named here by #1259. Before it, her ruling on #1151 (option 2) made (s3) of #1145 the candidate in place of #941's scaled mean reversion, arm (a) of #1115; (a) had replaced gbm_funding on #1115. The scoring record below is still #1145's: the tables on the results page are (s3)'s, the base, and (s3c)'s own scores (against (s3), (a), B1, B1' and B2, on the development window and the 2026 days) are on the page listed last under evidence. Nothing is registered; registration remains her own action. The page reads the candidate from this file; the step 4 record is the fallback when it is absent. The gbm_funding walks were not supplied to #1145, so no row compares (s3) with it. Each evidence entry also links its page read on the studentized bound on mean d (her ruling on #1009; #1167, #1194); the candidate stays (her ruling on #1187, 24 October 2026), and its upper-tail twCRPS losses in 2020 and on FOMC days are an open question before any registration.",
+ "note": "Her ruling of 29 October 2026 (chat, about 12:15 am ET, relayed on #1310; option 1 of decision 1 in the 28 October message, ledger item 73): (s3c), with its settlement terms read at leads 2 to 5 from the auction announcement and sized by net settlement, is the H5 candidate, named (s3c-ann-net). #1293 (#1288) scored it against (s3c): +4.8% [+1.4%, +7.0%] on the 2026 days and +1.7% [+1.0%, +2.5%] on the development window, development figures, not a verdict. The standings tables are (s3c-ann-net)'s own development walk (#1578, her ruling of 11 November 2026, option \"own\"), read from #1420's record, window development, beside B1, B1' and B2; before that they were (s3)'s, from #1145. Her ruling of 26 October 2026 (chat, ledger item 61; she merged #1256 that evening): (s3) carries the cap from full allotment onwards, and that is (s3c), named here by #1259. Before it, her ruling on #1151 (option 2) made (s3) of #1145 the candidate in place of #941's scaled mean reversion, arm (a) of #1115; (a) had replaced gbm_funding on #1115. Nothing is registered; registration remains her own action. The page reads the candidate from this file; the step 4 record is the fallback when it is absent. The gbm_funding walks were not supplied to #1145, so no row compares (s3) with it. Each evidence entry also links its page read on the studentized bound on mean d (her ruling on #1009; #1167, #1194); the candidate stays (her ruling on #1187, 24 October 2026), and its upper-tail twCRPS losses in 2020 and on FOMC days are an open question before any registration.",
  "known_candidates": ["sc_s3_robust", "sc_s3c_net", "sc_s3c_carry", "sc_s3c_gse", "sc_s3c_gse_roll", "sc_s3c_pd", "sc_s3c_pd_bounded", "sc_s3c_turn"],
  "incumbent": {"id": "gbm_funding", "family": "pressure model v1: gradient-boosted quantiles with nested PID-conformal calibration", "record": "docs/runs/compare_persistence_vs_gbm_conformal_pid_nested_funding_crps.json"},
- "state": {"frozen": "2026-11-02", "frozen_ruling": "https://github.com/eleonorabjornberg/repo-market-model/issues/1361", "registered": false, "waiting_on": "amendment4_coverage", "registration": "https://github.com/eleonorabjornberg/repo-market-model/issues/1510"},
+ "state": {"frozen": "2026-11-02", "frozen_ruling": "https://github.com/eleonorabjornberg/repo-market-model/issues/1361", "registered": false, "waiting_on": "quarter_end_family", "registration": "https://github.com/eleonorabjornberg/repo-market-model/issues/1510"},
+ "passed": [
+  {"key": "amendment4_coverage", "result_json": "docs/research/coverage-spacing-1527/result.json", "page": "docs/research/coverage-spacing-1527-result.md",
+   "values": {"now": ["methods", "spaced", "verdict", "strict", "rejected"],
+              "tests": ["methods", "spaced", "verdict", "strict", "tests"],
+              "before": ["methods", "thinned", "verdict", "strict", "rejected"],
+              "size": {"result_json": "docs/research/coverage-test-delay-power-1528/result.json", "path": ["results", "forecasters", "truth", "rules", "h", "family_wise"], "percent": true}}}
+ ],
  "open_failures": [
-  {"key": "amendment4_coverage", "result_json": "docs/research/coverage-report-1512/result.json", "page": "docs/research/coverage-report-1512-result.md",
-   "values": {}},
   {"key": "quarter_end_band", "result_json": "docs/research/day-type-scale-1402/result.json", "page": "docs/research/day-type-scale-1402-result.md",
    "values": {"qend": ["windows", "development", "groups", "pressure_day_type", "quarter_end_turn", "b90_closed", "means", "sc_s3c_ann_net"],
               "yend": ["windows", "development", "groups", "pressure_day_type", "year_end", "b90_closed", "means", "sc_s3c_ann_net"]}}
  ],
- "next": ["quarter_end_band", "registration"],
+ "next": ["quarter_end_family", "registration"],
  "scores": {
-  "record": "docs/research/state-calendar-1145/result.json",
-  "model": "sc_s3_robust",
-  "shown_as": "(s3), the base of (s3c), which is the base of (s3c-ann-net)",
+  "record": "docs/research/b2-star-1420/result.json",
+  "window": "development",
+  "model": "sc_s3c_ann_net",
   "not_supplied": ["gbm_funding"],
   "benchmarks": [
    {"key": "B1", "label": "B1"},
    {"key": "B1_prime", "label": "B1&prime;"},
-   {"key": "B2", "label": "B2"},
-   {"key": "mr_cal_a_base", "label": "spread_mr_fhs_mad20_f0.5"},
-   {"key": "spread_mr_ctx", "label": "spread_mr_ctx"}
+   {"key": "B2", "label": "B2"}
   ]
  },
  "evidence": [

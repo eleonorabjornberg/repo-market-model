@@ -127,9 +127,17 @@ def scores_record(repo):
 
 
 def failure_records(repo):
-    """The `result.json` of each open failure the source lists (#1532); each is a page input."""
+    """The `result.json` of each open failure and each passed check the source lists (#1532, #1574), and of each
+    figure a line reads from another record; each is a page input."""
     try:
-        return [f["result_json"] for f in (candidate_source(repo) or {}).get("open_failures", ())]
+        src = candidate_source(repo) or {}
+        out = []
+        for entry in (*src.get("open_failures", ()), *src.get("passed", ())):
+            specs = [s for s in entry["values"].values() if isinstance(s, dict)]
+            for rel in (entry["result_json"], *(s["result_json"] for s in specs)):
+                if rel not in out:
+                    out.append(rel)
+        return out
     except (TypeError, KeyError):
         return []
 
@@ -430,6 +438,33 @@ def current_model_plain(repo):
     return src, load_plain(repo)["current_model"]
 
 
+def _record_lines(repo, entries, templates, kind, links):
+    """One (key, html) line per entry of the source, its figures copied from result records. A figure is a path into
+    the entry's own `result_json`, or `{"result_json": ..., "path": [...], "percent": true}` for a figure of another
+    record, shown as a percentage to one place when `percent` is set. Refused when an entry has no plain line or a
+    path is absent."""
+    lines = []
+    for entry in entries:
+        template = templates.get(entry["key"])
+        if not template:
+            raise ResearchError(f"{SUMMARY}: the {kind} {entry['key']} of {CANDIDATE} has no plain line")
+        values = {}
+        for name, spec in entry["values"].items():
+            rel, path, percent = entry["result_json"], spec, False
+            if isinstance(spec, dict):
+                rel, path, percent = spec["result_json"], spec["path"], bool(spec.get("percent"))
+            node = json.loads(read(repo, rel))
+            for step in path:
+                try:
+                    node = node[step]
+                except (KeyError, IndexError, TypeError):
+                    raise ResearchError(f"{rel}: no {'/'.join(map(str, path))} for {entry['key']}") from None
+            values[name] = f"{100 * node:.1f}%" if percent else format_value(node)
+        link = f' (<a href="{BLOB}{esc(entry["page"])}">the record</a>)' if links else ""
+        lines.append((entry["key"], esc(template.format(**values)) + link))
+    return lines
+
+
 def failure_lines(repo, links=False):
     """One (key, html) line for each open failure the source lists (#1532), its figures copied from the failure's own
     `result.json` through the paths the source gives. Refused when a failure has no plain line or a path is absent.
@@ -438,24 +473,17 @@ def failure_lines(repo, links=False):
     if not found:
         return []
     src, words = found
-    lines = []
-    for failure in src.get("open_failures", ()):
-        template = words["failures"].get(failure["key"])
-        if not template:
-            raise ResearchError(f"{SUMMARY}: the open failure {failure['key']} of {CANDIDATE} has no plain line")
-        record = json.loads(read(repo, failure["result_json"]))
-        values = {}
-        for name, path in failure["values"].items():
-            node = record
-            for step in path:
-                try:
-                    node = node[step]
-                except (KeyError, IndexError, TypeError):
-                    raise ResearchError(f"{failure['result_json']}: no {'/'.join(map(str, path))} for {failure['key']}") from None
-            values[name] = format_value(node)
-        link = f' (<a href="{BLOB}{esc(failure["page"])}">the record</a>)' if links else ""
-        lines.append((failure["key"], esc(template.format(**values)) + link))
-    return lines
+    return _record_lines(repo, src.get("open_failures", ()), words["failures"], "open failure", links)
+
+
+def passed_lines(repo, links=False):
+    """One (key, html) line for each check the candidate passes (`passed` of the source, #1574), built as
+    `failure_lines` builds a failure's: no figure is typed in the wording."""
+    found = current_model_plain(repo)
+    if not found:
+        return []
+    src, words = found
+    return _record_lines(repo, src.get("passed", ()), words.get("passes", {}), "passed check", links)
 
 
 def current_model_html(repo, links=False):
@@ -476,7 +504,8 @@ def current_model_html(repo, links=False):
         if not waiting:
             raise ResearchError(f"{SUMMARY}: {CANDIDATE} waits on {state['waiting_on']}, which has no plain line")
         parts.append(words["not_registered"].format(waiting=waiting))
-    body = " ".join(esc(x) for x in parts) + " " + " ".join(line for _, line in failure_lines(repo, links))
+    body = " ".join(esc(x) for x in parts) + " " + " ".join(
+        line for _, line in passed_lines(repo, links) + failure_lines(repo, links))
     return f'<p class="rs-current"><b>Current model.</b> {body} <span class="rs-tag">{esc(DEV_LABEL)}</span></p>'
 
 
@@ -575,7 +604,8 @@ CANDIDATE_SPLITS = (("regime", "by regime"), ("target_day_type", "by target-day 
 #: What the page calls each evidence page of the candidate record: the page is for a lay reader, so no issue number.
 EVIDENCE_NAMES = {1145: "state-scaled calendar study", 1115: "calendar-terms study",
                   1141: "walk-forward calibration study", 1255: "capped-candidate study", 1288: "announced-settlement study"}
-SPLIT_BENCHMARKS = (("B1", "B1"), ("B1_prime", "B1&prime;"))  # keys only: the page prints their plain names (#1355)
+#: The benchmarks of the second table, by key: the page prints their plain names (#1355). B2 joined them with #1578.
+SPLIT_BENCHMARKS = (("B1", "B1"), ("B1_prime", "B1&prime;"), ("B2", "B2"))
 
 
 def read_mean_d(interval):
@@ -602,13 +632,17 @@ def _pair(group, model, bench):
 def candidate_standings(root):
     """The standings of the candidate `CANDIDATE` names, scored from the committed record it points to, or None.
 
-    Nothing is computed: every mean, difference, skill and interval is copied from the record. None when the record
-    does not hold the model it names, or the candidate file cannot be read.
+    Nothing is computed: every mean, difference, skill and interval is copied from the record. `scores.window`, when
+    the file has one, names the window of a record that holds several (#1578). None when the record does not hold the
+    model it names, or the candidate file cannot be read.
     """
     try:
         rec = json.loads((root / CANDIDATE).read_text(encoding="utf-8"))
         scores_path = rec["scores"]["record"]
         score = json.loads((root / scores_path).read_text(encoding="utf-8"))
+        window = rec["scores"].get("window")
+        if window:  # a record of several windows (#1420's): the one the candidate file names, its groups and notes (#1578)
+            score = {**score, **score["windows"][window]}
         model = rec["scores"]["model"]
         name = rec["candidate"]
     except (OSError, ValueError, KeyError, TypeError):
@@ -726,7 +760,11 @@ def candidate_standings_html(st):
         return f'{100 * pair["skill"]:+.1f}%' + (f' [{100 * lo[0]:+.1f}%, {100 * lo[1]:+.1f}%]' if lo else "")
 
     def mean(x):
-        return NOT_MEASURED if x is None else f"{x:.2f}"
+        return NOT_MEASURED if x is None else f"{x:.3f}"
+
+    def both(pair):
+        """A split cell (#1578, #1112): the gain with its interval and reading, then the skill with its interval."""
+        return f"{mean_d(pair)}; {skill(pair)}" if pair else NOT_MEASURED
 
     head = "".join(f'<th scope="col">Accuracy score, {esc(g["caption"])} ({g["days"]} days)</th>'
                    f'<th scope="col">Gain over the comparison model, bp [90%], read</th>'
@@ -738,7 +776,7 @@ def candidate_standings_html(st):
         body.append(f'<tr><th scope="row">{esc(shown)}</th>{cells}</tr>')
     body.append(f'<tr><th scope="row">{own}</th>' + "".join(
         f'<td>{mean(g["own"])}</td><td>&mdash;</td><td>&mdash;</td>' for g in st["groups"]) + '</tr>')
-    split_head = "".join(f'<th scope="col">Gain over {esc(names[key].lower())} (bp) [90%], read</th>'
+    split_head = "".join(f'<th scope="col">Gain over {esc(names[key].lower())}, bp [90%], read; as a share of its score [90%]</th>'
                          for key, _ in SPLIT_BENCHMARKS)
     split_body = []
     for split in st["splits"]:
@@ -747,7 +785,7 @@ def candidate_standings_html(st):
         for row in split["rows"]:
             split_body.append(
                 f'<tr><th scope="row">{esc(row["label"])}</th><td>{row["days"]}</td><td>{mean(row["own"])}</td>'
-                + "".join(f'<td>{mean_d(row["pairs"][b])}</td>' for b, _ in SPLIT_BENCHMARKS) + '</tr>')
+                + "".join(f'<td>{both(row["pairs"][b])}</td>' for b, _ in SPLIT_BENCHMARKS) + '</tr>')
     beside = ", ".join(esc(shown) for _, shown in st["benchmarks"][:-1]) + " and " + esc(st["benchmarks"][-1][1])
     missing = ("".join(f"No row compares it with {esc(names.get(b, 'another model').lower())}: its forecasts were not supplied to the study that scored it. "
                        for b in st.get("missing") or ()))

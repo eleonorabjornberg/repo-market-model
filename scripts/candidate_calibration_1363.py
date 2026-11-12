@@ -3,8 +3,8 @@
 A development study, never a verdict. It measures (s3c-ann-net), the H5 candidate, at the 18:00 decision instant: the empirical
 coverage of the 50% and 90% bands, every grid quantile's hit rate, the randomised PIT of #970, by regime and by day type with each
 group's size, and the serial dependence of the hit sequences at each lead (Christoffersen's independence test, its permutation
-p-value and the protocol's own thinned reading), beside B1, B1' and B2. Nothing is adopted. B4 (#1360) is not on main and is not
-compared.
+p-value and the protocol's own thinned reading), beside B1, B1' and B2. Nothing is adopted. B4 (#1360) was not on main when the study ran and is
+not compared.
 
 Every choice is in `metadata/candidate_calibration_1363.json`, which `walk` and `score` refuse to read unless it is committed and
 unchanged. The only slow step is `walk`: it re-walks (s3c-ann-net) with the code of `scripts/s3c_announced_settlement_1288.py`
@@ -757,8 +757,13 @@ def answer(r: dict) -> List[str]:
     dev, y26 = r["windows"]["development"], r["windows"].get("2026")
     cand = lambda rep, split, label: _group(rep, CANDIDATE, split, label)  # noqa: E731
     pooled, ref = cand(dev, "pooled", "all cells"), _group(dev, "B1_prime", "pooled", "all cells")
+    verb = {"consistent": "is consistent with its nominal coverage", "under-covers": "covers less than its nominal share",
+            "over-covers": "covers more than its nominal share"}
     out = ["## The answer", "",
-           f"**Development window, all cells ({pooled['target_days']} target days).** (s3c-ann-net) covers the 50% band {_p(pooled['band50']['closed'])}{_iv(pooled['band50']['closed_interval'])} "
+           f"Over all cells of the development window the candidate's 90% band {verb.get(pooled['band90']['reading'], pooled['band90']['reading'])} and its 50% band "
+           f"{verb.get(pooled['band50']['reading'], pooled['band50']['reading'])}. The groups where a band is off are listed below, largest gap first; the last "
+           "paragraph says whether a miss makes another miss more likely.", "",
+           f"**Development window, all cells ({pooled['target_days']} target days).** The candidate covers the 50% band {_p(pooled['band50']['closed'])}{_iv(pooled['band50']['closed_interval'])} "
            f"({pooled['band50']['reading']}) and the 90% band {_p(pooled['band90']['closed'])}{_iv(pooled['band90']['closed_interval'])} ({pooled['band90']['reading']}); "
            f"B1' covers the 90% band {_p(ref['band90']['closed'])}{_iv(ref['band90']['closed_interval'])}. "
            f"Its q05 sits above {_p(pooled['levels']['0.05']['strict'])} of outcomes (nominal 5.0%; {pooled['levels']['0.05']['reading']}) and its q95 above "
@@ -767,7 +772,7 @@ def answer(r: dict) -> List[str]:
         g = cand(y26, "pooled", "all cells")
         out.append(f"On the 2026 days (shown apart, {g['target_days']} target days) the 50% band covers {_p(g['band50']['closed'])}{_iv(g['band50']['closed_interval'])} "
                    f"({g['band50']['reading']}) and the 90% band {_p(g['band90']['closed'])}{_iv(g['band90']['closed_interval'])} ({g['band90']['reading']}).")
-    out += ["", "**Where the bands are read off on the development window (candidate; size = coverage less nominal; groups of 20 or more target days):**", ""]
+    out += ["", "**Where a band is off on the development window** (candidate; the size in brackets is coverage less nominal; groups of 20 or more target days):", ""]
     for split, title in (("regime", "regimes"), ("target_day_type", "day types"), ("pressure_day_type", "pressure-day types")):
         parts = []
         for g in dev["models"][CANDIDATE]["groups"]:
@@ -781,7 +786,7 @@ def answer(r: dict) -> List[str]:
     c = dev["models"][CANDIDATE]["clustering"]
     a = [x for block in c["all"].values() for x in block.values()]
     g = [x for by_lead in c["regime"].values() for block in by_lead.values() for x in block.values()]
-    out += ["", f"**Clustering.** Of the {len(a)} hit sequences of the candidate (four events, two tie rules, five leads), {sum(x['holm_clusters'] for x in a)} are read as serially dependent "
+    out += ["", f"**Do misses follow misses?** Of the {len(a)} hit sequences of the candidate (four events, two tie rules, five leads), {sum(x['holm_clusters'] for x in a)} are read as serially dependent "
             f"(Holm-adjusted permutation p below 0.05); inside regimes {sum(x['holm_clusters'] for x in g)} of {len(g)}. "
             f"After a miss of the 90% band the next day's miss chance at lead 1 is {_p(c['all']['1']['band90/strict']['p_miss_after_miss'])} against "
             f"{_p(c['all']['1']['band90/strict']['p_miss_after_hit'])} after a hit; the longest run of band misses at lead 1 is {c['all']['1']['band90/strict']['longest_run']} days. "
@@ -790,75 +795,125 @@ def answer(r: dict) -> List[str]:
     return out
 
 
+POOLED_GUIDE = ("The table shows, for the candidate and the three benchmarks over all cells, how often each band held the outcome (with its 90% interval and "
+                "reading) and the share of outcomes below q05 and q95.")
+
+
 def render(r: dict) -> str:
     dev, y26 = r["windows"].get("development"), r["windows"].get("2026")
     lines = [
-        "# The candidate's calibration by period and day type, and whether its misses cluster in time (#1363)",
+        "# The candidate's calibration by period and day type, and whether its misses cluster in time",
         "",
-        "**Hypothesis and step:** H5 (primary goal), registration design: step 3 evidence for the known-limits section of the registration and the validation report. "
-        "**Development data, not a verdict** (scoring protocol v1, #640). Nothing is registered or published, no record is edited, and nothing is adopted. "
-        f"Generated by `scripts/candidate_calibration_1363.py page` from `docs/research/candidate-calibration-1363/result.json`; declared in "
-        f"`metadata/candidate_calibration_1363.json` before any figure. Candidate: (s3c-ann-net) at the 18:00 decision instant, walked unchanged. "
-        f"Panel digest `{r['panel_sha256']}`. {r['b4']}.",
+        "Terms such as candidate, cell, band, regime and B1' are defined in the [glossary](glossary.md). Issue numbers and files are in the Record at the end.",
+        "",
+        "## The question",
+        "",
+        "**Do the candidate's bands hold the share of outcomes they name, in every period and on every type of day, and do its misses come in runs?** "
+        "The answer is evidence for the known-limits section of the registration and for the validation report.",
         "",
     ]
     if dev is None:
         return "\n".join(lines + ["The development window's walk is not in this record.", ""])
+    lines += answer(r)
     lines += [
-        "**What kind of look this is.** The development window (decision days whose five targets are on or before 2025-12-31) decides what is said here; the 2026 "
-        "days (targets 2026-01-02 to 2026-09-03) were already seen by #845, #1229, #1255, #1273, #1288 and #1321, are shown apart and decide nothing. "
-        f"Intervals are 90% stationary-bootstrap percentile intervals of a rate (mean block {int(r['block'])} target days, {r['reps']} resamples, seed {r['seed']}) "
-        "over the group's target days in date order: the current method, which #1221 questions and #1228 will decide, so no reading of a day-type group is a finding. "
-        f"Groups of fewer than {MIN_GROUP_DAYS} target days are listed with their rates and not read. A band is read 'under-covers' or 'over-covers' when its interval lies "
-        "wholly below or above the nominal; a quantile is read 'too high' when the interval of the share of outcomes strictly below it lies wholly above its level and 'too low' when "
-        "the interval of the share at or below it lies wholly below. Nothing is corrected for the number of readings.",
+        "## Data",
         "",
-        "**Reproduction.** Each walk's mean grid CRPS (candidate, B1, B1' and B2, all cells) equals the 18:00 record of #1314 "
-        "(`docs/research/s3c-ann-net-1800-1314/announced-settlement-1800.json`) to 1e-9, or the script refused to write this record.",
+        "The candidate, (s3c-ann-net), at the 18:00 decision instant, walked unchanged, with B1, B1' and B2 beside it. The answer rests on the development "
+        "window (decision days whose five targets are on or before 2025-12-31); the 2026 days (targets 2026-01-02 to 2026-09-03) had already been seen by "
+        "earlier studies, are shown at the end and decide nothing.",
+        "",
+        "## Method",
+        "",
+        "For every group of days, the study counts how often the outcome fell inside the candidate's 50% and 90% bands and below its q05 and q95, and sets "
+        "that against the share each one names. A band or quantile is read as off only when the whole 90% interval of its rate lies on one side of that "
+        "share. Each sequence of hits and misses is then tested for runs: if misses were independent, a miss would be no more likely after a miss than "
+        "after a hit.",
+        "",
+        "## Result on the development window",
+        "",
+        f"{dev['decision_days']} decision days ({dev['first_decision']} to {dev['last_decision']}), {dev['cells']} cells, last target {dev['last_target']}.",
+        "",
+        POOLED_GUIDE,
+        "",
+    ] + group_table(dev, MODELS, "pooled") + [""]
+    details = [
+        "## Details",
+        "",
+        f"**Intervals.** Intervals are 90% stationary-bootstrap percentile intervals of a rate (mean block {int(r['block'])} target days, {r['reps']} resamples, "
+        f"seed {r['seed']}) over the group's target days in date order. This is the current method; it has been questioned and a ruling on it is pending, so "
+        "no reading of a day-type group is a finding.",
+        "",
+        f"**Readings.** Groups of fewer than {MIN_GROUP_DAYS} target days are listed with their rates and not read. A band is read 'under-covers' or "
+        "'over-covers' when its interval lies wholly below or above the nominal; a quantile is read 'too high' when the interval of the share of outcomes "
+        "strictly below it lies wholly above its level and 'too low' when the interval of the share at or below it lies wholly below. Nothing is corrected "
+        "for the number of readings.",
         "",
     ]
-    lines += answer(r)
-    for name, rep in (("The development window", dev), ("The 2026 development days (shown apart; decide nothing)", y26)):
+    other = ["## Other tables", ""]
+    for name, rep in (("Development window", dev), ("The 2026 development days (shown apart; decide nothing)", y26)):
         if rep is None:
             continue
-        lines += [f"## {name}", "",
-                  f"{rep['decision_days']} decision days ({rep['first_decision']} to {rep['last_decision']}), {rep['cells']} cells, last target {rep['last_target']}.", "",
-                  "### Pooled and by lead", ""]
-        lines += group_table(rep, MODELS, "pooled") + [""] + group_table(rep, [CANDIDATE], "lead") + [""]
-        lines += ["### By regime of the target day", ""] + group_table(rep, MODELS, "regime") + [""]
-        lines += ["### By day type of the target day (the types overlap; ordinary is none of them)", ""] + group_table(rep, [CANDIDATE, "B1_prime"], "target_day_type") + [""]
-        lines += ["### By pressure-day type of the target day", ""] + group_table(rep, [CANDIDATE, "B1_prime"], "pressure_day_type") + [""]
-        lines += ["### Every grid quantile, all cells (candidate)", "", "| level | share strictly below | share at or below |", "|---|---|---|"]
+        block = []
+        if rep is not dev:
+            block += [f"{rep['decision_days']} decision days ({rep['first_decision']} to {rep['last_decision']}), {rep['cells']} cells, last target {rep['last_target']}.", "",
+                      "### Pooled", "", POOLED_GUIDE, ""] + group_table(rep, MODELS, "pooled") + [""]
+        block += ["### By lead", "", "The candidate alone, one row per lead.", ""] + group_table(rep, [CANDIDATE], "lead") + [""]
+        block += ["### By regime of the target day", "", "The same columns for all four models, one block per regime.", ""] + group_table(rep, MODELS, "regime") + [""]
+        block += ["### By day type of the target day (the types overlap; ordinary is none of them)", "",
+                  "These day types are calendar flags, and one day can carry several, so the rows do not add up to the whole. The candidate is shown beside B1'.", ""] + group_table(rep, [CANDIDATE, "B1_prime"], "target_day_type") + [""]
+        block += ["### By pressure-day type of the target day", "", "The same comparison on the pressure-day labels the quarter-end studies use.", ""] + group_table(rep, [CANDIDATE, "B1_prime"], "pressure_day_type") + [""]
+        block += ["### Every grid quantile, all cells (candidate)", "",
+                  "For a calibrated model each share, read as a fraction, equals the level in the first column.", "", "| level | share strictly below | share at or below |", "|---|---|---|"]
         for tau, v in rep["models"][CANDIDATE]["all_levels"].items():
-            lines.append(f"| {tau} | {_p(v['strict'], 2)} | {_p(v['at_or_below'], 2)} |")
-        lines += ["", "### Randomised PIT (seed 1363; the range is over seeds 1364 to 1383)", ""]
+            block.append(f"| {tau} | {_p(v['strict'], 2)} | {_p(v['at_or_below'], 2)} |")
+        block += ["", "### Randomized PIT (seed 1363; the range is over seeds 1364 to 1383)", "",
+                  "The PIT is the probability the forecast gave to outcomes at or below the one that happened; for a calibrated model the six bins hold ten, "
+                  "fifteen, twenty-five, twenty-five, fifteen and ten percent of the cells.", ""]
         for split in ("pooled", "regime", "target_day_type", "pressure_day_type"):
-            lines += [f"{split}, candidate:", ""] + pit_table(rep, CANDIDATE, split) + [""]
-        lines += ["pooled, the references:", ""]
+            block += [f"{split}, candidate:", ""] + pit_table(rep, CANDIDATE, split) + [""]
+        block += ["pooled, the references:", ""]
         for model in REFERENCES:
-            lines += [f"{LABELS[model]}:", ""] + pit_table(rep, model, "pooled") + [""]
-        lines += ["### Readings that are not 'consistent' (candidate)", ""]
+            block += [f"{LABELS[model]}:", ""] + pit_table(rep, model, "pooled") + [""]
+        block += ["### Readings that are not 'consistent' (candidate)", "",
+                  "The full list behind the summary in the answer, largest first.", ""]
         fl = flagged(rep, CANDIDATE)
-        lines.append(f"{len(fl)} of {readings_made(rep, CANDIDATE)} readings in tested groups. Sizes are observed less nominal for a band, distance of the level from [strict, at-or-below] for a quantile.")
-        lines += ["", "| split | group | target days | what | reading | size |", "|---|---|---|---|---|---|"]
+        block.append(f"{len(fl)} of {readings_made(rep, CANDIDATE)} readings in tested groups. Sizes are observed less nominal for a band, distance of the level from [strict, at-or-below] for a quantile.")
+        block += ["", "| split | group | target days | what | reading | size |", "|---|---|---|---|---|---|"]
         for split, lab, what, reading, size, days in sorted(fl, key=lambda x: -abs(x[4])):
-            lines.append(f"| {split} | {lab} | {days} | {what} | {reading} | {_pp(size)} |")
-        lines += ["", "### Do the misses cluster in time?", "",
+            block.append(f"| {split} | {lab} | {days} | {what} | {reading} | {_pp(size)} |")
+        block += ["", "### Do the misses cluster in time?", "",
+                  "The first table counts, for each model, how many of its hit sequences are read as serially dependent; the second gives the detail.", "",
                   "Christoffersen's independence test on each lead's sequence over the scored decision days (no transition across a gap or, for the regime rows, a regime change); the permutation p is the reading, "
                   "Holm-adjusted at 0.05 over the 40 sequences of a model and window (per regime for the regime rows).", ""]
-        lines += clustering_counts(rep) + [""] + clustering_table(rep, [CANDIDATE, "B1_prime", "B2"]) + [""]
-        lines += ["#### The protocol's own reading (thinned: every h-th decision day at lead h; regime of the decision day), q05 and q95, strict rule", "",
+        block += clustering_counts(rep) + [""] + clustering_table(rep, [CANDIDATE, "B1_prime", "B2"]) + [""]
+        block += ["#### The protocol's own reading (thinned: every h-th decision day at lead h; regime of the decision day), q05 and q95, strict rule", "",
+                  "These are the two tests the scoring protocol applies: a Kupiec test of the hit rate and an independence test, each with its p-value.", "",
                   "| model | lead | level | regime | n | hits | Kupiec p | independence p |", "|---|---|---|---|---|---|---|---|"]
         for model in (CANDIDATE, "B1_prime"):
             for c in rep["models"][model]["protocol"]:
                 if c["rule"] == "strict":
                     ind = "n/a" if c["independence_p"] is None else f"{c['independence_p']:.3f}"
-                    lines.append(f"| {LABELS[model]} | {c['lead']} | q{c['level']:g} | {c['regime']} | {c['n']} | {c['hits']} | {c['kupiec_p']:.3f} | {ind} |")
-        lines.append("")
-    lines += ["## What it does and does not show", "",
+                    block.append(f"| {LABELS[model]} | {c['lead']} | q{c['level']:g} | {c['regime']} | {c['n']} | {c['hits']} | {c['kupiec_p']:.3f} | {ind} |")
+        block.append("")
+        other += [f"### {name}", ""] + [("#" + line if line.startswith("###") else line) for line in block]
+    lines += ["## What it means, and its limits", "",
               "It shows how the candidate's bands and quantiles hold on seen days, by regime and by day type, and whether its tail and band misses are serially dependent. "
               "It does not show that any group is miscalibrated for the next days, nothing here is a verdict, and a miss rate that moves with the regime would also reject independence: "
-              "the regime rows and the day-type tables are there to tell the two apart. B4 (#1360) is not compared.", ""]
+              "the regime rows and the day-type tables are there to tell the two apart. B4 is not compared.", ""]
+    lines += details + other
+    lines += ["## Record", "",
+              "- Study: #1363. Hypothesis and step: H5 (primary goal), registration design: step 3 evidence for the known-limits section of the registration and the "
+              "validation report.",
+              "- Status: **development data, not a verdict** (scoring protocol v1, #640). Nothing is registered or published, no record is edited, and nothing is adopted.",
+              "- Generated by `scripts/candidate_calibration_1363.py page` from `docs/research/candidate-calibration-1363/result.json`; declared in "
+              "`metadata/candidate_calibration_1363.json` before any figure.",
+              f"- Panel digest `{r['panel_sha256']}`.",
+              "- Reproduction: each walk's mean grid CRPS (candidate, B1, B1' and B2, all cells) equals the 18:00 record of #1314 "
+              "(`docs/research/s3c-ann-net-1800-1314/announced-settlement-1800.json`) to 1e-9, or the script refused to write this record.",
+              "- B4 (#1360, a plain quantile regression on reserves and calendar days) is not compared on this page: it was not on main when the study "
+              "ran. It has merged since, and its own page compares it with the candidate (`docs/research/b4-quantile-regression-1360-result.md`).",
+              "- The 2026 days were already seen by #845, #1229, #1255, #1273, #1288 and #1321.",
+              "- The interval method: #1221 questions it and #1228 will decide.", ""]
     return "\n".join(lines)
 
 

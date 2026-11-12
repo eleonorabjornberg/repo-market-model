@@ -135,6 +135,30 @@ class OneSource(unittest.TestCase):
                 shown = research_view.format_value(node)
                 self.assertIn(shown, dict(research_view.failure_lines(ROOT))[f["key"]], name)
 
+    def test_every_passed_check_has_a_line_with_the_figures_of_its_records(self):
+        """#1574: a check the candidate passes is shown from records too, and a figure of another record is read
+        from that record."""
+        passed = source().get("passed", ())
+        lines = dict(research_view.passed_lines(ROOT, links=True))
+        self.assertEqual([p["key"] for p in passed], list(lines))
+        text = visible(PAGE)
+        for p in passed:
+            self.assertIn(visible(dict(research_view.passed_lines(ROOT))[p["key"]]), text)
+            self.assertIn(p["page"], lines[p["key"]])
+            for name, spec in p["values"].items():
+                rel, path = (spec["result_json"], spec["path"]) if isinstance(spec, dict) else (p["result_json"], spec)
+                self.assertIn(rel, research_view.input_files(ROOT), "the record is not a page input")
+                node = json.loads((ROOT / rel).read_text(encoding="utf-8"))
+                for step in path:
+                    node = node[step]
+                percent = isinstance(spec, dict) and spec.get("percent")
+                shown = f"{100 * node:.1f}%" if percent else research_view.format_value(node)
+                self.assertIn(shown, lines[p["key"]], name)
+
+    def test_a_check_is_not_both_passed_and_failing(self):
+        src = source()
+        self.assertFalse({p["key"] for p in src.get("passed", ())} & {f["key"] for f in src["open_failures"]})
+
     def test_the_page_names_the_incumbent_the_candidate_and_whether_it_is_registered(self):
         src = source()
         plain = json.loads((ROOT / research_view.SUMMARY).read_text(encoding="utf-8"))

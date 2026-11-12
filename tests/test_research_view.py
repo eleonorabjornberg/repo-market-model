@@ -334,7 +334,7 @@ class Standings(unittest.TestCase):
                 for v in x:
                     collect(v)
             elif isinstance(x, float):
-                allowed.update({f"{x:.2f}", f"{x:+.2f}", f"{100 * x:.1f}", f"{100 * x:+.1f}"})
+                allowed.update({f"{x:.2f}", f"{x:.3f}", f"{x:+.2f}", f"{100 * x:.1f}", f"{100 * x:+.1f}"})
             elif isinstance(x, int) and not isinstance(x, bool):
                 allowed.add(str(x))
 
@@ -393,7 +393,10 @@ class CandidateStandings(unittest.TestCase):
         return json.loads((ROOT / self.CANDIDATE).read_text(encoding="utf-8"))
 
     def scores(self):
-        return json.loads((ROOT / self.record()["scores"]["record"]).read_text(encoding="utf-8"))
+        """The record's groups and notes as the page reads them: the window `scores.window` names, when it names one."""
+        doc = json.loads((ROOT / self.record()["scores"]["record"]).read_text(encoding="utf-8"))
+        window = self.record()["scores"].get("window")
+        return {**doc, **doc["windows"][window]} if window else doc
 
     def best(self):
         return PAGE[at('id="best-performer"'):at('id="hypotheses"')]
@@ -429,14 +432,17 @@ class CandidateStandings(unittest.TestCase):
 
     def test_the_record_names_the_ruled_candidate_and_its_evidence(self):
         rec = self.record()
-        self.assertEqual(rec["scores"]["model"], "sc_s3_robust")
-        self.assertEqual(rec["candidate"], "sc_s3c_ann_net")  # #1310: (s3c-ann-net), (s3c) with announced settlement terms sized by the net; the record still scores (s3), its base's base
+        self.assertEqual(rec["scores"]["model"], "sc_s3c_ann_net")  # #1578: the candidate's own walk, not its base's
+        self.assertEqual(rec["candidate"], "sc_s3c_ann_net")
+        self.assertNotIn("shown_as", rec["scores"])
         self.assertEqual(rec["base"], "sc_s3c")
         self.assertEqual(rec["cap"]["margin_bp"], 0)
         self.assertEqual(rec["replaces"], "sc_s3c, (s3c): (s3) of the state-scaled calendar study capped at the SRF line")
         self.assertEqual(rec["date"], "2026-10-29")
         self.assertTrue(rec["earlier_ruling"]["url"].startswith("https://github.com/eleonorabjornberg/repo-market-model/issues/1151#issuecomment-"))
-        self.assertEqual(rec["scores"]["record"], "docs/research/state-calendar-1145/result.json")
+        self.assertEqual(rec["scores"]["record"], "docs/research/b2-star-1420/result.json")
+        self.assertEqual(rec["scores"]["window"], "development")
+        self.assertEqual([b["key"] for b in rec["scores"]["benchmarks"]], ["B1", "B1_prime", "B2"])
         self.assertEqual(rec["ruling"], "https://github.com/eleonorabjornberg/repo-market-model/issues/1310")
         self.assertEqual({e["issue"] for e in rec["evidence"]}, {1145, 1115, 1141, 1255, 1288})
         for e in rec["evidence"]:
@@ -458,13 +464,15 @@ class CandidateStandings(unittest.TestCase):
                 self.assertIn(e["mean_d_page"], block)
         self.assertNotRegex(block, r"(?<![&\w])#\d+")
         self.assertIn("2026-10-29", block)
-        self.assertIn(html.escape(plain["base"]), block)  # #1259, #1310: the tables are the base's, and the page says so
+        self.assertNotIn(html.escape(plain["base"]), block)  # #1578: the tables are the candidate's own, so no base note
 
-    def test_it_is_scored_beside_all_five_and_labelled(self):
+    def test_it_is_scored_beside_b1_b1_prime_and_b2_and_labelled(self):
         block = self.block()
         models = json.loads((ROOT / research_view.SUMMARY).read_text(encoding="utf-8"))["models"]
-        for key in ("B1", "B1_prime", "B2", "mr_cal_a_base", "spread_mr_ctx"):
+        for key in ("B1", "B1_prime", "B2"):
             self.assertIn(f'<th scope="row">{html.escape(models[key]["name"])}</th>', block)
+        for key in ("mr_cal_a_base", "spread_mr_ctx"):
+            self.assertNotIn(f'<th scope="row">{html.escape(models[key]["name"])}</th>', block)
         self.assertNotIn(f'<th scope="row">{models["gbm_funding"]["name"]}</th>', block)
         self.assertIn(research_view.DEV_LABEL, block)
         self.assertNotIn(research_view.PROVISIONAL_LABEL, block)  # it reads the calendar at the target day
@@ -472,7 +480,7 @@ class CandidateStandings(unittest.TestCase):
 
     def test_it_shows_the_mean_d_interval_and_reads_its_bound(self):
         grid = self.scores()["groups"]["pooled"]["all decision days"]["grid_crps"]
-        pair = grid["vs"]["sc_s3_robust"]["B1_prime"]
+        pair = grid["vs"]["sc_s3c_ann_net"]["B1_prime"]
         lo, hi = pair["difference_interval"]
         self.assertGreater(lo, 0)
         block = self.block()
@@ -482,12 +490,64 @@ class CandidateStandings(unittest.TestCase):
         self.assertIn("better", block)
         self.assertIn("ruling on which interval is read", block)
 
-    def test_it_shows_the_skill_over_the_replaced_candidate_with_its_interval(self):
-        pair = self.scores()["groups"]["pooled"]["all decision days"]["grid_crps"]["vs"]["sc_s3_robust"]["mr_cal_a_base"]
-        lo, hi = pair["skill_interval"]
-        self.assertEqual((f"{100 * pair['skill']:+.1f}%", f"{100 * lo:+.1f}%", f"{100 * hi:+.1f}%"),
-                         ("+4.3%", "+1.8%", "+6.4%"))
-        self.assertIn("+4.3% [+1.8%, +6.4%]", self.block())
+    def test_the_candidates_own_row_reproduces_its_development_score_from_its_record(self):
+        """#1578 (her ruling of 11 November 2026, option "own"): the standings row is the frozen candidate's own walk.
+
+        The development mean grid CRPS is 1.601 in the record (the #1388, #1420 and #1360 pages print it), not its
+        base's 1.624, and the page prints it as the record holds it, to three places.
+
+        Not a guard, so no mutation is claimed; pointing `scores` in `h5-candidate.json` back at #1145's record fails
+        this test (and the record test) at once.
+        """
+        own = self.scores()["groups"]["pooled"]["all decision days"]["grid_crps"]["means"]["sc_s3c_ann_net"]
+        self.assertEqual(f"{own:.3f}", "1.601")
+        block = self.block()
+        self.assertIn("<td>1.601</td>", block)
+        self.assertNotIn("1.624", block)
+        self.assertIn("The candidate</th>", block)
+        self.assertNotIn("base model", block)
+
+    def test_every_standings_cell_carries_both_intervals(self):
+        """#1578, closing #1112 (#1009's ruling): each gain cell shows the studentized skill interval and the mean-d
+        interval, and the mean-d bound is read. Two brackets in every cell of every gain column, in both tables.
+
+        Recorded mutation: in `scripts/research_view.py`, `candidate_standings_html`, drop `skill(...)` from the
+        split cells: `test_every_standings_cell_carries_both_intervals` failed with AssertionError (one bracket).
+        """
+        block = self.block()
+        tables = re.findall(r'<table class="rs-standings">.*?</table>', block, flags=re.S)
+        self.assertEqual(len(tables), 2)
+        rows = [r for r in re.findall(r"<tr>.*?</tr>", tables[0], flags=re.S)[1:] if "The candidate</th>" not in r]
+        self.assertEqual(len(rows), 3)  # B1, B1' and B2
+        for row in rows:
+            cells = re.findall(r"<td>(.*?)</td>", row)
+            self.assertEqual(len(cells) % 3, 0)
+            for k in range(0, len(cells), 3):
+                self.assertEqual(cells[k + 1].count("["), 1, cells[k + 1])  # mean d with its interval
+                self.assertRegex(cells[k + 1], r"better|worse|no difference")
+                self.assertEqual(cells[k + 2].count("["), 1, cells[k + 2])  # skill with its interval
+        for row in [r for r in re.findall(r"<tr>.*?</tr>", tables[1], flags=re.S)[1:] if "colspan" not in r]:
+            gains = re.findall(r"<td>(.*?)</td>", row)[2:]
+            self.assertEqual(len(gains), 3, row)
+            for cell in gains:
+                self.assertEqual(cell.count("["), 2, cell)
+                self.assertRegex(cell, r"better|worse|no difference")
+
+    def test_the_split_table_is_set_beside_b1_b1_prime_and_b2(self):
+        scores = self.scores()
+        block = self.block()
+        for kind in ("regime", "target_day_type"):
+            for label, group in scores["groups"][kind].items():
+                pair = group["grid_crps"]["vs"]["sc_s3c_ann_net"]["B2"]
+                lo, hi = pair["skill_interval"]
+                self.assertIn(f"{100 * pair['skill']:+.1f}% [{100 * lo:+.1f}%, {100 * hi:+.1f}%]", block)
+
+    def test_the_standings_state_the_hac_caveat_beside_both_intervals(self):
+        """#1112: the page states that the lag-10 error is understated about 2x after 2020 (her wording of 4 November)."""
+        block = self.block()
+        self.assertIn(research_view.esc(research_view.INTERVAL_CAVEAT_TEXT), block)
+        self.assertRegex(block, r"(?i)two-sided 90% interval")
+        self.assertIn("studentized", block)
 
     def test_the_provisional_mark_follows_the_record(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -527,7 +587,7 @@ class CandidateStandings(unittest.TestCase):
                 for v in x:
                     add(v)
             elif isinstance(x, float):
-                allowed.update({f"{x:.2f}", f"{x:+.2f}", f"{100 * x:.1f}", f"{100 * x:+.1f}"})
+                allowed.update({f"{x:.2f}", f"{x:.3f}", f"{x:+.2f}", f"{100 * x:.1f}", f"{100 * x:+.1f}"})
             elif isinstance(x, int) and not isinstance(x, bool):
                 allowed.add(str(x))
 
@@ -557,11 +617,12 @@ class CandidateStandings(unittest.TestCase):
             self.copy_tree(tmp)
             score = Path(tmp) / self.record()["scores"]["record"]
             doc = json.loads(score.read_text(encoding="utf-8"))
-            doc["groups"]["pooled"]["all decision days"]["grid_crps"]["means"]["B1"] = 9.87
+            window = self.record()["scores"]["window"]
+            doc["windows"][window]["groups"]["pooled"]["all decision days"]["grid_crps"]["means"]["B1"] = 9.87
             score.write_text(json.dumps(doc), encoding="utf-8")
             st = research_view.standings(tmp)
             self.assertEqual(st["candidate"], self.record()["candidate"])
-            self.assertIn("9.87", research_view.standings_html(st))
+            self.assertIn("9.870", research_view.standings_html(st))
 
     def test_it_falls_back_to_the_step4_record_when_the_file_is_absent(self):
         with tempfile.TemporaryDirectory() as tmp:
