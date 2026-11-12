@@ -540,10 +540,17 @@ def short_of_nominal(group: Mapping[str, object]) -> str:
             f"the gap to 90% is {100 * (0.9 - m['arm']):.1f} percentage points" + ("." if m["arm"] < 0.9 else " (negative: the band covers more than 90%)."))
 
 
-def kill_sentence(kill: Mapping[str, object]) -> str:
+def kill_sentence(kill: Mapping[str, object], *, events: Optional[int] = None, read: bool = True) -> str:
+    """The declared kill in words. `read=False` (the 2026 days, which decide nothing, #1572): the figures and the interval with the number of events, and no call."""
+
     gain = (f"Coverage on the group: {_signed(kill['coverage_gain'])} {_siv(kill['coverage_gain_interval'])} (arm minus candidate, event-cluster 90% interval). "
             + ("The lower end of the interval is above zero, so the arm improves beyond its interval."
                if kill["coverage_improves_beyond_interval"] else "The lower end of the interval is not above zero, so the arm does not improve beyond its interval."))
+    if not read:
+        low, high = kill["group_crps_diff_interval"]
+        spans = "an interval that spans zero" if low <= 0.0 <= high else "an interval that does not span zero"
+        return (f"{gain} Grid CRPS on the group: {_signed(kill['group_crps_diff'])} {_siv(kill['group_crps_diff_interval'])} bp over {events} events "
+                f"(arm minus candidate): {spans}. **The declared kill is read on the development window only; it is not called on these days.**")
     crps = (f"Grid CRPS on the group: {_signed(kill['group_crps_diff'])} {_siv(kill['group_crps_diff_interval'])} bp (arm minus candidate). "
             + ("The arm's is above the candidate's, so the arm loses." if kill["group_crps_loses"] else "The arm's is not above the candidate's, so the arm does not lose."))
     return f"{gain} {crps} **Against the declared kill: {'killed' if kill['killed'] else 'not killed'}.**"
@@ -634,7 +641,7 @@ def window_section(window: str, w: Mapping[str, object], context: Optional[Mappi
             "rule reads the first row's \"arm minus candidate\".", ""] + rates_table(group_rows(g)) + [
             "", f"**{short_of_nominal(g)}**", "",
             "### The declared kill" + ("" if window == "development" else " (shown apart; the kill is read on the development window only, and these days decide nothing)"), "",
-            kill_sentence(g["kill"]), ""]
+            kill_sentence(g["kill"], events=events, read=window == "development"), ""]
 
 
 def other_tables(window: str, w: Mapping[str, object], context: Optional[Mapping[str, object]] = None) -> List[str]:
@@ -733,7 +740,9 @@ def record(r: dict) -> List[str]:
     return out
 
 
-def render(r: dict) -> str:
+def render(r: dict, addendum: Sequence[str] = ()) -> str:
+    """The page. `addendum` is a dated section placed after the other tables, before the Record (#1572 adds one; nothing else of the page changes)."""
+
     dev = r["windows"]["development"]["group"]
     out = [
         "# An event-conditional quarter-end distribution beside the frozen candidate", "",
@@ -792,6 +801,7 @@ def render(r: dict) -> str:
                 "These days are kept apart from the development window. The kill rule is not read on them and they decide nothing.", ""]
         both = window_section("2026", y26, ctx26) + other_tables("2026", y26, ctx26)
         out += [("#" + line if line.startswith("###") else line) for line in both]
+    out += list(addendum)
     out += record(r)
     return "\n".join(out).rstrip() + "\n"
 

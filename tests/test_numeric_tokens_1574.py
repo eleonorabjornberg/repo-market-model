@@ -106,6 +106,55 @@ class SourcedAdditionTest(unittest.TestCase):
         self.assertEqual(unlisted["added"], ["4"])
 
 
+class GeneratedSectionTest(unittest.TestCase):
+    """A section a study's page command generates is traced to its own record after the page's own rounding and signing
+    (Eleonora's ruling of 12 November 2026 on #1585). No hand allow-list: a figure must round from a record value."""
+
+    SECTION = {"start": "## Addendum", "end": "\n## Record\n", "record": "r.json", "formats": ["{:.3f}", "{:+.3f}", "{:d}", "{:,d}"]}
+    RECORD = json.dumps({"d": 0.0174, "ci": [-0.4181, 0.5953], "events": 3, "cells": 2000, "label": "2025-26"})
+
+    def page(self, body, outside=""):
+        return "intro 1 " + outside + "\n## Addendum\n" + body + "\n## Record\nend 1\n"
+
+    def check(self, text, sections=None):
+        record = {"tokens": ["1"], "generated": [dict(self.SECTION)] if sections is None else sections}
+        return cnt.check_record(record, text, lambda rel: self.RECORD)
+
+    def test_figures_rounded_and_signed_from_the_record_are_accepted(self):
+        result = self.check(self.page("d +0.017 [-0.418, +0.595] over 3 events, 2,000 cells, regime 2025-26"))
+        self.assertEqual((result["removed"], result["added"]), ([], []))
+
+    def test_a_figure_one_off_in_its_last_rounded_digit_is_refused(self):
+        result = self.check(self.page("d +0.018 [-0.418, +0.595] over 3 events"))
+        self.assertEqual(result["added"], ["+0.018"])
+
+    def test_an_unsigned_figure_the_page_writes_signed_is_not_laundered_by_another_format(self):
+        self.assertEqual(self.check(self.page("d 0.0174"))["added"], ["0.0174"])
+
+    def test_a_record_figure_outside_the_section_is_not_traced(self):
+        result = self.check(self.page("d +0.017", outside="+0.595"))
+        self.assertEqual(result["added"], ["+0.595"])
+
+    def test_a_missing_section_traces_nothing(self):
+        self.assertEqual(self.check("intro 1 +0.017\n")["added"], ["+0.017"])
+
+    def test_without_a_declared_section_nothing_is_traced(self):
+        self.assertEqual(self.check(self.page("d +0.017"), sections=[])["added"], ["+0.017"])
+
+    def test_record_values_render_only_in_the_declared_formats(self):
+        rendered = cnt.rendered({"x": 0.12345, "n": 1234, "b": True, "s": "seed 1548"}, ["{:.3f}", "{:+.3f}", "{:d}", "{:,d}"])
+        self.assertEqual(rendered, {"0.123", "+0.123", "1234.000", "+1234.000", "1234", "1,234", "1548"})
+
+    def test_a_null_counts_only_as_the_text_declared_for_it(self):
+        self.assertEqual(cnt.rendered({"regime": None}, ["{:d}"]), set())
+        self.assertEqual(cnt.rendered({"regime": None}, ["{:d}"], null="0"), {"0"})
+        record = {"tokens": ["1"], "generated": [dict(self.SECTION, null="0")]}
+        held = cnt.check_record(record, self.page("| 0 | 0 |"), lambda rel: json.dumps({"r": None}))
+        self.assertEqual(held["added"], [])
+        none = cnt.check_record(record, self.page("| 0 | 0 |"), lambda rel: json.dumps({"r": 1}))
+        self.assertEqual(none["added"], ["0"])
+
+
 class BaselineTest(unittest.TestCase):
     def test_every_page_keeps_its_numbers(self):
         directory = ROOT / cnt.BASELINES

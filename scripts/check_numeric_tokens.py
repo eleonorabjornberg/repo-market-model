@@ -23,6 +23,13 @@ added token that one of the named files carries; `diff --cite N` accepts the num
 and only where the page writes it as `#N`. Nothing is accepted because it is listed alone, and a removed token always
 fails.
 
+A section that a study's page command generates is traced to its own record instead (Eleonora's ruling of 12 November
+2026 on #1585). The page's baseline declares it under `generated`: where it starts and ends, the record it is rendered
+from, and the formats the command applies (for #1572: `{:.3f}`, `{:+.3f}`, `{:d}`, `{:,d}`), and the text it writes for a null of
+the record (for #1572, "0" events and cells in a regime that holds none). A token written only inside
+that section passes when the record, rendered in those formats, carries it exactly; one that differs in its last
+rounded digit is refused. No token is listed by hand.
+
 Standard library only.
 """
 import argparse
@@ -109,16 +116,92 @@ def _read(rel):
     return (ROOT / rel).read_text(encoding="utf-8")
 
 
+def rendered(record, formats, null=None):
+    """Every token a page command can write from `record` (parsed JSON): each number in each of `formats`, the integer
+    formats (`{:d}`, `{:,d}`) applied to integers only, the tokens of every string and key as they are written, and,
+    when the command writes a null of the record as a fixed text (`null`, e.g. a regime with no events as "0"), that
+    text's tokens where the record holds a null."""
+    out = set()
+
+    def walk(x):
+        if isinstance(x, dict):
+            for key, value in x.items():
+                walk(key)
+                walk(value)
+        elif isinstance(x, list):
+            for value in x:
+                walk(value)
+        elif isinstance(x, str):
+            out.update(tokens(x))
+        elif x is None:
+            if null is not None:
+                out.update(tokens(null))
+        elif isinstance(x, bool):
+            pass
+        elif isinstance(x, int):
+            for f in formats:
+                out.update(tokens(f.format(x)))
+        elif isinstance(x, float):
+            for f in formats:
+                if f.endswith("d}"):
+                    continue
+                out.update(tokens(f.format(x)))
+
+    walk(record)
+    return out
+
+
+def _sections(page_text, section):
+    """The spans of the page from each `start` to the next `end` after it (an unterminated span counts for nothing)."""
+    spans, at = [], 0
+    while True:
+        i = page_text.find(section["start"], at)
+        if i < 0:
+            return spans
+        j = page_text.find(section["end"], i + len(section["start"]))
+        if j < 0:
+            return spans
+        spans.append((i, j))
+        at = j
+
+
+def generated_traced(added, page_text, sections, read=_read):
+    """The tokens of `added` that a generated section traces (Eleonora's ruling of 12 November 2026 on #1585).
+
+    A baseline's `generated` list declares, for a section a study's page command writes, where it starts and ends, the
+    record (`result.json`) it is rendered from, and the formats the command applies to its numbers. A token is traced
+    when every place the page writes it lies inside such a section and the record, in those formats, carries it exactly:
+    a figure that does not round from a record value is refused, and nothing is listed by hand."""
+    traced = set()
+    for section in sections:
+        spans = _sections(page_text, section)
+        if not spans:
+            continue
+        try:
+            carried = rendered(json.loads(read(section["record"])), section["formats"], section.get("null"))
+        except (OSError, ValueError):
+            continue
+        for token in added:
+            if token not in carried:
+                continue
+            places = [m.start() for m in _TOKEN.finditer(page_text) if m.group(0) == token]
+            if places and all(any(a <= x < b for a, b in spans) for x in places):
+                traced.add(token)
+    return traced
+
+
 def check_record(record, page_text, read=_read):
     """A stored baseline against the page: an added token passes only when the baseline lists it under `added` with a
-    `source` file that carries the same token."""
+    `source` file that carries the same token, or when a section the baseline declares under `generated` traces it to
+    its own record (`generated_traced`)."""
     result = _compare_sets(set(record["tokens"]), page_text)
     listed = record.get("added", {})
+    from_record = generated_traced(result["added"], page_text, record.get("generated", []), read)
     still = []
     for token in result["added"]:
         entry = listed.get(token)
         try:
-            traced = bool(entry) and not unsourced({token}, [read(entry["source"])])
+            traced = token in from_record or (bool(entry) and not unsourced({token}, [read(entry["source"])]))
         except OSError:
             traced = False
         if not traced:
