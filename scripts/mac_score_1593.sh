@@ -28,9 +28,14 @@ python scripts/qe_vs_calendar_gbm_1593.py score --published "$PUB" --panel "$SCR
 python scripts/qe_vs_calendar_gbm_1593.py page --score "$RESULT" --output "$PAGE"
 python scripts/qe_vs_calendar_gbm_1593.py log --score "$RESULT" --output "$LOG" --date "$DAY"
 python scripts/check_research_log.py check-block "$LOG"
+# the entry this run writes replaces the placeholder the pull request carried before the run (same directive, not yet scored)
+OLD=""
+for f in docs/research/log/*-model-01593-H5-step3.md; do
+  if [ "$f" != "$LOG" ] && [ -e "$f" ]; then OLD="$f"; git rm -q "$f"; fi
+done
 
 # nothing but the three outputs may have changed
-others="$(git status --porcelain --untracked-files=all | grep -v -e " $RESULT\$" -e " $PAGE\$" -e " $LOG\$" || true)"
+others="$(git status --porcelain --untracked-files=all | grep -v -e " $RESULT\$" -e " $PAGE\$" -e " $LOG\$" -e " ${OLD:-none}\$" || true)"
 if [ -n "$others" ]; then echo "STOP: files other than the result, page and log entry changed:"; echo "$others"; exit 1; fi
 
 git add "$RESULT" "$PAGE" "$LOG"
