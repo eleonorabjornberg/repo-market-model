@@ -158,6 +158,15 @@ A study that ran but read undecided, or covered only part of its question, fits 
 - **Studies:** #1356 (`docs/research/s3c-ann-net-cmb-1356-result.md`), development window and 2026 days.
 - **Would reopen it:** A different handling of the bill days than the announced term. The page ends with her question whether a form replaces the candidate (default no).
 
+### S17. The calendar-aware GBM in place of the candidate on quarter-end turns and year-ends
+
+- **Status:** failed
+- **Question:** Does the calendar-aware gradient-boosted model on direct pairs (`gbm_funding_cal_direct`) forecast quarter-end turns and year-ends better than the frozen candidate (s3c-ann-net), so that it could take the candidate's place on those days?
+- **Answer:** No. On the 30 events of the group it scores worse than the candidate on grid CRPS and on upper-tail twCRPS, and its 90% band covers less. Eleonora ruled on 13 November 2026 (option (a), relayed on #1593): swapping in the calendar GBM is not supported, the quarter-end family keeps the frozen candidate, and no GBM or combination arm is opened. Fixing the candidate's band on these days stays with Q9. The GBM's walks were made at the 16:00 instant, against the candidate's 18:00 decision instant, so it forecast with two hours less public information; that favours the candidate by an amount not measured.
+- **Figures:** d is the GBM minus the candidate, with 90% event-cluster intervals (positive favours the candidate on the scores). Group, 30 events and 291 cells: grid CRPS d +1.217 [+0.302, +2.257]; upper-tail twCRPS d +0.837 [+0.003, +1.857]; 90% coverage 0.601 for the candidate against 0.519 for the GBM (d -0.082 [-0.206, +0.037]). Quarter-end turns, 22 events: grid CRPS d +0.629 [-0.087, +1.413]. Year-ends, 8 events: grid CRPS d +3.038 [+0.525, +6.576]. Development data on days already seen; several regime cells rest on fewer than five events.
+- **Studies:** #1593 and its pull request #1599 (`docs/research/qe-vs-calendar-gbm-1593-result.md`), from #1036's walks, read without a refit.
+- **Would reopen it:** A refit of the calendar-aware GBM at the 18:00 decision instant, compared with the candidate on the same days.
+
 ## Awaiting her classification
 
 Each entry below ran, but read undecided or covered only part of its question. Eleonora's ruling of 9 November 2026 says these are raised as questions, not settled, so they carry no status until she classifies them. Q5 and Q6 were classified on 10 November 2026 and are S15 and S16; she ruled Q3 stays awaiting. "Open" names what is missing.
