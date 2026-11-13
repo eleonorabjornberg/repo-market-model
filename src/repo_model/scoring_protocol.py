@@ -56,7 +56,10 @@ from datetime import date, datetime
 from statistics import NormalDist
 from typing import Callable, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
+from pathlib import Path
+
 from . import coverage_tests, lockbox
+from .evaluation_splits import SplitDeclaration, load_split_declaration
 from .data import PointInTimeObservation
 from .metrics import _quantile, crps_from_quantiles, stationary_bootstrap_indices
 from .splits import LookAheadError
@@ -1005,6 +1008,29 @@ def _require_coverage_passed(coverage: object) -> None:
         )
 
 
+#: The split declaration the verdict reads the declared regimes from (`regime_labels`).
+DEFAULT_SPLITS = Path(__file__).parents[2] / "metadata" / "evaluation_splits.json"
+
+
+def _require_regimes_covered(coverage: "CoverageCheck", days: Sequence[date], splits: SplitDeclaration) -> None:
+    """The check covers every declared regime that holds a scored confirmation day (#1603; ruling on #1600, option a).
+
+    The required set is derived here, from the declaration and the scored days; the caller does not supply it. A declared
+    regime with no scored confirmation day is not required.
+
+    Raises:
+        ValueError: a required regime is missing from the check (a data guard), or a scored day is in no declared regime.
+    """
+
+    required = {splits.regime(day) for day in days}
+    missing = sorted(required - set(coverage.regimes))
+    if missing:
+        raise ValueError(
+            f"the coverage check does not cover regime(s) {missing} of the declaration, which hold scored confirmation days; "
+            f"the check covers {sorted(coverage.regimes)} (#1603)"
+        )
+
+
 def verdict(
     against_b1: PairedTest,
     against_b2: PairedTest,
@@ -1012,6 +1038,7 @@ def verdict(
     look: int,
     first_confirmation_day: date,
     coverage: "CoverageCheck",
+    splits: Optional[SplitDeclaration] = None,
     futility_level: float = FUTILITY_LEVEL,
     checkpoints: Sequence[int] = CHECKPOINTS,
     alpha: float = ALPHA,
@@ -1039,13 +1066,15 @@ def verdict(
     - every scored day is a prospective confirmation day, on or after `first_confirmation_day` (the registration's first
       confirmation day), and none is in a locked lockbox tier;
     - the coverage requirement of amendment 4 was checked and passed: `coverage` is what `check_coverage_requirement` returned,
-      on cells made with `COVERAGE_REQUIREMENT_METHOD`, with the requirement in force.
+      on cells made with `COVERAGE_REQUIREMENT_METHOD`, with the requirement in force, and covering every regime of `splits`
+      (default `metadata/evaluation_splits.json`) that holds a scored day (#1603).
 
     Raises:
         ProtocolError: the tests are not on the checkpoint's day count or the same days, `futility_level` is not the
             protocol's, a test is not the benchmark's, or `coverage` is not a passed coverage check.
         LookAheadError: a scored day is before `first_confirmation_day` (development data gives no verdict) or in a
             locked lockbox tier.
+        ValueError: the coverage check lacks a declared regime that holds a scored confirmation day (#1603).
     """
 
     if futility_level != FUTILITY_LEVEL:
@@ -1068,6 +1097,9 @@ def verdict(
             )
     _require_prospective(against_b1.days, first_confirmation_day, "scoring_protocol.verdict")
     _require_coverage_passed(coverage)
+    _require_regimes_covered(
+        coverage, against_b1.days, load_split_declaration(DEFAULT_SPLITS) if splits is None else splits
+    )
     critical = CRITICAL_VALUES[GRID_COMPARISON].get(days)
     b2_critical = B2_LEG_CRITICAL_VALUES.get(GRID_COMPARISON, {}).get(days, critical)
     if (
@@ -1433,6 +1465,7 @@ class CoverageCheck:
     rule: str
     method: str
     cells: int
+    regimes: Tuple[str, ...] = ()
     _seal: object = field(default=None, repr=False, compare=False)
 
 
@@ -1464,4 +1497,4 @@ def check_coverage_requirement(
     method = read[0].method
     if method != COVERAGE_REQUIREMENT_METHOD:
         raise ProtocolError(f"the requirement reads cells of method {COVERAGE_REQUIREMENT_METHOD!r}, not {method!r}")
-    return CoverageCheck(alpha, family, rule, method, len(read), _COVERAGE_SEAL)
+    return CoverageCheck(alpha, family, rule, method, len(read), tuple(sorted(regimes)), _COVERAGE_SEAL)
