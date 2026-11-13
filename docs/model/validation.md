@@ -281,6 +281,11 @@ label were each tested and not adopted (her rulings on #1223 and #1004), and bot
   - *Status.* Named as a split by her ruling of 8 November 2026 on #1515 (option split); nothing is re-scored, the term is not adopted, and the candidate is frozen as it is. The family-ablation page for H5.M3 carries the same regime line.
   - *Evidence.* #1507, `docs/research/satiation-arm-1507-result.md`: the distance and hinge arms, with the regime, lead and pressure-day-type tables
   - *Evidence.* #1483, `docs/research/family-ablation-1483-result.md`: the family row and, since #1518, its regime line
+- **Post-month-end band coverage.** On the target days one to three business days after a month-end, the central 90 per cent band holds clearly fewer outcomes than its nominal level, and both tails miss: the lower tail, which the reading of #1547 called in line on its ratio alone, misses with a share whose interval excludes the nominal 5 per cent, and so does the upper tail. A scale of the upper tail alone on those days (#1555) left the lower-tail misses as they were and is worse than the candidate there on grid CRPS and on upper-tail twCRPS, the only group intervals on its page wholly on that side. A symmetric scale by type of target day (#1402) also raised coverage and lost CRPS. Width is therefore not what is missing; location, or the timing of the spike within the three days, is untested, and no page records it. The candidate is not changed for this.
+  - *Status.* Added as a known limit by her ruling of 12 November 2026 on #1592 (the decision docket, option "both"); a location or timing diagnostic on these days is a later step, not a third width arm.
+  - *Evidence.* #1547, `docs/research/calendar-tail-diagnostic-1547-result.md`: the miss shares by calendar flag, with a dated note on the lower tail of the post-month-end days
+  - *Evidence.* #1555, `docs/research/calendar-flag-scale-arm-1555-result.md`: the upper-tail arm, which loses on these days, with a dated note
+  - *Evidence.* #1592, no page yet: the finding and her ruling are on the issue; the reading rule is drafted in docs/decisions/drafts/tail-reading-rule.md
 
 <!-- end generated: validation-known-limits -->
 

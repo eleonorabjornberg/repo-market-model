@@ -321,6 +321,13 @@
       "comment_id": 6828895747,
       "phrase": "GO #1570",
       "what": "CLAUDE.md: decision instant corrected to 18:00 the business day before, and the two progress files moved to the built-on-main list (PR #1583); her 12 November 2026 docket answer 'go' on the GO #1570 card"
+    },
+    {
+      "kind": "decisions",
+      "issue": 1598,
+      "comment_id": 6840997940,
+      "phrase": "GO #1598",
+      "what": "docs/decisions/drafts/tail-reading-rule.md drafted: a tail reading needs both intervals, and post-month-end coverage goes in the known limits (PR #1598, directive #1592); her GO #1598, posted 12 November 2026"
     }
   ],
   "rule": "docs/decisions/drafts/owner-attestation.md",
