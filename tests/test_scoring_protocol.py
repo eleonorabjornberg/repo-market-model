@@ -41,9 +41,10 @@ def bound_verdict(against_b1, against_b2, **settings):
     """`sp.verdict` as protocol v1 binds it (#1567): the tests are labelled as B1 and B2, the days are the registration's
     own, and the coverage requirement was checked and passed. The binding itself is tested in `test_verdict_binds_1567.py`."""
 
-    from test_verdict_binds_1567 import FIRST_DAY, passed_coverage
+    from test_verdict_binds_1567 import FIRST_DAY, SPLITS, passed_coverage
 
     settings.setdefault("first_confirmation_day", FIRST_DAY)
+    settings.setdefault("splits", SPLITS)
     settings.setdefault("coverage", passed_coverage())
     return sp.verdict(
         dataclasses.replace(against_b1, benchmark="B1"), dataclasses.replace(against_b2, benchmark="B2"), **settings
@@ -51,9 +52,10 @@ def bound_verdict(against_b1, against_b2, **settings):
 
 
 def bound_report(against_b1, against_b2, against_b3, **settings):
-    from test_verdict_binds_1567 import FIRST_DAY, passed_coverage
+    from test_verdict_binds_1567 import FIRST_DAY, SPLITS, passed_coverage
 
     settings.setdefault("first_confirmation_day", FIRST_DAY)
+    settings.setdefault("splits", SPLITS)
     settings.setdefault("coverage", passed_coverage())
     return sp.report(
         dataclasses.replace(against_b1, benchmark="B1"),

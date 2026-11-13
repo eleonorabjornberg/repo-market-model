@@ -181,3 +181,7 @@ By the declared arm rule: a scale of one tail where that tail is off, or a shift
 ## Reproduction
 
 See the header of `scripts/calendar_tail_diagnostic_1547.py`; the test is `tests/test_calendar_tail_diagnostic_1547.py`. Seed 1547 throughout, 1533 for the reproduction check.
+
+## Note of 12 November 2026 (#1592)
+
+The reading table above calls the q05 of `post_month_end_window` "in line" on its ratio alone (1.01 [0.82, 1.31]). The same page's miss table puts the strict share below q05 on those days at 9.1% [5.6%, 12.8%], an interval that excludes the nominal 5%. Under her ruling of 12 November 2026 on #1592 a tail is in line only when both intervals hold (draft: `docs/decisions/drafts/tail-reading-rule.md`), so that tail is not in line. This page's figures and its reading are unchanged; the "in line" entries elsewhere in its reading table were made on the ratio alone. #1555's upper-tail arm, built on that reading, lost on this group (see the note on its page).

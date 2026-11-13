@@ -41,6 +41,19 @@ from test_scoring_protocol_coverage_requirement import world
 FIRST_DAY = date(2015, 1, 2)
 
 
+class Declaration:
+    """A stand-in for `evaluation_splits.SplitDeclaration`: the two members `verdict` reads, with the labelling a test chooses."""
+
+    def __init__(self, label=lambda day: "all", labels=("all",)):
+        self._label, self.regime_labels = label, tuple(labels)
+
+    def regime(self, when):
+        return self._label(when)
+
+
+SPLITS = Declaration()
+
+
 def passed_coverage(method="spaced"):
     """A coverage check that passed: calibrated cells, read under the design the requirement names."""
 
@@ -63,7 +76,7 @@ class BoundVerdictTests(unittest.TestCase):
     def test_a_bound_verdict_is_read(self):
         b1, b2 = labelled_tests()
         self.assertEqual(
-            sp.verdict(b1, b2, look=3, first_confirmation_day=FIRST_DAY, coverage=passed_coverage()), sp.SUPPORTED
+            sp.verdict(b1, b2, look=3, splits=SPLITS, first_confirmation_day=FIRST_DAY, coverage=passed_coverage()), sp.SUPPORTED
         )
 
 
@@ -73,7 +86,7 @@ class BenchmarkIdentityTests(unittest.TestCase):
         for first, second in ((dataclasses.replace(b1, benchmark=None), b2), (b2, b1), (b1, dataclasses.replace(b2, benchmark="B3"))):
             with self.subTest(first=first.benchmark, second=second.benchmark):
                 with self.assertRaises(sp.ProtocolError):
-                    sp.verdict(first, second, look=3, first_confirmation_day=FIRST_DAY, coverage=passed_coverage())
+                    sp.verdict(first, second, look=3, splits=SPLITS, first_confirmation_day=FIRST_DAY, coverage=passed_coverage())
 
     def test_a_name_outside_the_protocol_is_refused_when_the_tests_are_made(self):
         days = weekdays(FIRST_DAY, 250)
@@ -86,28 +99,28 @@ class BenchmarkIdentityTests(unittest.TestCase):
     def test_the_b3_comparison_must_be_b3(self):
         b1, b2 = labelled_tests()
         b3 = dataclasses.replace(b1, benchmark="B3")
-        sp.report(b1, b2, b3, look=3, first_confirmation_day=FIRST_DAY, coverage=passed_coverage())
+        sp.report(b1, b2, b3, look=3, splits=SPLITS, first_confirmation_day=FIRST_DAY, coverage=passed_coverage())
         with self.assertRaises(sp.ProtocolError):
-            sp.report(b1, b2, b1, look=3, first_confirmation_day=FIRST_DAY, coverage=passed_coverage())
+            sp.report(b1, b2, b1, look=3, splits=SPLITS, first_confirmation_day=FIRST_DAY, coverage=passed_coverage())
 
 
 class ProspectiveDayTests(unittest.TestCase):
     def test_a_day_before_the_first_confirmation_day_is_refused(self):
         b1, b2 = labelled_tests()
         with self.assertRaises(LookAheadError):
-            sp.verdict(b1, b2, look=3, first_confirmation_day=b1.days[1], coverage=passed_coverage())
+            sp.verdict(b1, b2, look=3, splits=SPLITS, first_confirmation_day=b1.days[1], coverage=passed_coverage())
 
     def test_a_locked_day_is_refused(self):
         b1, b2 = labelled_tests()
         locked = lockbox.LockboxTier("test_blind", b1.days[0], None, None)
         with mock.patch.object(lockbox, "load_lockbox", return_value=(locked,)):
             with self.assertRaises(LookAheadError):
-                sp.verdict(b1, b2, look=3, first_confirmation_day=FIRST_DAY, coverage=passed_coverage())
+                sp.verdict(b1, b2, look=3, splits=SPLITS, first_confirmation_day=FIRST_DAY, coverage=passed_coverage())
 
     def test_the_registration_day_must_be_a_date(self):
         b1, b2 = labelled_tests()
         with self.assertRaises(sp.ProtocolError):
-            sp.verdict(b1, b2, look=3, first_confirmation_day="2015-01-02", coverage=passed_coverage())
+            sp.verdict(b1, b2, look=3, splits=SPLITS, first_confirmation_day="2015-01-02", coverage=passed_coverage())
 
 
 class CoverageBindingTests(unittest.TestCase):
@@ -117,7 +130,7 @@ class CoverageBindingTests(unittest.TestCase):
         for coverage in (None, True, forged):
             with self.subTest(coverage=coverage):
                 with self.assertRaises(sp.ProtocolError):
-                    sp.verdict(b1, b2, look=3, first_confirmation_day=FIRST_DAY, coverage=coverage)
+                    sp.verdict(b1, b2, look=3, splits=SPLITS, first_confirmation_day=FIRST_DAY, coverage=coverage)
 
     def test_a_check_on_the_wrong_method_does_not_bind(self):
         b1, b2 = labelled_tests()
@@ -125,7 +138,7 @@ class CoverageBindingTests(unittest.TestCase):
             passed_coverage(method="thinned")
         thinned = dataclasses.replace(passed_coverage(), method="thinned")
         with self.assertRaises(sp.ProtocolError):
-            sp.verdict(b1, b2, look=3, first_confirmation_day=FIRST_DAY, coverage=thinned)
+            sp.verdict(b1, b2, look=3, splits=SPLITS, first_confirmation_day=FIRST_DAY, coverage=thinned)
 
     def test_a_check_is_not_made_while_the_requirement_is_off(self):
         forecasts, outcomes, calendar, labels = world(n=2000, seed=5)
@@ -154,9 +167,9 @@ class VerdictBindsAmendment4Tests(unittest.TestCase):
     `test_a_check_on_a_subset_of_the_cells_is_refused` raised `AssertionError: ProtocolError not raised`.
     """
 
-    def verdict_with(self, coverage):
+    def verdict_with(self, coverage, declaration=SPLITS):
         b1, b2 = labelled_tests()
-        return sp.verdict(b1, b2, look=3, first_confirmation_day=FIRST_DAY, coverage=coverage)
+        return sp.verdict(b1, b2, look=3, splits=declaration, first_confirmation_day=FIRST_DAY, coverage=coverage)
 
     def test_a_check_at_another_level_family_or_rule_is_refused(self):
         for changed in ({"alpha": 1e-9}, {"alpha": 0.10}, {"family": "per_cell"}, {"rule": "tie_counts"}):
@@ -193,11 +206,61 @@ class VerdictBindsAmendment4Tests(unittest.TestCase):
         cells = sp.coverage_cells(forecasts, outcomes, calendar, labels, method="spaced")
         check = sp.check_coverage_requirement(cells, alpha=0.05, family="holm", rule="strict")
         self.assertEqual(check.cells, 2 * len(sp.HORIZONS) * len(sp.COVERAGE_LEVELS))
-        self.assertEqual(self.verdict_with(check), sp.SUPPORTED)
+        self.assertEqual(self.verdict_with(check, Declaration(regimes, ("a", "b"))), sp.SUPPORTED)
         with self.assertRaises(ValueError):
             sp.check_coverage_requirement(
                 [c for c in cells if not (c.regime == "b" and c.lead == 5)], alpha=0.05, family="holm", rule="strict"
             )
+
+
+class VerdictRequiresDeclaredRegimesTests(unittest.TestCase):
+    """#1603 (H5 protocol plumbing; for #1600; Eleonora's ruling of 13 November 2026, option (a)): `verdict` refuses a coverage check
+    that is missing any declared regime (`evaluation_splits` `regime_labels`) holding at least one scored confirmation day. The
+    required set is derived inside `verdict` from the declaration and the scored days; the caller does not supply it. A declared
+    regime with no scored confirmation day is not required.
+
+    One recorded mutation, made on this branch's tree and reverted (2026-11-13): in `_require_regimes_covered`, the line
+    `missing = sorted(required - set(coverage.regimes))` became `missing = []`;
+    `test_a_check_built_from_one_regime_is_refused_when_a_second_is_scored` raised `AssertionError: ValueError not raised`.
+    """
+
+    two = staticmethod(lambda day: "a" if (day.toordinal() // 200) % 2 else "b")
+
+    def checks(self):
+        forecasts, outcomes, calendar, labels = world(n=2000, seed=5, regimes=self.two)
+        cells = sp.coverage_cells(forecasts, outcomes, calendar, labels, method="spaced")
+        full = sp.check_coverage_requirement(cells, alpha=0.05, family="holm", rule="strict")
+        only_a = sp.check_coverage_requirement(
+            [c for c in cells if c.regime == "a"], alpha=0.05, family="holm", rule="strict"
+        )
+        return full, only_a
+
+    def verdict_with(self, coverage, declaration, **extra):
+        b1, b2 = labelled_tests()
+        return sp.verdict(b1, b2, look=3, splits=declaration, first_confirmation_day=FIRST_DAY, coverage=coverage, **extra)
+
+    def test_a_check_built_from_one_regime_is_refused_when_a_second_is_scored(self):
+        full, only_a = self.checks()
+        declaration = Declaration(self.two, ("a", "b"))
+        self.assertEqual({declaration.regime(d) for d in labelled_tests()[0].days}, {"a", "b"})
+        with self.assertRaises(ValueError):
+            self.verdict_with(only_a, declaration)
+        self.assertEqual(self.verdict_with(full, declaration), sp.SUPPORTED)
+
+    def test_a_regime_with_no_scored_confirmation_day_is_not_required(self):
+        full, only_a = self.checks()
+        declaration = Declaration(lambda day: "a", ("a", "b"))  # "b" is declared; no scored day falls in it
+        self.assertEqual(self.verdict_with(only_a, declaration), sp.SUPPORTED)
+
+    def test_the_required_set_is_not_taken_from_the_caller(self):
+        with self.assertRaises(TypeError):
+            self.verdict_with(self.checks()[1], Declaration(self.two, ("a", "b")), required=())
+
+    def test_the_declared_file_is_the_default(self):
+        b1, b2 = labelled_tests(days=weekdays(date(2018, 1, 2), 250))
+        # 2018-19 is declared in metadata/evaluation_splits.json, and the check's regime "all" is not it.
+        with self.assertRaises(ValueError):
+            sp.verdict(b1, b2, look=3, first_confirmation_day=date(2018, 1, 2), coverage=passed_coverage())
 
 
 class EnforceRefusesNothingTests(unittest.TestCase):
@@ -245,7 +308,7 @@ class ReproductionTests(unittest.TestCase):
         a, b, c = scores(1.0), scores(1.2), scores(0.8)
         tests = sp.paired_tests([(a, c), (b, c)], seed=1, draws=200)  # no identity declared
         with self.assertRaises(sp.ProtocolError):
-            sp.verdict(tests[0], tests[1], look=3, first_confirmation_day=FIRST_DAY, coverage=passed_coverage())
+            sp.verdict(tests[0], tests[1], look=3, splits=SPLITS, first_confirmation_day=FIRST_DAY, coverage=passed_coverage())
         with self.assertRaises(TypeError):  # no registration day, no coverage check
             sp.verdict(tests[0], tests[1], look=3)
         with self.assertRaises(ValueError):
