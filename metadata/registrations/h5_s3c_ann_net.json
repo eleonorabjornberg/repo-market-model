@@ -1,0 +1,166 @@
+{
+ "status": "DRAFT for Eleonora's review (#1510; H5, milestone M5, candidate registered). Not registered. Registering (s3c-ann-net) is her own GitHub action: a `GO #1510` comment, an entry in metadata/owner_attestations.json citing that comment, and her merge. A relayed ruling does not register it. `GO #1510` is not asked for until the coverage report of #1512 is merged. Until then nothing here is in force.",
+ "registered": false,
+ "owner_attestation": null,
+ "issue": 1510,
+ "serves": "H5 (primary goal), milestone M5 (candidate registered); registration under docs/decisions/scoring-protocol.md section 2, following the pattern of docs/decisions/final-test-preregistration.md",
+ "ruling": "Eleonora, 7 November 2026, decision docket, 7:18 pm ET: card queue-h5-registration-1107 option `queue`; card why-confirm-1107 option `keep` (500 origins, at least 24 months, a 30-month ceiling, one final analysis, the power stated beside the result)",
+ "drafted_against": {
+  "origin_main": "b0a09d2a508eb669def3e1495aafb0316d5f32bd",
+  "note": "Drafting base only. The code freeze is this pull request's merge commit (ruling on Q3)."
+ },
+ "candidate": {
+  "name": "sc_s3c_ann_net",
+  "label": "(s3c-ann-net)",
+  "description": "docs/research/h5-candidate.json",
+  "kind": "primary",
+  "secondary_candidates": []
+ },
+ "attached": {
+  "manifest": "metadata/h5_registration_manifest.json",
+  "manifest_reader": "docs/research/h5-registration-manifest.md",
+  "manifest_test": "tests/test_h5_registration_manifest_1391.py",
+  "validation_report": "docs/model/validation.md",
+  "confirmation_design": "docs/decisions/h5-confirmation-design.md",
+  "power_page": "docs/research/confirmation-size-power-1392-full-result.md",
+  "power_result": "docs/research/confirmation-size-power-1392/result-full.json",
+  "scoring_protocol": "docs/decisions/scoring-protocol.md",
+  "lockbox": "docs/decisions/lockbox.md"
+ },
+ "frozen_choices": {
+  "as_ruled_on": "2 November 2026 (#1395, #1389)",
+  "srf_cap": "kept, margin 0 bp",
+  "probability_rule": "open_tail",
+  "probability_rule_name": "rule (b): capped percentiles, open completion above the line",
+  "uncapped": "the uncapped version is reported as a secondary result, beside the capped candidate and never in its place",
+  "every_other_choice": "read from the manifest, each with its value and the code or declaration that implements it; the manifest's test fails when one no longer matches"
+ },
+ "validation_report": {
+  "file": "docs/model/validation.md",
+  "issue": 1442,
+  "step": "H5.M5a",
+  "reading": "attached with its known limits; it documents what exists and gives no verdict. It is read before she attests."
+ },
+ "search_inventory": {
+  "file": "metadata/h5_registration_manifest.json",
+  "key": "inventory",
+  "development_variant_count": "the generated figure of `python3 scripts/emit_progress.py` (variant_count) on the commit she names; at the drafting commit it read 172 variants in 259 arms. Counts are not frozen by this draft."
+ },
+ "confirmation_design": {
+  "decision": "docs/decisions/h5-confirmation-design.md",
+  "rule": "rules 1 to 10, as in force since 4 November 2026 (GO #1393)",
+  "origins": 500,
+  "minimum_months": 24,
+  "ceiling_months": 30,
+  "final_analyses": 1,
+  "operational_checks_at_origins": [
+   60,
+   125,
+   250
+  ],
+  "operational_checks_read": "data quality and the contract only; no early pass and no efficacy stopping",
+  "primary_claim_against": "B1'*-cap",
+  "reported_beside": [
+   "B2*-cap",
+   "B4",
+   "B1'*",
+   "B2*",
+   "B1"
+  ],
+  "practical_threshold": 0.97,
+  "score": "the protocol's 23-quantile score averaged over h = 1 to 5, equal weight per decision origin; h = 1 reported beside it",
+  "bootstrap": "joint stationary block bootstrap of whole origin vectors",
+  "bootstrap_mean_block": 50,
+  "bootstrap_replications": 50000,
+  "bootstrap_sensitivities": [
+   20,
+   100
+  ],
+  "seed": 1393,
+  "claim_b": "gated: tested only if A passes; descriptive otherwise"
+ },
+ "power_beside_the_design": {
+  "source": "docs/research/confirmation-size-power-1392-full-result.md",
+  "kind": "Pass rate of claim A at 500 origins, in percent, from #1392's full mode (500 simulated data sets per cell, development data, not a verdict). B1'* is the uncapped baseline and B2 stands in for B2*; the capped baselines are not in that study.",
+  "block": {
+   "b1_binding_10pct": 34.6,
+   "both_10pct": 6.6,
+   "development_level": 55.8
+  },
+  "regime": {
+   "b1_binding_10pct": 31.6,
+   "both_10pct": 3.4,
+   "development_level": 68.6
+  },
+  "columns": {
+   "b1_binding_10pct": "true skill 10% against B1'*, B2 as developed (the claim as ruled)",
+   "both_10pct": "true skill 10% against both baselines (why the claim is against B1'*-cap alone)",
+   "development_level": "the development skill unscaled against both baselines as developed"
+  },
+  "reading": "Development data, not a verdict. 500 origins is short of 80% power at 10% skill (80% is first reached at 2,500 origins, 85.8% block and 87.0% regime); a confirmation that is inconclusive at 500 origins is reported as inconclusive with this power beside it, never as lack of skill. The rates come from a bootstrap with far fewer draws than 50,000 and from schemes that resample 2018 to 2026 origins."
+ },
+ "lockbox": {
+  "decision": "docs/decisions/lockbox.md",
+  "metadata": "metadata/lockbox.json",
+  "scores_any_day": false,
+  "reading": "The blind tier stays locked. Confirmation days are the business days after the registration; each is scored only by the live pipeline at its checkpoint, and each opening of a blind-tier day is her own attested action. This draft scores nothing."
+ },
+ "live_pin": {
+  "file": "metadata/live_pin.json",
+  "moved": false
+ },
+ "changes_nothing_else": "No threshold, critical value, MME, block length or design rule, no model change. Finding #1473's open Q2 is left alone.",
+ "not_in_this_file": [
+  "metadata/owner_attestations.json entry: it needs the id of her own GO #1510 comment, asked for only after #1512's report is merged"
+ ],
+ "not_checked": [
+  "No score was run and no figure is new: every figure is copied from a merged page and recomputed from the record named for it.",
+  "Whether the attached validation report's own status line about the confirmation design is current (finding #1473, left alone).",
+  "The capped baselines B1'*-cap and B2*-cap are not in #1392's power study (it used the uncapped B1'* and B2 as stand-ins).",
+  "The amendment 4 coverage report: pending, directive #1512."
+ ],
+ "rulings": {
+  "source": "Eleonora's decision docket, 7 November 2026 (9:23-9:24 pm ET), relayed on https://github.com/eleonorabjornberg/repo-market-model/pull/1511#issuecomment-6716150954",
+  "items": [
+   {
+    "id": "Q1",
+    "ruling": "The claim is against B1'*-cap, as the design in force says; the uncapped B1'* is reported beside it."
+   },
+   {
+    "id": "Q2",
+    "ruling": "The metadata/owner_attestations.json entry is added only after she posts GO #1510, with that comment's id."
+   },
+   {
+    "id": "Q3",
+    "ruling": "The code freeze is this pull request's merge commit."
+   },
+   {
+    "id": "Q4",
+    "ruling": "The 3% threshold of design rule 4 is registered; no separate MME is set."
+   },
+   {
+    "id": "Q5",
+    "ruling": "The bootstrap seed is 1393."
+   },
+   {
+    "id": "Q6",
+    "ruling": "No secondary candidates; (s3c) and the announced-flag arm are logged on every origin and not registered."
+   },
+   {
+    "id": "Q7",
+    "ruling": "B4 is reported beside the claim and is not in the confirmatory set."
+   },
+   {
+    "id": "Q8",
+    "ruling": "Registration waits on the amendment 4 coverage report, built by directive #1512 (pending). GO #1510 is not asked for until that report is merged."
+   }
+  ]
+ },
+ "pending": {
+  "coverage_report": {
+   "directive": 1512,
+   "state": "pending",
+   "requirement": "amendment 4 of docs/decisions/scoring-protocol.md"
+  }
+ }
+}
