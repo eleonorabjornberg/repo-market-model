@@ -1,0 +1,13 @@
+{
+  "order": 199.5,
+  "directive": 1593,
+  "pull_request": 1599,
+  "hypothesis": "H5",
+  "result": "The frozen candidate against the calendar-aware direct-pairs GBM on quarter-end turns and year-ends, from #1036's walks (script and Mac paste; the Mac run is not yet made)",
+  "declarations": [],
+  "model": "`gbm_funding_cal_direct` as a series (the walks, read-only); it reads the calendar columns at the target day on direct pairs, so it is not provisional on the calendar rule",
+  "pairing": "one_step",
+  "class": "series",
+  "on_the_page": [],
+  "concluded": "No result yet: the comparison runs on the Mac and its page and log entry are committed to this branch by that run."
+}
