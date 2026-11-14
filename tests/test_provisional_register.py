@@ -240,6 +240,28 @@ class TestEveryDeclarationIsClassified(unittest.TestCase):
         self.assertEqual(missing, sorted(self.UNREGISTERED_SERIES_READERS),
                          f"scripts that read a gbm_funding walk and have no result row: {missing}")
 
+    def test_a_script_reading_only_calendar_walks_is_not_a_series_reader(self):
+        """#1608 (her ruling of 14 November 2026 on #1606): `walk_readers` lists the readers of the calendar-blind `gbm_funding`
+        walks only. A script that reads `gbm_funding_cal_*` walks (calendar columns at the target day, direct pairs) is not
+        provisional on the calendar rule, and its name merely contains `gbm_funding`. A script that names the blind variant in
+        its docstring or as a quoted name still is a reader, even when it also reads the calendar walks.
+
+        Recorded mutation: `_names_blind_walks` returns `"gbm_funding" in text` (the old substring rule); this test then
+        raised AssertionError (`'scripts/cal_only_1001.py'` found among the readers)."""
+        scripts = {
+            "cal_only_1001.py": '"""Reads `gbm_funding_cal_direct`."""\nimport argparse\n# --walks\nDIRECT = "gbm_funding_cal_direct"\n'
+                                'NOTE = "Reading it does not resume `gbm_funding` work."\n',
+            "blind_doc_1002.py": '"""Reads the walks of `gbm_funding` (--walks)."""\nimport argparse\n',
+            "blind_code_1003.py": '"""Reads walks."""\nimport argparse\n# --walks\nVARIANT = "gbm_funding"\n',
+            "both_1004.py": '"""Reads `gbm_funding_cal_direct` and `gbm_funding` (--walks)."""\n',
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            (Path(tmp) / "scripts").mkdir()
+            for name, text in scripts.items():
+                (Path(tmp) / "scripts" / name).write_text(text, encoding="utf-8")
+            readers = register.walk_readers(tmp)
+        self.assertEqual(readers, ["scripts/blind_code_1003.py", "scripts/blind_doc_1002.py", "scripts/both_1004.py"])
+
     def test_the_frozen_exemptions_of_the_one_step_guard_are_named_in_the_register(self):
         """#947's guard refuses a calendar or scheduled regressor in a one-step fit, except two frozen declarations: both are
         class b, and both are named on the register page."""
