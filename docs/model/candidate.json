@@ -322,8 +322,8 @@
     {
       "id": "post-month-end-coverage",
       "title": "Post-month-end band coverage",
-      "limit": "On the target days one to three business days after a month-end, the central 90 per cent band holds clearly fewer outcomes than its nominal level, and both tails miss: the lower tail, which the reading of #1547 called in line on its ratio alone, misses with a share whose interval excludes the nominal 5 per cent, and so does the upper tail. A scale of the upper tail alone on those days (#1555) left the lower-tail misses as they were and is worse than the candidate there on grid CRPS and on upper-tail twCRPS, the only group intervals on its page wholly on that side. A symmetric scale by type of target day (#1402) also raised coverage and lost CRPS. Width is therefore not what is missing; location, or the timing of the spike within the three days, is untested, and no page records it. The candidate is not changed for this.",
-      "status": "Added as a known limit by her ruling of 12 November 2026 on #1592 (the decision docket, option \"both\"); a location or timing diagnostic on these days is a later step, not a third width arm.",
+      "limit": "On the target days one to three business days after a month-end, the central 90 per cent band holds clearly fewer outcomes than its nominal level, and both tails miss: the lower tail, which the reading of #1547 called in line on its ratio alone, misses with a share whose interval excludes the nominal 5 per cent, and so does the upper tail. A scale of the upper tail alone on those days (#1555) left the lower-tail misses as they were and is worse than the candidate there on grid CRPS and on upper-tail twCRPS, the only group intervals on its page wholly on that side. A symmetric scale by type of target day (#1402) also raised coverage and lost CRPS. Width is therefore not what is missing. A level shift on these days was measured (#1547): its interval holds 0, so the shift is not distinguished from none. A spike-sized location term was tested and lost (#1275): it loses on upper-tail twCRPS on the post-month-end window, with an interval wholly on the losing side, and that term is non-zero only at lead 1 on business day 2, so it says nothing about business days 1 and 3. What remains untested is how the misses are spread across business days 1, 2 and 3. The candidate is not changed for this.",
+      "status": "Added as a known limit by her ruling of 12 November 2026 on #1592 (the decision docket, option \"both\"); the next step is a split of the post-month-end misses by business day 1, 2 and 3 from existing walks, not a new location arm and not a third width arm (her ruling of 14 November 2026 on #1605, option (a), carried by #1607); that split is a separate directive. Open.",
       "sources": [
         {
           "issue": "#1547",
@@ -334,6 +334,11 @@
           "issue": "#1555",
           "page": "docs/research/calendar-flag-scale-arm-1555-result.md",
           "note": "the upper-tail arm, which loses on these days, with a dated note"
+        },
+        {
+          "issue": "#1275",
+          "page": "docs/research/s3c-carry-1275-result.md",
+          "note": "the spike-sized location term, which loses on these days and acts only at lead 1 on business day 2"
         },
         {
           "issue": "#1592",

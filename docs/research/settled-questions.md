@@ -167,6 +167,15 @@ A study that ran but read undecided, or covered only part of its question, fits 
 - **Studies:** #1593 and its pull request #1599 (`docs/research/qe-vs-calendar-gbm-1593-result.md`), from #1036's walks, read without a refit.
 - **Would reopen it:** A refit of the calendar-aware GBM at the 18:00 decision instant, compared with the candidate on the same days.
 
+### S18. A spike-sized location term on post-month-end days
+
+- **Status:** failed
+- **Question:** Does a carryover term in (s3c), the size of the last month-end spike times a declared decay (1 on business day 1, 0.5 on business day 2), improve the forecast on the days after a month-end?
+- **Answer:** No. The arm loses to (s3c) on upper-tail twCRPS on the post-month-end window, and on the development window pooled it reads undecided to a small loss. Timing limit: the month-end spread is public only from the second business day of the next month, so the term is non-zero only at lead 1 on business day 2. It therefore says nothing about business days 1 and 3. The split of the post-month-end misses by business day 1, 2 and 3 is untested.
+- **Figures:** (s3c-carry) against (s3c) on the post_month_end_window, 267 days: grid CRPS -0.2% [-0.6%, -0.0%] (undecided, skill interval: loss); upper-tail twCRPS -0.5% [-1.0%, -0.1%] (loss). Development window, pooled grid CRPS: -0.0% [-0.1%, +0.0%] (undecided). The term is non-zero on 64 of 1,855 lead-1 cells. A level shift on these days was measured separately (#1547): median z -0.04 [-0.06, 0.01], interval holds 0. Development data on days already seen.
+- **Studies:** #1275 (`docs/research/s3c-carry-1275-result.md`); the level shift is #1547 (`docs/research/calendar-tail-diagnostic-1547-result.md`). Added by #1607 on Eleonora's ruling of 14 November 2026 (option (a), relayed on #1605).
+- **Would reopen it:** A split of the post-month-end misses by business day 1, 2 and 3 from existing walks (a separate directive) that shows the misses concentrate where a location term can act.
+
 ## Awaiting her classification
 
 Each entry below ran, but read undecided or covered only part of its question. Eleonora's ruling of 9 November 2026 says these are raised as questions, not settled, so they carry no status until she classifies them. Q5 and Q6 were classified on 10 November 2026 and are S15 and S16; she ruled Q3 stays awaiting. "Open" names what is missing.
