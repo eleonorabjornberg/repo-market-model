@@ -146,3 +146,7 @@ Points only: no interval, and no bootstrap is run on these days.
 - The studentized bootstrap is the protocol's interval for a mean of paired daily differences; applied to a rare-event share and to a series of non-consecutive days it is this study's reading, not a calibrated one (the calibration of #656 did not cover it).
 - The error is the outcome less the published (capped) forecast median; the shape ratios of #1547 are not recomputed here.
 - No arm is fitted or scored. If a figure here pointed at a change to the candidate or its registration (#1511), that goes to Eleonora, not into code.
+
+## Note of 15 November 2026 (#1613, #1614)
+
+This page's miss-share intervals dropped every bootstrap resample that drew no miss, and reported an interval while at least 90% of the resamples were left; scoring protocol v1's scorer refuses such a resample instead. Its 2026 table also printed the mean of each day's own share beside the cell count (1 of 39 shows as 0.111). The page is re-issued with every resample kept, the 2026 share as misses over cells, and a second, exploratory interval beside each share, in `docs/research/post-month-end-corrected-1614-result.md`. The figures on this page are unchanged and stand as published; the pooled rows of its "Reading, by business day" table keep their readings, and the lower tail of business day 2 in 2021-23, shown here wholly below 0.05, reads [0.000, 1.000] there.
