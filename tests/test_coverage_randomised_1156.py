@@ -167,20 +167,23 @@ class EnforceStaysInertTests(unittest.TestCase):
             tie_probabilities=fill(forecasts, 0.5, None), draws=fill(forecasts, 0.0, 0.1),
         )
 
-    def test_the_flag_is_still_off(self):
-        self.assertFalse(sp.COVERAGE_REQUIREMENT_IN_FORCE)
+    def test_the_flag_is_on_since_1522(self):
+        self.assertTrue(sp.COVERAGE_REQUIREMENT_IN_FORCE)
 
     def test_the_randomised_rule_is_accepted_by_the_requirement_and_inert_while_off(self):
-        self.assertEqual(sp.enforce_coverage_requirement(self.cells(), alpha=0.05, family="holm", rule="randomised"), [])
+        cells = self.cells()
+        with mock.patch.object(sp, "COVERAGE_REQUIREMENT_IN_FORCE", False):
+            self.assertEqual(sp.enforce_coverage_requirement(cells, alpha=0.05, family="holm", rule="randomised"), [])
 
     def test_once_on_it_reads_the_randomised_cells_only(self):
         cells = self.cells()
         with mock.patch.object(sp, "COVERAGE_REQUIREMENT_IN_FORCE", True):
             with self.assertRaises(sp.CoverageRequirementFailed):
                 sp.enforce_coverage_requirement(cells, alpha=0.05, family="holm", rule="randomised")
-            # With no randomised cells in the list the rule reads nothing and cannot fail.
+            # With no randomised cells in the list there is nothing to pass: refused, not passed (#1567).
             kept = [c for c in cells if c.rule != "randomised"]
-            self.assertEqual(sp.enforce_coverage_requirement(kept, alpha=0.05, family="holm", rule="randomised"), [])
+            with self.assertRaises(ValueError):
+                sp.enforce_coverage_requirement(kept, alpha=0.05, family="holm", rule="randomised")
 
     def test_an_unknown_rule_is_still_refused(self):
         with self.assertRaises(sp.ProtocolError):

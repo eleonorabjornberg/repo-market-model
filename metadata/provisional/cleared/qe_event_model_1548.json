@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/qe_event_model_1548.json",
+  "script": "scripts/qe_event_model_1548.py",
+  "pairing": "direct",
+  "why": "(s3c-ann-net-ev): (s3c-ann-net) with, on quarter-end target days only, its 23 pool quantiles replaced level by level by a shrinkage (w = n / (n + k)) toward the quantiles of the refit's own training residuals whose target is in the event set. The fit is (s3)'s estimation routine, spread_mr_state_calendar.walk with training_pairs = direct (guarded by one_step_guard with no allow-list entry), unchanged, and no gradient-boosted fit is called, so the study is not provisional; the arm adds no fit, only a re-reading of that fit's own residuals whose target is at or before the anchor (repo_model.event_conditional.event_pool, leakage-tested); the type of a day is a calendar function of its date read at the target day, every forecast outside the event set equals the candidate's bit for bit, and the settlement terms are those of (s3c-ann-net) (each figure counting an auction only when it was announced at or before the decision instant); no outcome after the anchor is an input"
+}

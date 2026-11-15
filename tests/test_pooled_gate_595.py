@@ -138,7 +138,7 @@ class RunGuardTests(unittest.TestCase):
         from datetime import date
 
         require_unlocked([date.fromisoformat(DECLARED["scoring"]["last_day"])], where="test")
-        with self.assertRaises(Exception):
+        with self.assertRaises(LookAheadError):
             require_unlocked([date(2026, 9, 4)], where="test")
 
 

@@ -1,0 +1,7438 @@
+{
+ "block": 10,
+ "changed_from_1611": [
+  {
+   "after": [
+    0.003632,
+    1.0
+   ],
+   "before": null,
+   "cells": 89,
+   "days": 89,
+   "group": "lead 1",
+   "misses": 2,
+   "no_variance_resamples": 1041,
+   "reading_after": "holds 0.05",
+   "reading_before": "no interval",
+   "reading_changed": true,
+   "scope": "all",
+   "tail": "low",
+   "target": "business day 1",
+   "visible": true
+  },
+  {
+   "after": [
+    0.0,
+    1.0
+   ],
+   "before": null,
+   "cells": 89,
+   "days": 89,
+   "group": "lead 2",
+   "misses": 1,
+   "no_variance_resamples": 3283,
+   "reading_after": "holds 0.05",
+   "reading_before": "no interval",
+   "reading_changed": true,
+   "scope": "all",
+   "tail": "low",
+   "target": "business day 1",
+   "visible": true
+  },
+  {
+   "after": [
+    0.066768,
+    0.274823
+   ],
+   "before": [
+    0.066767,
+    0.274817
+   ],
+   "cells": 89,
+   "days": 89,
+   "group": "lead 2",
+   "misses": 14,
+   "no_variance_resamples": 1,
+   "reading_after": "above 0.05",
+   "reading_before": "above 0.05",
+   "reading_changed": false,
+   "scope": "all",
+   "tail": "up",
+   "target": "business day 1",
+   "visible": false
+  },
+  {
+   "after": [
+    0.013793,
+    0.066382
+   ],
+   "before": [
+    0.013741,
+    0.066382
+   ],
+   "cells": 89,
+   "days": 89,
+   "group": "lead 3",
+   "misses": 3,
+   "no_variance_resamples": 148,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "all",
+   "tail": "low",
+   "target": "business day 1",
+   "visible": false
+  },
+  {
+   "after": [
+    0.063493,
+    0.251513
+   ],
+   "before": [
+    0.063482,
+    0.251307
+   ],
+   "cells": 89,
+   "days": 89,
+   "group": "lead 3",
+   "misses": 13,
+   "no_variance_resamples": 2,
+   "reading_after": "above 0.05",
+   "reading_before": "above 0.05",
+   "reading_changed": false,
+   "scope": "all",
+   "tail": "up",
+   "target": "business day 1",
+   "visible": true
+  },
+  {
+   "after": [
+    0.024272,
+    0.136852
+   ],
+   "before": [
+    0.024233,
+    0.134528
+   ],
+   "cells": 89,
+   "days": 89,
+   "group": "lead 4",
+   "misses": 6,
+   "no_variance_resamples": 23,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "all",
+   "tail": "low",
+   "target": "business day 1",
+   "visible": true
+  },
+  {
+   "after": [
+    0.060095,
+    0.319674
+   ],
+   "before": [
+    0.060095,
+    0.319329
+   ],
+   "cells": 89,
+   "days": 89,
+   "group": "lead 4",
+   "misses": 16,
+   "no_variance_resamples": 2,
+   "reading_after": "above 0.05",
+   "reading_before": "above 0.05",
+   "reading_changed": false,
+   "scope": "all",
+   "tail": "up",
+   "target": "business day 1",
+   "visible": true
+  },
+  {
+   "after": [
+    0.027877,
+    0.164673
+   ],
+   "before": [
+    0.027869,
+    0.161771
+   ],
+   "cells": 89,
+   "days": 89,
+   "group": "lead 5",
+   "misses": 7,
+   "no_variance_resamples": 20,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "all",
+   "tail": "low",
+   "target": "business day 1",
+   "visible": true
+  },
+  {
+   "after": [
+    0.066243,
+    0.297374
+   ],
+   "before": [
+    0.066241,
+    0.297317
+   ],
+   "cells": 89,
+   "days": 89,
+   "group": "lead 5",
+   "misses": 15,
+   "no_variance_resamples": 1,
+   "reading_after": "above 0.05",
+   "reading_before": "above 0.05",
+   "reading_changed": false,
+   "scope": "all",
+   "tail": "up",
+   "target": "business day 1",
+   "visible": false
+  },
+  {
+   "after": [
+    0.01616,
+    0.087771
+   ],
+   "before": [
+    0.016147,
+    0.086667
+   ],
+   "cells": 445,
+   "days": 89,
+   "group": "pooled",
+   "misses": 19,
+   "no_variance_resamples": 20,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "all",
+   "tail": "low",
+   "target": "business day 1",
+   "visible": true
+  },
+  {
+   "after": [
+    0.014421,
+    0.118271
+   ],
+   "before": [
+    0.014139,
+    0.117761
+   ],
+   "cells": 89,
+   "days": 89,
+   "group": "lead 2",
+   "misses": 4,
+   "no_variance_resamples": 224,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "all",
+   "tail": "low",
+   "target": "business day 2",
+   "visible": false
+  },
+  {
+   "after": [
+    0.014682,
+    0.116636
+   ],
+   "before": [
+    0.014487,
+    0.11581
+   ],
+   "cells": 89,
+   "days": 89,
+   "group": "lead 3",
+   "misses": 4,
+   "no_variance_resamples": 195,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "all",
+   "tail": "low",
+   "target": "business day 2",
+   "visible": true
+  },
+  {
+   "after": [
+    0.017094,
+    0.171822
+   ],
+   "before": [
+    0.01694,
+    0.124753
+   ],
+   "cells": 89,
+   "days": 89,
+   "group": "lead 4",
+   "misses": 5,
+   "no_variance_resamples": 180,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "all",
+   "tail": "low",
+   "target": "business day 2",
+   "visible": true
+  },
+  {
+   "after": [
+    0.091355,
+    0.22006
+   ],
+   "before": [
+    0.091354,
+    0.219998
+   ],
+   "cells": 89,
+   "days": 89,
+   "group": "lead 4",
+   "misses": 13,
+   "no_variance_resamples": 1,
+   "reading_after": "above 0.05",
+   "reading_before": "above 0.05",
+   "reading_changed": false,
+   "scope": "all",
+   "tail": "up",
+   "target": "business day 2",
+   "visible": false
+  },
+  {
+   "after": [
+    0.022341,
+    0.19155
+   ],
+   "before": [
+    0.022138,
+    0.186338
+   ],
+   "cells": 89,
+   "days": 89,
+   "group": "lead 5",
+   "misses": 7,
+   "no_variance_resamples": 114,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "all",
+   "tail": "low",
+   "target": "business day 2",
+   "visible": true
+  },
+  {
+   "after": [
+    0.096216,
+    0.278959
+   ],
+   "before": [
+    0.096215,
+    0.278885
+   ],
+   "cells": 89,
+   "days": 89,
+   "group": "lead 5",
+   "misses": 15,
+   "no_variance_resamples": 1,
+   "reading_after": "above 0.05",
+   "reading_before": "above 0.05",
+   "reading_changed": false,
+   "scope": "all",
+   "tail": "up",
+   "target": "business day 2",
+   "visible": false
+  },
+  {
+   "after": [
+    0.011913,
+    0.11987
+   ],
+   "before": [
+    0.011743,
+    0.11987
+   ],
+   "cells": 89,
+   "days": 89,
+   "group": "lead 1",
+   "misses": 4,
+   "no_variance_resamples": 201,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "all",
+   "tail": "up",
+   "target": "business day 3",
+   "visible": false
+  },
+  {
+   "after": [
+    0.024237,
+    0.211894
+   ],
+   "before": [
+    0.024157,
+    0.189393
+   ],
+   "cells": 89,
+   "days": 89,
+   "group": "lead 2",
+   "misses": 7,
+   "no_variance_resamples": 85,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "all",
+   "tail": "up",
+   "target": "business day 3",
+   "visible": true
+  },
+  {
+   "after": [
+    0.043432,
+    0.218033
+   ],
+   "before": [
+    0.04342,
+    0.217282
+   ],
+   "cells": 89,
+   "days": 89,
+   "group": "lead 3",
+   "misses": 10,
+   "no_variance_resamples": 6,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "all",
+   "tail": "low",
+   "target": "business day 3",
+   "visible": true
+  },
+  {
+   "after": [
+    0.018241,
+    0.185637
+   ],
+   "before": [
+    0.018167,
+    0.185637
+   ],
+   "cells": 89,
+   "days": 89,
+   "group": "lead 3",
+   "misses": 6,
+   "no_variance_resamples": 127,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "all",
+   "tail": "up",
+   "target": "business day 3",
+   "visible": false
+  },
+  {
+   "after": [
+    0.042803,
+    0.214386
+   ],
+   "before": [
+    0.042793,
+    0.213586
+   ],
+   "cells": 89,
+   "days": 89,
+   "group": "lead 4",
+   "misses": 10,
+   "no_variance_resamples": 6,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "all",
+   "tail": "low",
+   "target": "business day 3",
+   "visible": false
+  },
+  {
+   "after": [
+    0.024237,
+    0.211894
+   ],
+   "before": [
+    0.024157,
+    0.189393
+   ],
+   "cells": 89,
+   "days": 89,
+   "group": "lead 4",
+   "misses": 7,
+   "no_variance_resamples": 85,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "all",
+   "tail": "up",
+   "target": "business day 3",
+   "visible": true
+  },
+  {
+   "after": [
+    0.021653,
+    0.16908
+   ],
+   "before": [
+    0.021455,
+    0.159295
+   ],
+   "cells": 89,
+   "days": 89,
+   "group": "lead 5",
+   "misses": 6,
+   "no_variance_resamples": 102,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "all",
+   "tail": "up",
+   "target": "business day 3",
+   "visible": true
+  },
+  {
+   "after": [
+    0.021056,
+    0.165963
+   ],
+   "before": [
+    0.020943,
+    0.152991
+   ],
+   "cells": 445,
+   "days": 89,
+   "group": "pooled",
+   "misses": 30,
+   "no_variance_resamples": 85,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "all",
+   "tail": "up",
+   "target": "business day 3",
+   "visible": true
+  },
+  {
+   "after": [
+    0.041328,
+    0.493217
+   ],
+   "before": [
+    0.041328,
+    0.492377
+   ],
+   "cells": 29,
+   "days": 29,
+   "group": "lead 1",
+   "misses": 8,
+   "no_variance_resamples": 4,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "quarter_end",
+   "tail": "up",
+   "target": "business day 1",
+   "visible": true
+  },
+  {
+   "after": [
+    0.030099,
+    0.395019
+   ],
+   "before": [
+    0.030099,
+    0.394755
+   ],
+   "cells": 29,
+   "days": 29,
+   "group": "lead 2",
+   "misses": 7,
+   "no_variance_resamples": 4,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "quarter_end",
+   "tail": "up",
+   "target": "business day 1",
+   "visible": false
+  },
+  {
+   "after": [
+    0.0,
+    0.967548
+   ],
+   "before": [
+    0.0,
+    0.839954
+   ],
+   "cells": 29,
+   "days": 29,
+   "group": "lead 3",
+   "misses": 6,
+   "no_variance_resamples": 285,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "quarter_end",
+   "tail": "up",
+   "target": "business day 1",
+   "visible": true
+  },
+  {
+   "after": [
+    0.0,
+    1.0
+   ],
+   "before": null,
+   "cells": 29,
+   "days": 29,
+   "group": "lead 4",
+   "misses": 1,
+   "no_variance_resamples": 2444,
+   "reading_after": "holds 0.05",
+   "reading_before": "no interval",
+   "reading_changed": true,
+   "scope": "quarter_end",
+   "tail": "low",
+   "target": "business day 1",
+   "visible": true
+  },
+  {
+   "after": [
+    0.003222,
+    0.797297
+   ],
+   "before": [
+    0.003222,
+    0.795346
+   ],
+   "cells": 29,
+   "days": 29,
+   "group": "lead 4",
+   "misses": 10,
+   "no_variance_resamples": 5,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "quarter_end",
+   "tail": "up",
+   "target": "business day 1",
+   "visible": true
+  },
+  {
+   "after": [
+    0.0,
+    1.0
+   ],
+   "before": null,
+   "cells": 29,
+   "days": 29,
+   "group": "lead 5",
+   "misses": 1,
+   "no_variance_resamples": 2444,
+   "reading_after": "holds 0.05",
+   "reading_before": "no interval",
+   "reading_changed": true,
+   "scope": "quarter_end",
+   "tail": "low",
+   "target": "business day 1",
+   "visible": true
+  },
+  {
+   "after": [
+    0.015157,
+    0.652435
+   ],
+   "before": [
+    0.015033,
+    0.649912
+   ],
+   "cells": 29,
+   "days": 29,
+   "group": "lead 5",
+   "misses": 9,
+   "no_variance_resamples": 5,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "quarter_end",
+   "tail": "up",
+   "target": "business day 1",
+   "visible": true
+  },
+  {
+   "after": [
+    0.0,
+    1.0
+   ],
+   "before": null,
+   "cells": 145,
+   "days": 29,
+   "group": "pooled",
+   "misses": 2,
+   "no_variance_resamples": 2444,
+   "reading_after": "holds 0.05",
+   "reading_before": "no interval",
+   "reading_changed": true,
+   "scope": "quarter_end",
+   "tail": "low",
+   "target": "business day 1",
+   "visible": true
+  },
+  {
+   "after": [
+    0.010631,
+    0.58654
+   ],
+   "before": [
+    0.010587,
+    0.585407
+   ],
+   "cells": 145,
+   "days": 29,
+   "group": "pooled",
+   "misses": 40,
+   "no_variance_resamples": 3,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "quarter_end",
+   "tail": "up",
+   "target": "business day 1",
+   "visible": true
+  },
+  {
+   "after": [
+    0.066191,
+    0.252454
+   ],
+   "before": [
+    0.066191,
+    0.247987
+   ],
+   "cells": 29,
+   "days": 29,
+   "group": "lead 1",
+   "misses": 4,
+   "no_variance_resamples": 18,
+   "reading_after": "above 0.05",
+   "reading_before": "above 0.05",
+   "reading_changed": false,
+   "scope": "quarter_end",
+   "tail": "low",
+   "target": "business day 2",
+   "visible": true
+  },
+  {
+   "after": [
+    0.069562,
+    0.444511
+   ],
+   "before": [
+    0.069562,
+    0.441492
+   ],
+   "cells": 29,
+   "days": 29,
+   "group": "lead 1",
+   "misses": 5,
+   "no_variance_resamples": 11,
+   "reading_after": "above 0.05",
+   "reading_before": "above 0.05",
+   "reading_changed": false,
+   "scope": "quarter_end",
+   "tail": "up",
+   "target": "business day 2",
+   "visible": true
+  },
+  {
+   "after": [
+    0.0,
+    1.0
+   ],
+   "before": null,
+   "cells": 29,
+   "days": 29,
+   "group": "lead 2",
+   "misses": 1,
+   "no_variance_resamples": 2380,
+   "reading_after": "holds 0.05",
+   "reading_before": "no interval",
+   "reading_changed": true,
+   "scope": "quarter_end",
+   "tail": "low",
+   "target": "business day 2",
+   "visible": true
+  },
+  {
+   "after": [
+    0.0,
+    1.0
+   ],
+   "before": null,
+   "cells": 29,
+   "days": 29,
+   "group": "lead 3",
+   "misses": 1,
+   "no_variance_resamples": 2380,
+   "reading_after": "holds 0.05",
+   "reading_before": "no interval",
+   "reading_changed": true,
+   "scope": "quarter_end",
+   "tail": "low",
+   "target": "business day 2",
+   "visible": true
+  },
+  {
+   "after": [
+    0.172641,
+    0.309107
+   ],
+   "before": [
+    0.17264,
+    0.309103
+   ],
+   "cells": 29,
+   "days": 29,
+   "group": "lead 3",
+   "misses": 7,
+   "no_variance_resamples": 1,
+   "reading_after": "above 0.05",
+   "reading_before": "above 0.05",
+   "reading_changed": false,
+   "scope": "quarter_end",
+   "tail": "up",
+   "target": "business day 2",
+   "visible": false
+  },
+  {
+   "after": [
+    0.0,
+    1.0
+   ],
+   "before": null,
+   "cells": 29,
+   "days": 29,
+   "group": "lead 4",
+   "misses": 1,
+   "no_variance_resamples": 2380,
+   "reading_after": "holds 0.05",
+   "reading_before": "no interval",
+   "reading_changed": true,
+   "scope": "quarter_end",
+   "tail": "low",
+   "target": "business day 2",
+   "visible": true
+  },
+  {
+   "after": [
+    0.021859,
+    0.108908
+   ],
+   "before": [
+    0.021125,
+    0.108908
+   ],
+   "cells": 29,
+   "days": 29,
+   "group": "lead 5",
+   "misses": 2,
+   "no_variance_resamples": 295,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "quarter_end",
+   "tail": "low",
+   "target": "business day 2",
+   "visible": true
+  },
+  {
+   "after": [
+    0.021736,
+    0.177932
+   ],
+   "before": [
+    0.021733,
+    0.177932
+   ],
+   "cells": 145,
+   "days": 29,
+   "group": "pooled",
+   "misses": 9,
+   "no_variance_resamples": 1,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "quarter_end",
+   "tail": "low",
+   "target": "business day 2",
+   "visible": false
+  },
+  {
+   "after": [
+    0.000651,
+    0.966693
+   ],
+   "before": [
+    0.0,
+    0.917978
+   ],
+   "cells": 29,
+   "days": 29,
+   "group": "lead 1",
+   "misses": 7,
+   "no_variance_resamples": 62,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "quarter_end",
+   "tail": "low",
+   "target": "business day 3",
+   "visible": true
+  },
+  {
+   "after": [
+    0.032877,
+    0.105507
+   ],
+   "before": [
+    0.032683,
+    0.105507
+   ],
+   "cells": 29,
+   "days": 29,
+   "group": "lead 1",
+   "misses": 2,
+   "no_variance_resamples": 202,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "quarter_end",
+   "tail": "up",
+   "target": "business day 3",
+   "visible": false
+  },
+  {
+   "after": [
+    0.0,
+    0.721281
+   ],
+   "before": [
+    0.0,
+    0.39687
+   ],
+   "cells": 29,
+   "days": 29,
+   "group": "lead 2",
+   "misses": 5,
+   "no_variance_resamples": 396,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "quarter_end",
+   "tail": "low",
+   "target": "business day 3",
+   "visible": true
+  },
+  {
+   "after": [
+    0.0513,
+    0.378945
+   ],
+   "before": [
+    0.051031,
+    0.372678
+   ],
+   "cells": 29,
+   "days": 29,
+   "group": "lead 2",
+   "misses": 4,
+   "no_variance_resamples": 102,
+   "reading_after": "above 0.05",
+   "reading_before": "above 0.05",
+   "reading_changed": false,
+   "scope": "quarter_end",
+   "tail": "up",
+   "target": "business day 3",
+   "visible": true
+  },
+  {
+   "after": [
+    0.0,
+    1.0
+   ],
+   "before": null,
+   "cells": 29,
+   "days": 29,
+   "group": "lead 3",
+   "misses": 2,
+   "no_variance_resamples": 1053,
+   "reading_after": "holds 0.05",
+   "reading_before": "no interval",
+   "reading_changed": true,
+   "scope": "quarter_end",
+   "tail": "low",
+   "target": "business day 3",
+   "visible": true
+  },
+  {
+   "after": [
+    0.0513,
+    0.378945
+   ],
+   "before": [
+    0.051031,
+    0.372678
+   ],
+   "cells": 29,
+   "days": 29,
+   "group": "lead 3",
+   "misses": 4,
+   "no_variance_resamples": 102,
+   "reading_after": "above 0.05",
+   "reading_before": "above 0.05",
+   "reading_changed": false,
+   "scope": "quarter_end",
+   "tail": "up",
+   "target": "business day 3",
+   "visible": true
+  },
+  {
+   "after": [
+    0.0,
+    1.0
+   ],
+   "before": null,
+   "cells": 29,
+   "days": 29,
+   "group": "lead 4",
+   "misses": 2,
+   "no_variance_resamples": 1053,
+   "reading_after": "holds 0.05",
+   "reading_before": "no interval",
+   "reading_changed": true,
+   "scope": "quarter_end",
+   "tail": "low",
+   "target": "business day 3",
+   "visible": true
+  },
+  {
+   "after": [
+    0.0513,
+    0.378945
+   ],
+   "before": [
+    0.051031,
+    0.372678
+   ],
+   "cells": 29,
+   "days": 29,
+   "group": "lead 4",
+   "misses": 4,
+   "no_variance_resamples": 102,
+   "reading_after": "above 0.05",
+   "reading_before": "above 0.05",
+   "reading_changed": false,
+   "scope": "quarter_end",
+   "tail": "up",
+   "target": "business day 3",
+   "visible": true
+  },
+  {
+   "after": [
+    0.001065,
+    1.0
+   ],
+   "before": [
+    0.0,
+    0.122296
+   ],
+   "cells": 29,
+   "days": 29,
+   "group": "lead 5",
+   "misses": 2,
+   "no_variance_resamples": 549,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "quarter_end",
+   "tail": "low",
+   "target": "business day 3",
+   "visible": true
+  },
+  {
+   "after": [
+    0.045733,
+    0.21513
+   ],
+   "before": [
+    0.045225,
+    0.214524
+   ],
+   "cells": 29,
+   "days": 29,
+   "group": "lead 5",
+   "misses": 3,
+   "no_variance_resamples": 151,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "quarter_end",
+   "tail": "up",
+   "target": "business day 3",
+   "visible": true
+  },
+  {
+   "after": [
+    0.0,
+    0.495715
+   ],
+   "before": [
+    0.0,
+    0.474838
+   ],
+   "cells": 145,
+   "days": 29,
+   "group": "pooled",
+   "misses": 18,
+   "no_variance_resamples": 58,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "quarter_end",
+   "tail": "low",
+   "target": "business day 3",
+   "visible": true
+  },
+  {
+   "after": [
+    0.04841,
+    0.269893
+   ],
+   "before": [
+    0.048152,
+    0.268268
+   ],
+   "cells": 145,
+   "days": 29,
+   "group": "pooled",
+   "misses": 17,
+   "no_variance_resamples": 102,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "quarter_end",
+   "tail": "up",
+   "target": "business day 3",
+   "visible": true
+  },
+  {
+   "after": [
+    0.003315,
+    1.0
+   ],
+   "before": [
+    0.002563,
+    0.053863
+   ],
+   "cells": 60,
+   "days": 60,
+   "group": "lead 1",
+   "misses": 2,
+   "no_variance_resamples": 1000,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "other",
+   "tail": "low",
+   "target": "business day 1",
+   "visible": true
+  },
+  {
+   "after": [
+    0.054345,
+    0.243444
+   ],
+   "before": [
+    0.054287,
+    0.24305
+   ],
+   "cells": 60,
+   "days": 60,
+   "group": "lead 1",
+   "misses": 8,
+   "no_variance_resamples": 4,
+   "reading_after": "above 0.05",
+   "reading_before": "above 0.05",
+   "reading_changed": false,
+   "scope": "other",
+   "tail": "up",
+   "target": "business day 1",
+   "visible": false
+  },
+  {
+   "after": [
+    0.001918,
+    1.0
+   ],
+   "before": null,
+   "cells": 60,
+   "days": 60,
+   "group": "lead 2",
+   "misses": 1,
+   "no_variance_resamples": 3029,
+   "reading_after": "holds 0.05",
+   "reading_before": "no interval",
+   "reading_changed": true,
+   "scope": "other",
+   "tail": "low",
+   "target": "business day 1",
+   "visible": true
+  },
+  {
+   "after": [
+    0.033073,
+    0.261356
+   ],
+   "before": [
+    0.033072,
+    0.260142
+   ],
+   "cells": 60,
+   "days": 60,
+   "group": "lead 2",
+   "misses": 7,
+   "no_variance_resamples": 12,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "other",
+   "tail": "up",
+   "target": "business day 1",
+   "visible": true
+  },
+  {
+   "after": [
+    0.023013,
+    0.091523
+   ],
+   "before": [
+    0.022938,
+    0.091523
+   ],
+   "cells": 60,
+   "days": 60,
+   "group": "lead 3",
+   "misses": 3,
+   "no_variance_resamples": 76,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "other",
+   "tail": "low",
+   "target": "business day 1",
+   "visible": false
+  },
+  {
+   "after": [
+    0.033073,
+    0.261356
+   ],
+   "before": [
+    0.033072,
+    0.260142
+   ],
+   "cells": 60,
+   "days": 60,
+   "group": "lead 3",
+   "misses": 7,
+   "no_variance_resamples": 12,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "other",
+   "tail": "up",
+   "target": "business day 1",
+   "visible": true
+  },
+  {
+   "after": [
+    0.002233,
+    0.375452
+   ],
+   "before": [
+    0.001152,
+    0.267102
+   ],
+   "cells": 60,
+   "days": 60,
+   "group": "lead 4",
+   "misses": 6,
+   "no_variance_resamples": 252,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "other",
+   "tail": "up",
+   "target": "business day 1",
+   "visible": true
+  },
+  {
+   "after": [
+    0.038282,
+    0.191499
+   ],
+   "before": [
+    0.03826,
+    0.191499
+   ],
+   "cells": 60,
+   "days": 60,
+   "group": "lead 5",
+   "misses": 6,
+   "no_variance_resamples": 16,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "other",
+   "tail": "low",
+   "target": "business day 1",
+   "visible": false
+  },
+  {
+   "after": [
+    0.023047,
+    0.10674
+   ],
+   "before": [
+    0.023031,
+    0.105228
+   ],
+   "cells": 300,
+   "days": 60,
+   "group": "pooled",
+   "misses": 17,
+   "no_variance_resamples": 16,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "other",
+   "tail": "low",
+   "target": "business day 1",
+   "visible": true
+  },
+  {
+   "after": [
+    0.032705,
+    0.263253
+   ],
+   "before": [
+    0.032705,
+    0.261677
+   ],
+   "cells": 300,
+   "days": 60,
+   "group": "pooled",
+   "misses": 34,
+   "no_variance_resamples": 4,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "other",
+   "tail": "up",
+   "target": "business day 1",
+   "visible": true
+  },
+  {
+   "after": [
+    0.054469,
+    0.359791
+   ],
+   "before": [
+    0.054461,
+    0.359417
+   ],
+   "cells": 60,
+   "days": 60,
+   "group": "lead 1",
+   "misses": 12,
+   "no_variance_resamples": 1,
+   "reading_after": "above 0.05",
+   "reading_before": "above 0.05",
+   "reading_changed": false,
+   "scope": "other",
+   "tail": "low",
+   "target": "business day 2",
+   "visible": true
+  },
+  {
+   "after": [
+    0.044895,
+    0.141182
+   ],
+   "before": [
+    0.044883,
+    0.140886
+   ],
+   "cells": 60,
+   "days": 60,
+   "group": "lead 1",
+   "misses": 5,
+   "no_variance_resamples": 5,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "other",
+   "tail": "up",
+   "target": "business day 2",
+   "visible": false
+  },
+  {
+   "after": [
+    0.014954,
+    0.105257
+   ],
+   "before": [
+    0.014685,
+    0.105257
+   ],
+   "cells": 60,
+   "days": 60,
+   "group": "lead 2",
+   "misses": 3,
+   "no_variance_resamples": 219,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "other",
+   "tail": "low",
+   "target": "business day 2",
+   "visible": false
+  },
+  {
+   "after": [
+    0.047962,
+    0.131383
+   ],
+   "before": [
+    0.047959,
+    0.131383
+   ],
+   "cells": 60,
+   "days": 60,
+   "group": "lead 2",
+   "misses": 5,
+   "no_variance_resamples": 7,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "other",
+   "tail": "up",
+   "target": "business day 2",
+   "visible": false
+  },
+  {
+   "after": [
+    0.016077,
+    0.104686
+   ],
+   "before": [
+    0.015797,
+    0.104686
+   ],
+   "cells": 60,
+   "days": 60,
+   "group": "lead 3",
+   "misses": 3,
+   "no_variance_resamples": 184,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "other",
+   "tail": "low",
+   "target": "business day 2",
+   "visible": false
+  },
+  {
+   "after": [
+    0.047962,
+    0.131383
+   ],
+   "before": [
+    0.047959,
+    0.131383
+   ],
+   "cells": 60,
+   "days": 60,
+   "group": "lead 3",
+   "misses": 5,
+   "no_variance_resamples": 7,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "other",
+   "tail": "up",
+   "target": "business day 2",
+   "visible": false
+  },
+  {
+   "after": [
+    0.016186,
+    0.187686
+   ],
+   "before": [
+    0.015987,
+    0.187686
+   ],
+   "cells": 60,
+   "days": 60,
+   "group": "lead 4",
+   "misses": 4,
+   "no_variance_resamples": 170,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "other",
+   "tail": "low",
+   "target": "business day 2",
+   "visible": false
+  },
+  {
+   "after": [
+    0.047962,
+    0.131383
+   ],
+   "before": [
+    0.047959,
+    0.131383
+   ],
+   "cells": 60,
+   "days": 60,
+   "group": "lead 4",
+   "misses": 5,
+   "no_variance_resamples": 7,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "other",
+   "tail": "up",
+   "target": "business day 2",
+   "visible": false
+  },
+  {
+   "after": [
+    0.025499,
+    0.187598
+   ],
+   "before": [
+    0.025267,
+    0.179918
+   ],
+   "cells": 60,
+   "days": 60,
+   "group": "lead 5",
+   "misses": 5,
+   "no_variance_resamples": 101,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "other",
+   "tail": "low",
+   "target": "business day 2",
+   "visible": true
+  },
+  {
+   "after": [
+    0.047962,
+    0.131383
+   ],
+   "before": [
+    0.047959,
+    0.131383
+   ],
+   "cells": 60,
+   "days": 60,
+   "group": "lead 5",
+   "misses": 5,
+   "no_variance_resamples": 7,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "other",
+   "tail": "up",
+   "target": "business day 2",
+   "visible": false
+  },
+  {
+   "after": [
+    0.032101,
+    0.17472
+   ],
+   "before": [
+    0.0321,
+    0.174696
+   ],
+   "cells": 300,
+   "days": 60,
+   "group": "pooled",
+   "misses": 27,
+   "no_variance_resamples": 1,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "other",
+   "tail": "low",
+   "target": "business day 2",
+   "visible": false
+  },
+  {
+   "after": [
+    0.0,
+    1.0
+   ],
+   "before": null,
+   "cells": 60,
+   "days": 60,
+   "group": "lead 1",
+   "misses": 2,
+   "no_variance_resamples": 2645,
+   "reading_after": "holds 0.05",
+   "reading_before": "no interval",
+   "reading_changed": true,
+   "scope": "other",
+   "tail": "up",
+   "target": "business day 3",
+   "visible": true
+  },
+  {
+   "after": [
+    0.010025,
+    1.0
+   ],
+   "before": [
+    0.009342,
+    0.115054
+   ],
+   "cells": 60,
+   "days": 60,
+   "group": "lead 2",
+   "misses": 3,
+   "no_variance_resamples": 610,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "other",
+   "tail": "up",
+   "target": "business day 3",
+   "visible": true
+  },
+  {
+   "after": [
+    0.029229,
+    0.289885
+   ],
+   "before": [
+    0.029147,
+    0.286786
+   ],
+   "cells": 60,
+   "days": 60,
+   "group": "lead 3",
+   "misses": 8,
+   "no_variance_resamples": 26,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "other",
+   "tail": "low",
+   "target": "business day 3",
+   "visible": true
+  },
+  {
+   "after": [
+    0.007143,
+    1.0
+   ],
+   "before": [
+    0.00639,
+    0.053863
+   ],
+   "cells": 60,
+   "days": 60,
+   "group": "lead 3",
+   "misses": 2,
+   "no_variance_resamples": 694,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "other",
+   "tail": "up",
+   "target": "business day 3",
+   "visible": true
+  },
+  {
+   "after": [
+    0.032661,
+    0.274125
+   ],
+   "before": [
+    0.03261,
+    0.267721
+   ],
+   "cells": 60,
+   "days": 60,
+   "group": "lead 4",
+   "misses": 8,
+   "no_variance_resamples": 25,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "other",
+   "tail": "low",
+   "target": "business day 3",
+   "visible": true
+  },
+  {
+   "after": [
+    0.010025,
+    1.0
+   ],
+   "before": [
+    0.009342,
+    0.115054
+   ],
+   "cells": 60,
+   "days": 60,
+   "group": "lead 4",
+   "misses": 3,
+   "no_variance_resamples": 610,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "other",
+   "tail": "up",
+   "target": "business day 3",
+   "visible": true
+  },
+  {
+   "after": [
+    0.032661,
+    0.274125
+   ],
+   "before": [
+    0.03261,
+    0.267721
+   ],
+   "cells": 60,
+   "days": 60,
+   "group": "lead 5",
+   "misses": 8,
+   "no_variance_resamples": 25,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "other",
+   "tail": "low",
+   "target": "business day 3",
+   "visible": true
+  },
+  {
+   "after": [
+    0.010025,
+    1.0
+   ],
+   "before": [
+    0.009342,
+    0.115054
+   ],
+   "cells": 60,
+   "days": 60,
+   "group": "lead 5",
+   "misses": 3,
+   "no_variance_resamples": 610,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "other",
+   "tail": "up",
+   "target": "business day 3",
+   "visible": true
+  },
+  {
+   "after": [
+    0.00811,
+    1.0
+   ],
+   "before": [
+    0.007528,
+    0.108331
+   ],
+   "cells": 300,
+   "days": 60,
+   "group": "pooled",
+   "misses": 13,
+   "no_variance_resamples": 610,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "other",
+   "tail": "up",
+   "target": "business day 3",
+   "visible": true
+  },
+  {
+   "after": [
+    0.0,
+    1.0
+   ],
+   "before": null,
+   "cells": 180,
+   "days": 36,
+   "group": "2021-23",
+   "misses": 6,
+   "no_variance_resamples": 2165,
+   "reading_after": "holds 0.05",
+   "reading_before": "no interval",
+   "reading_changed": true,
+   "scope": "by regime",
+   "tail": "low",
+   "target": "business day 1",
+   "visible": true
+  },
+  {
+   "after": [
+    0.034274,
+    0.334366
+   ],
+   "before": [
+    0.034272,
+    0.334366
+   ],
+   "cells": 180,
+   "days": 36,
+   "group": "2021-23",
+   "misses": 34,
+   "no_variance_resamples": 1,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "by regime",
+   "tail": "up",
+   "target": "business day 1",
+   "visible": false
+  },
+  {
+   "after": [
+    0.0,
+    1.0
+   ],
+   "before": [
+    0.0,
+    0.045217
+   ],
+   "cells": 180,
+   "days": 36,
+   "group": "2021-23",
+   "misses": 3,
+   "no_variance_resamples": 708,
+   "reading_after": "holds 0.05",
+   "reading_before": "below 0.05",
+   "reading_changed": true,
+   "scope": "by regime",
+   "tail": "low",
+   "target": "business day 2",
+   "visible": true
+  },
+  {
+   "after": [
+    0.003285,
+    0.232548
+   ],
+   "before": [
+    0.003191,
+    0.231778
+   ],
+   "cells": 180,
+   "days": 36,
+   "group": "2021-23",
+   "misses": 9,
+   "no_variance_resamples": 23,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "by regime",
+   "tail": "low",
+   "target": "business day 3",
+   "visible": true
+  },
+  {
+   "after": [
+    0.0,
+    1.0
+   ],
+   "before": [
+    0.0,
+    0.246163
+   ],
+   "cells": 180,
+   "days": 36,
+   "group": "2021-23",
+   "misses": 16,
+   "no_variance_resamples": 804,
+   "reading_after": "holds 0.05",
+   "reading_before": "holds 0.05",
+   "reading_changed": false,
+   "scope": "by regime",
+   "tail": "up",
+   "target": "business day 3",
+   "visible": true
+  }
+ ],
+ "issue": 1614,
+ "label": "development, not a verdict",
+ "lag": 10,
+ "level": 0.9,
+ "min_days_for_interval": 20,
+ "no_refit": true,
+ "panel_sha256": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+ "panel_sha256_1611": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+ "re_issues": 1611,
+ "reproduces_1547": {
+  "cells": 1335,
+  "low": 0.091386,
+  "up": 0.125843
+ },
+ "reps": 10000,
+ "seed": 1611,
+ "walk_files": {
+  "2026": {
+   "refits": 97,
+   "sha256": "e409d28c54974510f215fcd5cf8644d1dd4c41dc887d7feafe90e3e612773270"
+  },
+  "development": {
+   "refits": 89,
+   "sha256": "435375425e64d83124edb559d0574cbe7949f5ed2dd5f00f03dad7ea4f318127"
+  }
+ },
+ "windows": {
+  "2026": {
+   "scopes": {
+    "all": {
+     "1": {
+      "1": {
+       "cells": 8,
+       "days": 8,
+       "low": {
+        "day_mean_share": 0.0,
+        "design_effect": null,
+        "expected": 0.4,
+        "interval": null,
+        "misses": 0,
+        "no_variance_resamples": null,
+        "resamples": 0,
+        "score_interval": null,
+        "score_vs_nominal": "no interval",
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       },
+       "mean_error": [
+        2.363314,
+        null,
+        null
+       ],
+       "median_error": [
+        2.544691,
+        null,
+        null
+       ],
+       "up": {
+        "day_mean_share": 0.125,
+        "design_effect": null,
+        "expected": 0.4,
+        "interval": null,
+        "misses": 1,
+        "no_variance_resamples": null,
+        "resamples": 0,
+        "score_interval": null,
+        "score_vs_nominal": "no interval",
+        "share": 0.125,
+        "vs_nominal": "no interval"
+       }
+      },
+      "2": {
+       "cells": 7,
+       "days": 7,
+       "low": {
+        "day_mean_share": 0.0,
+        "design_effect": null,
+        "expected": 0.35,
+        "interval": null,
+        "misses": 0,
+        "no_variance_resamples": null,
+        "resamples": 0,
+        "score_interval": null,
+        "score_vs_nominal": "no interval",
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       },
+       "mean_error": [
+        1.24514,
+        null,
+        null
+       ],
+       "median_error": [
+        1.12874,
+        null,
+        null
+       ],
+       "up": {
+        "day_mean_share": 0.0,
+        "design_effect": null,
+        "expected": 0.35,
+        "interval": null,
+        "misses": 0,
+        "no_variance_resamples": null,
+        "resamples": 0,
+        "score_interval": null,
+        "score_vs_nominal": "no interval",
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       }
+      },
+      "3": {
+       "cells": 8,
+       "days": 8,
+       "low": {
+        "day_mean_share": 0.0,
+        "design_effect": null,
+        "expected": 0.4,
+        "interval": null,
+        "misses": 0,
+        "no_variance_resamples": null,
+        "resamples": 0,
+        "score_interval": null,
+        "score_vs_nominal": "no interval",
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       },
+       "mean_error": [
+        0.350439,
+        null,
+        null
+       ],
+       "median_error": [
+        0.416255,
+        null,
+        null
+       ],
+       "up": {
+        "day_mean_share": 0.0,
+        "design_effect": null,
+        "expected": 0.4,
+        "interval": null,
+        "misses": 0,
+        "no_variance_resamples": null,
+        "resamples": 0,
+        "score_interval": null,
+        "score_vs_nominal": "no interval",
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       }
+      },
+      "4": {
+       "cells": 8,
+       "days": 8,
+       "low": {
+        "day_mean_share": 0.0,
+        "design_effect": null,
+        "expected": 0.4,
+        "interval": null,
+        "misses": 0,
+        "no_variance_resamples": null,
+        "resamples": 0,
+        "score_interval": null,
+        "score_vs_nominal": "no interval",
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       },
+       "mean_error": [
+        0.609812,
+        null,
+        null
+       ],
+       "median_error": [
+        0.342004,
+        null,
+        null
+       ],
+       "up": {
+        "day_mean_share": 0.0,
+        "design_effect": null,
+        "expected": 0.4,
+        "interval": null,
+        "misses": 0,
+        "no_variance_resamples": null,
+        "resamples": 0,
+        "score_interval": null,
+        "score_vs_nominal": "no interval",
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       }
+      },
+      "5": {
+       "cells": 8,
+       "days": 8,
+       "low": {
+        "day_mean_share": 0.0,
+        "design_effect": null,
+        "expected": 0.4,
+        "interval": null,
+        "misses": 0,
+        "no_variance_resamples": null,
+        "resamples": 0,
+        "score_interval": null,
+        "score_vs_nominal": "no interval",
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       },
+       "mean_error": [
+        0.751333,
+        null,
+        null
+       ],
+       "median_error": [
+        0.756855,
+        null,
+        null
+       ],
+       "up": {
+        "day_mean_share": 0.0,
+        "design_effect": null,
+        "expected": 0.4,
+        "interval": null,
+        "misses": 0,
+        "no_variance_resamples": null,
+        "resamples": 0,
+        "score_interval": null,
+        "score_vs_nominal": "no interval",
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       }
+      },
+      "all": {
+       "cells": 39,
+       "days": 9,
+       "low": {
+        "day_mean_share": 0.0,
+        "design_effect": null,
+        "expected": 1.95,
+        "interval": null,
+        "misses": 0,
+        "no_variance_resamples": null,
+        "resamples": 0,
+        "score_interval": null,
+        "score_vs_nominal": "no interval",
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       },
+       "mean_error": [
+        1.432266,
+        null,
+        null
+       ],
+       "median_error": [
+        1.13043,
+        null,
+        null
+       ],
+       "up": {
+        "day_mean_share": 0.111111,
+        "design_effect": null,
+        "expected": 1.95,
+        "interval": null,
+        "misses": 1,
+        "no_variance_resamples": null,
+        "resamples": 0,
+        "score_interval": null,
+        "score_vs_nominal": "no interval",
+        "share": 0.025641,
+        "vs_nominal": "no interval"
+       }
+      }
+     },
+     "2": {
+      "1": {
+       "cells": 8,
+       "days": 8,
+       "low": {
+        "day_mean_share": 0.0,
+        "design_effect": null,
+        "expected": 0.4,
+        "interval": null,
+        "misses": 0,
+        "no_variance_resamples": null,
+        "resamples": 0,
+        "score_interval": null,
+        "score_vs_nominal": "no interval",
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       },
+       "mean_error": [
+        -0.13586,
+        null,
+        null
+       ],
+       "median_error": [
+        0.022808,
+        null,
+        null
+       ],
+       "up": {
+        "day_mean_share": 0.0,
+        "design_effect": null,
+        "expected": 0.4,
+        "interval": null,
+        "misses": 0,
+        "no_variance_resamples": null,
+        "resamples": 0,
+        "score_interval": null,
+        "score_vs_nominal": "no interval",
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       }
+      },
+      "2": {
+       "cells": 8,
+       "days": 8,
+       "low": {
+        "day_mean_share": 0.0,
+        "design_effect": null,
+        "expected": 0.4,
+        "interval": null,
+        "misses": 0,
+        "no_variance_resamples": null,
+        "resamples": 0,
+        "score_interval": null,
+        "score_vs_nominal": "no interval",
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       },
+       "mean_error": [
+        0.638479,
+        null,
+        null
+       ],
+       "median_error": [
+        1.199086,
+        null,
+        null
+       ],
+       "up": {
+        "day_mean_share": 0.0,
+        "design_effect": null,
+        "expected": 0.4,
+        "interval": null,
+        "misses": 0,
+        "no_variance_resamples": null,
+        "resamples": 0,
+        "score_interval": null,
+        "score_vs_nominal": "no interval",
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       }
+      },
+      "3": {
+       "cells": 7,
+       "days": 7,
+       "low": {
+        "day_mean_share": 0.0,
+        "design_effect": null,
+        "expected": 0.35,
+        "interval": null,
+        "misses": 0,
+        "no_variance_resamples": null,
+        "resamples": 0,
+        "score_interval": null,
+        "score_vs_nominal": "no interval",
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       },
+       "mean_error": [
+        0.414753,
+        null,
+        null
+       ],
+       "median_error": [
+        1.257764,
+        null,
+        null
+       ],
+       "up": {
+        "day_mean_share": 0.0,
+        "design_effect": null,
+        "expected": 0.35,
+        "interval": null,
+        "misses": 0,
+        "no_variance_resamples": null,
+        "resamples": 0,
+        "score_interval": null,
+        "score_vs_nominal": "no interval",
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       }
+      },
+      "4": {
+       "cells": 8,
+       "days": 8,
+       "low": {
+        "day_mean_share": 0.0,
+        "design_effect": null,
+        "expected": 0.4,
+        "interval": null,
+        "misses": 0,
+        "no_variance_resamples": null,
+        "resamples": 0,
+        "score_interval": null,
+        "score_vs_nominal": "no interval",
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       },
+       "mean_error": [
+        -0.059623,
+        null,
+        null
+       ],
+       "median_error": [
+        0.059431,
+        null,
+        null
+       ],
+       "up": {
+        "day_mean_share": 0.0,
+        "design_effect": null,
+        "expected": 0.4,
+        "interval": null,
+        "misses": 0,
+        "no_variance_resamples": null,
+        "resamples": 0,
+        "score_interval": null,
+        "score_vs_nominal": "no interval",
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       }
+      },
+      "5": {
+       "cells": 8,
+       "days": 8,
+       "low": {
+        "day_mean_share": 0.0,
+        "design_effect": null,
+        "expected": 0.4,
+        "interval": null,
+        "misses": 0,
+        "no_variance_resamples": null,
+        "resamples": 0,
+        "score_interval": null,
+        "score_vs_nominal": "no interval",
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       },
+       "mean_error": [
+        0.211012,
+        null,
+        null
+       ],
+       "median_error": [
+        0.049873,
+        null,
+        null
+       ],
+       "up": {
+        "day_mean_share": 0.0,
+        "design_effect": null,
+        "expected": 0.4,
+        "interval": null,
+        "misses": 0,
+        "no_variance_resamples": null,
+        "resamples": 0,
+        "score_interval": null,
+        "score_vs_nominal": "no interval",
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       }
+      },
+      "all": {
+       "cells": 39,
+       "days": 9,
+       "low": {
+        "day_mean_share": 0.0,
+        "design_effect": null,
+        "expected": 1.95,
+        "interval": null,
+        "misses": 0,
+        "no_variance_resamples": null,
+        "resamples": 0,
+        "score_interval": null,
+        "score_vs_nominal": "no interval",
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       },
+       "mean_error": [
+        -0.080163,
+        null,
+        null
+       ],
+       "median_error": [
+        -0.050964,
+        null,
+        null
+       ],
+       "up": {
+        "day_mean_share": 0.0,
+        "design_effect": null,
+        "expected": 1.95,
+        "interval": null,
+        "misses": 0,
+        "no_variance_resamples": null,
+        "resamples": 0,
+        "score_interval": null,
+        "score_vs_nominal": "no interval",
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       }
+      }
+     },
+     "3": {
+      "1": {
+       "cells": 8,
+       "days": 8,
+       "low": {
+        "day_mean_share": 0.0,
+        "design_effect": null,
+        "expected": 0.4,
+        "interval": null,
+        "misses": 0,
+        "no_variance_resamples": null,
+        "resamples": 0,
+        "score_interval": null,
+        "score_vs_nominal": "no interval",
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       },
+       "mean_error": [
+        -1.458382,
+        null,
+        null
+       ],
+       "median_error": [
+        -1.61849,
+        null,
+        null
+       ],
+       "up": {
+        "day_mean_share": 0.0,
+        "design_effect": null,
+        "expected": 0.4,
+        "interval": null,
+        "misses": 0,
+        "no_variance_resamples": null,
+        "resamples": 0,
+        "score_interval": null,
+        "score_vs_nominal": "no interval",
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       }
+      },
+      "2": {
+       "cells": 8,
+       "days": 8,
+       "low": {
+        "day_mean_share": 0.125,
+        "design_effect": null,
+        "expected": 0.4,
+        "interval": null,
+        "misses": 1,
+        "no_variance_resamples": null,
+        "resamples": 0,
+        "score_interval": null,
+        "score_vs_nominal": "no interval",
+        "share": 0.125,
+        "vs_nominal": "no interval"
+       },
+       "mean_error": [
+        -2.348438,
+        null,
+        null
+       ],
+       "median_error": [
+        -1.926669,
+        null,
+        null
+       ],
+       "up": {
+        "day_mean_share": 0.0,
+        "design_effect": null,
+        "expected": 0.4,
+        "interval": null,
+        "misses": 0,
+        "no_variance_resamples": null,
+        "resamples": 0,
+        "score_interval": null,
+        "score_vs_nominal": "no interval",
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       }
+      },
+      "3": {
+       "cells": 8,
+       "days": 8,
+       "low": {
+        "day_mean_share": 0.0,
+        "design_effect": null,
+        "expected": 0.4,
+        "interval": null,
+        "misses": 0,
+        "no_variance_resamples": null,
+        "resamples": 0,
+        "score_interval": null,
+        "score_vs_nominal": "no interval",
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       },
+       "mean_error": [
+        -1.788743,
+        null,
+        null
+       ],
+       "median_error": [
+        -1.761861,
+        null,
+        null
+       ],
+       "up": {
+        "day_mean_share": 0.0,
+        "design_effect": null,
+        "expected": 0.4,
+        "interval": null,
+        "misses": 0,
+        "no_variance_resamples": null,
+        "resamples": 0,
+        "score_interval": null,
+        "score_vs_nominal": "no interval",
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       }
+      },
+      "4": {
+       "cells": 7,
+       "days": 7,
+       "low": {
+        "day_mean_share": 0.0,
+        "design_effect": null,
+        "expected": 0.35,
+        "interval": null,
+        "misses": 0,
+        "no_variance_resamples": null,
+        "resamples": 0,
+        "score_interval": null,
+        "score_vs_nominal": "no interval",
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       },
+       "mean_error": [
+        -1.396783,
+        null,
+        null
+       ],
+       "median_error": [
+        -1.375307,
+        null,
+        null
+       ],
+       "up": {
+        "day_mean_share": 0.0,
+        "design_effect": null,
+        "expected": 0.35,
+        "interval": null,
+        "misses": 0,
+        "no_variance_resamples": null,
+        "resamples": 0,
+        "score_interval": null,
+        "score_vs_nominal": "no interval",
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       }
+      },
+      "5": {
+       "cells": 8,
+       "days": 8,
+       "low": {
+        "day_mean_share": 0.125,
+        "design_effect": null,
+        "expected": 0.4,
+        "interval": null,
+        "misses": 1,
+        "no_variance_resamples": null,
+        "resamples": 0,
+        "score_interval": null,
+        "score_vs_nominal": "no interval",
+        "share": 0.125,
+        "vs_nominal": "no interval"
+       },
+       "mean_error": [
+        -1.585693,
+        null,
+        null
+       ],
+       "median_error": [
+        -1.282679,
+        null,
+        null
+       ],
+       "up": {
+        "day_mean_share": 0.0,
+        "design_effect": null,
+        "expected": 0.4,
+        "interval": null,
+        "misses": 0,
+        "no_variance_resamples": null,
+        "resamples": 0,
+        "score_interval": null,
+        "score_vs_nominal": "no interval",
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       }
+      },
+      "all": {
+       "cells": 39,
+       "days": 9,
+       "low": {
+        "day_mean_share": 0.059259,
+        "design_effect": null,
+        "expected": 1.95,
+        "interval": null,
+        "misses": 2,
+        "no_variance_resamples": null,
+        "resamples": 0,
+        "score_interval": null,
+        "score_vs_nominal": "no interval",
+        "share": 0.051282,
+        "vs_nominal": "no interval"
+       },
+       "mean_error": [
+        -1.798583,
+        null,
+        null
+       ],
+       "median_error": [
+        -1.643493,
+        null,
+        null
+       ],
+       "up": {
+        "day_mean_share": 0.0,
+        "design_effect": null,
+        "expected": 1.95,
+        "interval": null,
+        "misses": 0,
+        "no_variance_resamples": null,
+        "resamples": 0,
+        "score_interval": null,
+        "score_vs_nominal": "no interval",
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       }
+      }
+     }
+    }
+   }
+  },
+  "development": {
+   "by_regime": {
+    "1": {
+     "2018-19": {
+      "by_lead": {
+       "1": {
+        "cells": 17,
+        "days": 17,
+        "low": {
+         "misses": 1,
+         "share": 0.058824
+        },
+        "median_error": [
+         1.354942,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 2,
+         "share": 0.117647
+        }
+       },
+       "2": {
+        "cells": 17,
+        "days": 17,
+        "low": {
+         "misses": 0,
+         "share": 0.0
+        },
+        "median_error": [
+         0.548389,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 2,
+         "share": 0.117647
+        }
+       },
+       "3": {
+        "cells": 17,
+        "days": 17,
+        "low": {
+         "misses": 1,
+         "share": 0.058824
+        },
+        "median_error": [
+         -0.848469,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 2,
+         "share": 0.117647
+        }
+       },
+       "4": {
+        "cells": 17,
+        "days": 17,
+        "low": {
+         "misses": 1,
+         "share": 0.058824
+        },
+        "median_error": [
+         0.363293,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 2,
+         "share": 0.117647
+        }
+       },
+       "5": {
+        "cells": 17,
+        "days": 17,
+        "low": {
+         "misses": 1,
+         "share": 0.058824
+        },
+        "median_error": [
+         0.09375,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 3,
+         "share": 0.176471
+        }
+       }
+      },
+      "cells": 85,
+      "days": 17,
+      "low": {
+       "day_mean_share": 0.047059,
+       "design_effect": null,
+       "expected": 4.25,
+       "interval": null,
+       "misses": 4,
+       "no_variance_resamples": null,
+       "resamples": 0,
+       "score_interval": null,
+       "score_vs_nominal": "no interval",
+       "share": 0.047059,
+       "vs_nominal": "no interval"
+      },
+      "mean_error": [
+       3.188383,
+       null,
+       null
+      ],
+      "median_error": [
+       0.665627,
+       null,
+       null
+      ],
+      "up": {
+       "day_mean_share": 0.129412,
+       "design_effect": null,
+       "expected": 4.25,
+       "interval": null,
+       "misses": 11,
+       "no_variance_resamples": null,
+       "resamples": 0,
+       "score_interval": null,
+       "score_vs_nominal": "no interval",
+       "share": 0.129412,
+       "vs_nominal": "no interval"
+      }
+     },
+     "2020": {
+      "by_lead": {
+       "1": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 0,
+         "share": 0.0
+        },
+        "median_error": [
+         -0.517093,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 0,
+         "share": 0.0
+        }
+       },
+       "2": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 0,
+         "share": 0.0
+        },
+        "median_error": [
+         -0.772311,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 0,
+         "share": 0.0
+        }
+       },
+       "3": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 0,
+         "share": 0.0
+        },
+        "median_error": [
+         -1.213363,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 0,
+         "share": 0.0
+        }
+       },
+       "4": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 2,
+         "share": 0.166667
+        },
+        "median_error": [
+         -1.498917,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 0,
+         "share": 0.0
+        }
+       },
+       "5": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 2,
+         "share": 0.166667
+        },
+        "median_error": [
+         -1.679481,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 0,
+         "share": 0.0
+        }
+       }
+      },
+      "cells": 60,
+      "days": 12,
+      "low": {
+       "day_mean_share": 0.066667,
+       "design_effect": null,
+       "expected": 3.0,
+       "interval": null,
+       "misses": 4,
+       "no_variance_resamples": null,
+       "resamples": 0,
+       "score_interval": null,
+       "score_vs_nominal": "no interval",
+       "share": 0.066667,
+       "vs_nominal": "no interval"
+      },
+      "mean_error": [
+       -1.511765,
+       null,
+       null
+      ],
+      "median_error": [
+       -1.163159,
+       null,
+       null
+      ],
+      "up": {
+       "day_mean_share": 0.0,
+       "design_effect": null,
+       "expected": 3.0,
+       "interval": null,
+       "misses": 0,
+       "no_variance_resamples": null,
+       "resamples": 0,
+       "score_interval": null,
+       "score_vs_nominal": "no interval",
+       "share": 0.0,
+       "vs_nominal": "no interval"
+      }
+     },
+     "2021-23": {
+      "by_lead": {
+       "1": {
+        "cells": 36,
+        "days": 36,
+        "low": {
+         "misses": 1,
+         "share": 0.027778
+        },
+        "median_error": [
+         0.030368,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 8,
+         "share": 0.222222
+        }
+       },
+       "2": {
+        "cells": 36,
+        "days": 36,
+        "low": {
+         "misses": 1,
+         "share": 0.027778
+        },
+        "median_error": [
+         -0.087797,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 8,
+         "share": 0.222222
+        }
+       },
+       "3": {
+        "cells": 36,
+        "days": 36,
+        "low": {
+         "misses": 1,
+         "share": 0.027778
+        },
+        "median_error": [
+         0.432474,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 5,
+         "share": 0.138889
+        }
+       },
+       "4": {
+        "cells": 36,
+        "days": 36,
+        "low": {
+         "misses": 1,
+         "share": 0.027778
+        },
+        "median_error": [
+         -0.096098,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 7,
+         "share": 0.194444
+        }
+       },
+       "5": {
+        "cells": 36,
+        "days": 36,
+        "low": {
+         "misses": 2,
+         "share": 0.055556
+        },
+        "median_error": [
+         0.002666,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 6,
+         "share": 0.166667
+        }
+       }
+      },
+      "cells": 180,
+      "days": 36,
+      "low": {
+       "day_mean_share": 0.033333,
+       "design_effect": 5.137583,
+       "expected": 9.0,
+       "interval": [
+        0.0,
+        1.0
+       ],
+       "misses": 6,
+       "no_variance_resamples": 2165,
+       "resamples": 10000,
+       "score_interval": [
+        0.008229,
+        0.125345
+       ],
+       "score_vs_nominal": "holds 0.05",
+       "share": 0.033333,
+       "vs_nominal": "holds 0.05"
+      },
+      "mean_error": [
+       0.381119,
+       -1.220677,
+       1.156056
+      ],
+      "median_error": [
+       0.360507,
+       -0.205353,
+       0.694713
+      ],
+      "up": {
+       "day_mean_share": 0.188889,
+       "design_effect": 5.441278,
+       "expected": 9.0,
+       "interval": [
+        0.034274,
+        0.334366
+       ],
+       "misses": 34,
+       "no_variance_resamples": 1,
+       "resamples": 10000,
+       "score_interval": [
+        0.102244,
+        0.322575
+       ],
+       "score_vs_nominal": "above 0.05",
+       "share": 0.188889,
+       "vs_nominal": "holds 0.05"
+      }
+     },
+     "2024": {
+      "by_lead": {
+       "1": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 0,
+         "share": 0.0
+        },
+        "median_error": [
+         1.26572,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 3,
+         "share": 0.25
+        }
+       },
+       "2": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 0,
+         "share": 0.0
+        },
+        "median_error": [
+         0.927676,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 3,
+         "share": 0.25
+        }
+       },
+       "3": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 1,
+         "share": 0.083333
+        },
+        "median_error": [
+         1.391872,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 4,
+         "share": 0.333333
+        }
+       },
+       "4": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 1,
+         "share": 0.083333
+        },
+        "median_error": [
+         1.378529,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 5,
+         "share": 0.416667
+        }
+       },
+       "5": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 1,
+         "share": 0.083333
+        },
+        "median_error": [
+         1.332351,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 5,
+         "share": 0.416667
+        }
+       }
+      },
+      "cells": 60,
+      "days": 12,
+      "low": {
+       "day_mean_share": 0.05,
+       "design_effect": null,
+       "expected": 3.0,
+       "interval": null,
+       "misses": 3,
+       "no_variance_resamples": null,
+       "resamples": 0,
+       "score_interval": null,
+       "score_vs_nominal": "no interval",
+       "share": 0.05,
+       "vs_nominal": "no interval"
+      },
+      "mean_error": [
+       2.599731,
+       null,
+       null
+      ],
+      "median_error": [
+       1.714273,
+       null,
+       null
+      ],
+      "up": {
+       "day_mean_share": 0.333333,
+       "design_effect": null,
+       "expected": 3.0,
+       "interval": null,
+       "misses": 20,
+       "no_variance_resamples": null,
+       "resamples": 0,
+       "score_interval": null,
+       "score_vs_nominal": "no interval",
+       "share": 0.333333,
+       "vs_nominal": "no interval"
+      }
+     },
+     "2025-26": {
+      "by_lead": {
+       "1": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 0,
+         "share": 0.0
+        },
+        "median_error": [
+         0.732952,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 3,
+         "share": 0.25
+        }
+       },
+       "2": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 0,
+         "share": 0.0
+        },
+        "median_error": [
+         0.112834,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 1,
+         "share": 0.083333
+        }
+       },
+       "3": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 0,
+         "share": 0.0
+        },
+        "median_error": [
+         2.095545,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 2,
+         "share": 0.166667
+        }
+       },
+       "4": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 1,
+         "share": 0.083333
+        },
+        "median_error": [
+         2.027872,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 2,
+         "share": 0.166667
+        }
+       },
+       "5": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 1,
+         "share": 0.083333
+        },
+        "median_error": [
+         1.987107,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 1,
+         "share": 0.083333
+        }
+       }
+      },
+      "cells": 60,
+      "days": 12,
+      "low": {
+       "day_mean_share": 0.033333,
+       "design_effect": null,
+       "expected": 3.0,
+       "interval": null,
+       "misses": 2,
+       "no_variance_resamples": null,
+       "resamples": 0,
+       "score_interval": null,
+       "score_vs_nominal": "no interval",
+       "share": 0.033333,
+       "vs_nominal": "no interval"
+      },
+      "mean_error": [
+       2.341349,
+       null,
+       null
+      ],
+      "median_error": [
+       1.474623,
+       null,
+       null
+      ],
+      "up": {
+       "day_mean_share": 0.15,
+       "design_effect": null,
+       "expected": 3.0,
+       "interval": null,
+       "misses": 9,
+       "no_variance_resamples": null,
+       "resamples": 0,
+       "score_interval": null,
+       "score_vs_nominal": "no interval",
+       "share": 0.15,
+       "vs_nominal": "no interval"
+      }
+     }
+    },
+    "2": {
+     "2018-19": {
+      "by_lead": {
+       "1": {
+        "cells": 17,
+        "days": 17,
+        "low": {
+         "misses": 6,
+         "share": 0.352941
+        },
+        "median_error": [
+         -2.099587,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 1,
+         "share": 0.058824
+        }
+       },
+       "2": {
+        "cells": 17,
+        "days": 17,
+        "low": {
+         "misses": 1,
+         "share": 0.058824
+        },
+        "median_error": [
+         0.960581,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 3,
+         "share": 0.176471
+        }
+       },
+       "3": {
+        "cells": 17,
+        "days": 17,
+        "low": {
+         "misses": 1,
+         "share": 0.058824
+        },
+        "median_error": [
+         0.052289,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 3,
+         "share": 0.176471
+        }
+       },
+       "4": {
+        "cells": 17,
+        "days": 17,
+        "low": {
+         "misses": 2,
+         "share": 0.117647
+        },
+        "median_error": [
+         -0.581634,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 3,
+         "share": 0.176471
+        }
+       },
+       "5": {
+        "cells": 17,
+        "days": 17,
+        "low": {
+         "misses": 2,
+         "share": 0.117647
+        },
+        "median_error": [
+         0.444317,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 3,
+         "share": 0.176471
+        }
+       }
+      },
+      "cells": 85,
+      "days": 17,
+      "low": {
+       "day_mean_share": 0.141176,
+       "design_effect": null,
+       "expected": 4.25,
+       "interval": null,
+       "misses": 12,
+       "no_variance_resamples": null,
+       "resamples": 0,
+       "score_interval": null,
+       "score_vs_nominal": "no interval",
+       "share": 0.141176,
+       "vs_nominal": "no interval"
+      },
+      "mean_error": [
+       0.284805,
+       null,
+       null
+      ],
+      "median_error": [
+       0.112912,
+       null,
+       null
+      ],
+      "up": {
+       "day_mean_share": 0.152941,
+       "design_effect": null,
+       "expected": 4.25,
+       "interval": null,
+       "misses": 13,
+       "no_variance_resamples": null,
+       "resamples": 0,
+       "score_interval": null,
+       "score_vs_nominal": "no interval",
+       "share": 0.152941,
+       "vs_nominal": "no interval"
+      }
+     },
+     "2020": {
+      "by_lead": {
+       "1": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 1,
+         "share": 0.083333
+        },
+        "median_error": [
+         0.530335,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 1,
+         "share": 0.083333
+        }
+       },
+       "2": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 1,
+         "share": 0.083333
+        },
+        "median_error": [
+         0.480877,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 1,
+         "share": 0.083333
+        }
+       },
+       "3": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 1,
+         "share": 0.083333
+        },
+        "median_error": [
+         0.280145,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 1,
+         "share": 0.083333
+        }
+       },
+       "4": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 1,
+         "share": 0.083333
+        },
+        "median_error": [
+         0.159988,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 1,
+         "share": 0.083333
+        }
+       },
+       "5": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 2,
+         "share": 0.166667
+        },
+        "median_error": [
+         -0.332138,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 1,
+         "share": 0.083333
+        }
+       }
+      },
+      "cells": 60,
+      "days": 12,
+      "low": {
+       "day_mean_share": 0.1,
+       "design_effect": null,
+       "expected": 3.0,
+       "interval": null,
+       "misses": 6,
+       "no_variance_resamples": null,
+       "resamples": 0,
+       "score_interval": null,
+       "score_vs_nominal": "no interval",
+       "share": 0.1,
+       "vs_nominal": "no interval"
+      },
+      "mean_error": [
+       -0.196017,
+       null,
+       null
+      ],
+      "median_error": [
+       0.319771,
+       null,
+       null
+      ],
+      "up": {
+       "day_mean_share": 0.083333,
+       "design_effect": null,
+       "expected": 3.0,
+       "interval": null,
+       "misses": 5,
+       "no_variance_resamples": null,
+       "resamples": 0,
+       "score_interval": null,
+       "score_vs_nominal": "no interval",
+       "share": 0.083333,
+       "vs_nominal": "no interval"
+      }
+     },
+     "2021-23": {
+      "by_lead": {
+       "1": {
+        "cells": 36,
+        "days": 36,
+        "low": {
+         "misses": 3,
+         "share": 0.083333
+        },
+        "median_error": [
+         -0.19661,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 7,
+         "share": 0.194444
+        }
+       },
+       "2": {
+        "cells": 36,
+        "days": 36,
+        "low": {
+         "misses": 0,
+         "share": 0.0
+        },
+        "median_error": [
+         -0.074507,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 8,
+         "share": 0.222222
+        }
+       },
+       "3": {
+        "cells": 36,
+        "days": 36,
+        "low": {
+         "misses": 0,
+         "share": 0.0
+        },
+        "median_error": [
+         -0.024008,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 6,
+         "share": 0.166667
+        }
+       },
+       "4": {
+        "cells": 36,
+        "days": 36,
+        "low": {
+         "misses": 0,
+         "share": 0.0
+        },
+        "median_error": [
+         0.160176,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 6,
+         "share": 0.166667
+        }
+       },
+       "5": {
+        "cells": 36,
+        "days": 36,
+        "low": {
+         "misses": 0,
+         "share": 0.0
+        },
+        "median_error": [
+         0.021396,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 7,
+         "share": 0.194444
+        }
+       }
+      },
+      "cells": 180,
+      "days": 36,
+      "low": {
+       "day_mean_share": 0.016667,
+       "design_effect": 1.485191,
+       "expected": 9.0,
+       "interval": [
+        0.0,
+        1.0
+       ],
+       "misses": 3,
+       "no_variance_resamples": 708,
+       "resamples": 10000,
+       "score_interval": [
+        0.005558,
+        0.048883
+       ],
+       "score_vs_nominal": "below 0.05",
+       "share": 0.016667,
+       "vs_nominal": "holds 0.05"
+      },
+      "mean_error": [
+       0.539831,
+       0.033558,
+       1.262288
+      ],
+      "median_error": [
+       -0.032714,
+       -0.205595,
+       0.35694
+      ],
+      "up": {
+       "day_mean_share": 0.188889,
+       "design_effect": 6.786967,
+       "expected": 9.0,
+       "interval": [
+        0.070966,
+        0.323298
+       ],
+       "misses": 34,
+       "no_variance_resamples": 0,
+       "resamples": 10000,
+       "score_interval": [
+        0.095165,
+        0.340212
+       ],
+       "score_vs_nominal": "above 0.05",
+       "share": 0.188889,
+       "vs_nominal": "above 0.05"
+      }
+     },
+     "2024": {
+      "by_lead": {
+       "1": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 3,
+         "share": 0.25
+        },
+        "median_error": [
+         0.053914,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 1,
+         "share": 0.083333
+        }
+       },
+       "2": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 0,
+         "share": 0.0
+        },
+        "median_error": [
+         0.442127,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 1,
+         "share": 0.083333
+        }
+       },
+       "3": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 1,
+         "share": 0.083333
+        },
+        "median_error": [
+         -0.246197,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 1,
+         "share": 0.083333
+        }
+       },
+       "4": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 1,
+         "share": 0.083333
+        },
+        "median_error": [
+         0.217156,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 2,
+         "share": 0.166667
+        }
+       },
+       "5": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 1,
+         "share": 0.083333
+        },
+        "median_error": [
+         0.266696,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 3,
+         "share": 0.25
+        }
+       }
+      },
+      "cells": 60,
+      "days": 12,
+      "low": {
+       "day_mean_share": 0.1,
+       "design_effect": null,
+       "expected": 3.0,
+       "interval": null,
+       "misses": 6,
+       "no_variance_resamples": null,
+       "resamples": 0,
+       "score_interval": null,
+       "score_vs_nominal": "no interval",
+       "share": 0.1,
+       "vs_nominal": "no interval"
+      },
+      "mean_error": [
+       0.710186,
+       null,
+       null
+      ],
+      "median_error": [
+       0.281737,
+       null,
+       null
+      ],
+      "up": {
+       "day_mean_share": 0.133333,
+       "design_effect": null,
+       "expected": 3.0,
+       "interval": null,
+       "misses": 8,
+       "no_variance_resamples": null,
+       "resamples": 0,
+       "score_interval": null,
+       "score_vs_nominal": "no interval",
+       "share": 0.133333,
+       "vs_nominal": "no interval"
+      }
+     },
+     "2025-26": {
+      "by_lead": {
+       "1": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 3,
+         "share": 0.25
+        },
+        "median_error": [
+         -2.662177,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 0,
+         "share": 0.0
+        }
+       },
+       "2": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 2,
+         "share": 0.166667
+        },
+        "median_error": [
+         -1.218631,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 1,
+         "share": 0.083333
+        }
+       },
+       "3": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 1,
+         "share": 0.083333
+        },
+        "median_error": [
+         -1.640225,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 1,
+         "share": 0.083333
+        }
+       },
+       "4": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 1,
+         "share": 0.083333
+        },
+        "median_error": [
+         0.02602,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 1,
+         "share": 0.083333
+        }
+       },
+       "5": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 2,
+         "share": 0.166667
+        },
+        "median_error": [
+         0.388884,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 1,
+         "share": 0.083333
+        }
+       }
+      },
+      "cells": 60,
+      "days": 12,
+      "low": {
+       "day_mean_share": 0.15,
+       "design_effect": null,
+       "expected": 3.0,
+       "interval": null,
+       "misses": 9,
+       "no_variance_resamples": null,
+       "resamples": 0,
+       "score_interval": null,
+       "score_vs_nominal": "no interval",
+       "share": 0.15,
+       "vs_nominal": "no interval"
+      },
+      "mean_error": [
+       -1.19711,
+       null,
+       null
+      ],
+      "median_error": [
+       -1.366541,
+       null,
+       null
+      ],
+      "up": {
+       "day_mean_share": 0.066667,
+       "design_effect": null,
+       "expected": 3.0,
+       "interval": null,
+       "misses": 4,
+       "no_variance_resamples": null,
+       "resamples": 0,
+       "score_interval": null,
+       "score_vs_nominal": "no interval",
+       "share": 0.066667,
+       "vs_nominal": "no interval"
+      }
+     }
+    },
+    "3": {
+     "2018-19": {
+      "by_lead": {
+       "1": {
+        "cells": 17,
+        "days": 17,
+        "low": {
+         "misses": 4,
+         "share": 0.235294
+        },
+        "median_error": [
+         -0.922162,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 1,
+         "share": 0.058824
+        }
+       },
+       "2": {
+        "cells": 17,
+        "days": 17,
+        "low": {
+         "misses": 5,
+         "share": 0.294118
+        },
+        "median_error": [
+         -2.791125,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 1,
+         "share": 0.058824
+        }
+       },
+       "3": {
+        "cells": 17,
+        "days": 17,
+        "low": {
+         "misses": 3,
+         "share": 0.176471
+        },
+        "median_error": [
+         -1.893377,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 1,
+         "share": 0.058824
+        }
+       },
+       "4": {
+        "cells": 17,
+        "days": 17,
+        "low": {
+         "misses": 3,
+         "share": 0.176471
+        },
+        "median_error": [
+         -2.152088,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 1,
+         "share": 0.058824
+        }
+       },
+       "5": {
+        "cells": 17,
+        "days": 17,
+        "low": {
+         "misses": 3,
+         "share": 0.176471
+        },
+        "median_error": [
+         -3.213944,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 1,
+         "share": 0.058824
+        }
+       }
+      },
+      "cells": 85,
+      "days": 17,
+      "low": {
+       "day_mean_share": 0.211765,
+       "design_effect": null,
+       "expected": 4.25,
+       "interval": null,
+       "misses": 18,
+       "no_variance_resamples": null,
+       "resamples": 0,
+       "score_interval": null,
+       "score_vs_nominal": "no interval",
+       "share": 0.211765,
+       "vs_nominal": "no interval"
+      },
+      "mean_error": [
+       -1.592322,
+       null,
+       null
+      ],
+      "median_error": [
+       -2.145824,
+       null,
+       null
+      ],
+      "up": {
+       "day_mean_share": 0.058824,
+       "design_effect": null,
+       "expected": 4.25,
+       "interval": null,
+       "misses": 5,
+       "no_variance_resamples": null,
+       "resamples": 0,
+       "score_interval": null,
+       "score_vs_nominal": "no interval",
+       "share": 0.058824,
+       "vs_nominal": "no interval"
+      }
+     },
+     "2020": {
+      "by_lead": {
+       "1": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 1,
+         "share": 0.083333
+        },
+        "median_error": [
+         0.075758,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 2,
+         "share": 0.166667
+        }
+       },
+       "2": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 1,
+         "share": 0.083333
+        },
+        "median_error": [
+         0.110099,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 2,
+         "share": 0.166667
+        }
+       },
+       "3": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 1,
+         "share": 0.083333
+        },
+        "median_error": [
+         0.29765,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 1,
+         "share": 0.083333
+        }
+       },
+       "4": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 1,
+         "share": 0.083333
+        },
+        "median_error": [
+         0.264767,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 2,
+         "share": 0.166667
+        }
+       },
+       "5": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 1,
+         "share": 0.083333
+        },
+        "median_error": [
+         -0.043142,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 2,
+         "share": 0.166667
+        }
+       }
+      },
+      "cells": 60,
+      "days": 12,
+      "low": {
+       "day_mean_share": 0.083333,
+       "design_effect": null,
+       "expected": 3.0,
+       "interval": null,
+       "misses": 5,
+       "no_variance_resamples": null,
+       "resamples": 0,
+       "score_interval": null,
+       "score_vs_nominal": "no interval",
+       "share": 0.083333,
+       "vs_nominal": "no interval"
+      },
+      "mean_error": [
+       0.68482,
+       null,
+       null
+      ],
+      "median_error": [
+       0.111835,
+       null,
+       null
+      ],
+      "up": {
+       "day_mean_share": 0.15,
+       "design_effect": null,
+       "expected": 3.0,
+       "interval": null,
+       "misses": 9,
+       "no_variance_resamples": null,
+       "resamples": 0,
+       "score_interval": null,
+       "score_vs_nominal": "no interval",
+       "share": 0.15,
+       "vs_nominal": "no interval"
+      }
+     },
+     "2021-23": {
+      "by_lead": {
+       "1": {
+        "cells": 36,
+        "days": 36,
+        "low": {
+         "misses": 4,
+         "share": 0.111111
+        },
+        "median_error": [
+         -0.207565,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 1,
+         "share": 0.027778
+        }
+       },
+       "2": {
+        "cells": 36,
+        "days": 36,
+        "low": {
+         "misses": 4,
+         "share": 0.111111
+        },
+        "median_error": [
+         -0.242956,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 4,
+         "share": 0.111111
+        }
+       },
+       "3": {
+        "cells": 36,
+        "days": 36,
+        "low": {
+         "misses": 0,
+         "share": 0.0
+        },
+        "median_error": [
+         -0.144879,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 4,
+         "share": 0.111111
+        }
+       },
+       "4": {
+        "cells": 36,
+        "days": 36,
+        "low": {
+         "misses": 0,
+         "share": 0.0
+        },
+        "median_error": [
+         -0.118727,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 4,
+         "share": 0.111111
+        }
+       },
+       "5": {
+        "cells": 36,
+        "days": 36,
+        "low": {
+         "misses": 1,
+         "share": 0.027778
+        },
+        "median_error": [
+         -0.061373,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 3,
+         "share": 0.083333
+        }
+       }
+      },
+      "cells": 180,
+      "days": 36,
+      "low": {
+       "day_mean_share": 0.05,
+       "design_effect": 3.118022,
+       "expected": 9.0,
+       "interval": [
+        0.003285,
+        0.232548
+       ],
+       "misses": 9,
+       "no_variance_resamples": 23,
+       "resamples": 10000,
+       "score_interval": [
+        0.019823,
+        0.120468
+       ],
+       "score_vs_nominal": "holds 0.05",
+       "share": 0.05,
+       "vs_nominal": "holds 0.05"
+      },
+      "mean_error": [
+       0.057335,
+       -0.460541,
+       1.522926
+      ],
+      "median_error": [
+       -0.176113,
+       -0.286476,
+       -0.140028
+      ],
+      "up": {
+       "day_mean_share": 0.088889,
+       "design_effect": 7.537263,
+       "expected": 9.0,
+       "interval": [
+        0.0,
+        1.0
+       ],
+       "misses": 16,
+       "no_variance_resamples": 804,
+       "resamples": 10000,
+       "score_interval": [
+        0.030766,
+        0.230683
+       ],
+       "score_vs_nominal": "holds 0.05",
+       "share": 0.088889,
+       "vs_nominal": "holds 0.05"
+      }
+     },
+     "2024": {
+      "by_lead": {
+       "1": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 6,
+         "share": 0.5
+        },
+        "median_error": [
+         -2.139432,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 0,
+         "share": 0.0
+        }
+       },
+       "2": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 5,
+         "share": 0.416667
+        },
+        "median_error": [
+         -1.497907,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 0,
+         "share": 0.0
+        }
+       },
+       "3": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 2,
+         "share": 0.166667
+        },
+        "median_error": [
+         -0.929731,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 0,
+         "share": 0.0
+        }
+       },
+       "4": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 3,
+         "share": 0.25
+        },
+        "median_error": [
+         -0.75616,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 0,
+         "share": 0.0
+        }
+       },
+       "5": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 2,
+         "share": 0.166667
+        },
+        "median_error": [
+         -0.671608,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 0,
+         "share": 0.0
+        }
+       }
+      },
+      "cells": 60,
+      "days": 12,
+      "low": {
+       "day_mean_share": 0.3,
+       "design_effect": null,
+       "expected": 3.0,
+       "interval": null,
+       "misses": 18,
+       "no_variance_resamples": null,
+       "resamples": 0,
+       "score_interval": null,
+       "score_vs_nominal": "no interval",
+       "share": 0.3,
+       "vs_nominal": "no interval"
+      },
+      "mean_error": [
+       -2.082928,
+       null,
+       null
+      ],
+      "median_error": [
+       -1.297816,
+       null,
+       null
+      ],
+      "up": {
+       "day_mean_share": 0.0,
+       "design_effect": null,
+       "expected": 3.0,
+       "interval": null,
+       "misses": 0,
+       "no_variance_resamples": null,
+       "resamples": 0,
+       "score_interval": null,
+       "score_vs_nominal": "no interval",
+       "share": 0.0,
+       "vs_nominal": "no interval"
+      }
+     },
+     "2025-26": {
+      "by_lead": {
+       "1": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 3,
+         "share": 0.25
+        },
+        "median_error": [
+         -2.035444,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 0,
+         "share": 0.0
+        }
+       },
+       "2": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 4,
+         "share": 0.333333
+        },
+        "median_error": [
+         -3.991121,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 0,
+         "share": 0.0
+        }
+       },
+       "3": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 4,
+         "share": 0.333333
+        },
+        "median_error": [
+         -3.168658,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 0,
+         "share": 0.0
+        }
+       },
+       "4": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 3,
+         "share": 0.25
+        },
+        "median_error": [
+         -2.945614,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 0,
+         "share": 0.0
+        }
+       },
+       "5": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 3,
+         "share": 0.25
+        },
+        "median_error": [
+         -2.754781,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 0,
+         "share": 0.0
+        }
+       }
+      },
+      "cells": 60,
+      "days": 12,
+      "low": {
+       "day_mean_share": 0.283333,
+       "design_effect": null,
+       "expected": 3.0,
+       "interval": null,
+       "misses": 17,
+       "no_variance_resamples": null,
+       "resamples": 0,
+       "score_interval": null,
+       "score_vs_nominal": "no interval",
+       "share": 0.283333,
+       "vs_nominal": "no interval"
+      },
+      "mean_error": [
+       -3.968863,
+       null,
+       null
+      ],
+      "median_error": [
+       -2.777424,
+       null,
+       null
+      ],
+      "up": {
+       "day_mean_share": 0.0,
+       "design_effect": null,
+       "expected": 3.0,
+       "interval": null,
+       "misses": 0,
+       "no_variance_resamples": null,
+       "resamples": 0,
+       "score_interval": null,
+       "score_vs_nominal": "no interval",
+       "share": 0.0,
+       "vs_nominal": "no interval"
+      }
+     }
+    }
+   },
+   "scopes": {
+    "all": {
+     "1": {
+      "1": {
+       "cells": 89,
+       "days": 89,
+       "low": {
+        "day_mean_share": 0.022472,
+        "design_effect": 1.0,
+        "expected": 4.45,
+        "interval": [
+         0.003632,
+         1.0
+        ],
+        "misses": 2,
+        "no_variance_resamples": 1041,
+        "resamples": 10000,
+        "score_interval": [
+         0.007465,
+         0.065656
+        ],
+        "score_vs_nominal": "holds 0.05",
+        "share": 0.022472,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        1.684113,
+        0.285425,
+        5.427234
+       ],
+       "median_error": [
+        0.095779,
+        -0.245097,
+        0.998957
+       ],
+       "up": {
+        "day_mean_share": 0.179775,
+        "design_effect": 1.358685,
+        "expected": 4.45,
+        "interval": [
+         0.074336,
+         0.288535
+        ],
+        "misses": 16,
+        "no_variance_resamples": 0,
+        "resamples": 10000,
+        "score_interval": [
+         0.114952,
+         0.270002
+        ],
+        "score_vs_nominal": "above 0.05",
+        "share": 0.179775,
+        "vs_nominal": "above 0.05"
+       }
+      },
+      "2": {
+       "cells": 89,
+       "days": 89,
+       "low": {
+        "day_mean_share": 0.011236,
+        "design_effect": 1.0,
+        "expected": 4.45,
+        "interval": [
+         0.0,
+         1.0
+        ],
+        "misses": 1,
+        "no_variance_resamples": 3283,
+        "resamples": 10000,
+        "score_interval": [
+         0.002511,
+         0.048801
+        ],
+        "score_vs_nominal": "below 0.05",
+        "share": 0.011236,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        1.168635,
+        -0.055161,
+        4.357123
+       ],
+       "median_error": [
+        -0.14351,
+        -0.368142,
+        0.643908
+       ],
+       "up": {
+        "day_mean_share": 0.157303,
+        "design_effect": 1.436278,
+        "expected": 4.45,
+        "interval": [
+         0.066768,
+         0.274823
+        ],
+        "misses": 14,
+        "no_variance_resamples": 1,
+        "resamples": 10000,
+        "score_interval": [
+         0.095804,
+         0.247477
+        ],
+        "score_vs_nominal": "above 0.05",
+        "share": 0.157303,
+        "vs_nominal": "above 0.05"
+       }
+      },
+      "3": {
+       "cells": 89,
+       "days": 89,
+       "low": {
+        "day_mean_share": 0.033708,
+        "design_effect": 1.0,
+        "expected": 4.45,
+        "interval": [
+         0.013793,
+         0.066382
+        ],
+        "misses": 3,
+        "no_variance_resamples": 148,
+        "resamples": 10000,
+        "score_interval": [
+         0.01355,
+         0.081379
+        ],
+        "score_vs_nominal": "holds 0.05",
+        "share": 0.033708,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        1.005888,
+        -0.268395,
+        3.658316
+       ],
+       "median_error": [
+        0.1652,
+        -0.407861,
+        0.673916
+       ],
+       "up": {
+        "day_mean_share": 0.146067,
+        "design_effect": 1.24296,
+        "expected": 4.45,
+        "interval": [
+         0.063493,
+         0.251513
+        ],
+        "misses": 13,
+        "no_variance_resamples": 2,
+        "resamples": 10000,
+        "score_interval": [
+         0.090343,
+         0.227565
+        ],
+        "score_vs_nominal": "above 0.05",
+        "share": 0.146067,
+        "vs_nominal": "above 0.05"
+       }
+      },
+      "4": {
+       "cells": 89,
+       "days": 89,
+       "low": {
+        "day_mean_share": 0.067416,
+        "design_effect": 1.026656,
+        "expected": 4.45,
+        "interval": [
+         0.024272,
+         0.136852
+        ],
+        "misses": 6,
+        "no_variance_resamples": 23,
+        "resamples": 10000,
+        "score_interval": [
+         0.034965,
+         0.126051
+        ],
+        "score_vs_nominal": "holds 0.05",
+        "share": 0.067416,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        1.140674,
+        -0.358716,
+        3.782026
+       ],
+       "median_error": [
+        -0.115951,
+        -0.502201,
+        0.774561
+       ],
+       "up": {
+        "day_mean_share": 0.179775,
+        "design_effect": 1.707844,
+        "expected": 4.45,
+        "interval": [
+         0.060095,
+         0.319674
+        ],
+        "misses": 16,
+        "no_variance_resamples": 2,
+        "resamples": 10000,
+        "score_interval": [
+         0.108819,
+         0.282341
+        ],
+        "score_vs_nominal": "above 0.05",
+        "share": 0.179775,
+        "vs_nominal": "above 0.05"
+       }
+      },
+      "5": {
+       "cells": 89,
+       "days": 89,
+       "low": {
+        "day_mean_share": 0.078652,
+        "design_effect": 1.237845,
+        "expected": 4.45,
+        "interval": [
+         0.027877,
+         0.164673
+        ],
+        "misses": 7,
+        "no_variance_resamples": 20,
+        "resamples": 10000,
+        "score_interval": [
+         0.040439,
+         0.147424
+        ],
+        "score_vs_nominal": "holds 0.05",
+        "share": 0.078652,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        1.128476,
+        -0.568203,
+        3.546333
+       ],
+       "median_error": [
+        -0.019265,
+        -0.378879,
+        1.069969
+       ],
+       "up": {
+        "day_mean_share": 0.168539,
+        "design_effect": 1.568521,
+        "expected": 4.45,
+        "interval": [
+         0.066243,
+         0.297374
+        ],
+        "misses": 15,
+        "no_variance_resamples": 1,
+        "resamples": 10000,
+        "score_interval": [
+         0.102352,
+         0.264898
+        ],
+        "score_vs_nominal": "above 0.05",
+        "share": 0.168539,
+        "vs_nominal": "above 0.05"
+       }
+      },
+      "all": {
+       "cells": 445,
+       "days": 89,
+       "low": {
+        "day_mean_share": 0.042697,
+        "design_effect": 3.153811,
+        "expected": 22.25,
+        "interval": [
+         0.01616,
+         0.087771
+        ],
+        "misses": 19,
+        "no_variance_resamples": 20,
+        "resamples": 10000,
+        "score_interval": [
+         0.022266,
+         0.080335
+        ],
+        "score_vs_nominal": "holds 0.05",
+        "share": 0.042697,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        1.225557,
+        -0.15573,
+        4.066586
+       ],
+       "median_error": [
+        0.114414,
+        -0.391772,
+        0.884685
+       ],
+       "up": {
+        "day_mean_share": 0.166292,
+        "design_effect": 6.40479,
+        "expected": 22.25,
+        "interval": [
+         0.064805,
+         0.276602
+        ],
+        "misses": 74,
+        "no_variance_resamples": 0,
+        "resamples": 10000,
+        "score_interval": [
+         0.105637,
+         0.251962
+        ],
+        "score_vs_nominal": "above 0.05",
+        "share": 0.166292,
+        "vs_nominal": "above 0.05"
+       }
+      }
+     },
+     "2": {
+      "1": {
+       "cells": 89,
+       "days": 89,
+       "low": {
+        "day_mean_share": 0.179775,
+        "design_effect": 1.452396,
+        "expected": 4.45,
+        "interval": [
+         0.085584,
+         0.292323
+        ],
+        "misses": 16,
+        "no_variance_resamples": 0,
+        "resamples": 10000,
+        "score_interval": [
+         0.1132,
+         0.273432
+        ],
+        "score_vs_nominal": "above 0.05",
+        "share": 0.179775,
+        "vs_nominal": "above 0.05"
+       },
+       "mean_error": [
+        -0.569274,
+        -1.454452,
+        0.083015
+       ],
+       "median_error": [
+        -0.210353,
+        -0.354378,
+        0.074853
+       ],
+       "up": {
+        "day_mean_share": 0.11236,
+        "design_effect": 1.520785,
+        "expected": 4.45,
+        "interval": [
+         0.054617,
+         0.240668
+        ],
+        "misses": 10,
+        "no_variance_resamples": 0,
+        "resamples": 10000,
+        "score_interval": [
+         0.060928,
+         0.198049
+        ],
+        "score_vs_nominal": "above 0.05",
+        "share": 0.11236,
+        "vs_nominal": "above 0.05"
+       }
+      },
+      "2": {
+       "cells": 89,
+       "days": 89,
+       "low": {
+        "day_mean_share": 0.044944,
+        "design_effect": 1.079385,
+        "expected": 4.45,
+        "interval": [
+         0.014421,
+         0.118271
+        ],
+        "misses": 4,
+        "no_variance_resamples": 224,
+        "resamples": 10000,
+        "score_interval": [
+         0.019744,
+         0.099058
+        ],
+        "score_vs_nominal": "holds 0.05",
+        "share": 0.044944,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        0.609491,
+        0.01147,
+        1.444882
+       ],
+       "median_error": [
+        0.204805,
+        -0.166722,
+        0.576386
+       ],
+       "up": {
+        "day_mean_share": 0.157303,
+        "design_effect": 1.0,
+        "expected": 4.45,
+        "interval": [
+         0.097579,
+         0.234099
+        ],
+        "misses": 14,
+        "no_variance_resamples": 0,
+        "resamples": 10000,
+        "score_interval": [
+         0.104065,
+         0.230762
+        ],
+        "score_vs_nominal": "above 0.05",
+        "share": 0.157303,
+        "vs_nominal": "above 0.05"
+       }
+      },
+      "3": {
+       "cells": 89,
+       "days": 89,
+       "low": {
+        "day_mean_share": 0.044944,
+        "design_effect": 1.031791,
+        "expected": 4.45,
+        "interval": [
+         0.014682,
+         0.116636
+        ],
+        "misses": 4,
+        "no_variance_resamples": 195,
+        "resamples": 10000,
+        "score_interval": [
+         0.020093,
+         0.097473
+        ],
+        "score_vs_nominal": "holds 0.05",
+        "share": 0.044944,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        0.255981,
+        -0.346292,
+        0.955408
+       ],
+       "median_error": [
+        -0.068291,
+        -0.245045,
+        0.360912
+       ],
+       "up": {
+        "day_mean_share": 0.134831,
+        "design_effect": 1.0,
+        "expected": 4.45,
+        "interval": [
+         0.088671,
+         0.198548
+        ],
+        "misses": 12,
+        "no_variance_resamples": 0,
+        "resamples": 10000,
+        "score_interval": [
+         0.085959,
+         0.20525
+        ],
+        "score_vs_nominal": "above 0.05",
+        "share": 0.134831,
+        "vs_nominal": "above 0.05"
+       }
+      },
+      "4": {
+       "cells": 89,
+       "days": 89,
+       "low": {
+        "day_mean_share": 0.05618,
+        "design_effect": 1.302685,
+        "expected": 4.45,
+        "interval": [
+         0.017094,
+         0.171822
+        ],
+        "misses": 5,
+        "no_variance_resamples": 180,
+        "resamples": 10000,
+        "score_interval": [
+         0.025069,
+         0.121103
+        ],
+        "score_vs_nominal": "holds 0.05",
+        "share": 0.05618,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        0.272844,
+        -0.394214,
+        0.909608
+       ],
+       "median_error": [
+        0.037087,
+        -0.227281,
+        0.484653
+       ],
+       "up": {
+        "day_mean_share": 0.146067,
+        "design_effect": 1.0,
+        "expected": 4.45,
+        "interval": [
+         0.091355,
+         0.22006
+        ],
+        "misses": 13,
+        "no_variance_resamples": 1,
+        "resamples": 10000,
+        "score_interval": [
+         0.094955,
+         0.218064
+        ],
+        "score_vs_nominal": "above 0.05",
+        "share": 0.146067,
+        "vs_nominal": "above 0.05"
+       }
+      },
+      "5": {
+       "cells": 89,
+       "days": 89,
+       "low": {
+        "day_mean_share": 0.078652,
+        "design_effect": 1.801671,
+        "expected": 4.45,
+        "interval": [
+         0.022341,
+         0.19155
+        ],
+        "misses": 7,
+        "no_variance_resamples": 114,
+        "resamples": 10000,
+        "score_interval": [
+         0.035404,
+         0.165657
+        ],
+        "score_vs_nominal": "holds 0.05",
+        "share": 0.078652,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        0.334345,
+        -0.492754,
+        0.998938
+       ],
+       "median_error": [
+        0.019932,
+        -0.253664,
+        0.653073
+       ],
+       "up": {
+        "day_mean_share": 0.168539,
+        "design_effect": 1.261396,
+        "expected": 4.45,
+        "interval": [
+         0.096216,
+         0.278959
+        ],
+        "misses": 15,
+        "no_variance_resamples": 1,
+        "resamples": 10000,
+        "score_interval": [
+         0.107808,
+         0.253752
+        ],
+        "score_vs_nominal": "above 0.05",
+        "share": 0.168539,
+        "vs_nominal": "above 0.05"
+       }
+      },
+      "all": {
+       "cells": 445,
+       "days": 89,
+       "low": {
+        "day_mean_share": 0.080899,
+        "design_effect": 4.852647,
+        "expected": 22.25,
+        "interval": [
+         0.037245,
+         0.169696
+        ],
+        "misses": 36,
+        "no_variance_resamples": 0,
+        "resamples": 10000,
+        "score_interval": [
+         0.045211,
+         0.140607
+        ],
+        "score_vs_nominal": "holds 0.05",
+        "share": 0.080899,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        0.180677,
+        -0.43202,
+        0.745093
+       ],
+       "median_error": [
+        0.112912,
+        -0.196814,
+        0.250841
+       ],
+       "up": {
+        "day_mean_share": 0.14382,
+        "design_effect": 4.376754,
+        "expected": 22.25,
+        "interval": [
+         0.090347,
+         0.216148
+        ],
+        "misses": 64,
+        "no_variance_resamples": 0,
+        "resamples": 10000,
+        "score_interval": [
+         0.095808,
+         0.210297
+        ],
+        "score_vs_nominal": "above 0.05",
+        "share": 0.14382,
+        "vs_nominal": "above 0.05"
+       }
+      }
+     },
+     "3": {
+      "1": {
+       "cells": 89,
+       "days": 89,
+       "low": {
+        "day_mean_share": 0.202247,
+        "design_effect": 1.429948,
+        "expected": 4.45,
+        "interval": [
+         0.104133,
+         0.347576
+        ],
+        "misses": 18,
+        "no_variance_resamples": 0,
+        "resamples": 10000,
+        "score_interval": [
+         0.131734,
+         0.297568
+        ],
+        "score_vs_nominal": "above 0.05",
+        "share": 0.202247,
+        "vs_nominal": "above 0.05"
+       },
+       "mean_error": [
+        -1.342966,
+        -2.959754,
+        -0.243088
+       ],
+       "median_error": [
+        -0.304758,
+        -1.065181,
+        -0.221847
+       ],
+       "up": {
+        "day_mean_share": 0.044944,
+        "design_effect": 1.126978,
+        "expected": 4.45,
+        "interval": [
+         0.011913,
+         0.11987
+        ],
+        "misses": 4,
+        "no_variance_resamples": 201,
+        "resamples": 10000,
+        "score_interval": [
+         0.019409,
+         0.100626
+        ],
+        "score_vs_nominal": "holds 0.05",
+        "share": 0.044944,
+        "vs_nominal": "holds 0.05"
+       }
+      },
+      "2": {
+       "cells": 89,
+       "days": 89,
+       "low": {
+        "day_mean_share": 0.213483,
+        "design_effect": 1.742671,
+        "expected": 4.45,
+        "interval": [
+         0.090235,
+         0.352555
+        ],
+        "misses": 19,
+        "no_variance_resamples": 0,
+        "resamples": 10000,
+        "score_interval": [
+         0.134864,
+         0.320932
+        ],
+        "score_vs_nominal": "above 0.05",
+        "share": 0.213483,
+        "vs_nominal": "above 0.05"
+       },
+       "mean_error": [
+        -1.452195,
+        -3.156048,
+        -0.238107
+       ],
+       "median_error": [
+        -0.448776,
+        -1.713662,
+        -0.253242
+       ],
+       "up": {
+        "day_mean_share": 0.078652,
+        "design_effect": 1.771263,
+        "expected": 4.45,
+        "interval": [
+         0.024237,
+         0.211894
+        ],
+        "misses": 7,
+        "no_variance_resamples": 85,
+        "resamples": 10000,
+        "score_interval": [
+         0.035635,
+         0.164725
+        ],
+        "score_vs_nominal": "holds 0.05",
+        "share": 0.078652,
+        "vs_nominal": "holds 0.05"
+       }
+      },
+      "3": {
+       "cells": 89,
+       "days": 89,
+       "low": {
+        "day_mean_share": 0.11236,
+        "design_effect": 1.401567,
+        "expected": 4.45,
+        "interval": [
+         0.043432,
+         0.218033
+        ],
+        "misses": 10,
+        "no_variance_resamples": 6,
+        "resamples": 10000,
+        "score_interval": [
+         0.062423,
+         0.193978
+        ],
+        "score_vs_nominal": "above 0.05",
+        "share": 0.11236,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        -0.628953,
+        -1.781988,
+        0.187565
+       ],
+       "median_error": [
+        -0.214009,
+        -0.587697,
+        -0.126791
+       ],
+       "up": {
+        "day_mean_share": 0.067416,
+        "design_effect": 1.836806,
+        "expected": 4.45,
+        "interval": [
+         0.018241,
+         0.185637
+        ],
+        "misses": 6,
+        "no_variance_resamples": 127,
+        "resamples": 10000,
+        "score_interval": [
+         0.028258,
+         0.152327
+        ],
+        "score_vs_nominal": "holds 0.05",
+        "share": 0.067416,
+        "vs_nominal": "holds 0.05"
+       }
+      },
+      "4": {
+       "cells": 89,
+       "days": 89,
+       "low": {
+        "day_mean_share": 0.11236,
+        "design_effect": 1.3606,
+        "expected": 4.45,
+        "interval": [
+         0.042803,
+         0.214386
+        ],
+        "misses": 10,
+        "no_variance_resamples": 6,
+        "resamples": 10000,
+        "score_interval": [
+         0.062961,
+         0.192551
+        ],
+        "score_vs_nominal": "above 0.05",
+        "share": 0.11236,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        -0.75738,
+        -1.900012,
+        0.052759
+       ],
+       "median_error": [
+        -0.171539,
+        -0.526561,
+        -0.113683
+       ],
+       "up": {
+        "day_mean_share": 0.078652,
+        "design_effect": 1.771263,
+        "expected": 4.45,
+        "interval": [
+         0.024237,
+         0.211894
+        ],
+        "misses": 7,
+        "no_variance_resamples": 85,
+        "resamples": 10000,
+        "score_interval": [
+         0.035635,
+         0.164725
+        ],
+        "score_vs_nominal": "holds 0.05",
+        "share": 0.078652,
+        "vs_nominal": "holds 0.05"
+       }
+      },
+      "5": {
+       "cells": 89,
+       "days": 89,
+       "low": {
+        "day_mean_share": 0.11236,
+        "design_effect": 1.258184,
+        "expected": 4.45,
+        "interval": [
+         0.05091,
+         0.204554
+        ],
+        "misses": 10,
+        "no_variance_resamples": 0,
+        "resamples": 10000,
+        "score_interval": [
+         0.064366,
+         0.188914
+        ],
+        "score_vs_nominal": "above 0.05",
+        "share": 0.11236,
+        "vs_nominal": "above 0.05"
+       },
+       "mean_error": [
+        -0.841486,
+        -1.840806,
+        -0.095129
+       ],
+       "median_error": [
+        -0.181731,
+        -0.496752,
+        -0.057696
+       ],
+       "up": {
+        "day_mean_share": 0.067416,
+        "design_effect": 1.414389,
+        "expected": 4.45,
+        "interval": [
+         0.021653,
+         0.16908
+        ],
+        "misses": 6,
+        "no_variance_resamples": 102,
+        "resamples": 10000,
+        "score_interval": [
+         0.031306,
+         0.139191
+        ],
+        "score_vs_nominal": "holds 0.05",
+        "share": 0.067416,
+        "vs_nominal": "holds 0.05"
+       }
+      },
+      "all": {
+       "cells": 445,
+       "days": 89,
+       "low": {
+        "day_mean_share": 0.150562,
+        "design_effect": 5.591365,
+        "expected": 22.25,
+        "interval": [
+         0.070538,
+         0.249362
+        ],
+        "misses": 67,
+        "no_variance_resamples": 0,
+        "resamples": 10000,
+        "score_interval": [
+         0.096196,
+         0.227904
+        ],
+        "score_vs_nominal": "above 0.05",
+        "share": 0.150562,
+        "vs_nominal": "above 0.05"
+       },
+       "mean_error": [
+        -1.004596,
+        -2.292217,
+        -0.092405
+       ],
+       "median_error": [
+        -0.286476,
+        -0.871885,
+        -0.175046
+       ],
+       "up": {
+        "day_mean_share": 0.067416,
+        "design_effect": 7.013456,
+        "expected": 22.25,
+        "interval": [
+         0.021056,
+         0.165963
+        ],
+        "misses": 30,
+        "no_variance_resamples": 85,
+        "resamples": 10000,
+        "score_interval": [
+         0.031402,
+         0.138812
+        ],
+        "score_vs_nominal": "holds 0.05",
+        "share": 0.067416,
+        "vs_nominal": "holds 0.05"
+       }
+      }
+     }
+    },
+    "other": {
+     "1": {
+      "1": {
+       "cells": 60,
+       "days": 60,
+       "low": {
+        "day_mean_share": 0.033333,
+        "design_effect": 1.0,
+        "expected": 3.0,
+        "interval": [
+         0.003315,
+         1.0
+        ],
+        "misses": 2,
+        "no_variance_resamples": 1000,
+        "resamples": 10000,
+        "score_interval": [
+         0.011093,
+         0.095844
+        ],
+        "score_vs_nominal": "holds 0.05",
+        "share": 0.033333,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        0.506413,
+        -0.440189,
+        1.257721
+       ],
+       "median_error": [
+        -0.070467,
+        -0.37851,
+        0.635938
+       ],
+       "up": {
+        "day_mean_share": 0.133333,
+        "design_effect": 1.0,
+        "expected": 3.0,
+        "interval": [
+         0.054345,
+         0.243444
+        ],
+        "misses": 8,
+        "no_variance_resamples": 4,
+        "resamples": 10000,
+        "score_interval": [
+         0.076793,
+         0.221515
+        ],
+        "score_vs_nominal": "above 0.05",
+        "share": 0.133333,
+        "vs_nominal": "above 0.05"
+       }
+      },
+      "2": {
+       "cells": 60,
+       "days": 60,
+       "low": {
+        "day_mean_share": 0.016667,
+        "design_effect": 1.0,
+        "expected": 3.0,
+        "interval": [
+         0.001918,
+         1.0
+        ],
+        "misses": 1,
+        "no_variance_resamples": 3029,
+        "resamples": 10000,
+        "score_interval": [
+         0.003727,
+         0.071315
+        ],
+        "score_vs_nominal": "holds 0.05",
+        "share": 0.016667,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        0.010893,
+        -0.692021,
+        0.636981
+       ],
+       "median_error": [
+        -0.257643,
+        -0.467031,
+        0.404419
+       ],
+       "up": {
+        "day_mean_share": 0.116667,
+        "design_effect": 1.242751,
+        "expected": 3.0,
+        "interval": [
+         0.033073,
+         0.261356
+        ],
+        "misses": 7,
+        "no_variance_resamples": 12,
+        "resamples": 10000,
+        "score_interval": [
+         0.060311,
+         0.213705
+        ],
+        "score_vs_nominal": "above 0.05",
+        "share": 0.116667,
+        "vs_nominal": "holds 0.05"
+       }
+      },
+      "3": {
+       "cells": 60,
+       "days": 60,
+       "low": {
+        "day_mean_share": 0.05,
+        "design_effect": 1.0,
+        "expected": 3.0,
+        "interval": [
+         0.023013,
+         0.091523
+        ],
+        "misses": 3,
+        "no_variance_resamples": 76,
+        "resamples": 10000,
+        "score_interval": [
+         0.020157,
+         0.118675
+        ],
+        "score_vs_nominal": "holds 0.05",
+        "share": 0.05,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        -0.29923,
+        -1.475451,
+        0.549649
+       ],
+       "median_error": [
+        -0.236156,
+        -0.989325,
+        0.467054
+       ],
+       "up": {
+        "day_mean_share": 0.116667,
+        "design_effect": 1.242751,
+        "expected": 3.0,
+        "interval": [
+         0.033073,
+         0.261356
+        ],
+        "misses": 7,
+        "no_variance_resamples": 12,
+        "resamples": 10000,
+        "score_interval": [
+         0.060311,
+         0.213705
+        ],
+        "score_vs_nominal": "above 0.05",
+        "share": 0.116667,
+        "vs_nominal": "holds 0.05"
+       }
+      },
+      "4": {
+       "cells": 60,
+       "days": 60,
+       "low": {
+        "day_mean_share": 0.083333,
+        "design_effect": 1.0,
+        "expected": 3.0,
+        "interval": [
+         0.033867,
+         0.14539
+        ],
+        "misses": 5,
+        "no_variance_resamples": 17,
+        "resamples": 10000,
+        "score_interval": [
+         0.041152,
+         0.16147
+        ],
+        "score_vs_nominal": "holds 0.05",
+        "share": 0.083333,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        -0.285359,
+        -1.816611,
+        0.639453
+       ],
+       "median_error": [
+        -0.216138,
+        -1.399233,
+        0.363293
+       ],
+       "up": {
+        "day_mean_share": 0.1,
+        "design_effect": 1.666667,
+        "expected": 3.0,
+        "interval": [
+         0.002233,
+         0.375452
+        ],
+        "misses": 6,
+        "no_variance_resamples": 252,
+        "resamples": 10000,
+        "score_interval": [
+         0.04386,
+         0.21206
+        ],
+        "score_vs_nominal": "holds 0.05",
+        "share": 0.1,
+        "vs_nominal": "holds 0.05"
+       }
+      },
+      "5": {
+       "cells": 60,
+       "days": 60,
+       "low": {
+        "day_mean_share": 0.1,
+        "design_effect": 1.060606,
+        "expected": 3.0,
+        "interval": [
+         0.038282,
+         0.191499
+        ],
+        "misses": 6,
+        "no_variance_resamples": 16,
+        "resamples": 10000,
+        "score_interval": [
+         0.051615,
+         0.184899
+        ],
+        "score_vs_nominal": "above 0.05",
+        "share": 0.1,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        -0.25928,
+        -1.96599,
+        0.817935
+       ],
+       "median_error": [
+        -0.195301,
+        -1.480583,
+        0.390785
+       ],
+       "up": {
+        "day_mean_share": 0.1,
+        "design_effect": 1.026936,
+        "expected": 3.0,
+        "interval": [
+         0.030073,
+         0.205313
+        ],
+        "misses": 6,
+        "no_variance_resamples": 12,
+        "resamples": 10000,
+        "score_interval": [
+         0.052155,
+         0.183251
+        ],
+        "score_vs_nominal": "above 0.05",
+        "share": 0.1,
+        "vs_nominal": "holds 0.05"
+       }
+      },
+      "all": {
+       "cells": 300,
+       "days": 60,
+       "low": {
+        "day_mean_share": 0.056667,
+        "design_effect": 2.6201,
+        "expected": 15.0,
+        "interval": [
+         0.023047,
+         0.10674
+        ],
+        "misses": 17,
+        "no_variance_resamples": 16,
+        "resamples": 10000,
+        "score_interval": [
+         0.030312,
+         0.103489
+        ],
+        "score_vs_nominal": "holds 0.05",
+        "share": 0.056667,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        -0.065313,
+        -1.264973,
+        0.738508
+       ],
+       "median_error": [
+        -0.246276,
+        -0.799789,
+        0.477588
+       ],
+       "up": {
+        "day_mean_share": 0.113333,
+        "design_effect": 5.765081,
+        "expected": 15.0,
+        "interval": [
+         0.032705,
+         0.263253
+        ],
+        "misses": 34,
+        "no_variance_resamples": 4,
+        "resamples": 10000,
+        "score_interval": [
+         0.059425,
+         0.205461
+        ],
+        "score_vs_nominal": "above 0.05",
+        "share": 0.113333,
+        "vs_nominal": "holds 0.05"
+       }
+      }
+     },
+     "2": {
+      "1": {
+       "cells": 60,
+       "days": 60,
+       "low": {
+        "day_mean_share": 0.2,
+        "design_effect": 1.643939,
+        "expected": 3.0,
+        "interval": [
+         0.054469,
+         0.359791
+        ],
+        "misses": 12,
+        "no_variance_resamples": 1,
+        "resamples": 10000,
+        "score_interval": [
+         0.113602,
+         0.327806
+        ],
+        "score_vs_nominal": "above 0.05",
+        "share": 0.2,
+        "vs_nominal": "above 0.05"
+       },
+       "mean_error": [
+        -0.732943,
+        -2.052899,
+        0.01286
+       ],
+       "median_error": [
+        -0.256644,
+        -0.975542,
+        -0.12421
+       ],
+       "up": {
+        "day_mean_share": 0.083333,
+        "design_effect": 1.0,
+        "expected": 3.0,
+        "interval": [
+         0.044895,
+         0.141182
+        ],
+        "misses": 5,
+        "no_variance_resamples": 5,
+        "resamples": 10000,
+        "score_interval": [
+         0.041152,
+         0.16147
+        ],
+        "score_vs_nominal": "holds 0.05",
+        "share": 0.083333,
+        "vs_nominal": "holds 0.05"
+       }
+      },
+      "2": {
+       "cells": 60,
+       "days": 60,
+       "low": {
+        "day_mean_share": 0.05,
+        "design_effect": 1.0,
+        "expected": 3.0,
+        "interval": [
+         0.014954,
+         0.105257
+        ],
+        "misses": 3,
+        "no_variance_resamples": 219,
+        "resamples": 10000,
+        "score_interval": [
+         0.020157,
+         0.118675
+        ],
+        "score_vs_nominal": "holds 0.05",
+        "share": 0.05,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        0.144162,
+        -0.199588,
+        0.44615
+       ],
+       "median_error": [
+        -0.018461,
+        -0.224231,
+        0.279687
+       ],
+       "up": {
+        "day_mean_share": 0.083333,
+        "design_effect": 1.0,
+        "expected": 3.0,
+        "interval": [
+         0.047962,
+         0.131383
+        ],
+        "misses": 5,
+        "no_variance_resamples": 7,
+        "resamples": 10000,
+        "score_interval": [
+         0.041152,
+         0.16147
+        ],
+        "score_vs_nominal": "holds 0.05",
+        "share": 0.083333,
+        "vs_nominal": "holds 0.05"
+       }
+      },
+      "3": {
+       "cells": 60,
+       "days": 60,
+       "low": {
+        "day_mean_share": 0.05,
+        "design_effect": 1.0,
+        "expected": 3.0,
+        "interval": [
+         0.016077,
+         0.104686
+        ],
+        "misses": 3,
+        "no_variance_resamples": 184,
+        "resamples": 10000,
+        "score_interval": [
+         0.020157,
+         0.118675
+        ],
+        "score_vs_nominal": "holds 0.05",
+        "share": 0.05,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        -0.243015,
+        -0.920836,
+        0.197483
+       ],
+       "median_error": [
+        -0.178451,
+        -0.745189,
+        0.173367
+       ],
+       "up": {
+        "day_mean_share": 0.083333,
+        "design_effect": 1.0,
+        "expected": 3.0,
+        "interval": [
+         0.047962,
+         0.131383
+        ],
+        "misses": 5,
+        "no_variance_resamples": 7,
+        "resamples": 10000,
+        "score_interval": [
+         0.041152,
+         0.16147
+        ],
+        "score_vs_nominal": "holds 0.05",
+        "share": 0.083333,
+        "vs_nominal": "holds 0.05"
+       }
+      },
+      "4": {
+       "cells": 60,
+       "days": 60,
+       "low": {
+        "day_mean_share": 0.066667,
+        "design_effect": 1.264069,
+        "expected": 3.0,
+        "interval": [
+         0.016186,
+         0.187686
+        ],
+        "misses": 4,
+        "no_variance_resamples": 170,
+        "resamples": 10000,
+        "score_interval": [
+         0.027573,
+         0.152496
+        ],
+        "score_vs_nominal": "holds 0.05",
+        "share": 0.066667,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        -0.343255,
+        -1.003894,
+        0.144428
+       ],
+       "median_error": [
+        -0.23731,
+        -0.577004,
+        0.370403
+       ],
+       "up": {
+        "day_mean_share": 0.083333,
+        "design_effect": 1.0,
+        "expected": 3.0,
+        "interval": [
+         0.047962,
+         0.131383
+        ],
+        "misses": 5,
+        "no_variance_resamples": 7,
+        "resamples": 10000,
+        "score_interval": [
+         0.041152,
+         0.16147
+        ],
+        "score_vs_nominal": "holds 0.05",
+        "share": 0.083333,
+        "vs_nominal": "holds 0.05"
+       }
+      },
+      "5": {
+       "cells": 60,
+       "days": 60,
+       "low": {
+        "day_mean_share": 0.083333,
+        "design_effect": 1.21708,
+        "expected": 3.0,
+        "interval": [
+         0.025499,
+         0.187598
+        ],
+        "misses": 5,
+        "no_variance_resamples": 101,
+        "resamples": 10000,
+        "score_interval": [
+         0.038347,
+         0.171675
+        ],
+        "score_vs_nominal": "holds 0.05",
+        "share": 0.083333,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        -0.380467,
+        -1.060896,
+        0.172747
+       ],
+       "median_error": [
+        -0.184929,
+        -0.618391,
+        0.02286
+       ],
+       "up": {
+        "day_mean_share": 0.083333,
+        "design_effect": 1.0,
+        "expected": 3.0,
+        "interval": [
+         0.047962,
+         0.131383
+        ],
+        "misses": 5,
+        "no_variance_resamples": 7,
+        "resamples": 10000,
+        "score_interval": [
+         0.041152,
+         0.16147
+        ],
+        "score_vs_nominal": "holds 0.05",
+        "share": 0.083333,
+        "vs_nominal": "holds 0.05"
+       }
+      },
+      "all": {
+       "cells": 300,
+       "days": 60,
+       "low": {
+        "day_mean_share": 0.09,
+        "design_effect": 4.297369,
+        "expected": 15.0,
+        "interval": [
+         0.032101,
+         0.17472
+        ],
+        "misses": 27,
+        "no_variance_resamples": 1,
+        "resamples": 10000,
+        "score_interval": [
+         0.047941,
+         0.162653
+        ],
+        "score_vs_nominal": "holds 0.05",
+        "share": 0.09,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        -0.311104,
+        -0.950683,
+        0.135189
+       ],
+       "median_error": [
+        -0.171876,
+        -0.539169,
+        0.218941
+       ],
+       "up": {
+        "day_mean_share": 0.083333,
+        "design_effect": 2.229532,
+        "expected": 15.0,
+        "interval": [
+         0.051203,
+         0.127949
+        ],
+        "misses": 25,
+        "no_variance_resamples": 0,
+        "resamples": 10000,
+        "score_interval": [
+         0.051883,
+         0.131209
+        ],
+        "score_vs_nominal": "above 0.05",
+        "share": 0.083333,
+        "vs_nominal": "above 0.05"
+       }
+      }
+     },
+     "3": {
+      "1": {
+       "cells": 60,
+       "days": 60,
+       "low": {
+        "day_mean_share": 0.183333,
+        "design_effect": 1.0,
+        "expected": 3.0,
+        "interval": [
+         0.101282,
+         0.25435
+        ],
+        "misses": 11,
+        "no_variance_resamples": 0,
+        "resamples": 10000,
+        "score_interval": [
+         0.115469,
+         0.278524
+        ],
+        "score_vs_nominal": "above 0.05",
+        "share": 0.183333,
+        "vs_nominal": "above 0.05"
+       },
+       "mean_error": [
+        -0.986642,
+        -2.75684,
+        0.139017
+       ],
+       "median_error": [
+        -0.600162,
+        -1.192401,
+        -0.237327
+       ],
+       "up": {
+        "day_mean_share": 0.033333,
+        "design_effect": 1.572623,
+        "expected": 3.0,
+        "interval": [
+         0.0,
+         1.0
+        ],
+        "misses": 2,
+        "no_variance_resamples": 2645,
+        "resamples": 10000,
+        "score_interval": [
+         0.00866,
+         0.11981
+        ],
+        "score_vs_nominal": "holds 0.05",
+        "share": 0.033333,
+        "vs_nominal": "holds 0.05"
+       }
+      },
+      "2": {
+       "cells": 60,
+       "days": 60,
+       "low": {
+        "day_mean_share": 0.233333,
+        "design_effect": 1.567288,
+        "expected": 3.0,
+        "interval": [
+         0.056609,
+         0.384755
+        ],
+        "misses": 14,
+        "no_variance_resamples": 0,
+        "resamples": 10000,
+        "score_interval": [
+         0.140854,
+         0.361017
+        ],
+        "score_vs_nominal": "above 0.05",
+        "share": 0.233333,
+        "vs_nominal": "above 0.05"
+       },
+       "mean_error": [
+        -1.411795,
+        -3.865629,
+        -0.020192
+       ],
+       "median_error": [
+        -0.649477,
+        -2.547549,
+        -0.262043
+       ],
+       "up": {
+        "day_mean_share": 0.05,
+        "design_effect": 1.076555,
+        "expected": 3.0,
+        "interval": [
+         0.010025,
+         1.0
+        ],
+        "misses": 3,
+        "no_variance_resamples": 610,
+        "resamples": 10000,
+        "score_interval": [
+         0.019519,
+         0.122148
+        ],
+        "score_vs_nominal": "holds 0.05",
+        "share": 0.05,
+        "vs_nominal": "holds 0.05"
+       }
+      },
+      "3": {
+       "cells": 60,
+       "days": 60,
+       "low": {
+        "day_mean_share": 0.133333,
+        "design_effect": 1.561772,
+        "expected": 3.0,
+        "interval": [
+         0.029229,
+         0.289885
+        ],
+        "misses": 8,
+        "no_variance_resamples": 26,
+        "resamples": 10000,
+        "score_interval": [
+         0.066989,
+         0.247924
+        ],
+        "score_vs_nominal": "above 0.05",
+        "share": 0.133333,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        -0.793089,
+        -2.759139,
+        0.173843
+       ],
+       "median_error": [
+        -0.242758,
+        -1.213547,
+        -0.201987
+       ],
+       "up": {
+        "day_mean_share": 0.033333,
+        "design_effect": 1.0,
+        "expected": 3.0,
+        "interval": [
+         0.007143,
+         1.0
+        ],
+        "misses": 2,
+        "no_variance_resamples": 694,
+        "resamples": 10000,
+        "score_interval": [
+         0.011093,
+         0.095844
+        ],
+        "score_vs_nominal": "holds 0.05",
+        "share": 0.033333,
+        "vs_nominal": "holds 0.05"
+       }
+      },
+      "4": {
+       "cells": 60,
+       "days": 60,
+       "low": {
+        "day_mean_share": 0.133333,
+        "design_effect": 1.491841,
+        "expected": 3.0,
+        "interval": [
+         0.032661,
+         0.274125
+        ],
+        "misses": 8,
+        "no_variance_resamples": 25,
+        "resamples": 10000,
+        "score_interval": [
+         0.068027,
+         0.244862
+        ],
+        "score_vs_nominal": "above 0.05",
+        "share": 0.133333,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        -0.959822,
+        -3.080247,
+        0.039278
+       ],
+       "median_error": [
+        -0.369974,
+        -1.311523,
+        -0.139081
+       ],
+       "up": {
+        "day_mean_share": 0.05,
+        "design_effect": 1.076555,
+        "expected": 3.0,
+        "interval": [
+         0.010025,
+         1.0
+        ],
+        "misses": 3,
+        "no_variance_resamples": 610,
+        "resamples": 10000,
+        "score_interval": [
+         0.019519,
+         0.122148
+        ],
+        "score_vs_nominal": "holds 0.05",
+        "share": 0.05,
+        "vs_nominal": "holds 0.05"
+       }
+      },
+      "5": {
+       "cells": 60,
+       "days": 60,
+       "low": {
+        "day_mean_share": 0.133333,
+        "design_effect": 1.491841,
+        "expected": 3.0,
+        "interval": [
+         0.032661,
+         0.274125
+        ],
+        "misses": 8,
+        "no_variance_resamples": 25,
+        "resamples": 10000,
+        "score_interval": [
+         0.068027,
+         0.244862
+        ],
+        "score_vs_nominal": "above 0.05",
+        "share": 0.133333,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        -1.125845,
+        -2.881646,
+        -0.180714
+       ],
+       "median_error": [
+        -0.40446,
+        -1.512919,
+        -0.074635
+       ],
+       "up": {
+        "day_mean_share": 0.05,
+        "design_effect": 1.076555,
+        "expected": 3.0,
+        "interval": [
+         0.010025,
+         1.0
+        ],
+        "misses": 3,
+        "no_variance_resamples": 610,
+        "resamples": 10000,
+        "score_interval": [
+         0.019519,
+         0.122148
+        ],
+        "score_vs_nominal": "holds 0.05",
+        "share": 0.05,
+        "vs_nominal": "holds 0.05"
+       }
+      },
+      "all": {
+       "cells": 300,
+       "days": 60,
+       "low": {
+        "day_mean_share": 0.163333,
+        "design_effect": 5.588616,
+        "expected": 15.0,
+        "interval": [
+         0.054762,
+         0.289108
+        ],
+        "misses": 49,
+        "no_variance_resamples": 0,
+        "resamples": 10000,
+        "score_interval": [
+         0.096916,
+         0.262059
+        ],
+        "score_vs_nominal": "above 0.05",
+        "share": 0.163333,
+        "vs_nominal": "above 0.05"
+       },
+       "mean_error": [
+        -1.055439,
+        -3.053607,
+        -0.001234
+       ],
+       "median_error": [
+        -0.648895,
+        -1.32843,
+        -0.185626
+       ],
+       "up": {
+        "day_mean_share": 0.043333,
+        "design_effect": 4.864851,
+        "expected": 15.0,
+        "interval": [
+         0.00811,
+         1.0
+        ],
+        "misses": 13,
+        "no_variance_resamples": 610,
+        "resamples": 10000,
+        "score_interval": [
+         0.016584,
+         0.10847
+        ],
+        "score_vs_nominal": "holds 0.05",
+        "share": 0.043333,
+        "vs_nominal": "holds 0.05"
+       }
+      }
+     }
+    },
+    "quarter_end": {
+     "1": {
+      "1": {
+       "cells": 29,
+       "days": 29,
+       "low": {
+        "day_mean_share": 0.0,
+        "design_effect": 1.0,
+        "expected": 1.45,
+        "interval": null,
+        "misses": 0,
+        "no_variance_resamples": null,
+        "resamples": 10000,
+        "score_interval": [
+         0.0,
+         0.085333
+        ],
+        "score_vs_nominal": "holds 0.05",
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       },
+       "mean_error": [
+        4.120734,
+        0.779932,
+        17.890946
+       ],
+       "median_error": [
+        0.981609,
+        0.041964,
+        2.189014
+       ],
+       "up": {
+        "day_mean_share": 0.275862,
+        "design_effect": 1.331691,
+        "expected": 1.45,
+        "interval": [
+         0.041328,
+         0.493217
+        ],
+        "misses": 8,
+        "no_variance_resamples": 4,
+        "resamples": 10000,
+        "score_interval": [
+         0.150002,
+         0.451261
+        ],
+        "score_vs_nominal": "above 0.05",
+        "share": 0.275862,
+        "vs_nominal": "holds 0.05"
+       }
+      },
+      "2": {
+       "cells": 29,
+       "days": 29,
+       "low": {
+        "day_mean_share": 0.0,
+        "design_effect": 1.0,
+        "expected": 1.45,
+        "interval": null,
+        "misses": 0,
+        "no_variance_resamples": null,
+        "resamples": 10000,
+        "score_interval": [
+         0.0,
+         0.085333
+        ],
+        "score_vs_nominal": "holds 0.05",
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       },
+       "mean_error": [
+        3.563962,
+        0.358951,
+        17.096701
+       ],
+       "median_error": [
+        0.952096,
+        -0.14351,
+        1.949873
+       ],
+       "up": {
+        "day_mean_share": 0.241379,
+        "design_effect": 1.0,
+        "expected": 1.45,
+        "interval": [
+         0.030099,
+         0.395019
+        ],
+        "misses": 7,
+        "no_variance_resamples": 4,
+        "resamples": 10000,
+        "score_interval": [
+         0.136512,
+         0.390385
+        ],
+        "score_vs_nominal": "above 0.05",
+        "share": 0.241379,
+        "vs_nominal": "holds 0.05"
+       }
+      },
+      "3": {
+       "cells": 29,
+       "days": 29,
+       "low": {
+        "day_mean_share": 0.0,
+        "design_effect": 1.0,
+        "expected": 1.45,
+        "interval": null,
+        "misses": 0,
+        "no_variance_resamples": null,
+        "resamples": 10000,
+        "score_interval": [
+         0.0,
+         0.085333
+        ],
+        "score_vs_nominal": "holds 0.05",
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       },
+       "mean_error": [
+        3.706132,
+        0.449909,
+        15.960285
+       ],
+       "median_error": [
+        0.935342,
+        0.532967,
+        2.395802
+       ],
+       "up": {
+        "day_mean_share": 0.206897,
+        "design_effect": 2.600654,
+        "expected": 1.45,
+        "interval": [
+         0.0,
+         0.967548
+        ],
+        "misses": 6,
+        "no_variance_resamples": 285,
+        "resamples": 10000,
+        "score_interval": [
+         0.076205,
+         0.452047
+        ],
+        "score_vs_nominal": "above 0.05",
+        "share": 0.206897,
+        "vs_nominal": "holds 0.05"
+       }
+      },
+      "4": {
+       "cells": 29,
+       "days": 29,
+       "low": {
+        "day_mean_share": 0.034483,
+        "design_effect": 1.0,
+        "expected": 1.45,
+        "interval": [
+         0.0,
+         1.0
+        ],
+        "misses": 1,
+        "no_variance_resamples": 2444,
+        "resamples": 10000,
+        "score_interval": [
+         0.007731,
+         0.140683
+        ],
+        "score_vs_nominal": "holds 0.05",
+        "share": 0.034483,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        4.091089,
+        0.506358,
+        14.651839
+       ],
+       "median_error": [
+        0.973963,
+        -0.14805,
+        2.331359
+       ],
+       "up": {
+        "day_mean_share": 0.344828,
+        "design_effect": 2.374526,
+        "expected": 1.45,
+        "interval": [
+         0.003222,
+         0.797297
+        ],
+        "misses": 10,
+        "no_variance_resamples": 5,
+        "resamples": 10000,
+        "score_interval": [
+         0.168607,
+         0.577331
+        ],
+        "score_vs_nominal": "above 0.05",
+        "share": 0.344828,
+        "vs_nominal": "holds 0.05"
+       }
+      },
+      "5": {
+       "cells": 29,
+       "days": 29,
+       "low": {
+        "day_mean_share": 0.034483,
+        "design_effect": 1.0,
+        "expected": 1.45,
+        "interval": [
+         0.0,
+         1.0
+        ],
+        "misses": 1,
+        "no_variance_resamples": 2444,
+        "resamples": 10000,
+        "score_interval": [
+         0.007731,
+         0.140683
+        ],
+        "score_vs_nominal": "holds 0.05",
+        "share": 0.034483,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        3.999695,
+        0.251604,
+        13.559017
+       ],
+       "median_error": [
+        1.376182,
+        -0.074635,
+        2.385549
+       ],
+       "up": {
+        "day_mean_share": 0.310345,
+        "design_effect": 1.829815,
+        "expected": 1.45,
+        "interval": [
+         0.015157,
+         0.652435
+        ],
+        "misses": 9,
+        "no_variance_resamples": 5,
+        "resamples": 10000,
+        "score_interval": [
+         0.159186,
+         0.516814
+        ],
+        "score_vs_nominal": "above 0.05",
+        "share": 0.310345,
+        "vs_nominal": "holds 0.05"
+       }
+      },
+      "all": {
+       "cells": 145,
+       "days": 29,
+       "low": {
+        "day_mean_share": 0.013793,
+        "design_effect": 1.289432,
+        "expected": 7.25,
+        "interval": [
+         0.0,
+         1.0
+        ],
+        "misses": 2,
+        "no_variance_resamples": 2444,
+        "resamples": 10000,
+        "score_interval": [
+         0.004001,
+         0.046431
+        ],
+        "score_vs_nominal": "below 0.05",
+        "share": 0.013793,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        3.896322,
+        0.502392,
+        15.791322
+       ],
+       "median_error": [
+        0.975521,
+        0.282913,
+        2.450276
+       ],
+       "up": {
+        "day_mean_share": 0.275862,
+        "design_effect": 7.740924,
+        "expected": 7.25,
+        "interval": [
+         0.010631,
+         0.58654
+        ],
+        "misses": 40,
+        "no_variance_resamples": 3,
+        "resamples": 10000,
+        "score_interval": [
+         0.142868,
+         0.465432
+        ],
+        "score_vs_nominal": "above 0.05",
+        "share": 0.275862,
+        "vs_nominal": "holds 0.05"
+       }
+      }
+     },
+     "2": {
+      "1": {
+       "cells": 29,
+       "days": 29,
+       "low": {
+        "day_mean_share": 0.137931,
+        "design_effect": 1.0,
+        "expected": 1.45,
+        "interval": [
+         0.066191,
+         0.252454
+        ],
+        "misses": 4,
+        "no_variance_resamples": 18,
+        "resamples": 10000,
+        "score_interval": [
+         0.063465,
+         0.27419
+        ],
+        "score_vs_nominal": "above 0.05",
+        "share": 0.137931,
+        "vs_nominal": "above 0.05"
+       },
+       "mean_error": [
+        -0.23065,
+        -1.201769,
+        0.583366
+       ],
+       "median_error": [
+        0.45453,
+        -0.223134,
+        0.535983
+       ],
+       "up": {
+        "day_mean_share": 0.172414,
+        "design_effect": 1.0,
+        "expected": 1.45,
+        "interval": [
+         0.069562,
+         0.444511
+        ],
+        "misses": 5,
+        "no_variance_resamples": 11,
+        "resamples": 10000,
+        "score_interval": [
+         0.086537,
+         0.314199
+        ],
+        "score_vs_nominal": "above 0.05",
+        "share": 0.172414,
+        "vs_nominal": "above 0.05"
+       }
+      },
+      "2": {
+       "cells": 29,
+       "days": 29,
+       "low": {
+        "day_mean_share": 0.034483,
+        "design_effect": 1.0,
+        "expected": 1.45,
+        "interval": [
+         0.0,
+         1.0
+        ],
+        "misses": 1,
+        "no_variance_resamples": 2380,
+        "resamples": 10000,
+        "score_interval": [
+         0.007731,
+         0.140683
+        ],
+        "score_vs_nominal": "holds 0.05",
+        "share": 0.034483,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        1.57224,
+        0.460098,
+        3.307637
+       ],
+       "median_error": [
+        1.106189,
+        0.385367,
+        1.749618
+       ],
+       "up": {
+        "day_mean_share": 0.310345,
+        "design_effect": 1.0,
+        "expected": 1.45,
+        "interval": [
+         0.163504,
+         0.449282
+        ],
+        "misses": 9,
+        "no_variance_resamples": 0,
+        "resamples": 10000,
+        "score_interval": [
+         0.190419,
+         0.462639
+        ],
+        "score_vs_nominal": "above 0.05",
+        "share": 0.310345,
+        "vs_nominal": "above 0.05"
+       }
+      },
+      "3": {
+       "cells": 29,
+       "days": 29,
+       "low": {
+        "day_mean_share": 0.034483,
+        "design_effect": 1.0,
+        "expected": 1.45,
+        "interval": [
+         0.0,
+         1.0
+        ],
+        "misses": 1,
+        "no_variance_resamples": 2380,
+        "resamples": 10000,
+        "score_interval": [
+         0.007731,
+         0.140683
+        ],
+        "score_vs_nominal": "holds 0.05",
+        "share": 0.034483,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        1.288386,
+        0.302374,
+        2.978813
+       ],
+       "median_error": [
+        0.962647,
+        0.052289,
+        1.832252
+       ],
+       "up": {
+        "day_mean_share": 0.241379,
+        "design_effect": 1.0,
+        "expected": 1.45,
+        "interval": [
+         0.172641,
+         0.309107
+        ],
+        "misses": 7,
+        "no_variance_resamples": 1,
+        "resamples": 10000,
+        "score_interval": [
+         0.136512,
+         0.390385
+        ],
+        "score_vs_nominal": "above 0.05",
+        "share": 0.241379,
+        "vs_nominal": "above 0.05"
+       }
+      },
+      "4": {
+       "cells": 29,
+       "days": 29,
+       "low": {
+        "day_mean_share": 0.034483,
+        "design_effect": 1.0,
+        "expected": 1.45,
+        "interval": [
+         0.0,
+         1.0
+        ],
+        "misses": 1,
+        "no_variance_resamples": 2380,
+        "resamples": 10000,
+        "score_interval": [
+         0.007731,
+         0.140683
+        ],
+        "score_vs_nominal": "holds 0.05",
+        "share": 0.034483,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        1.547533,
+        0.435554,
+        3.131661
+       ],
+       "median_error": [
+        1.411431,
+        0.357885,
+        2.78481
+       ],
+       "up": {
+        "day_mean_share": 0.275862,
+        "design_effect": 1.0,
+        "expected": 1.45,
+        "interval": [
+         0.069051,
+         0.416277
+        ],
+        "misses": 8,
+        "no_variance_resamples": 0,
+        "resamples": 10000,
+        "score_interval": [
+         0.163033,
+         0.426944
+        ],
+        "score_vs_nominal": "above 0.05",
+        "share": 0.275862,
+        "vs_nominal": "above 0.05"
+       }
+      },
+      "5": {
+       "cells": 29,
+       "days": 29,
+       "low": {
+        "day_mean_share": 0.068966,
+        "design_effect": 1.0,
+        "expected": 1.45,
+        "interval": [
+         0.021859,
+         0.108908
+        ],
+        "misses": 2,
+        "no_variance_resamples": 295,
+        "resamples": 10000,
+        "score_interval": [
+         0.023091,
+         0.188404
+        ],
+        "score_vs_nominal": "holds 0.05",
+        "share": 0.068966,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        1.813266,
+        0.312471,
+        3.342448
+       ],
+       "median_error": [
+        1.976388,
+        0.486491,
+        2.622352
+       ],
+       "up": {
+        "day_mean_share": 0.344828,
+        "design_effect": 1.545818,
+        "expected": 1.45,
+        "interval": [
+         0.062632,
+         0.618457
+        ],
+        "misses": 10,
+        "no_variance_resamples": 0,
+        "resamples": 10000,
+        "score_interval": [
+         0.19451,
+         0.534261
+        ],
+        "score_vs_nominal": "above 0.05",
+        "share": 0.344828,
+        "vs_nominal": "above 0.05"
+       }
+      },
+      "all": {
+       "cells": 145,
+       "days": 29,
+       "low": {
+        "day_mean_share": 0.062069,
+        "design_effect": 1.867586,
+        "expected": 7.25,
+        "interval": [
+         0.021736,
+         0.177932
+        ],
+        "misses": 9,
+        "no_variance_resamples": 1,
+        "resamples": 10000,
+        "score_interval": [
+         0.030149,
+         0.123483
+        ],
+        "score_vs_nominal": "holds 0.05",
+        "share": 0.062069,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        1.198155,
+        0.239601,
+        2.375776
+       ],
+       "median_error": [
+        1.321716,
+        0.228885,
+        1.785752
+       ],
+       "up": {
+        "day_mean_share": 0.268966,
+        "design_effect": 2.824994,
+        "expected": 7.25,
+        "interval": [
+         0.128991,
+         0.380014
+        ],
+        "misses": 39,
+        "no_variance_resamples": 0,
+        "resamples": 10000,
+        "score_interval": [
+         0.180638,
+         0.380429
+        ],
+        "score_vs_nominal": "above 0.05",
+        "share": 0.268966,
+        "vs_nominal": "above 0.05"
+       }
+      }
+     },
+     "3": {
+      "1": {
+       "cells": 29,
+       "days": 29,
+       "low": {
+        "day_mean_share": 0.241379,
+        "design_effect": 2.520987,
+        "expected": 1.45,
+        "interval": [
+         0.000651,
+         0.966693
+        ],
+        "misses": 7,
+        "no_variance_resamples": 62,
+        "resamples": 10000,
+        "score_interval": [
+         0.097512,
+         0.483735
+        ],
+        "score_vs_nominal": "above 0.05",
+        "share": 0.241379,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        -2.080187,
+        -4.904067,
+        -0.157678
+       ],
+       "median_error": [
+        -0.251877,
+        -0.631468,
+        -0.024785
+       ],
+       "up": {
+        "day_mean_share": 0.068966,
+        "design_effect": 1.0,
+        "expected": 1.45,
+        "interval": [
+         0.032877,
+         0.105507
+        ],
+        "misses": 2,
+        "no_variance_resamples": 202,
+        "resamples": 10000,
+        "score_interval": [
+         0.023091,
+         0.188404
+        ],
+        "score_vs_nominal": "holds 0.05",
+        "share": 0.068966,
+        "vs_nominal": "holds 0.05"
+       }
+      },
+      "2": {
+       "cells": 29,
+       "days": 29,
+       "low": {
+        "day_mean_share": 0.172414,
+        "design_effect": 2.217189,
+        "expected": 1.45,
+        "interval": [
+         0.0,
+         0.721281
+        ],
+        "misses": 5,
+        "no_variance_resamples": 396,
+        "resamples": 10000,
+        "score_interval": [
+         0.062402,
+         0.39472
+        ],
+        "score_vs_nominal": "above 0.05",
+        "share": 0.172414,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        -1.535782,
+        -3.468031,
+        0.218869
+       ],
+       "median_error": [
+        -0.23267,
+        -1.088605,
+        0.298078
+       ],
+       "up": {
+        "day_mean_share": 0.137931,
+        "design_effect": 1.0,
+        "expected": 1.45,
+        "interval": [
+         0.0513,
+         0.378945
+        ],
+        "misses": 4,
+        "no_variance_resamples": 102,
+        "resamples": 10000,
+        "score_interval": [
+         0.063465,
+         0.27419
+        ],
+        "score_vs_nominal": "above 0.05",
+        "share": 0.137931,
+        "vs_nominal": "above 0.05"
+       }
+      },
+      "3": {
+       "cells": 29,
+       "days": 29,
+       "low": {
+        "day_mean_share": 0.068966,
+        "design_effect": 1.069546,
+        "expected": 1.45,
+        "interval": [
+         0.0,
+         1.0
+        ],
+        "misses": 2,
+        "no_variance_resamples": 1053,
+        "resamples": 10000,
+        "score_interval": [
+         0.022311,
+         0.193835
+        ],
+        "score_vs_nominal": "holds 0.05",
+        "share": 0.068966,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        -0.289362,
+        -1.391601,
+        0.712398
+       ],
+       "median_error": [
+        0.28692,
+        -0.292712,
+        0.601462
+       ],
+       "up": {
+        "day_mean_share": 0.137931,
+        "design_effect": 1.0,
+        "expected": 1.45,
+        "interval": [
+         0.0513,
+         0.378945
+        ],
+        "misses": 4,
+        "no_variance_resamples": 102,
+        "resamples": 10000,
+        "score_interval": [
+         0.063465,
+         0.27419
+        ],
+        "score_vs_nominal": "above 0.05",
+        "share": 0.137931,
+        "vs_nominal": "above 0.05"
+       }
+      },
+      "4": {
+       "cells": 29,
+       "days": 29,
+       "low": {
+        "day_mean_share": 0.068966,
+        "design_effect": 1.069546,
+        "expected": 1.45,
+        "interval": [
+         0.0,
+         1.0
+        ],
+        "misses": 2,
+        "no_variance_resamples": 1053,
+        "resamples": 10000,
+        "score_interval": [
+         0.022311,
+         0.193835
+        ],
+        "score_vs_nominal": "holds 0.05",
+        "share": 0.068966,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        -0.338534,
+        -1.339819,
+        0.518986
+       ],
+       "median_error": [
+        0.007123,
+        -0.28423,
+        0.279533
+       ],
+       "up": {
+        "day_mean_share": 0.137931,
+        "design_effect": 1.0,
+        "expected": 1.45,
+        "interval": [
+         0.0513,
+         0.378945
+        ],
+        "misses": 4,
+        "no_variance_resamples": 102,
+        "resamples": 10000,
+        "score_interval": [
+         0.063465,
+         0.27419
+        ],
+        "score_vs_nominal": "above 0.05",
+        "share": 0.137931,
+        "vs_nominal": "above 0.05"
+       }
+      },
+      "5": {
+       "cells": 29,
+       "days": 29,
+       "low": {
+        "day_mean_share": 0.068966,
+        "design_effect": 1.0,
+        "expected": 1.45,
+        "interval": [
+         0.001065,
+         1.0
+        ],
+        "misses": 2,
+        "no_variance_resamples": 549,
+        "resamples": 10000,
+        "score_interval": [
+         0.023091,
+         0.188404
+        ],
+        "score_vs_nominal": "holds 0.05",
+        "share": 0.068966,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        -0.253157,
+        -1.087913,
+        0.602462
+       ],
+       "median_error": [
+        0.177692,
+        0.028319,
+        0.475014
+       ],
+       "up": {
+        "day_mean_share": 0.103448,
+        "design_effect": 1.0,
+        "expected": 1.45,
+        "interval": [
+         0.045733,
+         0.21513
+        ],
+        "misses": 3,
+        "no_variance_resamples": 151,
+        "resamples": 10000,
+        "score_interval": [
+         0.042106,
+         0.232469
+        ],
+        "score_vs_nominal": "holds 0.05",
+        "share": 0.103448,
+        "vs_nominal": "holds 0.05"
+       }
+      },
+      "all": {
+       "cells": 145,
+       "days": 29,
+       "low": {
+        "day_mean_share": 0.124138,
+        "design_effect": 6.760944,
+        "expected": 7.25,
+        "interval": [
+         0.0,
+         0.495715
+        ],
+        "misses": 18,
+        "no_variance_resamples": 58,
+        "resamples": 10000,
+        "score_interval": [
+         0.048122,
+         0.284363
+        ],
+        "score_vs_nominal": "holds 0.05",
+        "share": 0.124138,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        -0.899404,
+        -2.28606,
+        0.327522
+       ],
+       "median_error": [
+        -0.071946,
+        -0.566363,
+        0.339935
+       ],
+       "up": {
+        "day_mean_share": 0.117241,
+        "design_effect": 3.284002,
+        "expected": 7.25,
+        "interval": [
+         0.04841,
+         0.269893
+        ],
+        "misses": 17,
+        "no_variance_resamples": 102,
+        "resamples": 10000,
+        "score_interval": [
+         0.058942,
+         0.21974
+        ],
+        "score_vs_nominal": "above 0.05",
+        "share": 0.117241,
+        "vs_nominal": "holds 0.05"
+       }
+      }
+     }
+    }
+   }
+  }
+ }
+}

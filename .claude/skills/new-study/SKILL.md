@@ -18,6 +18,10 @@ A study is development evidence, never a verdict (scoring protocol v1). It produ
 | `docs/research/log/<date>-model-<n>-H<k>-step<j>.md` | The research-log entry: Directive, Step, Tier (development), Pins, Tried (with the variant count), Result, Against kill, Next. Copy the shape of a recent entry. |
 
 Rules that apply to every study:
+- Start from the register (Eleonora, 9 November 2026, #1530). Find the line of `docs/research/settled-questions.md`
+  the study touches and cite it on the page and in the log entry, or say "new question". A question the register lists
+  as answered is not re-run without her explicit "reopen". After two failed fixes for the same symptom, the study
+  checks the test or the measurement, not a third fix.
 - Name the hypothesis and step it serves (`docs/research/plan.md`).
 - Calendar first: a new spread model reads the calendar columns at the target day on direct pairs. If the study reads a
   calendar-blind series, say so on the page and check whether its producer needs a register row (`register-producer`).

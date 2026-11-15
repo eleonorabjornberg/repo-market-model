@@ -26,6 +26,7 @@ from datetime import date, timedelta
 from pathlib import Path
 
 from repo_model import scoring_protocol as sp
+from repo_model.splits import LookAheadError
 
 ROOT = Path(__file__).resolve().parent.parent
 _spec = importlib.util.spec_from_file_location("s3c_uncapped_1361", ROOT / "scripts" / "s3c_uncapped_1361.py")
@@ -131,7 +132,7 @@ class CellTests(unittest.TestCase):
     def test_a_day_after_the_declared_end_is_refused(self):
         frame = Frame()
         frame.days = [frame.dates[0]]
-        with self.assertRaises(Exception):
+        with self.assertRaises(LookAheadError):
             script.cell_table(frame, {frame.dates[0]: {h: list(Q) for h in sp.HORIZONS}}, frame.dates[2])
 
 

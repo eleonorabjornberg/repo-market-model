@@ -1,0 +1,71 @@
+{
+ "status": "declared by the pull request that closes #1531 before any score was computed; a development study, never a verdict. (s3c-ann-net) stays the frozen H5 candidate (her ruling of 2 November 2026): nothing is adopted, registered or published, no record in docs/runs/ is edited, the live record and its pin do not change, docs/research/h5-candidate.json and scripts/final_test_preregistration.py do not change, no day after 2026-09-03 is scored and no lockbox day is scored.",
+ "issue": 1531,
+ "ruling": "Eleonora, 9 November 2026, relayed on #1531: arm A (the shrunk quarter-end-only adjustment) is the strongest first model experiment; fix the quarter-end definition and the shrinkage rule before scoring; every forecast outside the group stays identical; assess lower- and upper-tail misses, distribution accuracy and results by horizon; the five forecasts around one quarter-end are related observations. Second ruling the same day: #1531 waits for #1533 to be reviewed (it was, PR #1539 merged), and any revision of the design goes to her before scoring.",
+ "hypothesis": "H5 (primary goal): the SOFR - IORB spread distribution in bp. Step 3, one arm on the candidate (s3c-ann-net): a shrunk residual multiplier on quarter-end target days only. Development tier",
+ "target": "spread_bps at the scored day, in basis points, as a 23-quantile distribution at each lead h = 1..5 (scoring_protocol.GRID)",
+ "why": "#1378 (directive #1363): the candidate's 90% band covers 49.3% on quarter-end days and 58.6% on quarter-end turns. #1402 rescaled every pressure-day type at once, unshrunk and clamped to [0.5, 4]: on quarter_end_turn the 90% coverage went 0.586 to 0.718 and CRPS there improved, while ordinary-day coverage fell and pooled CRPS lost. No arm touching quarter-ends alone, and no shrunk arm, has been run. #1533's Mechanism section reads the failure as a shape problem with a location shift, not a width problem alone, and says no single multiplier fits every level: this arm is run as ruled, as the untested width-only repair, and is read against that.",
+ "decision_instant": "18:00 America/New_York on the decision day (repo_model.decision_instant.DECISION_TIME, amended on 29 October 2026, #1312). Every walk of this study is made at that instant and the instant is pinned for the run; no record made at 16:00 is edited.",
+ "group": {
+  "definition": "a TARGET day whose repo_model.turn_days.reporting_day_type (the record in force, #959 labels) is quarter_end_turn or year_end: the last business day of each calendar quarter and the first business day after it. Fixed here, before any score. A function of the date alone, read at the target day (calendar first).",
+  "types": ["quarter_end_turn", "year_end"],
+  "reported_separately": ["quarter_end_turn", "year_end", "the #1363 quarter_end subset (calendar target-day type quarter_end, the 49.3% figure's group), so the two read side by side"],
+  "event": "the cluster of the h = 1..5 forecasts aimed at one turn and of the two days of a turn: scripts/qe_diagnosis_1533.quarter_end_event(target day), the YYYY-MM of the quarter-end"
+ },
+ "form": {
+  "what": "On a target day in the group, the candidate's pool is replaced by c + m * (pool_j - c), c the pool's median (grid level 0.5), as repo_model.day_type_scale.rescaled; on every other target day the candidate's quantiles are used as they are, bit for bit. The centre, shift, scale at the anchor and Huber fit are the candidate's; the SRF cap is applied after, as to the candidate.",
+  "module": "repo_model.day_type_scale.group_multiplier (shrunk), with rescaled and rescale_day unchanged",
+  "m_raw": "#1402's statistic for the group as one set: sqrt( mean over the refit's training pairs whose target is in the group of (z - c)^2 / mean over all the refit's training pairs of (z - c)^2 ), per refit and lead, from the refit's own pairs (StateEstimate.residuals and .targets), targets at or before the anchor (LookAheadError otherwise). 1 when the group has fewer than 10 training pairs at that lead (#1402's minimum). Clamped to [0.5, 4.0] (#1402's bounds).",
+  "shrinkage": "m = 1 + w * (m_raw - 1), w = n / (n + k), n the group's training pairs at that refit and lead, k the constant below.",
+  "k": 20,
+  "k_reason": "a training pair is one target day at one lead and a turn has two days, so n = 20 is ten turns. At ten turns the multiplier is moved half of the way from 1 to the raw ratio (w = 0.5), at thirty turns three fifths (w = 0.6), and the raw ratio is trusted most only well beyond the roughly thirty turns the development window holds. It is also twice #1402's minimum of rows, so a group just above the fallback is shrunk by more than half. It was chosen from the count of turns and not from any score, and is not tuned on scores. The choice is a marked question for her in the pull request (options k = 10, 20, 40; default 20).",
+  "k_is_fixed": "k is written here before any score. The study reads it from this declaration and does not vary it: there is one arm and no sweep.",
+  "bounds": [0.5, 4.0],
+  "minimum_rows": 10
+ },
+ "arms": [
+  {"name": "sc_s3c_ann_net", "role": "(s3c-ann-net), the frozen candidate; reference", "margin_bp": 0.0},
+  {"name": "sc_s3c_ann_net_qeshrunk", "role": "(s3c-ann-net-qe): the candidate with the shrunk quarter-end-only multiplier (k = 20) on target days of type quarter_end_turn or year_end; every other forecast identical", "margin_bp": 0.0}
+ ],
+ "models": ["sc_s3c_ann_net", "sc_s3c_ann_net_qeshrunk", "B1", "B1_prime", "B2"],
+ "references": [
+  {"name": "sc_s3c_ann_net", "role": "the candidate, re-run at 18:00 in the same run; the reference the arm is measured against on the group"},
+  {"name": "B1", "role": "the protocol's B1, grid CRPS"},
+  {"name": "B1_prime", "role": "B1' (#960)"},
+  {"name": "B2", "role": "the protocol's B2, grid CRPS"},
+  {"name": "B3", "role": "the incumbent: the published v1 record's five levels (0.05, 0.25, 0.5, 0.75, 0.95), scored on those five against the arm read at the same five, on the decision days where the record holds all five leads (ruling of 13 October 2026, PR #660); pooled and by regime of the decision day"}
+ ],
+ "pairs": "direct: the fit is spread_mr_state_calendar.fit_state_terms with training_pairs = 'direct' (guarded by one_step_guard with no allow-list entry; ONE_STEP_ALLOW_LIST is not changed). The arm adds no fit: it rescales the candidate's pool on group target days by a shrunk ratio of second moments of that fit's own residuals. The provisional-register row is metadata/provisional/cleared/qe_shrunk_scale_1531.json",
+ "frame": {
+  "windows": "the two windows of #1255: the development window (decision days whose five targets fall on or before 2025-12-31) and the 2026 development days (targets from 2026-01-02 to 2026-09-03). The 2026 days are shown apart and decide nothing",
+  "walk": "(s3c-ann-net) is walked as #1363 and #1402 walk it (refit every 21 decision days, direct pairs); the study refuses to write a record unless the candidate's pooled mean grid CRPS equals #1314's 18:00 record to 1e-9, and unless, on every cell whose target is outside the group, every quantile of the arm equals the candidate's (the walk fails otherwise)",
+  "guards": "a scored decision day or target day passes lockbox.require_unlocked through spread_mean_reversion_686.require_scored_days with the last day of the window; the blind tier (from 2026-09-04) and every lockbox day are refused"
+ },
+ "scoring": {
+  "scorer": "repo_model.scoring_protocol (#655), the development tier: no verdict, no registration",
+  "on_the_group": "by horizon h = 1..5 and pooled: 90% coverage (q05 to q95, closed), the lower-tail miss rate (below q05) and the upper-tail miss rate (above q95) each against 5%, the q01 and q99 miss rates against 1%, grid CRPS and upper-tail twCRPS, the arm against the candidate on the same cells (paired). Also for quarter_end_turn, year_end and the #1363 quarter_end subset.",
+  "interval_on_the_group": "a cluster bootstrap over turn events (quarter_end_event of the target day): whole events resampled with replacement, 2,000 resamples, seed 1531, 90% percentile interval. The page states the number of events and says plainly that roughly 30 to 44 events is small. The day-type interval method of #1228 has not ruled (#1221's caveat): the page states which method it uses and that the reading carries that caveat.",
+  "against_benchmarks": "pooled and by regime: grid CRPS and upper-tail twCRPS of the arm and of the candidate against B1, B1' and B2, and grid CRPS on B3's five levels against B3, on scoring_protocol.paired_tests, the studentized stationary bootstrap (ruling 1), mean block 10 business days, 10,000 draws, seed 1531, two-sided 90% interval, the reading taken from the mean-d bound (ruling on #1009). Because every cell outside the group is identical, the arm and the candidate differ against a benchmark only through the group.",
+  "seed": 1531
+ },
+ "read_out": "One table: coverage and tail misses on the group, by horizon, candidate against arm. A plain sentence on how far short of 90% the arm still is.",
+ "kill": "The arm's group 90% coverage does not improve on the candidate's beyond its interval (the lower end of the 90% event-cluster interval of the paired coverage difference, arm minus candidate, is not above zero), or the group's mean grid CRPS of the arm is above the candidate's (the arm loses). Pooled figures cannot pass or fail it alone, since everything outside the group is identical. A kill applies to a result that is not provisional; this one reads calendar columns at the target day on direct pairs.",
+ "reading_rules": [
+  "A figure is a check on days that were already seen. Nothing here is a verdict, nothing is registered and no choice is made on it; (s3c-ann-net) stays the frozen H5 candidate. Adopting the arm is hers; the 2 November freeze holds.",
+  "The group's intervals are event-cluster intervals over roughly 30 to 44 events: small. A pooled figure is never read alone: it is shown beside the group and the regime splits.",
+  "Even if coverage improves, the page says how far it stays short of 90%, as #1402's did (71.8%)."
+ ],
+ "limits": {
+  "last_day": "2026-09-03",
+  "named_candidate": "unchanged; docs/research/h5-candidate.json is not changed",
+  "preregistration": "scripts/final_test_preregistration.py is not touched",
+  "allow_list": "repo_model.one_step_guard.ONE_STEP_ALLOW_LIST is not changed",
+  "sources": "no source, no declaration already merged and no page already merged is changed; docs/runs/ is not touched",
+  "long_run": "two walks of the candidate per window, cloud first (minutes each); well under the two-hour line of the long-run skill"
+ },
+ "not_in_scope": "adopting the arm; registration, the live record, #1528; arms B (regularized quantile corrections), C (recency-weighted residuals), D (separate tail recalibration), which follow only after this is reviewed",
+ "variants": {
+  "sc_s3c_ann_net_qeshrunk": "the only arm: one shrunk multiplier on quarter-end target days, k = 20, written above before any score; nothing else varies (one variant, no sweep over k)"
+ },
+ "amendments": []
+}

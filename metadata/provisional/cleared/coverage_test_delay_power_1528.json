@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/coverage_test_delay_power_1528.json",
+  "script": "scripts/coverage_test_delay_power_1528.py",
+  "pairing": "none",
+  "why": "a size-and-power simulation of the coverage-test rules on simulated calendar classes (day types of the development walk file, no forecast read); no model is fitted and no gradient-boosted fit is called, so there is no training pair to read a calendar column from"
+}

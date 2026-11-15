@@ -38,7 +38,7 @@ from . import spread_mean_reversion as smr
 from . import spread_mr_fhs as fhs
 from .data import DailyObservation, in_last_business_days_of_month
 from .evaluation_splits import SplitDeclaration
-from .one_step_guard import guard_one_step_fit
+from .one_step_guard import guard_one_step_fit, guard_pair_stamp, stamp_pairs
 from .scoring_protocol import HORIZONS, ProtocolError
 from .splits import LookAheadError, SplitError
 
@@ -306,6 +306,7 @@ def _entering(names: Sequence[str], pairs: Sequence[PairRow], min_flagged: int) 
     return tuple(n for n in ALL_TERMS if n in counts and counts[n] >= min_flagged), counts
 
 
+@guard_pair_stamp("pairs")
 @guard_one_step_fit
 def fit_calendar_terms(
     pairs: Sequence[PairRow],
@@ -428,7 +429,7 @@ def refit(
             if not pairs:
                 raise smr.InsufficientHistory(f"{dates[decision_index]}: no training pair of lead {h} has a scale")
             per_lead[h] = fit_calendar_terms(
-                pairs, regressors=regressors_of(arm, h), location=arm.location, scale_terms=arm.scale,
+                stamp_pairs(pairs, direct=training_pairs == "direct"), regressors=regressors_of(arm, h), location=arm.location, scale_terms=arm.scale,
                 training_pairs=training_pairs,
             )
         out[arm.name] = per_lead

@@ -1,0 +1,53 @@
+{
+ "status": "declared by the pull request that closes #1555 before any figure of this study was computed; a development study, never a verdict. No change to the candidate, no lockbox day, no day after 2026-09-03, no record in docs/runs/ is edited or re-scored, nothing is published. The only things run before this file was committed are the unchanged walk of scripts/qe_diagnosis_1533.py (which calls scripts/candidate_calibration_1363.py unchanged), to check its sha256 against docs/research/candidate-calibration-1363/result.json (walk_files), and a look at the structure of the walk files (keys, one cell, the share of cells whose raw and final quantiles differ). No arm score and no ratio of this study was computed. Amendments made after a figure was computed are listed in `amendments`.",
+ "issue": 1555,
+ "avenue": 1546,
+ "hypothesis": "H5, step 4: a per-tail scale of the candidate's quantiles by the target day's calendar flag, each scale fitted walk-forward from the cells already scored at each decision day, on the flags and tails that #1547's diagnostic (docs/research/calendar-tail-diagnostic-1547-result.md, 'The per-tail arm the evidence supports') names. Does it improve the candidate's grid CRPS and upper-tail twCRPS, and the coverage of its 90% band by tail and by flag, on development data?",
+ "ruling": "Eleonora, 11 November 2026, docket ruling on PR #1550 ('Confirm both; merge, go to step 4'), relayed on #1555; her ruling that the flag groups stay overlapping",
+ "candidate": "sc_s3c_ann_net, (s3c-ann-net), the walk of candidate_calibration_1363.py unchanged at the 18:00 decision instant, read through scripts/qe_diagnosis_1533.py walk (the same extension as #1533 and #1547). No new walk and no refit: the arm is a transform of the candidate's own final quantiles by a factor fitted on cells of that walk, so it runs in the cloud, below the long-run line",
+ "windows": {
+  "development": "decision days whose five targets fall on or before 2025-12-31; decides the reading",
+  "2026": "decision days whose five targets fall from 2026-01-02 to 2026-09-03; shown apart, point values, decides nothing. Its factors are fitted from every earlier cell of both windows"
+ },
+ "arm": {
+  "meaning": "The candidate's 23 quantiles q_i on a target day in an arm group are replaced by q50 + m_side * (q_i - q50) for every level i on a side of the median, with m_side the day's factor for that side's tail; q50 is untouched. A tail with no factor on the day has m = 1. On every other target day the arm's quantiles are the candidate's, the same numbers (the run raises ValueError otherwise). The arm is applied to the final quantiles (after the candidate's cap), not to the raw pre-cap quantiles that the fit reads (the same raw quantiles #1547 read); 50 of the 9275 development cells differ between the two",
+  "groups_and_tails": {
+   "dom_19_23": ["0.05", "0.95"],
+   "coupon_settlement": ["0.95"],
+   "post_month_end_window": ["0.95"],
+   "no_flag": ["0.95"]
+  },
+  "group_membership": "dom_19_23, coupon_settlement and post_month_end_window: the flag is in targets[T].types of the 1363 walk file. no_flag: targets[T].types == ['ordinary'] and targets[T].pressure == 'ordinary'. Each group's own tails are the ones the issue names: dom_19_23 the q05 side widened and the q95 side narrowed; coupon_settlement, post_month_end_window the q95 side widened; no_flag the q95 side narrowed. The direction is not imposed: each factor is whatever the walk-forward fit gives (see fit), and may be above or below 1",
+  "quarter_end_out": "A target day carrying the quarter_end flag, or whose pressure-day type is quarter_end_turn or year_end, is in no arm group: its forecast is the candidate's, and its cells are left out of every group's training cells, so a group's factor does not learn from the quarter-end days it will not be applied to. Quarter-end is a reference only (#1531 and #1548 cover it). This is a choice the pull request marks as a question for Eleonora; #1547's point values (1.45, 0.53, 1.67, 1.66, 0.79) included those days in the groups' cells",
+  "overlap": "A day in more than one group takes, for each side, the geometric mean of the factors of the groups it is in that carry that tail: m = exp(mean(log f)). A day in one group takes that group's factor; a day in no group, or in groups with no factor on that tail, takes 1. So an overlap neither compounds nor lets one group override another. Default of a question for Eleonora; the alternatives are the product, and the factor furthest from 1"
+ },
+ "fit": {
+  "statistic": "The ratio of #1533's section 2b (scripts/qe_diagnosis_1533.py shape_ratios) on the group's training cells: z = (y - q50)/(q95 - q05) on the raw quantiles, over cells with q95 > q05; the law's distance of the tail from the median is the mean of (q_tau - q50)/(q95 - q05); the realised distance is the sample quantile tau of z less the sample median of z; ratio_tau = realised / law. The tail's raw factor is ratio_0.05 for the q05 side and ratio_0.95 for the q95 side, the same statistic #1547 reports",
+  "training_cells": "At a decision day d, the cells of the group, at every lead, whose target day is strictly before d, from both windows in date order (the first decision day has none). The 5 cells of a decision day share one fit. A cell whose target day is d or later is never read; the run raises LookAheadError if it is",
+  "shrinkage": "m = 1 + n / (n + k) * (ratio - 1), n the group's usable training cells and k = 500 cells (about 100 target days, five leads each). With fewer than 100 usable training cells (MIN_TRAIN), or a ratio that is not a positive finite number, m = 1. k and the minimum are this study's choice, a question for Eleonora in the pull request; they are fixed here before any score, and no other value is run",
+  "no_other_fit": "No grid of k, no per-regime or per-lead factor, no shift and no other tail level is tried. The sizes come from the walk, not from #1547's point values"
+ },
+ "protocol": {
+  "pooled": "Grid CRPS and upper-tail twCRPS, one score per decision day (the mean over its five leads, as scoring_protocol.day_scores), the arm against the candidate, B1, B1' and B2, and the candidate against B1, B1' and B2, on scoring protocol v1's studentized stationary bootstrap (repo_model.scoring_protocol.paired_tests: mean block 10, 10000 draws, HAC lag 10, seed 1555, one resample stream for all pairs). The figure is the mean of d = S(reference) - S(arm), positive favours the arm, with a two-sided 90% interval read from the studentized draws as the point less the 0.95 and 0.05 quantiles of the t-draws times the HAC standard error, and the skill (mean d over the reference's mean score) is not reported",
+  "splits": "The same paired differences, and the strict miss rates below q05 and above q95, by regime of the target day, by the target day's calendar flag (the four arm groups, quarter_end flag as a reference, the days in no arm group, and all days), by pressure-day type of the target, and by lead; the interval is the stationary bootstrap of the target days of the rows in date order (mean block 10, 1000 resamples, seed 1555, every cell of a drawn day comes with it), the 90% percentile interval, as #1547. A split with fewer than 30 cells is 'too few'",
+  "coverage": "The 90% band's strict miss rate below q05 and above q95 against the nominal 0.05, per tail and per flag, the candidate and the arm, with the same interval",
+  "2026": "Shown apart as point values on the 2026 window: pooled and by flag. They decide nothing"
+ },
+ "reading": {
+  "pooled_loss": "The arm loses on the pooled score when its mean grid CRPS over the development window is not below the candidate's (mean d <= 0, d the candidate's score less the arm's); it wins when the two-sided 90% interval of d lies wholly above 0; between the two it is undecided. This is the issue's 'loses on the pooled score', made mechanical; the pull request marks it as a question for Eleonora. Only a loss adds the settled-questions entry that closes the per-tail-by-flag line",
+  "no_verdict": "Development data on seen days: nothing here is a verdict, and the arm does not change the frozen candidate"
+ },
+ "provisional": "The arm trains on the candidate's own walk (direct pairs, calendar flags read at the target day); it calls no guarded fitter, so it is not a producer for docs/research/provisional-calendar-register.md",
+ "seeds": {"pooled": 1555, "splits": 1555},
+ "limits": [
+  "development data on seen days, never a verdict; the 2026 days are shown apart and decide nothing",
+  "the sizes are fitted on cells of the same development walk, walk-forward, but the choice of flags and tails is itself read from the full development window by #1547 (selection on the sample the arm is scored on), so the development figures are optimistic for the arm",
+  "the flag groups overlap; the overlap rule and the quarter-end exclusion are choices, not findings",
+  "the fit reads the raw quantiles and the arm scales the final ones (50 development cells differ)"
+ ],
+ "variants": {
+  "arm": "the only scored arm; one k, one overlap rule, one training rule",
+  "candidate": "the unchanged candidate, read from the same walk"
+ },
+ "amendments": []
+}

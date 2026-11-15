@@ -148,7 +148,8 @@ from .baseline import (
     _validate_prediction,
     _validate_taus,
 )
-from .asof import InformationRule, information_summary
+from .asof import information_summary
+from .masked_rule import MaskedInformationRule as InformationRule  # the masked read (#1565)
 from .contract import (
     EVENT_WINDOW_KEYS,
     event_window_digest,

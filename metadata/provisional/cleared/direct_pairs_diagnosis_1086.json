@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/direct_pairs_diagnosis_1086.json",
+  "script": "scripts/direct_pairs_diagnosis_1086.py",
+  "pairing": "direct",
+  "why": "fits nothing; decomposes the walks of #1027 (direct and aligned variants, which read the calendar columns at the target day); the calendar-blind control gbm_funding is only the reference of the excess"
+}

@@ -16,6 +16,8 @@ import unittest
 from datetime import date
 from pathlib import Path
 
+from repo_model.splits import LookAheadError
+
 ROOT = Path(__file__).resolve().parent.parent
 SPLITS = ROOT / "metadata" / "evaluation_splits.json"
 SCORE_934 = ROOT / "docs" / "pivot" / "ordinary-day-p5-844" / "score.json"
@@ -103,9 +105,8 @@ class ScoreTests(unittest.TestCase):
 
     def test_a_day_after_the_declared_end_is_refused(self):
         rows = _cells({"2025-26": (date(2025, 12, 20), 30)})
-        with self.assertRaises(Exception) as caught:
+        with self.assertRaises(LookAheadError):
             script.score_document({"horizons": {"1": rows}, "panel_sha256": "x", "decision_days": 30, "walks": {}}, replications=5)
-        self.assertEqual(type(caught.exception).__name__, "LookAheadError")
 
 
 class PageTests(unittest.TestCase):

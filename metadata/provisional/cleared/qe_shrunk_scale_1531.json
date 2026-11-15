@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/qe_shrunk_scale_1531.json",
+  "script": "scripts/qe_shrunk_scale_1531.py",
+  "pairing": "direct",
+  "why": "(s3c-ann-net-qe): (s3c-ann-net) with its residual pool rescaled, on quarter-end target days only, by a shrunk multiplier. The fit is (s3)'s estimation routine, spread_mr_state_calendar.walk with training_pairs = direct (guarded by one_step_guard with no allow-list entry), unchanged, and no gradient-boosted fit is called, so the study is not provisional; the arm adds no fit, only a ratio of second moments of that fit's own residuals over training pairs whose target is at or before the anchor (repo_model.day_type_scale.group_multiplier, leakage-tested), shrunk by n / (n + k); the type of a day is a calendar function of its date read at the target day, every forecast outside the group equals the candidate's bit for bit, and the settlement terms are those of (s3c-ann-net) (each figure counting an auction only when it was announced at or before the decision instant); no outcome after the anchor is an input"
+}

@@ -57,7 +57,9 @@ from .splits import LookAheadError
 LOCKBOX_CRPS = {
     "record": (
         "delegates",
-        "a label the online calibrator takes from the walk that calls it; scores no day itself",
+        "a label the online calibrator takes from the walk that calls it; scores no day itself. The walks that call it "
+        "draw their days from `_as_of_folds` (`rolling_persistence_backtest`, `paired_model_comparison`, "
+        "`rolling_exceedance_backtest`) or `require_unlocked` (`distribution_walk`), which refuse a locked scored day (#1568)",
     ),
 }
 

@@ -180,6 +180,7 @@ from repo_model.baseline import (
     ExceedanceCurves,
     arx_exceedance,
     climatology_exceedance,
+    UnobservedThresholdError,
     threshold_exceedance,
 )
 from repo_model.contract import UndeclaredFeatureError, event_window_digest
@@ -1148,7 +1149,9 @@ class RegimeDeclarationTests(EvaluatorHarness):
         caller declared.
 
         Undeclared, the regime variable is a column the model reads and the gap
-        was not sized over: refused, `LookAheadError`, naming the column. The
+        was not sized over: refused, naming the column (the model's own
+        `UnobservedThresholdError` on the hole the as-of observation leaves
+        there since #1565; `LookAheadError` for a predictor that reports it). The
         refusal comes before the record, so a run purged against the wrong
         fields leaves no journal line claiming a single-evaluation budget was
         spent on it.
@@ -1169,9 +1172,29 @@ class RegimeDeclarationTests(EvaluatorHarness):
         self.assertNotIn(THRESHOLD_VARIABLE, REGIME_REGRESSORS)
         self.assertLess(self.BASE_PURGE, self.REGIME_PURGE)
 
-        # Undeclared: read, not declared, refused by name -- and unjournalled.
-        with self.assertRaises(LookAheadError) as caught:
+        # Undeclared, the model itself: since #1565 the as-of observation hands
+        # an undeclared column over as `None`, so the threshold model meets a
+        # hole where it would have read `tgcr` and refuses (`ValueError`),
+        # before any curve exists. Unjournalled.
+        with self.assertRaises(UnobservedThresholdError) as caught:
             self.regime_report(features=FEATURES)
+        self.assertIn(THRESHOLD_VARIABLE, str(caught.exception))
+        self.assertEqual(read_journal(self.journal), ())
+
+        # Undeclared, a predictor that reads the column and says so: refused by
+        # name with `LookAheadError` by the same guard, before the record.
+        regimeless = climatology_exceedance(minimum_history=self.MINIMUM_HISTORY)
+
+        def reports_the_regime_variable(train_rows, feature_rows, taus):
+            fitted = regimeless(train_rows, feature_rows, taus)
+            return ExceedanceCurves(
+                fitted.curves, fitted.features_read + (THRESHOLD_VARIABLE,)
+            )
+
+        with self.assertRaises(LookAheadError) as caught:
+            self.regime_report(
+                features=FEATURES, fit_predict=reports_the_regime_variable
+            )
         self.assertIn(THRESHOLD_VARIABLE, str(caught.exception))
         self.assertEqual(read_journal(self.journal), ())
 

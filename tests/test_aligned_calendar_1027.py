@@ -203,12 +203,6 @@ class OneStepVariantTests(NeedsExtra):
         with Admitted():
             return super().run(result)
 
-    def test_the_947_guard_refuses_this_variant_until_the_allow_list_admits_it(self):
-        features = script.variant_features(script.ALIGNED, 2)
-        with mock.patch.object(one_step_guard, "ONE_STEP_ALLOW_LIST", {}):
-            with self.assertRaises(ValueError):
-                script.variant_fit(script.ALIGNED, features)(panel(), 20)
-
     def test_every_calendar_and_scheduled_column_is_the_targets_at_every_lead(self):
         rows = panel()
         for h in script.HORIZONS:
@@ -244,16 +238,32 @@ class OneStepVariantTests(NeedsExtra):
             with self.assertRaises(ValueError):
                 fit(panel(), 20)
 
-    def test_the_admitted_entries_are_exactly_the_variants_inputs(self):
-        """Without the stand-in: the allow-list's two #1027 entries admit the aligned variant at every lead (Eleonora, 21 October 2026)."""
-        listed = {e.regressors for n, e in one_step_guard.ONE_STEP_ALLOW_LIST.items() if n.startswith("aligned_calendar_1027")}
-        self.assertEqual(listed, {tuple(script.regressors(script.variant_features(script.ALIGNED, h))) for h in script.HORIZONS})
-
     def test_the_fit_names_no_information_so_the_pairs_stay_one_step(self):
         import inspect
 
         fit = script.variant_fit(script.ALIGNED, script.variant_features(script.ALIGNED, 1))
         self.assertNotIn("information", inspect.signature(fit).parameters)
+
+
+class RemovedExemptionTests(NeedsExtra):
+    """Eleonora's ruling of 11 November 2026 (#1556, option a): the two #1027 allow-list entries are removed and the script's one-step fit is refused.
+
+    Recorded mutation: restoring an `aligned_calendar_1027_h1` entry in `ONE_STEP_ALLOW_LIST` with the aligned variant's lead-1 regressors makes
+    `test_the_aligned_variant_one_step_fit_raises_citing_the_ruling` fail with `AssertionError` (`ValueError not raised`).
+    """
+
+    def test_the_aligned_variant_one_step_fit_raises_citing_the_ruling(self):
+        for h in script.HORIZONS:
+            fit = script.variant_fit(script.ALIGNED, script.variant_features(script.ALIGNED, h))
+            with self.assertRaises(ValueError) as raised:
+                fit(panel(), 20)
+            self.assertIn("#1556", str(raised.exception))
+            self.assertIn("11 November 2026", str(raised.exception))
+
+    def test_no_allow_list_entry_admits_the_variants_inputs(self):
+        listed = {e.regressors for e in one_step_guard.ONE_STEP_ALLOW_LIST.values()}
+        for h in script.HORIZONS:
+            self.assertNotIn(tuple(script.regressors(script.variant_features(script.ALIGNED, h))), listed)
 
 
 class DirectVariantTests(NeedsExtra):
@@ -358,6 +368,7 @@ class ScoredVariantsTests(unittest.TestCase):
         scored, not_run = script.scored_variants(self.walks([script.DIRECT]))
         self.assertEqual(scored, [script.DIRECT])
         self.assertIn("947", not_run[script.ALIGNED])
+        self.assertIn("1556", not_run[script.ALIGNED])
 
     def test_the_direct_variant_missing_is_an_error(self):
         with self.assertRaises(ValueError):

@@ -63,6 +63,16 @@ GENERATOR_BLOCK = 10
 _ROWS = []
 
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_CRPS = {
+    "five_level_scores": (
+        "delegates",
+        "five-level losses of the days `day_scores` scores, which calls `require_unlocked` on every decision and "
+        "target day before it computes any (#1568)",
+    ),
+}
+
+
 def published_rows():
     """The published panel, built once from the tracked fixtures."""
 

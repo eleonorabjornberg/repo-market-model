@@ -91,6 +91,16 @@ RESAMPLES = 1000
 BLOCK = 10
 
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_CRPS = {
+    "score_command": (
+        "guard",
+        "the near-threshold study's scores: `refuse_locked` on every scored day and its targets before any score is "
+        "computed (#688, #1568)",
+    ),
+}
+
+
 def _load(name: str):
     spec = importlib.util.spec_from_file_location(f"{name}_script", REPO / "scripts" / f"{name}.py")
     module = importlib.util.module_from_spec(spec)

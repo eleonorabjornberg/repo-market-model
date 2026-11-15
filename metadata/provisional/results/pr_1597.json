@@ -1,0 +1,15 @@
+{
+  "order": 199,
+  "directive": 1591,
+  "pull_request": 1597,
+  "hypothesis": "H5",
+  "result": "The direct-pairs variant's loss outside 2021-23: a dated note on the #1086 page, and the interval re-read written for the Mac",
+  "declarations": [],
+  "model": "`gbm_funding` as a series",
+  "pairing": "one_step",
+  "class": "series",
+  "on_the_page": [
+    "2026-11-12-model-01591-H5-step3"
+  ],
+  "concluded": "The page's own tables show the loss outside 2021-23 as well; no interval exists until the Mac run."
+}

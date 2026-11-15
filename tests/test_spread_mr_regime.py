@@ -37,6 +37,7 @@ import random
 import unittest
 from datetime import date
 
+from repo_model import one_step_guard as osg
 from repo_model import protocol_benchmarks as pb
 from repo_model import spread_mr_calendar as cal
 from repo_model import spread_mr_regime as rg
@@ -168,7 +169,7 @@ class FitTests(unittest.TestCase):
 
     def fit(self, z, xs=None, **kw):
         regressors = () if xs is None else rg.ENTRY_REGRESSORS
-        return rg.fit_regimes(z, xs, regressors=regressors, training_pairs="direct", **kw)
+        return rg.fit_regimes(z, None if xs is None else osg.stamp_pairs(xs, direct=True), regressors=regressors, training_pairs="direct", **kw)
 
     def test_em_recovers_a_planted_chain(self):
         z, _, _ = simulate(4000)
@@ -229,7 +230,7 @@ class FitTests(unittest.TestCase):
         z, _, xs = simulate(300)
         with self.assertRaisesRegex(ValueError, "one-step pairs"):
             rg.fit_regimes(z, xs, regressors=rg.ENTRY_REGRESSORS, training_pairs="one_step")
-        self.assertIsNotNone(rg.fit_regimes(z, xs, regressors=rg.ENTRY_REGRESSORS, training_pairs="direct"))
+        self.assertIsNotNone(rg.fit_regimes(z, osg.stamp_pairs(xs, direct=True), regressors=rg.ENTRY_REGRESSORS, training_pairs="direct"))
 
     def test_a_chain_with_no_calendar_column_has_nothing_to_refuse_but_still_trains_direct(self):
         with self.assertRaisesRegex(ValueError, "direct pairs only"):

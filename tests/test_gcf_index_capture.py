@@ -383,10 +383,24 @@ class DeclarationTests(unittest.TestCase):
         entry = measurement_fields.load_registry()["dtcc_gcf_repo_index"]
         lag = entry["release_lag"]
         self.assertEqual((lag["basis"], lag["days"], lag["unit"], lag["timezone"]), ("ref_date", 0, "business_days", "America/New_York"))
-        self.assertEqual(lag["available_time"], "15:30")
-        self.assertLessEqual(lag["available_time"], "16:00")
+        # Re-declared from 15:30 to the measured 16:05 (#1569; the captures of #1280): after the old 16:00 instant, at or
+        # before the 18:00 instant of #1312, so the 18:00 decision reads it and nothing read at 18:00 changes.
+        self.assertEqual(lag["available_time"], "16:05")
+        self.assertGreater(lag["available_time"], "16:00")
+        self.assertLessEqual(lag["available_time"], gi.DECISION_TIME.strftime("%H:%M"))
+        self.assertIn("#1569", lag["note"])
+        self.assertIn("#1280", lag["note"])
+        self.assertIn("#1312", lag["note"])
         self.assertIn("fact sheet", entry["availability_provenance"]["publication"])
         self.assertIn("NOT", entry["availability_provenance"]["note"])  # what was and was not re-read is stated
+
+    def test_reproducibility_names_every_workflow_that_pins_the_ml_libraries(self):
+        """#1569: the exact numpy and scikit-learn pins live in tests.yml and long-run.yml; the note names both."""
+
+        note = (self.ROOT / "REPRODUCIBILITY.md").read_text(encoding="utf-8")
+        for workflow in (self.ROOT / ".github" / "workflows").glob("*.yml"):
+            if '"numpy==2.4.6"' in workflow.read_text(encoding="utf-8"):
+                self.assertIn(f".github/workflows/{workflow.name}", note, workflow.name)
 
     def test_no_published_declaration_reads_it(self):
         from repo_model import contract

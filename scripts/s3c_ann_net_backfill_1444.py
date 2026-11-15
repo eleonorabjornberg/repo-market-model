@@ -75,6 +75,7 @@ def _load(name: str, alias: Optional[str] = None):
 
 from repo_model import announced_iorb, backfill, b1_calendar, metrics, policy_events, s3c_announced, s3c_net  # noqa: E402
 from repo_model import data, protocol_benchmarks as pb, scoring_protocol as sp, spread_mean_reversion as smr, spread_mr_fhs as fhs  # noqa: E402
+from repo_model import one_step_guard as osg  # noqa: E402
 from repo_model import spread_mr_calendar as cal, spread_mr_state_calendar as sc, turn_days  # noqa: E402
 from repo_model.baseline import ScoredFold, panel_sha256  # noqa: E402
 from repo_model.data import DailyObservation, load_daily_panel  # noqa: E402
@@ -314,7 +315,7 @@ def two_stage(pairs: Sequence[sc.StatePair], prefix: int, arm: sc.StateArm, lead
         InsufficientHistory: no published-target pair.
     """
 
-    published = [pair for pair in pairs if pair.target >= prefix]
+    published = osg.stamp_like([pair for pair in pairs if pair.target >= prefix], pairs)
     require_published_targets(published, prefix, where="stage 1 of the two-stage refit")
     common = dict(interact=arm.interact, robust=arm.robust, training_pairs="direct", ridge=arm.ridge, calendar_k=arm.calendar_k)
     first = sc.fit_state_terms(published, regressors=cal.regressors_of(arm, lead), terms=arm.location, sized=arm.sized, extra=arm.extra, **common)
@@ -327,7 +328,7 @@ def two_stage(pairs: Sequence[sc.StatePair], prefix: int, arm: sc.StateArm, lead
         else:
             adjusted.append(pair)
     second_arm = dataclasses.replace(arm, name=arm.name + "_known", location=known, sized=False)
-    second = sc.fit_state_terms(adjusted, regressors=cal.regressors_of(second_arm, lead), terms=known, sized=False, extra=(), **common)
+    second = sc.fit_state_terms(osg.stamp_like(adjusted, pairs), regressors=cal.regressors_of(second_arm, lead), terms=known, sized=False, extra=(), **common)
     effect = {**{n: first.effect[n] for n in unknown if n in first.effect}, **second.effect}
     ordered = tuple(n for n in cal.ALL_TERMS if n in effect)
     flagged = {**{n: v for n, v in first.flagged.items() if n in unknown}, **{n: v for n, v in second.flagged.items() if n in known}}
@@ -369,7 +370,7 @@ def refit_extended(
             pairs.append(sc.StatePair(raw, scale, table.flags_at(h, target), state, size, origin, target))
         if not pairs:
             raise smr.InsufficientHistory(f"{dates[decision_index]}: no training pair of lead {h} has a scale")
-        out[h] = two_stage(pairs, table.prefix, arm, h)
+        out[h] = two_stage(osg.stamp_pairs(pairs, direct=True), table.prefix, arm, h)
     return out
 
 

@@ -67,6 +67,16 @@ MINIMUM_DAYS = 60
 REPRODUCTION_TOLERANCE = 1e-9
 
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_CRPS = {
+    "series": (
+        "guard",
+        "the daily series of the block-length study: `require_unlocked` on every decision day and every target "
+        "before any score is computed (#949, #1568)",
+    ),
+}
+
+
 def _load(name):
     spec = importlib.util.spec_from_file_location(f"{name}_script", REPO / "scripts" / f"{name}.py")
     module = importlib.util.module_from_spec(spec)

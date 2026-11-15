@@ -34,6 +34,7 @@ from . import spread_mr_scale as scale_mod
 from . import spread_mr_state_calendar as sc
 from .data import DailyObservation
 from .evaluation_splits import SplitDeclaration
+from .one_step_guard import stamp_pairs
 from .scoring_protocol import GRID, HORIZONS
 from .splits import LookAheadError, SplitError
 
@@ -134,7 +135,7 @@ def fit_v4(
         estimate = estimates[h]
         kinds = [scale_mod.type_of(table.flags_at(h, target)) for target in estimate.targets]
         factors[h] = scale_mod.fit_type_factors(
-            list(zip(estimate.residuals, kinds)), regressors=scale_mod.regressors_at(h), training_pairs="direct"
+            stamp_pairs(list(zip(estimate.residuals, kinds)), direct=True), regressors=scale_mod.regressors_at(h), training_pairs="direct"
         )
         z[h] = [e / factors[h].get(t, 1.0) for e, t in zip(estimate.residuals, kinds)]
     one = pb.empirical_quantiles(sorted(z[1]))

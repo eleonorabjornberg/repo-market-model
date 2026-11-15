@@ -18,6 +18,7 @@ import dataclasses
 import unittest
 from datetime import date
 
+from repo_model import one_step_guard as osg
 from repo_model import spread_mr_calendar as cal
 from repo_model import spread_mr_state_calendar as sc
 
@@ -29,7 +30,7 @@ S4 = sc.ARMS[3]
 
 def fit(pairs, arm, *, terms=("quarter_end",)):
     return sc.fit_state_terms(
-        pairs, regressors=terms, terms=terms, interact=arm.interact, robust=arm.robust, ridge=arm.ridge, sized=arm.sized,
+        osg.stamp_pairs(pairs, direct=True), regressors=terms, terms=terms, interact=arm.interact, robust=arm.robust, ridge=arm.ridge, sized=arm.sized,
         training_pairs="direct",
     )
 

@@ -44,21 +44,22 @@ day is provisional (`docs/research/provisional-calendar-register.md`). A session
 - **Publishing a record** follows `docs/decisions/publish-rule.md`: a PR that adds the records and regenerates the
   blocks rendered from them (`python3 scripts/emit_results.py`) in the same commit. Generated blocks are never
   hand-edited.
-- **Built on main, never committed** (#928): the results page (`site/index.html`), its data (`docs/visual/data/`) and
-  the assembled `docs/research/log.md` are gitignored. A PR changes only their inputs (log entry files, records, the
-  template, the scripts). `scripts/check_built_outputs.py` fails a PR that adds or edits one. To read them locally:
+- **Built on main, never committed** (#928): the results page (`site/index.html`), its data (`docs/visual/data/`), the
+  assembled `docs/research/log.md` and the progress page with its data (`docs/pivot/progress.md`,
+  `docs/research/progress.json`, built by `scripts/emit_progress.py`) are gitignored. A PR changes only their inputs
+  (log entry files, records, the template, the scripts). `scripts/check_built_outputs.py` fails a PR that adds or edits one. To read them locally:
   `python3 scripts/emit_visual.py` and `python3 scripts/check_research_log.py assemble`. The newcomer layer ("Start
   here") is part of that page.
 - **Committed generated files** are regenerated in the PR that changes their inputs, never hand-edited:
   `docs/status.json` (`scripts/emit_status.py`, from `PLAN.md`, top-level `docs/runs/`, `metadata/events.json`,
   `pyproject.toml`; commit it after the input change, since it is stamped with that commit, and `git fetch
-  --unshallow` first in a shallow clone) and `docs/pivot/progress.md` with `docs/research/progress.json`
-  (`scripts/emit_progress.py`). After merging main, a conflict in these is mechanical: regenerate in a separate commit.
+  --unshallow` first in a shallow clone). After merging main, a conflict in it is mechanical: regenerate in a separate
+  commit.
 
 ## The science rules
 
 - **Information set:** `docs/decisions/information-set.md`. A forecast uses exactly what was public at its decision
-  instant (16:00 the business day before), read per field. Leakage guards and staleness guards both have to hold.
+  instant (18:00 New York time the business day before, since #1312), read per field. Leakage guards and staleness guards both have to hold.
 - **Calendar first** (Eleonora, 20 October 2026). A repo-market model that does not read calendar days at the target
   day (quarter-end, month-end, tax dates, Treasury settlements, scheduled IORB) is wrong. A new spread model reads
   them, on direct pairs. A result from a model that did not, or that learned them one row off (the #914 class), is

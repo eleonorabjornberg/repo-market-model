@@ -119,6 +119,16 @@ RAW_SERIES: Mapping[str, Tuple[str, str]] = {
 ONE_ROW_HOLE_COLUMNS = tuple(RAW_SERIES)
 
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_CRPS = {
+    "crps": (
+        "delegates",
+        "a wrapper of `grid_crps`, a loss of one vector at one outcome; chooses no day. Its caller "
+        "`richer_targets_639.run_command` calls `require_unlocked` on every scored day before it reads one (#1568)",
+    ),
+}
+
+
 class Target(NamedTuple):
     """One H9 target: the panel column it is, its unit, the group it belongs to and its definition."""
 

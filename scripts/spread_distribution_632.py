@@ -63,6 +63,11 @@ LOCKBOX_CRPS = {
         "last scored day (2025-12-31) and walks the benchmarks on the panel cut at it, and the "
         "published daily file is read to that day only (#632)",
     ),
+    "pinballs": (
+        "delegates",
+        "the pinball losses of one vector at one outcome on days `distribution_command` chose, after its "
+        "`require_unlocked` on the last scored day (#632, #1568)",
+    ),
 }
 
 DECLARATION = REPO / "metadata" / "spread_distribution_632.json"

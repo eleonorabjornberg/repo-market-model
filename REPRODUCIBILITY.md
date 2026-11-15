@@ -23,7 +23,7 @@ re-run from their own `declaration` blocks; no script re-checks them yet.
   their last digits.
 - no third-party Python packages for any published record; the optional `ml` extra
   (numpy, scikit-learn) is needed only by `src/repo_model/ml.py`. CI pins numpy 2.4.6
-  and scikit-learn 1.9.1, and the rmm environment is to pin the same. A gbm record names the versions
+  and scikit-learn 1.9.1 (exactly, in `.github/workflows/tests.yml` and `.github/workflows/long-run.yml`), and the rmm environment is to pin the same. A gbm record names the versions
   it was fitted with in `provenance.ml_libraries`; the records in `docs/runs/` were
   fitted with numpy 2.4.6 and scikit-learn 1.9.1 (the archived pre-as-of records with
   numpy 2.0.2 and scikit-learn 1.6.1), and a re-run under other versions

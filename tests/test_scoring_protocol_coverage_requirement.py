@@ -1,14 +1,16 @@
-"""The coverage requirement of the draft amendment (#1130), implemented inert behind the record.
+"""The coverage requirement of amendment 4 (#1130), put in force by #1522.
 
-`docs/decisions/scoring-protocol.md`, section "Draft amendment 4", drafts passing the Kupiec and Christoffersen tests
-at q05/q95 and q01/q99, by lead and regime, as a registration requirement. It is in force only once Eleonora merges
-it. Until then `scoring_protocol.COVERAGE_REQUIREMENT_IN_FORCE` is False, `coverage_cells` only reports, and
-`enforce_coverage_requirement` returns nothing whatever the cells say. The statistics are
+`docs/decisions/scoring-protocol.md`, section "Draft amendment 4", sets passing the Kupiec and Christoffersen tests
+at q05/q95 and q01/q99, by lead and regime, as a registration requirement. Its in-force state is the record's: the
+section says whether `scoring_protocol.COVERAGE_REQUIREMENT_IN_FORCE` is True, which hit rule the requirement reads
+and which size table meets its point 3, and `InForceTests` checks the flag against that statement (the flag is True
+only with the record saying so, and the record says so only with the flag True). While the flag is off,
+`enforce_coverage_requirement` returns nothing whatever the cells say; `coverage_cells` only reports. The statistics are
 `repo_model.coverage_tests` (#993); this module tests only what is new: the hit direction in each tail, both hit
 rules, thinning, the HAC variant, the lockbox refusal and the inertness.
 
-**Recorded mutation (inertness).** `COVERAGE_REQUIREMENT_IN_FORCE = False` -> `True` in `scoring_protocol.py` fails
-`InertUntilMergedTests.test_the_flag_is_off_while_the_record_is_a_draft` with `AssertionError`.
+**Recorded mutation (flag).** `COVERAGE_REQUIREMENT_IN_FORCE = True` -> `False` in `scoring_protocol.py` fails
+`InForceTests.test_the_flag_matches_the_record` with `AssertionError`.
 **Recorded mutation (lower tail).** In `coverage_cells`, mapping a lower level to the upper-tail hit (`y > q`
 instead of `y < q`) fails `HitDirectionTests.test_a_lower_level_is_hit_below_the_quantile` with `AssertionError`.
 **Recorded mutation (lockbox).** Deleting the `lockbox.require_unlocked` call in `coverage_cells` fails
@@ -183,24 +185,51 @@ class LockboxTests(unittest.TestCase):
         self.assertEqual(guard.call_count, 1)
 
 
-class InertUntilMergedTests(unittest.TestCase):
+def record_section():
+    text = RECORD.read_text(encoding="utf-8")
+    start = text.index(HEADING)
+    end = text.find("\n## ", start + len(HEADING))
+    return " ".join(text[start:end if end != -1 else None].split())
+
+
+class InForceTests(unittest.TestCase):
+    def test_the_flag_matches_the_record(self):
+        section = record_section()
+        # Amendment 4 is in force as set (#1522, GO #1522): the record says the flag is True, names the hit rule, and the flag is True.
+        self.assertIn("`scoring_protocol.COVERAGE_REQUIREMENT_IN_FORCE` is True", section)
+        self.assertNotIn("`scoring_protocol.COVERAGE_REQUIREMENT_IN_FORCE` is False", section)
+        self.assertTrue(sp.COVERAGE_REQUIREMENT_IN_FORCE)
+
+    def test_the_record_names_the_hit_rule_the_requirement_reads(self):
+        section = record_section()
+        self.assertIn("reads the `strict` hit rule", section)
+        self.assertIn("`tie_counts`", section)
+        self.assertIn("randomised", section)
+
+    def test_the_record_cites_the_size_table_that_meets_point_3(self):
+        section = record_section()
+        self.assertIn("PR #1520", section)
+        self.assertIn("1.7%", section)
+        self.assertIn("5.0%", section)
+
+    def test_a_failing_forecast_raises_under_the_design_as_set_with_no_patch(self):
+        forecasts, outcomes, calendar, labels = world(n=300, outcome=lambda day: 4.9)
+        cells = sp.coverage_cells(forecasts, outcomes, calendar, labels, method="thinned")
+        with self.assertRaises(sp.CoverageRequirementFailed):
+            sp.enforce_coverage_requirement(cells, alpha=0.05, family="holm", rule="strict")
+
+
+class InertWhileOffTests(unittest.TestCase):
+    """The guard's inertness is a property of the flag, tested with the flag patched off."""
+
     def failing_cells(self):
         forecasts, outcomes, calendar, labels = world(n=300, outcome=lambda day: 4.9)
         return sp.coverage_cells(forecasts, outcomes, calendar, labels, method="thinned")
 
-    def test_the_flag_is_off_while_the_record_is_a_draft(self):
-        text = RECORD.read_text(encoding="utf-8")
-        start = text.index(HEADING)
-        end = text.find("\n## ", start + len(HEADING))
-        section = text[start:end if end != -1 else None]
-        # The amendment is merged (GO #1130), but her #1473 Q2 ruling (b) keeps the requirement reported only:
-        # the record still states the flag is False, and the flag is False.
-        self.assertIn("`scoring_protocol.COVERAGE_REQUIREMENT_IN_FORCE` is False", " ".join(section.split()))
-        self.assertFalse(sp.COVERAGE_REQUIREMENT_IN_FORCE)
-
     def test_enforcement_returns_nothing_while_off(self):
         cells = self.failing_cells()
-        self.assertEqual(sp.enforce_coverage_requirement(cells, alpha=0.01, family="per_cell", rule="strict"), [])
+        with mock.patch.object(sp, "COVERAGE_REQUIREMENT_IN_FORCE", False):
+            self.assertEqual(sp.enforce_coverage_requirement(cells, alpha=0.01, family="per_cell", rule="strict"), [])
 
     def test_enforcement_names_the_failing_cells_once_on(self):
         cells = self.failing_cells()

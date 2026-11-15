@@ -204,7 +204,7 @@ class GuardTests(unittest.TestCase):
                     osg.check_one_step_regressors("fit_calendar_terms", cal.regressors_of(arm, lead) + ("quarter_end",))
         self.assertFalse([k for k, v in osg.ONE_STEP_ALLOW_LIST.items() if v.fitter == "fit_calendar_terms"])
         estimate = cal.fit_calendar_terms(
-            self.pairs(), regressors=("quarter_end",), location=("quarter_end",), scale_terms=(), training_pairs="direct"
+            osg.stamp_pairs(self.pairs(), direct=True), regressors=("quarter_end",), location=("quarter_end",), scale_terms=(), training_pairs="direct"
         )
         self.assertEqual(estimate.pairs, 5)
 
@@ -226,7 +226,7 @@ class EstimationTests(unittest.TestCase):
         return out
 
     def fit(self, pairs, location=("quarter_end",), scale=()):
-        return cal.fit_calendar_terms(pairs, regressors=("quarter_end",), location=location, scale_terms=scale, training_pairs="direct")
+        return cal.fit_calendar_terms(osg.stamp_pairs(pairs, direct=True), regressors=("quarter_end",), location=location, scale_terms=scale, training_pairs="direct")
 
     def test_a_planted_location_effect_is_estimated_and_shifts_only_the_flagged_day(self):
         estimate = self.fit(self.pairs())

@@ -105,17 +105,17 @@ class WorldTests(unittest.TestCase):
 
 
 class PathTests(unittest.TestCase):
-    def test_a_path_reports_each_rule_overall_and_by_lead_and_leaves_the_flag_off(self):
+    def test_a_path_reports_each_rule_overall_and_by_lead_and_leaves_the_flag_as_it_was(self):
         out = script.path_report(3, narrow=1.0, days=300)
         self.assertEqual(set(out["fails"]), {"strict", "tie_counts", "randomised"})
         for rule, row in out["fails"].items():
             self.assertEqual(set(row), {"all", "1", "2", "3", "4", "5"})
             self.assertTrue(all(isinstance(v, bool) for v in row.values()))
-        self.assertFalse(sp.COVERAGE_REQUIREMENT_IN_FORCE)
+        self.assertTrue(sp.COVERAGE_REQUIREMENT_IN_FORCE)  # in force since #1522; the script restores it
 
     def test_the_flag_is_restored_even_when_the_requirement_raises(self):
         script.path_report(3, narrow=0.4, days=300)
-        self.assertFalse(sp.COVERAGE_REQUIREMENT_IN_FORCE)
+        self.assertTrue(sp.COVERAGE_REQUIREMENT_IN_FORCE)  # in force since #1522; the script restores it
 
     def test_a_grossly_narrow_forecaster_fails_every_rule(self):
         out = script.path_report(3, narrow=0.4, days=600)

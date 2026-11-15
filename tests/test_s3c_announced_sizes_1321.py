@@ -168,7 +168,7 @@ class FitWithSizeTermsTests(unittest.TestCase):
 
     def test_the_iorb_extras_are_unchanged(self):
         self.assertEqual(sc.IORB_EXTRAS, ("iorb_signed", "iorb_technical"))
-        self.assertEqual(sc.EXTRA_TERMS, sc.IORB_EXTRAS + sc.SIZE_EXTRAS + sc.CMB_EXTRAS + sc.OPS_EXTRAS + sc.MISSING_EXTRAS + sc.PRICE_EXTRAS + (sc.H9_FORECAST,) + sc.SATIATION_EXTRAS)  # #1356 adds the CMB names, #1349 the take-up extras, #1390 the missingness flag, #1346 the price extra, #1345 the H9 forecast, #1507 the satiation extras
+        self.assertEqual(sc.EXTRA_TERMS, sc.IORB_EXTRAS + sc.SIZE_EXTRAS + sc.CMB_EXTRAS + sc.OPS_EXTRAS + sc.MISSING_EXTRAS + sc.PRICE_EXTRAS + (sc.H9_FORECAST,) + sc.SATIATION_EXTRAS + sc.RS_EXTRAS)  # #1526 adds the R+S pair, #1356 adds the CMB names, #1349 the take-up extras, #1390 the missingness flag, #1346 the price extra, #1345 the H9 forecast, #1507 the satiation extras
 
 
 class ArmTests(unittest.TestCase):

@@ -66,6 +66,17 @@ METRIC_TITLES = {"brier5": "Brier P(> +5 bp)", "brier10": "Brier P(> +10 bp)", "
 _STATE: Dict = {}
 
 
+# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
+LOCKBOX_CRPS = {
+    "window_result": (
+        "delegates",
+        "scores the cells of the walk files `walk_command` wrote; `walk_command` calls `require_exploratory_window` "
+        "and `refuse_beyond` on every panel day, decision day and target day before it writes a file, and "
+        "`score_command` reads those files back without a second check (#1389, #1568)",
+    ),
+}
+
+
 def _load(name: str, alias: str):
     spec = importlib.util.spec_from_file_location(alias, REPO / "scripts" / f"{name}.py")
     module = importlib.util.module_from_spec(spec)

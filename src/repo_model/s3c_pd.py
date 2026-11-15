@@ -60,7 +60,7 @@ from . import spread_mr_fhs as fhs
 from . import spread_mr_state_calendar as sc
 from .data import DailyObservation
 from .evaluation_splits import SplitDeclaration
-from .one_step_guard import guard_one_step_fit
+from .one_step_guard import guard_one_step_fit, guard_pair_stamp, stamp_pairs
 from .scoring_protocol import HORIZONS, ProtocolError
 from .splits import LookAheadError, SplitError
 
@@ -265,6 +265,7 @@ class PdEstimate:
     pd_pairs: int
 
 
+@guard_pair_stamp("pairs")
 @guard_one_step_fit
 def fit_pd_terms(
     pairs: Sequence[sc.StatePair],
@@ -394,6 +395,7 @@ def refit(
             values.append(sc.pair_state(states, dates, origin, lag, decision_index))
         if not pairs:
             raise smr.InsufficientHistory(f"{dates[decision_index]}: no training pair of lead {h} has a scale")
+        pairs = stamp_pairs(pairs, direct=training_pairs == "direct")
         regressors = cal.regressors_of(ARM, h)
         s3[h] = sc.fit_state_terms(
             pairs, regressors=regressors, terms=ARM.location, interact=False, robust=True, training_pairs=training_pairs,

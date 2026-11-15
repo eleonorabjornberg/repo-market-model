@@ -286,6 +286,48 @@
       "comment_id": 6712519282,
       "phrase": "GO #1506",
       "what": "docs/decisions/scoring-protocol.md draft amendment 6 marked parked, not proposed for H5 (PR #1508); her 7 November 2026 docket ruling on #1504"
+    },
+    {
+      "kind": "decisions",
+      "issue": 1522,
+      "comment_id": 6730682161,
+      "phrase": "GO #1522",
+      "what": "docs/decisions/scoring-protocol.md amendment 4 put in force as set, COVERAGE_REQUIREMENT_IN_FORCE on (PR #1524); her 8 November 2026 docket ruling 'bar' on #1520"
+    },
+    {
+      "kind": "claude-files",
+      "issue": 1534,
+      "comment_id": 6780785264,
+      "phrase": "GO #1534",
+      "what": ".claude/ agents and directive-orchestrator skill: the H5 candidate process (PR #1541); her 10 November 2026 docket answer 'go'"
+    },
+    {
+      "kind": "claude-files",
+      "issue": 1530,
+      "comment_id": 6787826004,
+      "phrase": "GO #1530",
+      "what": ".claude/ agents and skills: a directive cites the settled-questions register before it is queued (PR #1552); her 11 November 2026 docket answer 'Done' on the GO #1530 card"
+    },
+    {
+      "kind": "decisions",
+      "issue": 1527,
+      "comment_id": 6787805666,
+      "phrase": "GO #1527",
+      "what": "docs/decisions/scoring-protocol.md amendment 4 drafted to read Kupiec and independence at spacing h + 1 (PR #1549); her 11 November 2026 docket answer 'Done' on the GO #1527 card"
+    },
+    {
+      "kind": "claude-files",
+      "issue": 1570,
+      "comment_id": 6828895747,
+      "phrase": "GO #1570",
+      "what": "CLAUDE.md: decision instant corrected to 18:00 the business day before, and the two progress files moved to the built-on-main list (PR #1583); her 12 November 2026 docket answer 'go' on the GO #1570 card"
+    },
+    {
+      "kind": "decisions",
+      "issue": 1598,
+      "comment_id": 6840997940,
+      "phrase": "GO #1598",
+      "what": "docs/decisions/drafts/tail-reading-rule.md drafted: a tail reading needs both intervals, and post-month-end coverage goes in the known limits (PR #1598, directive #1592); her GO #1598, posted 12 November 2026"
     }
   ],
   "rule": "docs/decisions/drafts/owner-attestation.md",

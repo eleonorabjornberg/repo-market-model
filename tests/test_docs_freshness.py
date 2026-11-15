@@ -180,6 +180,24 @@ def published_markdown(root=REPO_ROOT):
     return found
 
 
+# The only future dates a published page may state: scheduled dates, not
+# claims that something happened. Adding one is Eleonora's decision (#1573).
+SCHEDULED_FUTURE_DATES = {
+    # The series break named by repo-market-liquidity #206 and #207: the SOFR
+    # volume and p99-p1 series are not read across it.
+    datetime.date(2027, 6, 30): "scheduled SOFR series break (liquidity #206, #207)",
+}
+
+
+def future_offences(text, today):
+    """Dates in `text` after `today` that are not a listed scheduled date."""
+    return [
+        shown
+        for value, shown in dates_in(text)
+        if value > today and value not in SCHEDULED_FUTURE_DATES
+    ]
+
+
 def dates_in(text):
     """Every calendar date the text states, as (date, matched text) pairs.
 
@@ -206,7 +224,8 @@ def dates_in(text):
             )
         except ValueError:
             continue
-    for month, year in MONTH_YEAR.findall(text):
+    # A "June 2027" inside "30 June 2027" is the same date, already read above.
+    for month, year in MONTH_YEAR.findall(DAY_MONTH_YEAR.sub(" ", text)):
         found.append(
             (datetime.date(int(year), MONTH_INDEX[month], 1), f"{month} {year}")
         )
@@ -668,9 +687,8 @@ class PublishedDocumentTests(unittest.TestCase):
         offences = []
         for relative, path in published_markdown():
             for number, line in enumerate(path.read_text().splitlines(), start=1):
-                for value, text in dates_in(line):
-                    if value > today:
-                        offences.append(f"{relative}:{number}: {text!r}")
+                for text in future_offences(line, today):
+                    offences.append(f"{relative}:{number}: {text!r}")
         self.assertEqual(
             [],
             offences,
@@ -679,6 +697,31 @@ class PublishedDocumentTests(unittest.TestCase):
             + "\nName the commit instead; `git show -s --format=%ci <sha>` is a "
             "timestamp nobody has to type.",
         )
+
+
+class ScheduledFutureDateTests(unittest.TestCase):
+    """The future-date check accepts only the listed scheduled dates (#1573)."""
+
+    TODAY = datetime.date(2026, 11, 12)
+
+    def test_a_listed_scheduled_date_is_accepted(self):
+        self.assertEqual([], future_offences("break from 2027-06-30", self.TODAY))
+        self.assertEqual([], future_offences("break on 30 June 2027", self.TODAY))
+
+    def test_an_unlisted_future_date_is_still_refused(self):
+        self.assertEqual(
+            ["2027-07-01"], future_offences("from 2027-07-01", self.TODAY)
+        )
+        self.assertEqual(
+            ["2027-06-29"], future_offences("from 2027-06-29", self.TODAY)
+        )
+        self.assertEqual(
+            ["29 June 2027"], future_offences("on 29 June 2027", self.TODAY)
+        )
+
+    def test_the_set_holds_only_the_ruled_date_with_a_reason(self):
+        self.assertEqual({datetime.date(2027, 6, 30)}, set(SCHEDULED_FUTURE_DATES))
+        self.assertTrue(all(SCHEDULED_FUTURE_DATES.values()))
 
 
 class CountClaimPatternTests(unittest.TestCase):

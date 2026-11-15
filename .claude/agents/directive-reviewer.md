@@ -19,6 +19,7 @@ Review in this order, against the tree, never the PR's own claims:
 4. The diff, and every acceptance criterion in the issue and in every ruling comment on it, one by one.
 5. Calendar first: a new model that does not read the calendar columns at the target day on direct pairs is CHANGES,
    or a register row if the directive says so (`docs/research/provisional-calendar-register.md`).
+   A PR that changes the H5 candidate without updating `docs/research/h5-candidate.json` is CHANGES.
 6. Reproduce what is cheap in a scratch copy: `verify-panel` when the panel was rebuilt, and each recorded mutation.
 
 Begin your comment with `Review of <head SHA>: MERGE|CHANGES|ESCALATE` and give a criterion-by-criterion account.

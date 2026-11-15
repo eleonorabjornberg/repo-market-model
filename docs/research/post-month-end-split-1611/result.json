@@ -1,0 +1,4112 @@
+{
+ "block": 10,
+ "issue": 1611,
+ "label": "development, not a verdict",
+ "lag": 10,
+ "level": 0.9,
+ "min_days_for_interval": 20,
+ "no_refit": true,
+ "panel_sha256": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+ "reproduces_1547": {
+  "cells": 1335,
+  "low": 0.091386,
+  "up": 0.125843
+ },
+ "reps": 10000,
+ "seed": 1611,
+ "walk_files": {
+  "2026": {
+   "refits": 97,
+   "sha256": "e409d28c54974510f215fcd5cf8644d1dd4c41dc887d7feafe90e3e612773270"
+  },
+  "development": {
+   "refits": 89,
+   "sha256": "435375425e64d83124edb559d0574cbe7949f5ed2dd5f00f03dad7ea4f318127"
+  }
+ },
+ "windows": {
+  "2026": {
+   "scopes": {
+    "all": {
+     "1": {
+      "1": {
+       "cells": 8,
+       "days": 8,
+       "low": {
+        "expected": 0.4,
+        "interval": null,
+        "misses": 0,
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       },
+       "mean_error": [
+        2.363314,
+        null,
+        null
+       ],
+       "median_error": [
+        2.544691,
+        null,
+        null
+       ],
+       "up": {
+        "expected": 0.4,
+        "interval": null,
+        "misses": 1,
+        "share": 0.125,
+        "vs_nominal": "no interval"
+       }
+      },
+      "2": {
+       "cells": 7,
+       "days": 7,
+       "low": {
+        "expected": 0.35,
+        "interval": null,
+        "misses": 0,
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       },
+       "mean_error": [
+        1.24514,
+        null,
+        null
+       ],
+       "median_error": [
+        1.12874,
+        null,
+        null
+       ],
+       "up": {
+        "expected": 0.35,
+        "interval": null,
+        "misses": 0,
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       }
+      },
+      "3": {
+       "cells": 8,
+       "days": 8,
+       "low": {
+        "expected": 0.4,
+        "interval": null,
+        "misses": 0,
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       },
+       "mean_error": [
+        0.350439,
+        null,
+        null
+       ],
+       "median_error": [
+        0.416255,
+        null,
+        null
+       ],
+       "up": {
+        "expected": 0.4,
+        "interval": null,
+        "misses": 0,
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       }
+      },
+      "4": {
+       "cells": 8,
+       "days": 8,
+       "low": {
+        "expected": 0.4,
+        "interval": null,
+        "misses": 0,
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       },
+       "mean_error": [
+        0.609812,
+        null,
+        null
+       ],
+       "median_error": [
+        0.342004,
+        null,
+        null
+       ],
+       "up": {
+        "expected": 0.4,
+        "interval": null,
+        "misses": 0,
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       }
+      },
+      "5": {
+       "cells": 8,
+       "days": 8,
+       "low": {
+        "expected": 0.4,
+        "interval": null,
+        "misses": 0,
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       },
+       "mean_error": [
+        0.751333,
+        null,
+        null
+       ],
+       "median_error": [
+        0.756855,
+        null,
+        null
+       ],
+       "up": {
+        "expected": 0.4,
+        "interval": null,
+        "misses": 0,
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       }
+      },
+      "all": {
+       "cells": 39,
+       "days": 9,
+       "low": {
+        "expected": 1.95,
+        "interval": null,
+        "misses": 0,
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       },
+       "mean_error": [
+        1.432266,
+        null,
+        null
+       ],
+       "median_error": [
+        1.13043,
+        null,
+        null
+       ],
+       "up": {
+        "expected": 1.95,
+        "interval": null,
+        "misses": 1,
+        "share": 0.111111,
+        "vs_nominal": "no interval"
+       }
+      }
+     },
+     "2": {
+      "1": {
+       "cells": 8,
+       "days": 8,
+       "low": {
+        "expected": 0.4,
+        "interval": null,
+        "misses": 0,
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       },
+       "mean_error": [
+        -0.13586,
+        null,
+        null
+       ],
+       "median_error": [
+        0.022808,
+        null,
+        null
+       ],
+       "up": {
+        "expected": 0.4,
+        "interval": null,
+        "misses": 0,
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       }
+      },
+      "2": {
+       "cells": 8,
+       "days": 8,
+       "low": {
+        "expected": 0.4,
+        "interval": null,
+        "misses": 0,
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       },
+       "mean_error": [
+        0.638479,
+        null,
+        null
+       ],
+       "median_error": [
+        1.199086,
+        null,
+        null
+       ],
+       "up": {
+        "expected": 0.4,
+        "interval": null,
+        "misses": 0,
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       }
+      },
+      "3": {
+       "cells": 7,
+       "days": 7,
+       "low": {
+        "expected": 0.35,
+        "interval": null,
+        "misses": 0,
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       },
+       "mean_error": [
+        0.414753,
+        null,
+        null
+       ],
+       "median_error": [
+        1.257764,
+        null,
+        null
+       ],
+       "up": {
+        "expected": 0.35,
+        "interval": null,
+        "misses": 0,
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       }
+      },
+      "4": {
+       "cells": 8,
+       "days": 8,
+       "low": {
+        "expected": 0.4,
+        "interval": null,
+        "misses": 0,
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       },
+       "mean_error": [
+        -0.059623,
+        null,
+        null
+       ],
+       "median_error": [
+        0.059431,
+        null,
+        null
+       ],
+       "up": {
+        "expected": 0.4,
+        "interval": null,
+        "misses": 0,
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       }
+      },
+      "5": {
+       "cells": 8,
+       "days": 8,
+       "low": {
+        "expected": 0.4,
+        "interval": null,
+        "misses": 0,
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       },
+       "mean_error": [
+        0.211012,
+        null,
+        null
+       ],
+       "median_error": [
+        0.049873,
+        null,
+        null
+       ],
+       "up": {
+        "expected": 0.4,
+        "interval": null,
+        "misses": 0,
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       }
+      },
+      "all": {
+       "cells": 39,
+       "days": 9,
+       "low": {
+        "expected": 1.95,
+        "interval": null,
+        "misses": 0,
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       },
+       "mean_error": [
+        -0.080163,
+        null,
+        null
+       ],
+       "median_error": [
+        -0.050964,
+        null,
+        null
+       ],
+       "up": {
+        "expected": 1.95,
+        "interval": null,
+        "misses": 0,
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       }
+      }
+     },
+     "3": {
+      "1": {
+       "cells": 8,
+       "days": 8,
+       "low": {
+        "expected": 0.4,
+        "interval": null,
+        "misses": 0,
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       },
+       "mean_error": [
+        -1.458382,
+        null,
+        null
+       ],
+       "median_error": [
+        -1.61849,
+        null,
+        null
+       ],
+       "up": {
+        "expected": 0.4,
+        "interval": null,
+        "misses": 0,
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       }
+      },
+      "2": {
+       "cells": 8,
+       "days": 8,
+       "low": {
+        "expected": 0.4,
+        "interval": null,
+        "misses": 1,
+        "share": 0.125,
+        "vs_nominal": "no interval"
+       },
+       "mean_error": [
+        -2.348438,
+        null,
+        null
+       ],
+       "median_error": [
+        -1.926669,
+        null,
+        null
+       ],
+       "up": {
+        "expected": 0.4,
+        "interval": null,
+        "misses": 0,
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       }
+      },
+      "3": {
+       "cells": 8,
+       "days": 8,
+       "low": {
+        "expected": 0.4,
+        "interval": null,
+        "misses": 0,
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       },
+       "mean_error": [
+        -1.788743,
+        null,
+        null
+       ],
+       "median_error": [
+        -1.761861,
+        null,
+        null
+       ],
+       "up": {
+        "expected": 0.4,
+        "interval": null,
+        "misses": 0,
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       }
+      },
+      "4": {
+       "cells": 7,
+       "days": 7,
+       "low": {
+        "expected": 0.35,
+        "interval": null,
+        "misses": 0,
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       },
+       "mean_error": [
+        -1.396783,
+        null,
+        null
+       ],
+       "median_error": [
+        -1.375307,
+        null,
+        null
+       ],
+       "up": {
+        "expected": 0.35,
+        "interval": null,
+        "misses": 0,
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       }
+      },
+      "5": {
+       "cells": 8,
+       "days": 8,
+       "low": {
+        "expected": 0.4,
+        "interval": null,
+        "misses": 1,
+        "share": 0.125,
+        "vs_nominal": "no interval"
+       },
+       "mean_error": [
+        -1.585693,
+        null,
+        null
+       ],
+       "median_error": [
+        -1.282679,
+        null,
+        null
+       ],
+       "up": {
+        "expected": 0.4,
+        "interval": null,
+        "misses": 0,
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       }
+      },
+      "all": {
+       "cells": 39,
+       "days": 9,
+       "low": {
+        "expected": 1.95,
+        "interval": null,
+        "misses": 2,
+        "share": 0.059259,
+        "vs_nominal": "no interval"
+       },
+       "mean_error": [
+        -1.798583,
+        null,
+        null
+       ],
+       "median_error": [
+        -1.643493,
+        null,
+        null
+       ],
+       "up": {
+        "expected": 1.95,
+        "interval": null,
+        "misses": 0,
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       }
+      }
+     }
+    }
+   }
+  },
+  "development": {
+   "by_regime": {
+    "1": {
+     "2018-19": {
+      "by_lead": {
+       "1": {
+        "cells": 17,
+        "days": 17,
+        "low": {
+         "misses": 1,
+         "share": 0.058824
+        },
+        "median_error": [
+         1.354942,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 2,
+         "share": 0.117647
+        }
+       },
+       "2": {
+        "cells": 17,
+        "days": 17,
+        "low": {
+         "misses": 0,
+         "share": 0.0
+        },
+        "median_error": [
+         0.548389,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 2,
+         "share": 0.117647
+        }
+       },
+       "3": {
+        "cells": 17,
+        "days": 17,
+        "low": {
+         "misses": 1,
+         "share": 0.058824
+        },
+        "median_error": [
+         -0.848469,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 2,
+         "share": 0.117647
+        }
+       },
+       "4": {
+        "cells": 17,
+        "days": 17,
+        "low": {
+         "misses": 1,
+         "share": 0.058824
+        },
+        "median_error": [
+         0.363293,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 2,
+         "share": 0.117647
+        }
+       },
+       "5": {
+        "cells": 17,
+        "days": 17,
+        "low": {
+         "misses": 1,
+         "share": 0.058824
+        },
+        "median_error": [
+         0.09375,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 3,
+         "share": 0.176471
+        }
+       }
+      },
+      "cells": 85,
+      "days": 17,
+      "low": {
+       "expected": 4.25,
+       "interval": null,
+       "misses": 4,
+       "share": 0.047059,
+       "vs_nominal": "no interval"
+      },
+      "mean_error": [
+       3.188383,
+       null,
+       null
+      ],
+      "median_error": [
+       0.665627,
+       null,
+       null
+      ],
+      "up": {
+       "expected": 4.25,
+       "interval": null,
+       "misses": 11,
+       "share": 0.129412,
+       "vs_nominal": "no interval"
+      }
+     },
+     "2020": {
+      "by_lead": {
+       "1": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 0,
+         "share": 0.0
+        },
+        "median_error": [
+         -0.517093,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 0,
+         "share": 0.0
+        }
+       },
+       "2": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 0,
+         "share": 0.0
+        },
+        "median_error": [
+         -0.772311,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 0,
+         "share": 0.0
+        }
+       },
+       "3": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 0,
+         "share": 0.0
+        },
+        "median_error": [
+         -1.213363,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 0,
+         "share": 0.0
+        }
+       },
+       "4": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 2,
+         "share": 0.166667
+        },
+        "median_error": [
+         -1.498917,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 0,
+         "share": 0.0
+        }
+       },
+       "5": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 2,
+         "share": 0.166667
+        },
+        "median_error": [
+         -1.679481,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 0,
+         "share": 0.0
+        }
+       }
+      },
+      "cells": 60,
+      "days": 12,
+      "low": {
+       "expected": 3.0,
+       "interval": null,
+       "misses": 4,
+       "share": 0.066667,
+       "vs_nominal": "no interval"
+      },
+      "mean_error": [
+       -1.511765,
+       null,
+       null
+      ],
+      "median_error": [
+       -1.163159,
+       null,
+       null
+      ],
+      "up": {
+       "expected": 3.0,
+       "interval": null,
+       "misses": 0,
+       "share": 0.0,
+       "vs_nominal": "no interval"
+      }
+     },
+     "2021-23": {
+      "by_lead": {
+       "1": {
+        "cells": 36,
+        "days": 36,
+        "low": {
+         "misses": 1,
+         "share": 0.027778
+        },
+        "median_error": [
+         0.030368,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 8,
+         "share": 0.222222
+        }
+       },
+       "2": {
+        "cells": 36,
+        "days": 36,
+        "low": {
+         "misses": 1,
+         "share": 0.027778
+        },
+        "median_error": [
+         -0.087797,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 8,
+         "share": 0.222222
+        }
+       },
+       "3": {
+        "cells": 36,
+        "days": 36,
+        "low": {
+         "misses": 1,
+         "share": 0.027778
+        },
+        "median_error": [
+         0.432474,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 5,
+         "share": 0.138889
+        }
+       },
+       "4": {
+        "cells": 36,
+        "days": 36,
+        "low": {
+         "misses": 1,
+         "share": 0.027778
+        },
+        "median_error": [
+         -0.096098,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 7,
+         "share": 0.194444
+        }
+       },
+       "5": {
+        "cells": 36,
+        "days": 36,
+        "low": {
+         "misses": 2,
+         "share": 0.055556
+        },
+        "median_error": [
+         0.002666,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 6,
+         "share": 0.166667
+        }
+       }
+      },
+      "cells": 180,
+      "days": 36,
+      "low": {
+       "expected": 9.0,
+       "interval": null,
+       "misses": 6,
+       "share": 0.033333,
+       "vs_nominal": "no interval"
+      },
+      "mean_error": [
+       0.381119,
+       -1.220677,
+       1.156056
+      ],
+      "median_error": [
+       0.360507,
+       -0.205353,
+       0.694713
+      ],
+      "up": {
+       "expected": 9.0,
+       "interval": [
+        0.034272,
+        0.334366
+       ],
+       "misses": 34,
+       "share": 0.188889,
+       "vs_nominal": "holds 0.05"
+      }
+     },
+     "2024": {
+      "by_lead": {
+       "1": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 0,
+         "share": 0.0
+        },
+        "median_error": [
+         1.26572,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 3,
+         "share": 0.25
+        }
+       },
+       "2": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 0,
+         "share": 0.0
+        },
+        "median_error": [
+         0.927676,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 3,
+         "share": 0.25
+        }
+       },
+       "3": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 1,
+         "share": 0.083333
+        },
+        "median_error": [
+         1.391872,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 4,
+         "share": 0.333333
+        }
+       },
+       "4": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 1,
+         "share": 0.083333
+        },
+        "median_error": [
+         1.378529,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 5,
+         "share": 0.416667
+        }
+       },
+       "5": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 1,
+         "share": 0.083333
+        },
+        "median_error": [
+         1.332351,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 5,
+         "share": 0.416667
+        }
+       }
+      },
+      "cells": 60,
+      "days": 12,
+      "low": {
+       "expected": 3.0,
+       "interval": null,
+       "misses": 3,
+       "share": 0.05,
+       "vs_nominal": "no interval"
+      },
+      "mean_error": [
+       2.599731,
+       null,
+       null
+      ],
+      "median_error": [
+       1.714273,
+       null,
+       null
+      ],
+      "up": {
+       "expected": 3.0,
+       "interval": null,
+       "misses": 20,
+       "share": 0.333333,
+       "vs_nominal": "no interval"
+      }
+     },
+     "2025-26": {
+      "by_lead": {
+       "1": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 0,
+         "share": 0.0
+        },
+        "median_error": [
+         0.732952,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 3,
+         "share": 0.25
+        }
+       },
+       "2": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 0,
+         "share": 0.0
+        },
+        "median_error": [
+         0.112834,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 1,
+         "share": 0.083333
+        }
+       },
+       "3": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 0,
+         "share": 0.0
+        },
+        "median_error": [
+         2.095545,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 2,
+         "share": 0.166667
+        }
+       },
+       "4": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 1,
+         "share": 0.083333
+        },
+        "median_error": [
+         2.027872,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 2,
+         "share": 0.166667
+        }
+       },
+       "5": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 1,
+         "share": 0.083333
+        },
+        "median_error": [
+         1.987107,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 1,
+         "share": 0.083333
+        }
+       }
+      },
+      "cells": 60,
+      "days": 12,
+      "low": {
+       "expected": 3.0,
+       "interval": null,
+       "misses": 2,
+       "share": 0.033333,
+       "vs_nominal": "no interval"
+      },
+      "mean_error": [
+       2.341349,
+       null,
+       null
+      ],
+      "median_error": [
+       1.474623,
+       null,
+       null
+      ],
+      "up": {
+       "expected": 3.0,
+       "interval": null,
+       "misses": 9,
+       "share": 0.15,
+       "vs_nominal": "no interval"
+      }
+     }
+    },
+    "2": {
+     "2018-19": {
+      "by_lead": {
+       "1": {
+        "cells": 17,
+        "days": 17,
+        "low": {
+         "misses": 6,
+         "share": 0.352941
+        },
+        "median_error": [
+         -2.099587,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 1,
+         "share": 0.058824
+        }
+       },
+       "2": {
+        "cells": 17,
+        "days": 17,
+        "low": {
+         "misses": 1,
+         "share": 0.058824
+        },
+        "median_error": [
+         0.960581,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 3,
+         "share": 0.176471
+        }
+       },
+       "3": {
+        "cells": 17,
+        "days": 17,
+        "low": {
+         "misses": 1,
+         "share": 0.058824
+        },
+        "median_error": [
+         0.052289,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 3,
+         "share": 0.176471
+        }
+       },
+       "4": {
+        "cells": 17,
+        "days": 17,
+        "low": {
+         "misses": 2,
+         "share": 0.117647
+        },
+        "median_error": [
+         -0.581634,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 3,
+         "share": 0.176471
+        }
+       },
+       "5": {
+        "cells": 17,
+        "days": 17,
+        "low": {
+         "misses": 2,
+         "share": 0.117647
+        },
+        "median_error": [
+         0.444317,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 3,
+         "share": 0.176471
+        }
+       }
+      },
+      "cells": 85,
+      "days": 17,
+      "low": {
+       "expected": 4.25,
+       "interval": null,
+       "misses": 12,
+       "share": 0.141176,
+       "vs_nominal": "no interval"
+      },
+      "mean_error": [
+       0.284805,
+       null,
+       null
+      ],
+      "median_error": [
+       0.112912,
+       null,
+       null
+      ],
+      "up": {
+       "expected": 4.25,
+       "interval": null,
+       "misses": 13,
+       "share": 0.152941,
+       "vs_nominal": "no interval"
+      }
+     },
+     "2020": {
+      "by_lead": {
+       "1": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 1,
+         "share": 0.083333
+        },
+        "median_error": [
+         0.530335,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 1,
+         "share": 0.083333
+        }
+       },
+       "2": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 1,
+         "share": 0.083333
+        },
+        "median_error": [
+         0.480877,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 1,
+         "share": 0.083333
+        }
+       },
+       "3": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 1,
+         "share": 0.083333
+        },
+        "median_error": [
+         0.280145,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 1,
+         "share": 0.083333
+        }
+       },
+       "4": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 1,
+         "share": 0.083333
+        },
+        "median_error": [
+         0.159988,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 1,
+         "share": 0.083333
+        }
+       },
+       "5": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 2,
+         "share": 0.166667
+        },
+        "median_error": [
+         -0.332138,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 1,
+         "share": 0.083333
+        }
+       }
+      },
+      "cells": 60,
+      "days": 12,
+      "low": {
+       "expected": 3.0,
+       "interval": null,
+       "misses": 6,
+       "share": 0.1,
+       "vs_nominal": "no interval"
+      },
+      "mean_error": [
+       -0.196017,
+       null,
+       null
+      ],
+      "median_error": [
+       0.319771,
+       null,
+       null
+      ],
+      "up": {
+       "expected": 3.0,
+       "interval": null,
+       "misses": 5,
+       "share": 0.083333,
+       "vs_nominal": "no interval"
+      }
+     },
+     "2021-23": {
+      "by_lead": {
+       "1": {
+        "cells": 36,
+        "days": 36,
+        "low": {
+         "misses": 3,
+         "share": 0.083333
+        },
+        "median_error": [
+         -0.19661,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 7,
+         "share": 0.194444
+        }
+       },
+       "2": {
+        "cells": 36,
+        "days": 36,
+        "low": {
+         "misses": 0,
+         "share": 0.0
+        },
+        "median_error": [
+         -0.074507,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 8,
+         "share": 0.222222
+        }
+       },
+       "3": {
+        "cells": 36,
+        "days": 36,
+        "low": {
+         "misses": 0,
+         "share": 0.0
+        },
+        "median_error": [
+         -0.024008,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 6,
+         "share": 0.166667
+        }
+       },
+       "4": {
+        "cells": 36,
+        "days": 36,
+        "low": {
+         "misses": 0,
+         "share": 0.0
+        },
+        "median_error": [
+         0.160176,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 6,
+         "share": 0.166667
+        }
+       },
+       "5": {
+        "cells": 36,
+        "days": 36,
+        "low": {
+         "misses": 0,
+         "share": 0.0
+        },
+        "median_error": [
+         0.021396,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 7,
+         "share": 0.194444
+        }
+       }
+      },
+      "cells": 180,
+      "days": 36,
+      "low": {
+       "expected": 9.0,
+       "interval": [
+        0.0,
+        0.045217
+       ],
+       "misses": 3,
+       "share": 0.016667,
+       "vs_nominal": "below 0.05"
+      },
+      "mean_error": [
+       0.539831,
+       0.033558,
+       1.262288
+      ],
+      "median_error": [
+       -0.032714,
+       -0.205595,
+       0.35694
+      ],
+      "up": {
+       "expected": 9.0,
+       "interval": [
+        0.070966,
+        0.323298
+       ],
+       "misses": 34,
+       "share": 0.188889,
+       "vs_nominal": "above 0.05"
+      }
+     },
+     "2024": {
+      "by_lead": {
+       "1": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 3,
+         "share": 0.25
+        },
+        "median_error": [
+         0.053914,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 1,
+         "share": 0.083333
+        }
+       },
+       "2": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 0,
+         "share": 0.0
+        },
+        "median_error": [
+         0.442127,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 1,
+         "share": 0.083333
+        }
+       },
+       "3": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 1,
+         "share": 0.083333
+        },
+        "median_error": [
+         -0.246197,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 1,
+         "share": 0.083333
+        }
+       },
+       "4": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 1,
+         "share": 0.083333
+        },
+        "median_error": [
+         0.217156,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 2,
+         "share": 0.166667
+        }
+       },
+       "5": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 1,
+         "share": 0.083333
+        },
+        "median_error": [
+         0.266696,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 3,
+         "share": 0.25
+        }
+       }
+      },
+      "cells": 60,
+      "days": 12,
+      "low": {
+       "expected": 3.0,
+       "interval": null,
+       "misses": 6,
+       "share": 0.1,
+       "vs_nominal": "no interval"
+      },
+      "mean_error": [
+       0.710186,
+       null,
+       null
+      ],
+      "median_error": [
+       0.281737,
+       null,
+       null
+      ],
+      "up": {
+       "expected": 3.0,
+       "interval": null,
+       "misses": 8,
+       "share": 0.133333,
+       "vs_nominal": "no interval"
+      }
+     },
+     "2025-26": {
+      "by_lead": {
+       "1": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 3,
+         "share": 0.25
+        },
+        "median_error": [
+         -2.662177,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 0,
+         "share": 0.0
+        }
+       },
+       "2": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 2,
+         "share": 0.166667
+        },
+        "median_error": [
+         -1.218631,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 1,
+         "share": 0.083333
+        }
+       },
+       "3": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 1,
+         "share": 0.083333
+        },
+        "median_error": [
+         -1.640225,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 1,
+         "share": 0.083333
+        }
+       },
+       "4": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 1,
+         "share": 0.083333
+        },
+        "median_error": [
+         0.02602,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 1,
+         "share": 0.083333
+        }
+       },
+       "5": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 2,
+         "share": 0.166667
+        },
+        "median_error": [
+         0.388884,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 1,
+         "share": 0.083333
+        }
+       }
+      },
+      "cells": 60,
+      "days": 12,
+      "low": {
+       "expected": 3.0,
+       "interval": null,
+       "misses": 9,
+       "share": 0.15,
+       "vs_nominal": "no interval"
+      },
+      "mean_error": [
+       -1.19711,
+       null,
+       null
+      ],
+      "median_error": [
+       -1.366541,
+       null,
+       null
+      ],
+      "up": {
+       "expected": 3.0,
+       "interval": null,
+       "misses": 4,
+       "share": 0.066667,
+       "vs_nominal": "no interval"
+      }
+     }
+    },
+    "3": {
+     "2018-19": {
+      "by_lead": {
+       "1": {
+        "cells": 17,
+        "days": 17,
+        "low": {
+         "misses": 4,
+         "share": 0.235294
+        },
+        "median_error": [
+         -0.922162,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 1,
+         "share": 0.058824
+        }
+       },
+       "2": {
+        "cells": 17,
+        "days": 17,
+        "low": {
+         "misses": 5,
+         "share": 0.294118
+        },
+        "median_error": [
+         -2.791125,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 1,
+         "share": 0.058824
+        }
+       },
+       "3": {
+        "cells": 17,
+        "days": 17,
+        "low": {
+         "misses": 3,
+         "share": 0.176471
+        },
+        "median_error": [
+         -1.893377,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 1,
+         "share": 0.058824
+        }
+       },
+       "4": {
+        "cells": 17,
+        "days": 17,
+        "low": {
+         "misses": 3,
+         "share": 0.176471
+        },
+        "median_error": [
+         -2.152088,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 1,
+         "share": 0.058824
+        }
+       },
+       "5": {
+        "cells": 17,
+        "days": 17,
+        "low": {
+         "misses": 3,
+         "share": 0.176471
+        },
+        "median_error": [
+         -3.213944,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 1,
+         "share": 0.058824
+        }
+       }
+      },
+      "cells": 85,
+      "days": 17,
+      "low": {
+       "expected": 4.25,
+       "interval": null,
+       "misses": 18,
+       "share": 0.211765,
+       "vs_nominal": "no interval"
+      },
+      "mean_error": [
+       -1.592322,
+       null,
+       null
+      ],
+      "median_error": [
+       -2.145824,
+       null,
+       null
+      ],
+      "up": {
+       "expected": 4.25,
+       "interval": null,
+       "misses": 5,
+       "share": 0.058824,
+       "vs_nominal": "no interval"
+      }
+     },
+     "2020": {
+      "by_lead": {
+       "1": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 1,
+         "share": 0.083333
+        },
+        "median_error": [
+         0.075758,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 2,
+         "share": 0.166667
+        }
+       },
+       "2": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 1,
+         "share": 0.083333
+        },
+        "median_error": [
+         0.110099,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 2,
+         "share": 0.166667
+        }
+       },
+       "3": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 1,
+         "share": 0.083333
+        },
+        "median_error": [
+         0.29765,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 1,
+         "share": 0.083333
+        }
+       },
+       "4": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 1,
+         "share": 0.083333
+        },
+        "median_error": [
+         0.264767,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 2,
+         "share": 0.166667
+        }
+       },
+       "5": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 1,
+         "share": 0.083333
+        },
+        "median_error": [
+         -0.043142,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 2,
+         "share": 0.166667
+        }
+       }
+      },
+      "cells": 60,
+      "days": 12,
+      "low": {
+       "expected": 3.0,
+       "interval": null,
+       "misses": 5,
+       "share": 0.083333,
+       "vs_nominal": "no interval"
+      },
+      "mean_error": [
+       0.68482,
+       null,
+       null
+      ],
+      "median_error": [
+       0.111835,
+       null,
+       null
+      ],
+      "up": {
+       "expected": 3.0,
+       "interval": null,
+       "misses": 9,
+       "share": 0.15,
+       "vs_nominal": "no interval"
+      }
+     },
+     "2021-23": {
+      "by_lead": {
+       "1": {
+        "cells": 36,
+        "days": 36,
+        "low": {
+         "misses": 4,
+         "share": 0.111111
+        },
+        "median_error": [
+         -0.207565,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 1,
+         "share": 0.027778
+        }
+       },
+       "2": {
+        "cells": 36,
+        "days": 36,
+        "low": {
+         "misses": 4,
+         "share": 0.111111
+        },
+        "median_error": [
+         -0.242956,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 4,
+         "share": 0.111111
+        }
+       },
+       "3": {
+        "cells": 36,
+        "days": 36,
+        "low": {
+         "misses": 0,
+         "share": 0.0
+        },
+        "median_error": [
+         -0.144879,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 4,
+         "share": 0.111111
+        }
+       },
+       "4": {
+        "cells": 36,
+        "days": 36,
+        "low": {
+         "misses": 0,
+         "share": 0.0
+        },
+        "median_error": [
+         -0.118727,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 4,
+         "share": 0.111111
+        }
+       },
+       "5": {
+        "cells": 36,
+        "days": 36,
+        "low": {
+         "misses": 1,
+         "share": 0.027778
+        },
+        "median_error": [
+         -0.061373,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 3,
+         "share": 0.083333
+        }
+       }
+      },
+      "cells": 180,
+      "days": 36,
+      "low": {
+       "expected": 9.0,
+       "interval": [
+        0.003191,
+        0.231778
+       ],
+       "misses": 9,
+       "share": 0.05,
+       "vs_nominal": "holds 0.05"
+      },
+      "mean_error": [
+       0.057335,
+       -0.460541,
+       1.522926
+      ],
+      "median_error": [
+       -0.176113,
+       -0.286476,
+       -0.140028
+      ],
+      "up": {
+       "expected": 9.0,
+       "interval": [
+        0.0,
+        0.246163
+       ],
+       "misses": 16,
+       "share": 0.088889,
+       "vs_nominal": "holds 0.05"
+      }
+     },
+     "2024": {
+      "by_lead": {
+       "1": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 6,
+         "share": 0.5
+        },
+        "median_error": [
+         -2.139432,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 0,
+         "share": 0.0
+        }
+       },
+       "2": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 5,
+         "share": 0.416667
+        },
+        "median_error": [
+         -1.497907,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 0,
+         "share": 0.0
+        }
+       },
+       "3": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 2,
+         "share": 0.166667
+        },
+        "median_error": [
+         -0.929731,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 0,
+         "share": 0.0
+        }
+       },
+       "4": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 3,
+         "share": 0.25
+        },
+        "median_error": [
+         -0.75616,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 0,
+         "share": 0.0
+        }
+       },
+       "5": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 2,
+         "share": 0.166667
+        },
+        "median_error": [
+         -0.671608,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 0,
+         "share": 0.0
+        }
+       }
+      },
+      "cells": 60,
+      "days": 12,
+      "low": {
+       "expected": 3.0,
+       "interval": null,
+       "misses": 18,
+       "share": 0.3,
+       "vs_nominal": "no interval"
+      },
+      "mean_error": [
+       -2.082928,
+       null,
+       null
+      ],
+      "median_error": [
+       -1.297816,
+       null,
+       null
+      ],
+      "up": {
+       "expected": 3.0,
+       "interval": null,
+       "misses": 0,
+       "share": 0.0,
+       "vs_nominal": "no interval"
+      }
+     },
+     "2025-26": {
+      "by_lead": {
+       "1": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 3,
+         "share": 0.25
+        },
+        "median_error": [
+         -2.035444,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 0,
+         "share": 0.0
+        }
+       },
+       "2": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 4,
+         "share": 0.333333
+        },
+        "median_error": [
+         -3.991121,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 0,
+         "share": 0.0
+        }
+       },
+       "3": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 4,
+         "share": 0.333333
+        },
+        "median_error": [
+         -3.168658,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 0,
+         "share": 0.0
+        }
+       },
+       "4": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 3,
+         "share": 0.25
+        },
+        "median_error": [
+         -2.945614,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 0,
+         "share": 0.0
+        }
+       },
+       "5": {
+        "cells": 12,
+        "days": 12,
+        "low": {
+         "misses": 3,
+         "share": 0.25
+        },
+        "median_error": [
+         -2.754781,
+         null,
+         null
+        ],
+        "up": {
+         "misses": 0,
+         "share": 0.0
+        }
+       }
+      },
+      "cells": 60,
+      "days": 12,
+      "low": {
+       "expected": 3.0,
+       "interval": null,
+       "misses": 17,
+       "share": 0.283333,
+       "vs_nominal": "no interval"
+      },
+      "mean_error": [
+       -3.968863,
+       null,
+       null
+      ],
+      "median_error": [
+       -2.777424,
+       null,
+       null
+      ],
+      "up": {
+       "expected": 3.0,
+       "interval": null,
+       "misses": 0,
+       "share": 0.0,
+       "vs_nominal": "no interval"
+      }
+     }
+    }
+   },
+   "scopes": {
+    "all": {
+     "1": {
+      "1": {
+       "cells": 89,
+       "days": 89,
+       "low": {
+        "expected": 4.45,
+        "interval": null,
+        "misses": 2,
+        "share": 0.022472,
+        "vs_nominal": "no interval"
+       },
+       "mean_error": [
+        1.684113,
+        0.285425,
+        5.427234
+       ],
+       "median_error": [
+        0.095779,
+        -0.245097,
+        0.998957
+       ],
+       "up": {
+        "expected": 4.45,
+        "interval": [
+         0.074336,
+         0.288535
+        ],
+        "misses": 16,
+        "share": 0.179775,
+        "vs_nominal": "above 0.05"
+       }
+      },
+      "2": {
+       "cells": 89,
+       "days": 89,
+       "low": {
+        "expected": 4.45,
+        "interval": null,
+        "misses": 1,
+        "share": 0.011236,
+        "vs_nominal": "no interval"
+       },
+       "mean_error": [
+        1.168635,
+        -0.055161,
+        4.357123
+       ],
+       "median_error": [
+        -0.14351,
+        -0.368142,
+        0.643908
+       ],
+       "up": {
+        "expected": 4.45,
+        "interval": [
+         0.066767,
+         0.274817
+        ],
+        "misses": 14,
+        "share": 0.157303,
+        "vs_nominal": "above 0.05"
+       }
+      },
+      "3": {
+       "cells": 89,
+       "days": 89,
+       "low": {
+        "expected": 4.45,
+        "interval": [
+         0.013741,
+         0.066382
+        ],
+        "misses": 3,
+        "share": 0.033708,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        1.005888,
+        -0.268395,
+        3.658316
+       ],
+       "median_error": [
+        0.1652,
+        -0.407861,
+        0.673916
+       ],
+       "up": {
+        "expected": 4.45,
+        "interval": [
+         0.063482,
+         0.251307
+        ],
+        "misses": 13,
+        "share": 0.146067,
+        "vs_nominal": "above 0.05"
+       }
+      },
+      "4": {
+       "cells": 89,
+       "days": 89,
+       "low": {
+        "expected": 4.45,
+        "interval": [
+         0.024233,
+         0.134528
+        ],
+        "misses": 6,
+        "share": 0.067416,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        1.140674,
+        -0.358716,
+        3.782026
+       ],
+       "median_error": [
+        -0.115951,
+        -0.502201,
+        0.774561
+       ],
+       "up": {
+        "expected": 4.45,
+        "interval": [
+         0.060095,
+         0.319329
+        ],
+        "misses": 16,
+        "share": 0.179775,
+        "vs_nominal": "above 0.05"
+       }
+      },
+      "5": {
+       "cells": 89,
+       "days": 89,
+       "low": {
+        "expected": 4.45,
+        "interval": [
+         0.027869,
+         0.161771
+        ],
+        "misses": 7,
+        "share": 0.078652,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        1.128476,
+        -0.568203,
+        3.546333
+       ],
+       "median_error": [
+        -0.019265,
+        -0.378879,
+        1.069969
+       ],
+       "up": {
+        "expected": 4.45,
+        "interval": [
+         0.066241,
+         0.297317
+        ],
+        "misses": 15,
+        "share": 0.168539,
+        "vs_nominal": "above 0.05"
+       }
+      },
+      "all": {
+       "cells": 445,
+       "days": 89,
+       "low": {
+        "expected": 22.25,
+        "interval": [
+         0.016147,
+         0.086667
+        ],
+        "misses": 19,
+        "share": 0.042697,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        1.225557,
+        -0.15573,
+        4.066586
+       ],
+       "median_error": [
+        0.114414,
+        -0.391772,
+        0.884685
+       ],
+       "up": {
+        "expected": 22.25,
+        "interval": [
+         0.064805,
+         0.276602
+        ],
+        "misses": 74,
+        "share": 0.166292,
+        "vs_nominal": "above 0.05"
+       }
+      }
+     },
+     "2": {
+      "1": {
+       "cells": 89,
+       "days": 89,
+       "low": {
+        "expected": 4.45,
+        "interval": [
+         0.085584,
+         0.292323
+        ],
+        "misses": 16,
+        "share": 0.179775,
+        "vs_nominal": "above 0.05"
+       },
+       "mean_error": [
+        -0.569274,
+        -1.454452,
+        0.083015
+       ],
+       "median_error": [
+        -0.210353,
+        -0.354378,
+        0.074853
+       ],
+       "up": {
+        "expected": 4.45,
+        "interval": [
+         0.054617,
+         0.240668
+        ],
+        "misses": 10,
+        "share": 0.11236,
+        "vs_nominal": "above 0.05"
+       }
+      },
+      "2": {
+       "cells": 89,
+       "days": 89,
+       "low": {
+        "expected": 4.45,
+        "interval": [
+         0.014139,
+         0.117761
+        ],
+        "misses": 4,
+        "share": 0.044944,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        0.609491,
+        0.01147,
+        1.444882
+       ],
+       "median_error": [
+        0.204805,
+        -0.166722,
+        0.576386
+       ],
+       "up": {
+        "expected": 4.45,
+        "interval": [
+         0.097579,
+         0.234099
+        ],
+        "misses": 14,
+        "share": 0.157303,
+        "vs_nominal": "above 0.05"
+       }
+      },
+      "3": {
+       "cells": 89,
+       "days": 89,
+       "low": {
+        "expected": 4.45,
+        "interval": [
+         0.014487,
+         0.11581
+        ],
+        "misses": 4,
+        "share": 0.044944,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        0.255981,
+        -0.346292,
+        0.955408
+       ],
+       "median_error": [
+        -0.068291,
+        -0.245045,
+        0.360912
+       ],
+       "up": {
+        "expected": 4.45,
+        "interval": [
+         0.088671,
+         0.198548
+        ],
+        "misses": 12,
+        "share": 0.134831,
+        "vs_nominal": "above 0.05"
+       }
+      },
+      "4": {
+       "cells": 89,
+       "days": 89,
+       "low": {
+        "expected": 4.45,
+        "interval": [
+         0.01694,
+         0.124753
+        ],
+        "misses": 5,
+        "share": 0.05618,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        0.272844,
+        -0.394214,
+        0.909608
+       ],
+       "median_error": [
+        0.037087,
+        -0.227281,
+        0.484653
+       ],
+       "up": {
+        "expected": 4.45,
+        "interval": [
+         0.091354,
+         0.219998
+        ],
+        "misses": 13,
+        "share": 0.146067,
+        "vs_nominal": "above 0.05"
+       }
+      },
+      "5": {
+       "cells": 89,
+       "days": 89,
+       "low": {
+        "expected": 4.45,
+        "interval": [
+         0.022138,
+         0.186338
+        ],
+        "misses": 7,
+        "share": 0.078652,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        0.334345,
+        -0.492754,
+        0.998938
+       ],
+       "median_error": [
+        0.019932,
+        -0.253664,
+        0.653073
+       ],
+       "up": {
+        "expected": 4.45,
+        "interval": [
+         0.096215,
+         0.278885
+        ],
+        "misses": 15,
+        "share": 0.168539,
+        "vs_nominal": "above 0.05"
+       }
+      },
+      "all": {
+       "cells": 445,
+       "days": 89,
+       "low": {
+        "expected": 22.25,
+        "interval": [
+         0.037245,
+         0.169696
+        ],
+        "misses": 36,
+        "share": 0.080899,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        0.180677,
+        -0.43202,
+        0.745093
+       ],
+       "median_error": [
+        0.112912,
+        -0.196814,
+        0.250841
+       ],
+       "up": {
+        "expected": 22.25,
+        "interval": [
+         0.090347,
+         0.216148
+        ],
+        "misses": 64,
+        "share": 0.14382,
+        "vs_nominal": "above 0.05"
+       }
+      }
+     },
+     "3": {
+      "1": {
+       "cells": 89,
+       "days": 89,
+       "low": {
+        "expected": 4.45,
+        "interval": [
+         0.104133,
+         0.347576
+        ],
+        "misses": 18,
+        "share": 0.202247,
+        "vs_nominal": "above 0.05"
+       },
+       "mean_error": [
+        -1.342966,
+        -2.959754,
+        -0.243088
+       ],
+       "median_error": [
+        -0.304758,
+        -1.065181,
+        -0.221847
+       ],
+       "up": {
+        "expected": 4.45,
+        "interval": [
+         0.011743,
+         0.11987
+        ],
+        "misses": 4,
+        "share": 0.044944,
+        "vs_nominal": "holds 0.05"
+       }
+      },
+      "2": {
+       "cells": 89,
+       "days": 89,
+       "low": {
+        "expected": 4.45,
+        "interval": [
+         0.090235,
+         0.352555
+        ],
+        "misses": 19,
+        "share": 0.213483,
+        "vs_nominal": "above 0.05"
+       },
+       "mean_error": [
+        -1.452195,
+        -3.156048,
+        -0.238107
+       ],
+       "median_error": [
+        -0.448776,
+        -1.713662,
+        -0.253242
+       ],
+       "up": {
+        "expected": 4.45,
+        "interval": [
+         0.024157,
+         0.189393
+        ],
+        "misses": 7,
+        "share": 0.078652,
+        "vs_nominal": "holds 0.05"
+       }
+      },
+      "3": {
+       "cells": 89,
+       "days": 89,
+       "low": {
+        "expected": 4.45,
+        "interval": [
+         0.04342,
+         0.217282
+        ],
+        "misses": 10,
+        "share": 0.11236,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        -0.628953,
+        -1.781988,
+        0.187565
+       ],
+       "median_error": [
+        -0.214009,
+        -0.587697,
+        -0.126791
+       ],
+       "up": {
+        "expected": 4.45,
+        "interval": [
+         0.018167,
+         0.185637
+        ],
+        "misses": 6,
+        "share": 0.067416,
+        "vs_nominal": "holds 0.05"
+       }
+      },
+      "4": {
+       "cells": 89,
+       "days": 89,
+       "low": {
+        "expected": 4.45,
+        "interval": [
+         0.042793,
+         0.213586
+        ],
+        "misses": 10,
+        "share": 0.11236,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        -0.75738,
+        -1.900012,
+        0.052759
+       ],
+       "median_error": [
+        -0.171539,
+        -0.526561,
+        -0.113683
+       ],
+       "up": {
+        "expected": 4.45,
+        "interval": [
+         0.024157,
+         0.189393
+        ],
+        "misses": 7,
+        "share": 0.078652,
+        "vs_nominal": "holds 0.05"
+       }
+      },
+      "5": {
+       "cells": 89,
+       "days": 89,
+       "low": {
+        "expected": 4.45,
+        "interval": [
+         0.05091,
+         0.204554
+        ],
+        "misses": 10,
+        "share": 0.11236,
+        "vs_nominal": "above 0.05"
+       },
+       "mean_error": [
+        -0.841486,
+        -1.840806,
+        -0.095129
+       ],
+       "median_error": [
+        -0.181731,
+        -0.496752,
+        -0.057696
+       ],
+       "up": {
+        "expected": 4.45,
+        "interval": [
+         0.021455,
+         0.159295
+        ],
+        "misses": 6,
+        "share": 0.067416,
+        "vs_nominal": "holds 0.05"
+       }
+      },
+      "all": {
+       "cells": 445,
+       "days": 89,
+       "low": {
+        "expected": 22.25,
+        "interval": [
+         0.070538,
+         0.249362
+        ],
+        "misses": 67,
+        "share": 0.150562,
+        "vs_nominal": "above 0.05"
+       },
+       "mean_error": [
+        -1.004596,
+        -2.292217,
+        -0.092405
+       ],
+       "median_error": [
+        -0.286476,
+        -0.871885,
+        -0.175046
+       ],
+       "up": {
+        "expected": 22.25,
+        "interval": [
+         0.020943,
+         0.152991
+        ],
+        "misses": 30,
+        "share": 0.067416,
+        "vs_nominal": "holds 0.05"
+       }
+      }
+     }
+    },
+    "other": {
+     "1": {
+      "1": {
+       "cells": 60,
+       "days": 60,
+       "low": {
+        "expected": 3.0,
+        "interval": [
+         0.002563,
+         0.053863
+        ],
+        "misses": 2,
+        "share": 0.033333,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        0.506413,
+        -0.440189,
+        1.257721
+       ],
+       "median_error": [
+        -0.070467,
+        -0.37851,
+        0.635938
+       ],
+       "up": {
+        "expected": 3.0,
+        "interval": [
+         0.054287,
+         0.24305
+        ],
+        "misses": 8,
+        "share": 0.133333,
+        "vs_nominal": "above 0.05"
+       }
+      },
+      "2": {
+       "cells": 60,
+       "days": 60,
+       "low": {
+        "expected": 3.0,
+        "interval": null,
+        "misses": 1,
+        "share": 0.016667,
+        "vs_nominal": "no interval"
+       },
+       "mean_error": [
+        0.010893,
+        -0.692021,
+        0.636981
+       ],
+       "median_error": [
+        -0.257643,
+        -0.467031,
+        0.404419
+       ],
+       "up": {
+        "expected": 3.0,
+        "interval": [
+         0.033072,
+         0.260142
+        ],
+        "misses": 7,
+        "share": 0.116667,
+        "vs_nominal": "holds 0.05"
+       }
+      },
+      "3": {
+       "cells": 60,
+       "days": 60,
+       "low": {
+        "expected": 3.0,
+        "interval": [
+         0.022938,
+         0.091523
+        ],
+        "misses": 3,
+        "share": 0.05,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        -0.29923,
+        -1.475451,
+        0.549649
+       ],
+       "median_error": [
+        -0.236156,
+        -0.989325,
+        0.467054
+       ],
+       "up": {
+        "expected": 3.0,
+        "interval": [
+         0.033072,
+         0.260142
+        ],
+        "misses": 7,
+        "share": 0.116667,
+        "vs_nominal": "holds 0.05"
+       }
+      },
+      "4": {
+       "cells": 60,
+       "days": 60,
+       "low": {
+        "expected": 3.0,
+        "interval": [
+         0.033867,
+         0.14539
+        ],
+        "misses": 5,
+        "share": 0.083333,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        -0.285359,
+        -1.816611,
+        0.639453
+       ],
+       "median_error": [
+        -0.216138,
+        -1.399233,
+        0.363293
+       ],
+       "up": {
+        "expected": 3.0,
+        "interval": [
+         0.001152,
+         0.267102
+        ],
+        "misses": 6,
+        "share": 0.1,
+        "vs_nominal": "holds 0.05"
+       }
+      },
+      "5": {
+       "cells": 60,
+       "days": 60,
+       "low": {
+        "expected": 3.0,
+        "interval": [
+         0.03826,
+         0.191499
+        ],
+        "misses": 6,
+        "share": 0.1,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        -0.25928,
+        -1.96599,
+        0.817935
+       ],
+       "median_error": [
+        -0.195301,
+        -1.480583,
+        0.390785
+       ],
+       "up": {
+        "expected": 3.0,
+        "interval": [
+         0.030073,
+         0.205313
+        ],
+        "misses": 6,
+        "share": 0.1,
+        "vs_nominal": "holds 0.05"
+       }
+      },
+      "all": {
+       "cells": 300,
+       "days": 60,
+       "low": {
+        "expected": 15.0,
+        "interval": [
+         0.023031,
+         0.105228
+        ],
+        "misses": 17,
+        "share": 0.056667,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        -0.065313,
+        -1.264973,
+        0.738508
+       ],
+       "median_error": [
+        -0.246276,
+        -0.799789,
+        0.477588
+       ],
+       "up": {
+        "expected": 15.0,
+        "interval": [
+         0.032705,
+         0.261677
+        ],
+        "misses": 34,
+        "share": 0.113333,
+        "vs_nominal": "holds 0.05"
+       }
+      }
+     },
+     "2": {
+      "1": {
+       "cells": 60,
+       "days": 60,
+       "low": {
+        "expected": 3.0,
+        "interval": [
+         0.054461,
+         0.359417
+        ],
+        "misses": 12,
+        "share": 0.2,
+        "vs_nominal": "above 0.05"
+       },
+       "mean_error": [
+        -0.732943,
+        -2.052899,
+        0.01286
+       ],
+       "median_error": [
+        -0.256644,
+        -0.975542,
+        -0.12421
+       ],
+       "up": {
+        "expected": 3.0,
+        "interval": [
+         0.044883,
+         0.140886
+        ],
+        "misses": 5,
+        "share": 0.083333,
+        "vs_nominal": "holds 0.05"
+       }
+      },
+      "2": {
+       "cells": 60,
+       "days": 60,
+       "low": {
+        "expected": 3.0,
+        "interval": [
+         0.014685,
+         0.105257
+        ],
+        "misses": 3,
+        "share": 0.05,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        0.144162,
+        -0.199588,
+        0.44615
+       ],
+       "median_error": [
+        -0.018461,
+        -0.224231,
+        0.279687
+       ],
+       "up": {
+        "expected": 3.0,
+        "interval": [
+         0.047959,
+         0.131383
+        ],
+        "misses": 5,
+        "share": 0.083333,
+        "vs_nominal": "holds 0.05"
+       }
+      },
+      "3": {
+       "cells": 60,
+       "days": 60,
+       "low": {
+        "expected": 3.0,
+        "interval": [
+         0.015797,
+         0.104686
+        ],
+        "misses": 3,
+        "share": 0.05,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        -0.243015,
+        -0.920836,
+        0.197483
+       ],
+       "median_error": [
+        -0.178451,
+        -0.745189,
+        0.173367
+       ],
+       "up": {
+        "expected": 3.0,
+        "interval": [
+         0.047959,
+         0.131383
+        ],
+        "misses": 5,
+        "share": 0.083333,
+        "vs_nominal": "holds 0.05"
+       }
+      },
+      "4": {
+       "cells": 60,
+       "days": 60,
+       "low": {
+        "expected": 3.0,
+        "interval": [
+         0.015987,
+         0.187686
+        ],
+        "misses": 4,
+        "share": 0.066667,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        -0.343255,
+        -1.003894,
+        0.144428
+       ],
+       "median_error": [
+        -0.23731,
+        -0.577004,
+        0.370403
+       ],
+       "up": {
+        "expected": 3.0,
+        "interval": [
+         0.047959,
+         0.131383
+        ],
+        "misses": 5,
+        "share": 0.083333,
+        "vs_nominal": "holds 0.05"
+       }
+      },
+      "5": {
+       "cells": 60,
+       "days": 60,
+       "low": {
+        "expected": 3.0,
+        "interval": [
+         0.025267,
+         0.179918
+        ],
+        "misses": 5,
+        "share": 0.083333,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        -0.380467,
+        -1.060896,
+        0.172747
+       ],
+       "median_error": [
+        -0.184929,
+        -0.618391,
+        0.02286
+       ],
+       "up": {
+        "expected": 3.0,
+        "interval": [
+         0.047959,
+         0.131383
+        ],
+        "misses": 5,
+        "share": 0.083333,
+        "vs_nominal": "holds 0.05"
+       }
+      },
+      "all": {
+       "cells": 300,
+       "days": 60,
+       "low": {
+        "expected": 15.0,
+        "interval": [
+         0.0321,
+         0.174696
+        ],
+        "misses": 27,
+        "share": 0.09,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        -0.311104,
+        -0.950683,
+        0.135189
+       ],
+       "median_error": [
+        -0.171876,
+        -0.539169,
+        0.218941
+       ],
+       "up": {
+        "expected": 15.0,
+        "interval": [
+         0.051203,
+         0.127949
+        ],
+        "misses": 25,
+        "share": 0.083333,
+        "vs_nominal": "above 0.05"
+       }
+      }
+     },
+     "3": {
+      "1": {
+       "cells": 60,
+       "days": 60,
+       "low": {
+        "expected": 3.0,
+        "interval": [
+         0.101282,
+         0.25435
+        ],
+        "misses": 11,
+        "share": 0.183333,
+        "vs_nominal": "above 0.05"
+       },
+       "mean_error": [
+        -0.986642,
+        -2.75684,
+        0.139017
+       ],
+       "median_error": [
+        -0.600162,
+        -1.192401,
+        -0.237327
+       ],
+       "up": {
+        "expected": 3.0,
+        "interval": null,
+        "misses": 2,
+        "share": 0.033333,
+        "vs_nominal": "no interval"
+       }
+      },
+      "2": {
+       "cells": 60,
+       "days": 60,
+       "low": {
+        "expected": 3.0,
+        "interval": [
+         0.056609,
+         0.384755
+        ],
+        "misses": 14,
+        "share": 0.233333,
+        "vs_nominal": "above 0.05"
+       },
+       "mean_error": [
+        -1.411795,
+        -3.865629,
+        -0.020192
+       ],
+       "median_error": [
+        -0.649477,
+        -2.547549,
+        -0.262043
+       ],
+       "up": {
+        "expected": 3.0,
+        "interval": [
+         0.009342,
+         0.115054
+        ],
+        "misses": 3,
+        "share": 0.05,
+        "vs_nominal": "holds 0.05"
+       }
+      },
+      "3": {
+       "cells": 60,
+       "days": 60,
+       "low": {
+        "expected": 3.0,
+        "interval": [
+         0.029147,
+         0.286786
+        ],
+        "misses": 8,
+        "share": 0.133333,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        -0.793089,
+        -2.759139,
+        0.173843
+       ],
+       "median_error": [
+        -0.242758,
+        -1.213547,
+        -0.201987
+       ],
+       "up": {
+        "expected": 3.0,
+        "interval": [
+         0.00639,
+         0.053863
+        ],
+        "misses": 2,
+        "share": 0.033333,
+        "vs_nominal": "holds 0.05"
+       }
+      },
+      "4": {
+       "cells": 60,
+       "days": 60,
+       "low": {
+        "expected": 3.0,
+        "interval": [
+         0.03261,
+         0.267721
+        ],
+        "misses": 8,
+        "share": 0.133333,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        -0.959822,
+        -3.080247,
+        0.039278
+       ],
+       "median_error": [
+        -0.369974,
+        -1.311523,
+        -0.139081
+       ],
+       "up": {
+        "expected": 3.0,
+        "interval": [
+         0.009342,
+         0.115054
+        ],
+        "misses": 3,
+        "share": 0.05,
+        "vs_nominal": "holds 0.05"
+       }
+      },
+      "5": {
+       "cells": 60,
+       "days": 60,
+       "low": {
+        "expected": 3.0,
+        "interval": [
+         0.03261,
+         0.267721
+        ],
+        "misses": 8,
+        "share": 0.133333,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        -1.125845,
+        -2.881646,
+        -0.180714
+       ],
+       "median_error": [
+        -0.40446,
+        -1.512919,
+        -0.074635
+       ],
+       "up": {
+        "expected": 3.0,
+        "interval": [
+         0.009342,
+         0.115054
+        ],
+        "misses": 3,
+        "share": 0.05,
+        "vs_nominal": "holds 0.05"
+       }
+      },
+      "all": {
+       "cells": 300,
+       "days": 60,
+       "low": {
+        "expected": 15.0,
+        "interval": [
+         0.054762,
+         0.289108
+        ],
+        "misses": 49,
+        "share": 0.163333,
+        "vs_nominal": "above 0.05"
+       },
+       "mean_error": [
+        -1.055439,
+        -3.053607,
+        -0.001234
+       ],
+       "median_error": [
+        -0.648895,
+        -1.32843,
+        -0.185626
+       ],
+       "up": {
+        "expected": 15.0,
+        "interval": [
+         0.007528,
+         0.108331
+        ],
+        "misses": 13,
+        "share": 0.043333,
+        "vs_nominal": "holds 0.05"
+       }
+      }
+     }
+    },
+    "quarter_end": {
+     "1": {
+      "1": {
+       "cells": 29,
+       "days": 29,
+       "low": {
+        "expected": 1.45,
+        "interval": null,
+        "misses": 0,
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       },
+       "mean_error": [
+        4.120734,
+        0.779932,
+        17.890946
+       ],
+       "median_error": [
+        0.981609,
+        0.041964,
+        2.189014
+       ],
+       "up": {
+        "expected": 1.45,
+        "interval": [
+         0.041328,
+         0.492377
+        ],
+        "misses": 8,
+        "share": 0.275862,
+        "vs_nominal": "holds 0.05"
+       }
+      },
+      "2": {
+       "cells": 29,
+       "days": 29,
+       "low": {
+        "expected": 1.45,
+        "interval": null,
+        "misses": 0,
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       },
+       "mean_error": [
+        3.563962,
+        0.358951,
+        17.096701
+       ],
+       "median_error": [
+        0.952096,
+        -0.14351,
+        1.949873
+       ],
+       "up": {
+        "expected": 1.45,
+        "interval": [
+         0.030099,
+         0.394755
+        ],
+        "misses": 7,
+        "share": 0.241379,
+        "vs_nominal": "holds 0.05"
+       }
+      },
+      "3": {
+       "cells": 29,
+       "days": 29,
+       "low": {
+        "expected": 1.45,
+        "interval": null,
+        "misses": 0,
+        "share": 0.0,
+        "vs_nominal": "no interval"
+       },
+       "mean_error": [
+        3.706132,
+        0.449909,
+        15.960285
+       ],
+       "median_error": [
+        0.935342,
+        0.532967,
+        2.395802
+       ],
+       "up": {
+        "expected": 1.45,
+        "interval": [
+         0.0,
+         0.839954
+        ],
+        "misses": 6,
+        "share": 0.206897,
+        "vs_nominal": "holds 0.05"
+       }
+      },
+      "4": {
+       "cells": 29,
+       "days": 29,
+       "low": {
+        "expected": 1.45,
+        "interval": null,
+        "misses": 1,
+        "share": 0.034483,
+        "vs_nominal": "no interval"
+       },
+       "mean_error": [
+        4.091089,
+        0.506358,
+        14.651839
+       ],
+       "median_error": [
+        0.973963,
+        -0.14805,
+        2.331359
+       ],
+       "up": {
+        "expected": 1.45,
+        "interval": [
+         0.003222,
+         0.795346
+        ],
+        "misses": 10,
+        "share": 0.344828,
+        "vs_nominal": "holds 0.05"
+       }
+      },
+      "5": {
+       "cells": 29,
+       "days": 29,
+       "low": {
+        "expected": 1.45,
+        "interval": null,
+        "misses": 1,
+        "share": 0.034483,
+        "vs_nominal": "no interval"
+       },
+       "mean_error": [
+        3.999695,
+        0.251604,
+        13.559017
+       ],
+       "median_error": [
+        1.376182,
+        -0.074635,
+        2.385549
+       ],
+       "up": {
+        "expected": 1.45,
+        "interval": [
+         0.015033,
+         0.649912
+        ],
+        "misses": 9,
+        "share": 0.310345,
+        "vs_nominal": "holds 0.05"
+       }
+      },
+      "all": {
+       "cells": 145,
+       "days": 29,
+       "low": {
+        "expected": 7.25,
+        "interval": null,
+        "misses": 2,
+        "share": 0.013793,
+        "vs_nominal": "no interval"
+       },
+       "mean_error": [
+        3.896322,
+        0.502392,
+        15.791322
+       ],
+       "median_error": [
+        0.975521,
+        0.282913,
+        2.450276
+       ],
+       "up": {
+        "expected": 7.25,
+        "interval": [
+         0.010587,
+         0.585407
+        ],
+        "misses": 40,
+        "share": 0.275862,
+        "vs_nominal": "holds 0.05"
+       }
+      }
+     },
+     "2": {
+      "1": {
+       "cells": 29,
+       "days": 29,
+       "low": {
+        "expected": 1.45,
+        "interval": [
+         0.066191,
+         0.247987
+        ],
+        "misses": 4,
+        "share": 0.137931,
+        "vs_nominal": "above 0.05"
+       },
+       "mean_error": [
+        -0.23065,
+        -1.201769,
+        0.583366
+       ],
+       "median_error": [
+        0.45453,
+        -0.223134,
+        0.535983
+       ],
+       "up": {
+        "expected": 1.45,
+        "interval": [
+         0.069562,
+         0.441492
+        ],
+        "misses": 5,
+        "share": 0.172414,
+        "vs_nominal": "above 0.05"
+       }
+      },
+      "2": {
+       "cells": 29,
+       "days": 29,
+       "low": {
+        "expected": 1.45,
+        "interval": null,
+        "misses": 1,
+        "share": 0.034483,
+        "vs_nominal": "no interval"
+       },
+       "mean_error": [
+        1.57224,
+        0.460098,
+        3.307637
+       ],
+       "median_error": [
+        1.106189,
+        0.385367,
+        1.749618
+       ],
+       "up": {
+        "expected": 1.45,
+        "interval": [
+         0.163504,
+         0.449282
+        ],
+        "misses": 9,
+        "share": 0.310345,
+        "vs_nominal": "above 0.05"
+       }
+      },
+      "3": {
+       "cells": 29,
+       "days": 29,
+       "low": {
+        "expected": 1.45,
+        "interval": null,
+        "misses": 1,
+        "share": 0.034483,
+        "vs_nominal": "no interval"
+       },
+       "mean_error": [
+        1.288386,
+        0.302374,
+        2.978813
+       ],
+       "median_error": [
+        0.962647,
+        0.052289,
+        1.832252
+       ],
+       "up": {
+        "expected": 1.45,
+        "interval": [
+         0.17264,
+         0.309103
+        ],
+        "misses": 7,
+        "share": 0.241379,
+        "vs_nominal": "above 0.05"
+       }
+      },
+      "4": {
+       "cells": 29,
+       "days": 29,
+       "low": {
+        "expected": 1.45,
+        "interval": null,
+        "misses": 1,
+        "share": 0.034483,
+        "vs_nominal": "no interval"
+       },
+       "mean_error": [
+        1.547533,
+        0.435554,
+        3.131661
+       ],
+       "median_error": [
+        1.411431,
+        0.357885,
+        2.78481
+       ],
+       "up": {
+        "expected": 1.45,
+        "interval": [
+         0.069051,
+         0.416277
+        ],
+        "misses": 8,
+        "share": 0.275862,
+        "vs_nominal": "above 0.05"
+       }
+      },
+      "5": {
+       "cells": 29,
+       "days": 29,
+       "low": {
+        "expected": 1.45,
+        "interval": [
+         0.021125,
+         0.108908
+        ],
+        "misses": 2,
+        "share": 0.068966,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        1.813266,
+        0.312471,
+        3.342448
+       ],
+       "median_error": [
+        1.976388,
+        0.486491,
+        2.622352
+       ],
+       "up": {
+        "expected": 1.45,
+        "interval": [
+         0.062632,
+         0.618457
+        ],
+        "misses": 10,
+        "share": 0.344828,
+        "vs_nominal": "above 0.05"
+       }
+      },
+      "all": {
+       "cells": 145,
+       "days": 29,
+       "low": {
+        "expected": 7.25,
+        "interval": [
+         0.021733,
+         0.177932
+        ],
+        "misses": 9,
+        "share": 0.062069,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        1.198155,
+        0.239601,
+        2.375776
+       ],
+       "median_error": [
+        1.321716,
+        0.228885,
+        1.785752
+       ],
+       "up": {
+        "expected": 7.25,
+        "interval": [
+         0.128991,
+         0.380014
+        ],
+        "misses": 39,
+        "share": 0.268966,
+        "vs_nominal": "above 0.05"
+       }
+      }
+     },
+     "3": {
+      "1": {
+       "cells": 29,
+       "days": 29,
+       "low": {
+        "expected": 1.45,
+        "interval": [
+         0.0,
+         0.917978
+        ],
+        "misses": 7,
+        "share": 0.241379,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        -2.080187,
+        -4.904067,
+        -0.157678
+       ],
+       "median_error": [
+        -0.251877,
+        -0.631468,
+        -0.024785
+       ],
+       "up": {
+        "expected": 1.45,
+        "interval": [
+         0.032683,
+         0.105507
+        ],
+        "misses": 2,
+        "share": 0.068966,
+        "vs_nominal": "holds 0.05"
+       }
+      },
+      "2": {
+       "cells": 29,
+       "days": 29,
+       "low": {
+        "expected": 1.45,
+        "interval": [
+         0.0,
+         0.39687
+        ],
+        "misses": 5,
+        "share": 0.172414,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        -1.535782,
+        -3.468031,
+        0.218869
+       ],
+       "median_error": [
+        -0.23267,
+        -1.088605,
+        0.298078
+       ],
+       "up": {
+        "expected": 1.45,
+        "interval": [
+         0.051031,
+         0.372678
+        ],
+        "misses": 4,
+        "share": 0.137931,
+        "vs_nominal": "above 0.05"
+       }
+      },
+      "3": {
+       "cells": 29,
+       "days": 29,
+       "low": {
+        "expected": 1.45,
+        "interval": null,
+        "misses": 2,
+        "share": 0.068966,
+        "vs_nominal": "no interval"
+       },
+       "mean_error": [
+        -0.289362,
+        -1.391601,
+        0.712398
+       ],
+       "median_error": [
+        0.28692,
+        -0.292712,
+        0.601462
+       ],
+       "up": {
+        "expected": 1.45,
+        "interval": [
+         0.051031,
+         0.372678
+        ],
+        "misses": 4,
+        "share": 0.137931,
+        "vs_nominal": "above 0.05"
+       }
+      },
+      "4": {
+       "cells": 29,
+       "days": 29,
+       "low": {
+        "expected": 1.45,
+        "interval": null,
+        "misses": 2,
+        "share": 0.068966,
+        "vs_nominal": "no interval"
+       },
+       "mean_error": [
+        -0.338534,
+        -1.339819,
+        0.518986
+       ],
+       "median_error": [
+        0.007123,
+        -0.28423,
+        0.279533
+       ],
+       "up": {
+        "expected": 1.45,
+        "interval": [
+         0.051031,
+         0.372678
+        ],
+        "misses": 4,
+        "share": 0.137931,
+        "vs_nominal": "above 0.05"
+       }
+      },
+      "5": {
+       "cells": 29,
+       "days": 29,
+       "low": {
+        "expected": 1.45,
+        "interval": [
+         0.0,
+         0.122296
+        ],
+        "misses": 2,
+        "share": 0.068966,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        -0.253157,
+        -1.087913,
+        0.602462
+       ],
+       "median_error": [
+        0.177692,
+        0.028319,
+        0.475014
+       ],
+       "up": {
+        "expected": 1.45,
+        "interval": [
+         0.045225,
+         0.214524
+        ],
+        "misses": 3,
+        "share": 0.103448,
+        "vs_nominal": "holds 0.05"
+       }
+      },
+      "all": {
+       "cells": 145,
+       "days": 29,
+       "low": {
+        "expected": 7.25,
+        "interval": [
+         0.0,
+         0.474838
+        ],
+        "misses": 18,
+        "share": 0.124138,
+        "vs_nominal": "holds 0.05"
+       },
+       "mean_error": [
+        -0.899404,
+        -2.28606,
+        0.327522
+       ],
+       "median_error": [
+        -0.071946,
+        -0.566363,
+        0.339935
+       ],
+       "up": {
+        "expected": 7.25,
+        "interval": [
+         0.048152,
+         0.268268
+        ],
+        "misses": 17,
+        "share": 0.117241,
+        "vs_nominal": "holds 0.05"
+       }
+      }
+     }
+    }
+   }
+  }
+ }
+}

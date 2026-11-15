@@ -32,6 +32,7 @@ from repo_model import s3c_net
 from repo_model import scoring_protocol as sp
 from repo_model import spread_mr_state_calendar as sc
 from repo_model.data import DailyObservation
+from repo_model.splits import LookAheadError
 
 ROOT = Path(__file__).resolve().parent.parent
 _spec = importlib.util.spec_from_file_location("s3c_net_settlement_1273", ROOT / "scripts" / "s3c_net_settlement_1273.py")
@@ -123,13 +124,25 @@ class CellTableTests(unittest.TestCase):
             self.assertEqual(len(cells[m]), 5 * len(frame.days))
 
     def test_a_locked_day_is_refused(self):
+        """The lockbox check is what fires, not the declared last day's (#1568).
+
+        `last_day` is set past every day of the frame, so `require_scored_days` cannot refuse on `day > last`; the
+        refusal that is left is `lockbox.require_unlocked`, and the message names the locked tier. Before #1568 the
+        test passed `script.LAST_DAY` (2025-12-31), so the declared-end check fired first and the lockbox line was
+        never reached.
+
+        Recorded mutation (#1568): in `spread_mean_reversion_686.require_scored_days`, the line
+        `lockbox.require_unlocked(days, where="scripts/spread_mean_reversion_686")` replaced by `pass` makes this test
+        fail with `AssertionError: LookAheadError not raised`; restored, it passes.
+        """
+
         frame = Frame(n=26)
         late = {date(2026, 9, 7): {h: list(Q) for h in sp.HORIZONS}}
         frame.dates = business_days(date(2026, 9, 1), 12)
         frame.position = {d: i for i, d in enumerate(frame.dates)}
         frame.outcome = {d: 0.0 for d in frame.dates}
-        with self.assertRaises(Exception):
-            script.cell_table(frame, late, script.LAST_DAY)
+        with self.assertRaisesRegex(LookAheadError, "locked blind tier"):
+            script.cell_table(frame, late, date(2027, 12, 31))
 
 
 class ChecksTests(unittest.TestCase):

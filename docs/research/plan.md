@@ -69,7 +69,7 @@ on 17 October 2026 by directive [#891](https://github.com/eleonorabjornberg/repo
 - **Test:** [#633](https://github.com/eleonorabjornberg/repo-market-model/issues/633).
 - **Kill:** no 2014–18 series has an established posting time, or extended training moves 2018–19 calibration by less than its interval.
 - **Next:** on kill, 2018–19 stays a known weakness and is reported as one. Otherwise release the series that pass.
-- **Status:** open. Manual: [`hypotheses/H4.md`](hypotheses/H4.md).
+- **Status:** closed, at step 3: the back-fill of the 2014–18 history was tested and not adopted (her ruling of 5 November 2026, [#1469](https://github.com/eleonorabjornberg/repo-market-model/issues/1469)), and 2018–19 stays a known weakness. Manual: [`hypotheses/H4.md`](hypotheses/H4.md).
 
 ## H5 (primary goal). The SOFR − IORB spread distribution in bp improves on phase 2 and beats classification
 
@@ -93,7 +93,7 @@ on 17 October 2026 by directive [#891](https://github.com/eleonorabjornberg/repo
 - **Owner of the estimator:** `eleonorabjornberg/repo-market-liquidity` (step 1 moves there from [#644](https://github.com/eleonorabjornberg/repo-market-model/issues/644)). The nested forecast test is here, under #640.
 - **Kill:** the estimate does not predict later spread behaviour beyond the current scarcity state.
 - **Next:** on support, it becomes an input to H5 and H6.
-- **Status:** open, not yet queued here. Manual: [`hypotheses/H7.md`](hypotheses/H7.md).
+- **Status:** open, the estimator (H7m) is closed: the exit criterion of Phase 3 was not met on development (her ruling of 28 October 2026, repo-market-liquidity [#199](https://github.com/eleonorabjornberg/repo-market-liquidity/issues/199)), and the nested test on the H5 candidate (H7f, [#1526](https://github.com/eleonorabjornberg/repo-market-model/issues/1526)) has a development result, a loss on the studentized bound, whose reading is hers. Manual: [`hypotheses/H7.md`](hypotheses/H7.md).
 
 ## H8. Ranking beats calibrating for desk use
 
@@ -115,7 +115,7 @@ on 17 October 2026 by directive [#891](https://github.com/eleonorabjornberg/repo
 - **Owner:** `eleonorabjornberg/repo-market-liquidity`.
 - **Kill:** the residual dominates most episodes.
 - **Next:** it tells H5–H9 which drivers to forecast.
-- **Status:** open, not yet queued here. Manual: [`hypotheses/H10.md`](hypotheses/H10.md).
+- **Status:** registered, live since 3 November 2026 (confirmation; her registration comment on repo-market-liquidity#23). Manual: [`hypotheses/H10.md`](hypotheses/H10.md).
 
 ## Critical path
 

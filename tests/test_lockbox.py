@@ -38,6 +38,8 @@ import csv
 import importlib.util
 import io
 import json
+import re
+import sys
 import tempfile
 import unittest
 from datetime import date, time, timedelta
@@ -45,6 +47,7 @@ from pathlib import Path
 from unittest import mock
 
 from repo_model import cli, lockbox
+from repo_model.exploration import NEAR_BLIND_START
 from repo_model.contract import event_window_digest
 from repo_model.baseline import (
     climatology_exceedance,
@@ -351,7 +354,9 @@ NON_SCORING_COMMANDS = {
 #: syntax tree, never by importing a script. So a new study declares itself in its own script and
 #: never edits this file.
 READS_KINDS = ("entry", "not_entry")
-CRPS_KINDS = ("guard", "delegates")
+#: `"synthetic"` (#1568): the function computes a loss on a simulated series and reads no panel day. The scan checks
+#: that its module names no panel loader and dates its simulated days from a `START` before the lockbox's first tier.
+CRPS_KINDS = ("guard", "delegates", "synthetic")
 
 
 def _lockbox_modules():
@@ -846,8 +851,16 @@ class ScriptTests(EventHoldoutHarness):
 #: `information_set` and the fold loop, and `live_score.score` and `score_crps` read neither.
 CRPS_CALLERS = frozenset({"crps_from_quantiles", "crps_trapezoid_from_quantiles",
                           "crps_from_record", "integral_crps_from_record",
-                          "_require_scored_days_unlocked"})
-GUARD_CALLS = frozenset({"require_unlocked", "_require_scored_days_unlocked", "_as_of_folds"})
+                          "_require_scored_days_unlocked",
+                          "grid_crps", "upper_tail_twcrps", "level_crps", "pinball_loss", "brier_score"})
+#: The calls that refuse a locked scored day. The first three are the original ones. The others are the guards the
+#: study scripts named in `LOCKBOX_CRPS` call (#1568); `GuardNamesRefuseTests` calls every definition of each with a day
+#: of the blind tier, so a name cannot stay here after its function stops refusing.
+GUARD_CALLS = frozenset({"require_unlocked", "_require_scored_days_unlocked", "_as_of_folds",
+                         "require_exploratory_window", "require_scored_days", "refuse_locked",
+                         "require_study_window", "refuse_beyond", "require_development_window"})
+#: Guards that `GuardNamesRefuseTests` cannot call with a day list alone; each is held by its own tests above.
+GUARDS_CALLED_ELSEWHERE = frozenset({"_as_of_folds", "_require_scored_days_unlocked"})
 
 
 def _crps_scorers():
@@ -872,6 +885,16 @@ class CrpsScorerScanTests(unittest.TestCase):
     `live_score.score` with `pass` makes `test_a_guard_entry_calls_a_guard_itself` fail with
     `AssertionError: set() is not true : scripts/live_score.score calls no guard`.
     Written with its table in one pass; not run red first.
+
+    Widened by #1568 (Eleonora's ruling "widen", 11 November 2026): `CRPS_CALLERS` now also holds `grid_crps`,
+    `upper_tail_twcrps`, `level_crps`, `pinball_loss` and `brier_score`, so a study that scores with any of them is found
+    and classified too. Run red first: with only that change, `test_every_function_that_computes_a_crps_is_classified`
+    failed listing 46 unclassified functions (the three loss primitives of `metrics`, `baseline._tau_metrics`,
+    `richer_targets.crps`, `spread_mr_variants.choose_weight` and the rest in study scripts), among them the
+    callers the issue names (`hit_dependence_1523.cell_scores`, `coverage_gate_961.mean_crps`,
+    `confirmation_design.build_pool`). Recorded mutation: deleting the `LOCKBOX_CRPS` table of
+    `scripts/protocol_coverage.py` makes that test fail with `AssertionError: Items in the first set but not the
+    second: 'scripts/protocol_coverage.five_level_scores'`; restored, it passes.
     """
 
     @staticmethod
@@ -892,14 +915,112 @@ class CrpsScorerScanTests(unittest.TestCase):
         called = dict(self.functions())
         for name, (kind, reason) in _crps_scorers().items():
             with self.subTest(function=name):
-                self.assertIn(kind, ("guard", "delegates"))
+                self.assertIn(kind, CRPS_KINDS)
                 self.assertTrue(reason.strip())
                 if kind == "guard":
                     self.assertTrue(called[name] & GUARD_CALLS, f"{name} calls no guard")
 
+    def test_a_synthetic_entry_reads_no_panel(self):
+        """A `"synthetic"` entry's module names no panel loader and starts its simulated days before 2026-01-01 (#1568).
+
+        Recorded mutation (#1568): `START = date(2001, 1, 2)` in `scripts/coverage_gate_961.py` changed to
+        `date(2027, 1, 4)` makes this test fail with `AssertionError: 2027-01-04 is not less than 2026-01-01`;
+        restored, it passes.
+        """
+
+        loaders = {"load_daily_panel", "audit_panel", "build_panel", "DailyObservation"}
+        for name, (kind, _reason) in _crps_scorers().items():
+            if kind != "synthetic":
+                continue
+            module = name.rsplit(".", 1)[0]
+            tree = ast.parse(next(p for p, m in _lockbox_modules() if m == module).read_text(encoding="utf-8"))
+            used = {getattr(node, "id", getattr(node, "attr", None)) for node in ast.walk(tree)}
+            with self.subTest(function=name):
+                self.assertFalse(used & loaders, f"{module} names a panel loader")
+                start = next(n for n in tree.body if isinstance(n, ast.Assign)
+                             and any(getattr(t, "id", None) == "START" for t in n.targets))
+                self.assertLess(date(*[ast.literal_eval(a) for a in start.value.args]), NEAR_BLIND_START)
+
     def test_the_live_scorers_cells_are_classified_as_guards(self):
         for name in ("scripts/live_score.score_crps", "scripts/live_score.score"):
             self.assertEqual(_crps_scorers()[name][0], "guard")
+
+    def test_a_delegating_entry_names_a_chooser_that_calls_a_guard(self):
+        """A `"delegates"` reason names the function that chose the days, and that function calls a guard (#1568).
+
+        The name is a backticked identifier (`module.name` is read as `name`) or a bare guard name in the reason. It
+        counts when it is in `GUARD_CALLS`, or is a function of the tree that itself calls one; a reason that names
+        no such function ("chooses no day", "the walk that calls it") is refused.
+
+        Recorded mutation (#1568): the reason of `metrics.crps_from_quantiles` in `LOCKBOX_CRPS` changed from
+        "... `day_scores` calls `require_unlocked` ..." to "... the caller chooses the days ..." makes this test fail
+        with `AssertionError: metrics.crps_from_quantiles delegates but names no function that calls a guard`;
+        restored, it passes.
+        """
+
+        choosers = set(GUARD_CALLS) | {name.rsplit(".", 1)[1] for name, called in self.functions() if called & GUARD_CALLS}
+        for name, (kind, reason) in _crps_scorers().items():
+            if kind != "delegates":
+                continue
+            named = {token.rsplit(".", 1)[-1] for token in re.findall(r"`([\w.]+)(?:\(\))?`", reason)}
+            named |= {word for word in re.findall(r"\w+", reason) if word in GUARD_CALLS}
+            with self.subTest(function=name):
+                self.assertTrue(named & choosers, f"{name} delegates but names no function that calls a guard")
+
+
+class GuardNamesRefuseTests(unittest.TestCase):
+    """Every function named in `GUARD_CALLS` refuses a day of the blind tier (#1568).
+
+    The scan above accepts a call to one of these names as "this function is guarded", so each definition of each name
+    in the tree is called here with 2026-09-10 (the blind tier opens on 2026-09-04 in `metadata/lockbox.json`, and no
+    study window ends after 2026-09-03) and must raise `LookAheadError`. A guard that stopped refusing would otherwise
+    stay in the list and keep every function that calls it classified as guarded.
+
+    Recorded mutation (#1568): in `spread_mean_reversion_686.require_scored_days`, `if day > last:` replaced by
+    `if False:` and the `lockbox.require_unlocked` line by `pass` makes
+    `test_every_definition_of_a_guard_refuses_a_blind_day` fail with `AssertionError: LookAheadError not raised` for
+    `scripts/spread_mean_reversion_686.require_scored_days`; restored, it passes.
+    """
+
+    BLIND_DAY = date(2026, 9, 10)
+
+    @staticmethod
+    def definitions():
+        for path, module in _lockbox_modules():
+            for node in ast.parse(path.read_text(encoding="utf-8")).body:
+                # `pressure_judge.require_scored_days(declaration, days, ...)` is another function of the same name: it
+                # is not called with a day list alone and no `LOCKBOX_CRPS` entry reaches it.
+                if (isinstance(node, ast.FunctionDef) and node.name in GUARD_CALLS - GUARDS_CALLED_ELSEWHERE
+                        and node.args.args and node.args.args[0].arg in ("days", "scored_days")):
+                    yield path, module, node
+
+    @staticmethod
+    def load(path, module):
+        if not module.startswith("scripts/"):
+            return importlib.import_module(f"repo_model.{module}")
+        name = "lockbox_guard_" + module.split("/")[1]
+        spec = importlib.util.spec_from_file_location(name, path)
+        loaded = importlib.util.module_from_spec(spec)
+        sys.modules[name] = loaded
+        spec.loader.exec_module(loaded)
+        return loaded
+
+    def test_every_guard_name_has_a_definition(self):
+        defined = {node.name for _path, _module, node in self.definitions()}
+        self.assertEqual(defined, GUARD_CALLS - GUARDS_CALLED_ELSEWHERE)
+
+    def test_every_definition_of_a_guard_refuses_a_blind_day(self):
+        for path, module, node in self.definitions():
+            with self.subTest(guard=f"{module}.{node.name}"):
+                loaded = self.load(path, module)
+                function = getattr(loaded, node.name)
+                required = [a.arg for a in node.args.args[: len(node.args.args) - len(node.args.defaults)]]
+                kwargs = {a.arg: "test" for a, d in zip(node.args.kwonlyargs, node.args.kw_defaults) if d is None}
+                args = [[self.BLIND_DAY]]
+                for extra in required[1:]:
+                    args.append(date(2026, 9, 3) if extra == "last" else "test")
+                with self.assertRaises(LookAheadError):
+                    function(*args, **kwargs)
 
 
 class EnumerationTests(unittest.TestCase):
