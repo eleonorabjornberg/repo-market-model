@@ -542,6 +542,16 @@ def page(r: Mapping[str, object]) -> str:
     w("")
     w("The rule (loses when the difference candidate - arm is not above 0, wins when its 90% interval lies wholly above 0) is marked as a question in the pull request.")
     w("")
+    w("**Where the grid-CRPS difference sits** (the primary arm against the candidate; rows whose 90% interval lies wholly above or wholly below 0, development window):")
+    w("")
+    for split, title in (("by_business_day", "business day"), ("by_group", "group"), ("by_regime", "regime")):
+        better = [k for k, v in sp_dev[split].items() if "note" not in v and v["d_arm_cand_crps"][1] > 0.0]
+        worse = [k for k, v in sp_dev[split].items() if "note" not in v and v["d_arm_cand_crps"][2] < 0.0]
+        w(f"- By {title}: interval above 0 for {', '.join(better) or 'none'}; below 0 for {', '.join(worse) or 'none'}.")
+    later_win = r["windows"].get("2026", {}).get("splits", {}).get("window", {}).get("post_month_end_window")
+    if later_win and "note" not in later_win:
+        w(f"- The 2026 days, shown apart and deciding nothing: grid CRPS {later_win['d_arm_cand_crps'][0]:+.3f}, twCRPS {later_win['d_arm_cand_tw'][0]:+.3f} on {later_win['cells']} post-month-end cells.")
+    w("")
     w("## Pooled, on scoring protocol v1's studentized stationary bootstrap")
     w("")
     w(f"One score per decision day (the mean over h = 1 to 5), development window. d = reference score - arm score: positive favours the arm. Two-sided 90% intervals from the studentized draws of "
