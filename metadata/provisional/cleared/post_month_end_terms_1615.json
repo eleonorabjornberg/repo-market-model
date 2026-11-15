@@ -1,0 +1,6 @@
+{
+  "declaration": "metadata/post_month_end_terms_1615.json",
+  "script": "scripts/post_month_end_terms_1615.py",
+  "pairing": "direct",
+  "why": "(s3c-ann-net) with, on target days on business day 1, 2 or 3 of the month (six groups, crossed with the kind of the month-end before), its quantiles shifted and scaled about the median by terms fitted walk-forward and shrunk. The arms fit no model and call no gradient-boosted or one-step fitter: they read the candidate's own walk (spread_mr_state_calendar.walk with training_pairs = direct, guarded by one_step_guard with no allow-list entry, regenerated bit-identical from the 1363 walk by scripts/qe_diagnosis_1533.py) and the realised outcomes of cells whose target day is strictly before the decision day (a LookAheadError guard, mutation-tested). The group is read from the target day's own calendar position (bday_of_month of the target day), so no calendar or scheduled column is learned one day off; every forecast outside the groups equals the candidate's, and the run fails otherwise, so the study is not provisional"
+}
