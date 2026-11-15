@@ -138,6 +138,50 @@ class PowerIsTheMeasuredPowerTests(unittest.TestCase):
         self.assertEqual(self.power["source"], "docs/research/confirmation-size-power-1392-full-result.md")
 
 
+class QuarterEndKnownLimitTests(unittest.TestCase):
+    """#1618: the result of #1599 (S17, the candidate against the calendar-aware GBM on quarter-end turns) is in the known limits.
+
+    The record and its reader carry it, each figure is copied from the merged page and no figure is new, and the registration
+    still registers nothing. Mutation: not a leakage, availability or staleness guard, so none is recorded. The test was run
+    first against the tree without the entry and failed with `KeyError: 'known_limits'`.
+    """
+
+    PAGE = ROOT / "docs" / "research" / "qe-vs-calendar-gbm-1593-result.md"
+
+    @classmethod
+    def setUpClass(cls):
+        cls.record = load(RECORD)
+        cls.reader = READER.read_text()
+        cls.page = cls.PAGE.read_text()
+        cls.entry = next(x for x in cls.record["known_limits"] if x["id"] == "quarter-end-calendar-gbm")
+
+    def test_the_entry_cites_the_study_and_its_page(self):
+        self.assertEqual(self.entry["issues"], ["#1593", "#1599"])
+        self.assertEqual(self.entry["page"], "docs/research/qe-vs-calendar-gbm-1593-result.md")
+        self.assertTrue(self.PAGE.exists())
+        self.assertIn("development", self.entry["reading"].lower())
+        self.assertIn("no verdict", self.entry["reading"].lower())
+
+    def test_every_figure_is_on_the_merged_page_and_in_the_reader(self):
+        figures = self.entry["figures"]
+        self.assertTrue(figures)
+        for figure in figures:
+            self.assertIn(figure, self.page, figure)
+            self.assertIn(figure, self.reader, figure)
+
+    def test_the_reader_has_a_known_limits_section_that_names_it(self):
+        self.assertIn("## Known limits", self.reader)
+        section = self.reader.split("## Known limits", 1)[1].split("\n## ", 1)[0]
+        self.assertIn("#1599", section)
+        self.assertIn("quarter-end", section)
+
+    def test_the_two_instants_and_the_swap_ruling_are_stated(self):
+        self.assertIn("16:00", self.entry["caveat"])
+        self.assertIn("18:00", self.entry["caveat"])
+        self.assertIn("13 November 2026", self.entry["ruling"])
+        self.assertFalse(self.record["registered"])
+
+
 class NothingElseMovesTests(unittest.TestCase):
     def test_it_scores_no_locked_day_and_moves_no_pin(self):
         record = load(RECORD)

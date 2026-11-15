@@ -54,6 +54,17 @@ The blind tier stays locked and this draft scores no day. Confirmation days are 
 - **Q7.** B4 is reported beside the claim and is not in the confirmatory set.
 - **Q8.** Registration waits on the amendment 4 coverage report, built by directive #1512 (pending). `GO #1510` is not asked for until that report is merged.
 
+## Known limits
+
+The validation report's known limits (`docs/model/validation.md`) travel with this record, and this one is added to them by directive #1618. It changes nothing: the candidate, the design and every threshold stand, and every figure below is copied from the merged page, `docs/research/qe-vs-calendar-gbm-1593-result.md` (#1593, pull request #1599; S17 of `docs/research/settled-questions.md`, failed). Development data on days already seen, no verdict.
+
+**Quarter-end turns and year-ends against the calendar-aware GBM.** The question was whether the calendar-aware gradient-boosted model on direct pairs (`gbm_funding_cal_direct`) forecasts these days better than (s3c-ann-net), so that it could take the candidate's place on them. Her ruling of 13 November 2026 (option (a), relayed on #1593): swapping it in is not supported, the quarter-end family keeps the frozen candidate, and no GBM or combination arm is opened. Fixing the candidate's band on these days stays with Q9. d is the GBM minus the candidate on the same cells, with 90% event-cluster intervals; positive favours the candidate on the scores.
+
+- **Quarter-end turns, 22 events and 220 cells.** The 90% band covers 0.586 for the candidate and 0.500 for the GBM (d -0.086 [-0.245, +0.077]). Above q95 the candidate is exceeded 0.336 of the time and the GBM 0.255 (nominal 0.050). Grid CRPS 3.512 against 4.141 (d +0.629 [-0.087, +1.413]); upper-tail twCRPS 2.136 against 2.422 (d +0.286 [-0.342, +0.982]). The score and coverage intervals hold zero.
+- **Year-ends, 8 events and 71 cells.** The 90% band covers 0.648 for the candidate and 0.577 for the GBM (d -0.070 [-0.141, +0.000]). Grid CRPS 8.469 against 11.507 (d +3.038 [+0.525, +6.576]); upper-tail twCRPS 7.771 against 10.316 (d +2.545 [+0.065, +6.160]).
+
+The candidate's own band still covers far less than 90% on these days, which is the quarter-end limit that was already listed. The GBM's walks were made at the 16:00 instant and the candidate's at the 18:00 decision instant, so the GBM forecast with two hours less public information; that favours the candidate by an amount not measured. Several regime cells rest on fewer than five events, and the regimes are not tested against one another.
+
 ## What was not checked
 
 No score was run and no figure is new. The coverage report of amendment 4 is pending (#1512). Whether the validation report's own status line about the confirmation design is current is finding #1473, left alone. The capped baselines are not in the power study.

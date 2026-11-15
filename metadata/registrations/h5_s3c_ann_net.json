@@ -110,6 +110,43 @@
   "moved": false
  },
  "changes_nothing_else": "No threshold, critical value, MME, block length or design rule, no model change. Finding #1473's open Q2 is left alone.",
+ "known_limits": [
+  {
+   "id": "quarter-end-calendar-gbm",
+   "title": "The candidate against the calendar-aware GBM on quarter-end turns and year-ends",
+   "issues": [
+    "#1593",
+    "#1599"
+   ],
+   "page": "docs/research/qe-vs-calendar-gbm-1593-result.md",
+   "settled_question": "S17 of docs/research/settled-questions.md (failed)",
+   "ruling": "Eleonora, 13 November 2026, option (a) on #1593: swapping in the calendar GBM is not supported, the quarter-end family keeps the frozen candidate, and no GBM or combination arm is opened.",
+   "reading": "Development data on days already seen, no verdict. d is the GBM minus the candidate on the same cells; 90% event-cluster intervals. Quarter-end turns, 22 events and 220 cells: the 90% band covers 0.586 for the candidate and 0.500 for the GBM (d -0.086 [-0.245, +0.077]); above q95 the candidate is exceeded 0.336 of the time and the GBM 0.255 (nominal 0.050); grid CRPS 3.512 against 4.141 (d +0.629 [-0.087, +1.413]); upper-tail twCRPS 2.136 against 2.422 (d +0.286 [-0.342, +0.982]). Year-ends, 8 events and 71 cells: 90% band 0.648 against 0.577 (d -0.070 [-0.141, +0.000]); grid CRPS 8.469 against 11.507 (d +3.038 [+0.525, +6.576]); upper-tail twCRPS 7.771 against 10.316 (d +2.545 [+0.065, +6.160]). On the quarter-end turns alone the score and coverage intervals hold zero; the candidate's band still covers far less than 90% there.",
+   "figures": [
+    "0.586",
+    "0.500",
+    "-0.086 [-0.245, +0.077]",
+    "0.336",
+    "0.255",
+    "3.512",
+    "4.141",
+    "+0.629 [-0.087, +1.413]",
+    "2.136",
+    "2.422",
+    "+0.286 [-0.342, +0.982]",
+    "0.648",
+    "0.577",
+    "8.469",
+    "11.507",
+    "+3.038 [+0.525, +6.576]",
+    "7.771",
+    "10.316",
+    "+2.545 [+0.065, +6.160]"
+   ],
+   "caveat": "The GBM's walks were made at the 16:00 instant, the candidate's at the 18:00 decision instant, so the GBM forecast with two hours less public information; that favours the candidate by an amount not measured. Several regime cells rest on fewer than five events, and the regimes are not tested against one another.",
+   "changes": "Nothing. No figure is new, and the candidate, the design and the thresholds are as they were."
+  }
+ ],
  "not_in_this_file": [
   "metadata/owner_attestations.json entry: it needs the id of her own GO #1510 comment, asked for only after #1512's report is merged"
  ],
