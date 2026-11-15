@@ -32,6 +32,7 @@ not read them, and no checksummed declaration is touched.
 from __future__ import annotations
 
 import argparse
+import ast
 import json
 import re
 import sys
@@ -296,12 +297,25 @@ def one_step_fitter_callers(repo):
     return found
 
 
+def _names_blind_walks(text):
+    """True when a script names the calendar-blind variant `gbm_funding` itself: in its module docstring (the usage lines) or as a
+    quoted name in code. `gbm_funding_cal_*` (calendar columns at the target day, direct pairs) does not count, and neither does a
+    passing mention in a page's prose (#1608, her ruling of 14 November 2026 on #1606)."""
+    blind = re.compile(r"gbm_funding(?![\w])")
+    try:
+        docstring = ast.get_docstring(ast.parse(text)) or ""
+    except SyntaxError:
+        docstring = ""
+    return bool(blind.search(docstring) or re.search(r"[\"']gbm_funding[\"']", text))
+
+
 def walk_readers(repo):
-    """Scripts that read the walks of `gbm_funding` as data (a `--walks` directory): the class `series`, besides the fitters' callers."""
+    """Scripts that read the walks of the calendar-blind `gbm_funding` as data (a `--walks` directory): the class `series`, besides
+    the fitters' callers. A reader of `gbm_funding_cal_*` walks only is not one (#1608)."""
     found = []
     for path in sorted((Path(repo) / "scripts").glob("*.py")):
         text = path.read_text(encoding="utf-8")
-        if "--walks" in text and "gbm_funding" in text and not FITTER.search(text) and re.search(r"_\d+\.py$", path.name):
+        if "--walks" in text and _names_blind_walks(text) and not FITTER.search(text) and re.search(r"_\d+\.py$", path.name):
             found.append(f"scripts/{path.name}")
     return found
 
