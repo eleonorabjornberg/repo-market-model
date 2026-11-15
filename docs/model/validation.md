@@ -286,6 +286,8 @@ label were each tested and not adopted (her rulings on #1223 and #1004), and bot
   - *Evidence.* #1547, `docs/research/calendar-tail-diagnostic-1547-result.md`: the miss shares by calendar flag, with a dated note on the lower tail of the post-month-end days
   - *Evidence.* #1555, `docs/research/calendar-flag-scale-arm-1555-result.md`: the upper-tail arm, which loses on these days, with a dated note
   - *Evidence.* #1275, `docs/research/s3c-carry-1275-result.md`: the spike-sized location term, which loses on these days and acts only at lead 1 on business day 2
+  - *Evidence.* #1611, `docs/research/post-month-end-split-1611-result.md`: the first split of the misses by business day 1, 2 and 3, with a dated note that its miss-share intervals dropped the resamples that drew no miss; its figures stand as published
+  - *Evidence.* #1614, `docs/research/post-month-end-corrected-1614-result.md`: the split re-issued with every resample kept, with a dated note of 15 November 2026 under this limit that quotes the corrected figures, and a second, exploratory interval for rare-event shares; development data, no change to the candidate
   - *Evidence.* #1592, no page yet: the finding and her ruling are on the issue; the reading rule is drafted in docs/decisions/drafts/tail-reading-rule.md
 
 <!-- end generated: validation-known-limits -->
