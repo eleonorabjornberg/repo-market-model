@@ -103,7 +103,7 @@ v1 = _script("pressure_model_v1")
 #: published distribution and as-of persistence exactly as `compare` does.
 final_test = _script("final_test_preregistration")
 
-from repo_model import decision_instant, field_flags, onset, pressure, prospective_log  # noqa: E402
+from repo_model import decision_instant, field_flags, h5_live, onset, pressure, prospective_log  # noqa: E402
 from repo_model.asof import (  # noqa: E402
     KIND_OBSERVED,
     InformationRule,
@@ -1237,7 +1237,27 @@ def distributions_block(extended, registry, *, forecast=None, v2_forecast=None) 
     return block
 
 
-def protocol_for(extended, decision_day: date, registry, splits, written_at: datetime) -> dict:
+def candidate_forecasts(extended5, decision_day: date, registry, splits, records) -> dict:
+    """The forecast of each registered candidate (`prospective_log.REGISTERED_CANDIDATES`) for the decision on `decision_day`.
+
+    `extended5` is the panel extended through the decision day's fifth target; `records` are the run's own fetch of the Treasury auction
+    records (`auction_records`). (s3c-ann-net), the one registered candidate (H5, #1510, #1629), is made by `repo_model.h5_live`.
+
+    Raises:
+        ValueError: a registered candidate has no producer here.
+    """
+
+    producers = {h5_live.CANDIDATE_ID: h5_live.candidate_forecast}
+    unknown = [name for name in prospective_log.REGISTERED_CANDIDATES if name not in producers]
+    if unknown:
+        raise ValueError(f"a registered candidate has no producer in the live record: {unknown}")
+    return {
+        name: producers[name](extended5, decision_day, registry=registry, splits=splits, auction_records=records)
+        for name in prospective_log.REGISTERED_CANDIDATES
+    }
+
+
+def protocol_for(extended, decision_day: date, registry, splits, written_at: datetime, candidates=None) -> dict:
     """The record's `protocol` block (#656): B1, B2, B3's note, the registered candidates and the H7m hook.
 
     `extended` is the panel extended through the decision day's fifth target (`extend_panel` at horizon 5); the
@@ -1246,13 +1266,22 @@ def protocol_for(extended, decision_day: date, registry, splits, written_at: dat
     being made; the block is refused if that is not before the first outcome's publication
     (`prospective_log.require_written_before_outcome`).
 
-    No candidate is registered and no H7m estimate is, so those parts are empty (`prospective_log.REGISTERED_CANDIDATES`,
-    `REGISTERED_H7M`). Registering one is Eleonora's attested action and changes this function with it.
+    `candidates` maps each registered candidate (`prospective_log.REGISTERED_CANDIDATES`: (s3c-ann-net) since its
+    registration, #1629) to its forecast (`candidate_forecasts`). A day logs every registered candidate (protocol section 11): a call that
+    leaves one out is refused here, not written as a day that scores as B1's. No H7m estimate is registered (`REGISTERED_H7M`).
+    Registering one is Eleonora's attested action and changes this function with it.
+
+    Raises:
+        ValueError: a registered candidate is not in `candidates`.
     """
 
+    missing = [name for name in prospective_log.REGISTERED_CANDIDATES if name not in (candidates or {})]
+    if missing:
+        raise ValueError(f"the protocol block of {decision_day} lacks the registered candidate(s) {missing}")
     index = [row.date for row in extended].index(decision_day)
     return prospective_log.protocol_block(
         extended, index, registry=registry, decision_time=DECISION, splits=splits, written_at=written_at,
+        candidates=candidates,
     )
 
 
@@ -1450,6 +1479,7 @@ def run_command(args) -> int:
     tick = clock.monotonic()
     _status(args.status, "fit_forecast_distributions")
     distributions = distributions_block(extended, registry)
+    candidates = candidate_forecasts(extended[HORIZONS[-1]][0], day, registry, splits, auctions)
     durations["fit_forecast_distributions"] = clock.monotonic() - tick
 
     tick = clock.monotonic()
@@ -1473,7 +1503,7 @@ def run_command(args) -> int:
         "models": models,
         "baselines": baselines,
         "distributions": distributions,
-        "protocol": protocol_for(extended[HORIZONS[-1]][0], day, registry, splits, datetime.now(timezone.utc)),
+        "protocol": protocol_for(extended[HORIZONS[-1]][0], day, registry, splits, datetime.now(timezone.utc), candidates),
         "field_flags": field_flags_for(extended, registry),
         "run": {
             "started_at": started.isoformat(),

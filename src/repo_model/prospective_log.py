@@ -8,8 +8,8 @@ exists. From record version 3 the file also carries a `protocol` block, built he
 - **B3**, the incumbent: the published v1 declaration forecasts five levels, and §4 does not say how it is put on the
   23-level grid, so the block names it (`B3`) and points at the five-level forecast the same file already carries
   under `distributions.published`; it maps nothing (`protocol_benchmarks.b3_forecast` refuses a forecast off the grid);
-- every **registered candidate**'s forecast on the same grid (`REGISTERED_CANDIDATES`; none yet. A registration is
-  Eleonora's attested action, and the tuple changes only with it);
+- every **registered candidate**'s forecast on the same grid (`REGISTERED_CANDIDATES`: (s3c-ann-net) since its registration,
+  H5, #1510, #1629; made by `repo_model.h5_live`. A registration is Eleonora's attested action, and the tuple changes only with it);
 - the **H7m hook**: a registered estimate read from a liquidity-repository snapshot pinned by digest (Eleonora's
   decision on eleonorabjornberg/repo-market-liquidity#20, Q4). Built only; nothing is registered (`REGISTERED_H7M`).
 
@@ -48,8 +48,9 @@ from .splits import LookAheadError
 PROTOCOL_VERSION = 1
 EASTERN = ZoneInfo("America/New_York")
 
-#: The candidates logged each day. A registration (Eleonora's attested action, protocol §2) adds one; none is registered.
-REGISTERED_CANDIDATES: tuple = ()
+#: The candidates logged each day. A registration (Eleonora's attested action, protocol §2) adds one: (s3c-ann-net), H5 (#1510,
+#: registered by her merge of #1511, cf21d52f; logged from #1629). The id is `repo_model.h5_live.CANDIDATE_ID`, which a test pins.
+REGISTERED_CANDIDATES: tuple = ("sc_s3c_ann_net",)
 #: The H7m estimates logged each day: a registered liquidity-repository snapshot digest. None is registered.
 REGISTERED_H7M: tuple = ()
 

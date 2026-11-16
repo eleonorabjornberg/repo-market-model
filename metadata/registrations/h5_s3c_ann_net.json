@@ -1,7 +1,14 @@
 {
- "status": "DRAFT for Eleonora's review (#1510; H5, milestone M5, candidate registered). Not registered. Registering (s3c-ann-net) is her own GitHub action: a `GO #1510` comment, an entry in metadata/owner_attestations.json citing that comment, and her merge. A relayed ruling does not register it. `GO #1510` is not asked for until the coverage report of #1512 is merged. Until then nothing here is in force.",
- "registered": false,
- "owner_attestation": null,
+ "status": "REGISTERED by Eleonora (H5, milestone M5, candidate registered; #1510): her `GO #1510` (comment 6806539641, 11 November 2026), the entry in metadata/owner_attestations.json, and her merge of #1511 (cf21d52fe12590f619f62a932104ea09abf3c290, 15 November 2026, 19:40 New York time). Brought to the registered state by #1629 (finding #1625; her ruling of 16 November 2026, option (a)). The live pin moves only on her own GO on #1629.",
+ "registered": true,
+ "owner_attestation": {
+  "issue": 1510,
+  "comment_id": 6806539641,
+  "phrase": "GO #1510",
+  "entry": "metadata/owner_attestations.json",
+  "kind": "registration",
+  "merged": "#1511, cf21d52fe12590f619f62a932104ea09abf3c290, 2026-11-16T00:40:19Z (15 November 2026, 19:40 New York time)"
+ },
  "issue": 1510,
  "serves": "H5 (primary goal), milestone M5 (candidate registered); registration under docs/decisions/scoring-protocol.md section 2, following the pattern of docs/decisions/final-test-preregistration.md",
  "ruling": "Eleonora, 7 November 2026, decision docket, 7:18 pm ET: card queue-h5-registration-1107 option `queue`; card why-confirm-1107 option `keep` (500 origins, at least 24 months, a 30-month ceiling, one final analysis, the power stated beside the result)",
@@ -44,7 +51,7 @@
  "search_inventory": {
   "file": "metadata/h5_registration_manifest.json",
   "key": "inventory",
-  "development_variant_count": "the generated figure of `python3 scripts/emit_progress.py` (variant_count) on the commit she names; at the drafting commit it read 172 variants in 259 arms. Counts are not frozen by this draft."
+  "development_variant_count": "at the freeze commit cf21d52fe12590f619f62a932104ea09abf3c290: 200 variants in 261 arms (the generated figure of `python3 scripts/emit_progress.py`, variant_count, on that commit; see `freeze`). At the drafting commit it read 172 variants in 259 arms."
  },
  "confirmation_design": {
   "decision": "docs/decisions/h5-confirmation-design.md",
@@ -103,11 +110,13 @@
   "decision": "docs/decisions/lockbox.md",
   "metadata": "metadata/lockbox.json",
   "scores_any_day": false,
-  "reading": "The blind tier stays locked. Confirmation days are the business days after the registration; each is scored only by the live pipeline at its checkpoint, and each opening of a blind-tier day is her own attested action. This draft scores nothing."
+  "reading": "The blind tier stays locked. Confirmation counts from the first business day the pinned live record carries the forecast (the dated note); each day is scored only by the live pipeline at its checkpoint, and each opening of a blind-tier day is her own attested action. This record scores nothing."
  },
  "live_pin": {
   "file": "metadata/live_pin.json",
-  "moved": false
+  "moved": false,
+  "current": "6d95ebb93db369892b2ee46b30b5e87ddb2e63e2",
+  "reading": "As it stands: the pin of the 'decision-row-bills' transition (docs/decisions/live-pin-v5-bump.md). It does not yet run the candidate: (s3c-ann-net) is logged only once the pin moves to a commit that carries `repo_model.h5_live` and `prospective_log.REGISTERED_CANDIDATES`. Moving it is her own GO (#1629)."
  },
  "changes_nothing_else": "No threshold, critical value, MME, block length or design rule, no model change. Finding #1473's open Q2 is left alone.",
  "known_limits": [
@@ -147,14 +156,13 @@
    "changes": "Nothing. No figure is new, and the candidate, the design and the thresholds are as they were."
   }
  ],
- "not_in_this_file": [
-  "metadata/owner_attestations.json entry: it needs the id of her own GO #1510 comment, asked for only after #1512's report is merged"
- ],
+ "not_in_this_file": [],
  "not_checked": [
   "No score was run and no figure is new: every figure is copied from a merged page and recomputed from the record named for it.",
   "Whether the attached validation report's own status line about the confirmation design is current (finding #1473, left alone).",
   "The capped baselines B1'*-cap and B2*-cap are not in #1392's power study (it used the uncapped B1'* and B2 as stand-ins).",
-  "The amendment 4 coverage report: pending, directive #1512."
+  "Whether the live pipeline at the new pin reproduces the candidate on a past day: the equality of `repo_model.h5_live` with the frozen walk is tested on one fixture day (2025-12-22) in the tree, not at the pin.",
+  "The policy register (metadata/policy_events.json) and the table of announced IORB changes are tracked files: the table is checked against the panel's observed IORB (StaleReadError), the register has no such check."
  ],
  "rulings": {
   "source": "Eleonora's decision docket, 7 November 2026 (9:23-9:24 pm ET), relayed on https://github.com/eleonorabjornberg/repo-market-model/pull/1511#issuecomment-6716150954",
@@ -165,7 +173,7 @@
    },
    {
     "id": "Q2",
-    "ruling": "The metadata/owner_attestations.json entry is added only after she posts GO #1510, with that comment's id."
+    "ruling": "The metadata/owner_attestations.json entry is added only after she posts GO #1510, with that comment's id (done: comment 6806539641)."
    },
    {
     "id": "Q3",
@@ -189,16 +197,9 @@
    },
    {
     "id": "Q8",
-    "ruling": "Registration waits on the amendment 4 coverage report, built by directive #1512 (pending). GO #1510 is not asked for until that report is merged."
+    "ruling": "Registration waited on the amendment 4 coverage report, built by directive #1512 (merged as #1513, a30d3c5c). GO #1510 was asked for after it."
    }
   ]
- },
- "pending": {
-  "coverage_report": {
-   "directive": 1512,
-   "state": "pending",
-   "requirement": "amendment 4 of docs/decisions/scoring-protocol.md"
-  }
  },
  "dated_notes": [
   {
@@ -212,5 +213,22 @@
    "unused_band": "from 16 November 2026 to the business day before the confirmation start. Those days are unused, not missing: they are not scored and not counted under section 11 of docs/decisions/scoring-protocol.md.",
    "outcomes_read": "No outcome of the unused band has been read. This note is written before any of those days' outcomes is read."
   }
- ]
+ ],
+ "freeze": {
+  "commit": "cf21d52fe12590f619f62a932104ea09abf3c290",
+  "ruling": "Q3: the code freeze is the merge commit of #1511, her merge",
+  "variants": 200,
+  "arms": 261,
+  "source": "the variant_count of `python3 scripts/emit_progress.py` run on the tree at that commit (variants 200, arms 261; 74 declarations, 67 of them with arms)",
+  "reading": "Scoring protocol section 2: the code commit and the development variant count to date. The drafting-time figure (172 variants in 259 arms) is replaced by the figure at the freeze."
+ },
+ "resolved": {
+  "coverage_report": {
+   "directive": 1512,
+   "state": "merged",
+   "pull_request": 1513,
+   "merge_commit": "a30d3c5c72a82ee8c431ea4eed37190fc087ee1e",
+   "requirement": "amendment 4 of docs/decisions/scoring-protocol.md"
+  }
+ }
 }

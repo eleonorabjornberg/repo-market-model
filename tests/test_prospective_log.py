@@ -110,10 +110,11 @@ class ProtocolBlockTests(unittest.TestCase):
         self.assertEqual(block["benchmarks"]["b1"], {str(h): b1[h] for h in sp.HORIZONS})
         self.assertEqual(block["benchmarks"]["b2"], {str(h): b2[h] for h in sp.HORIZONS})
 
-    def test_no_candidate_is_registered_yet(self):
+    def test_a_block_built_without_candidates_carries_none(self):
+        """`protocol_block` logs what it is given; that every registered candidate is given is `live_record.protocol_for`'s check (#1629)."""
         block = self.block()
         self.assertEqual(block["candidates"], {})
-        self.assertEqual(pl.REGISTERED_CANDIDATES, ())
+        self.assertEqual(pl.REGISTERED_CANDIDATES, ("sc_s3c_ann_net",))
         self.assertIsNone(block["h7m"])
 
     def test_b3_is_named_but_not_mapped_onto_the_grid(self):

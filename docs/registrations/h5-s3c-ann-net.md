@@ -1,8 +1,8 @@
-# Registration (draft): H5, (s3c-ann-net)
+# Registration: H5, (s3c-ann-net)
 
-**Status: a draft for Eleonora, not registered.** Hypothesis and step: H5 (primary goal), milestone M5 (candidate registered), #1510. Registering the candidate is her own GitHub action: a `GO #1510` comment, an entry in `metadata/owner_attestations.json` citing it, and her merge. A relayed ruling does not register it, and a session never posts the `GO`. `GO #1510` is not asked for until the coverage report of directive #1512 is merged (Q8). Until then nothing here is in force. Pattern: `docs/decisions/final-test-preregistration.md` and section 2 of `docs/decisions/scoring-protocol.md`. Development data and a design, not a verdict.
+**Status: registered.** Hypothesis and step: H5 (primary goal), milestone M5 (candidate registered), #1510. Registered by Eleonora: her `GO #1510` (comment 6806539641, 11 November 2026), the entry in `metadata/owner_attestations.json`, and her merge of #1511 (`cf21d52fe12590f619f62a932104ea09abf3c290`, 15 November 2026, 19:40 New York time), which is the code freeze (Q3). Brought to the registered state by #1629 (finding #1625; her ruling of 16 November 2026, option (a)): see the dated note at the end. A session never posts the `GO`, and the live pin moves only on her own `GO` on #1629. Pattern: `docs/decisions/final-test-preregistration.md` and section 2 of `docs/decisions/scoring-protocol.md`. Development data and a design, not a verdict.
 
-The record is `metadata/registrations/h5_s3c_ann_net.json`. This page is its reader. Both change no threshold, critical value, MME, block length or design rule, no model, and no pin; both score no day. Her rulings of 7 November 2026 (decision docket): queue this registration; keep the confirmation as designed.
+The record is `metadata/registrations/h5_s3c_ann_net.json`. This page is its reader. Both change no threshold, critical value, MME, block length or design rule, no model; both score no day. Her rulings of 7 November 2026 (decision docket): queue this registration; keep the confirmation as designed.
 
 ## What is registered
 
@@ -12,11 +12,11 @@ The record is `metadata/registrations/h5_s3c_ann_net.json`. This page is its rea
 - probability rule (b) applies (`open_tail`: capped percentiles, open completion above the line);
 - the uncapped version is reported as a secondary result, beside the capped candidate and never in its place.
 
-**Every other frozen choice** is in the manifest, `metadata/h5_registration_manifest.json` (#1391; reader `docs/research/h5-registration-manifest.md`), taken as it stands with its search inventory of every model, arm and variant tried on the way. Each choice has a value and the one place it lives, and `tests/test_h5_registration_manifest_1391.py` fails when the code or a declaration no longer says what the manifest says. The development variant count is the generated figure of `python3 scripts/emit_progress.py` on the commit she names.
+**Every other frozen choice** is in the manifest, `metadata/h5_registration_manifest.json` (#1391; reader `docs/research/h5-registration-manifest.md`), taken as it stands with its search inventory of every model, arm and variant tried on the way. Each choice has a value and the one place it lives, and `tests/test_h5_registration_manifest_1391.py` fails when the code or a declaration no longer says what the manifest says. The development variant count is the generated figure of `python3 scripts/emit_progress.py` on the freeze commit.
 
 **The validation report** is `docs/model/validation.md` (#1442, H5.M5a), attached with its known limits. It documents what exists and gives no verdict.
 
-**The code freeze** is this pull request's merge commit (her ruling on Q3). This pull request changes no code.
+**The code freeze** is the merge commit of #1511, `cf21d52fe12590f619f62a932104ea09abf3c290` (her ruling on Q3). **The development variant count at the freeze** is 200 variants in 261 arms (the generated figure of `python3 scripts/emit_progress.py`, `variant_count`, on that commit; at the drafting commit it read 172 variants in 259 arms).
 
 ## The confirmation design, as in force
 
@@ -41,18 +41,18 @@ From #1392 (full mode, `docs/research/confirmation-size-power-1392-full-result.m
 
 ## Lockbox and live pin
 
-The blind tier stays locked and this draft scores no day. Confirmation days are the business days after the registration, scored by the live pipeline at its checkpoint; each opening of a blind-tier day is her own attested action (`docs/decisions/lockbox.md`). `metadata/live_pin.json` and the pin code are not touched.
+The blind tier stays locked and this record scores no day. Confirmation counts from the first business day the pinned live record carries the forecast (the dated note), scored by the live pipeline at its checkpoint; each opening of a blind-tier day is her own attested action (`docs/decisions/lockbox.md`). `metadata/live_pin.json` stands at `6d95ebb93db369892b2ee46b30b5e87ddb2e63e2` and is not moved here: it does not yet run the candidate, and moving it is her own `GO` (#1629).
 
 ## Her rulings on the marked questions (decision docket, 7 November 2026, relayed on the pull request)
 
 - **Q1.** The claim is against B1'*-cap, as the design in force says.
-- **Q2.** The `metadata/owner_attestations.json` entry is added only after she posts `GO #1510`.
+- **Q2.** The `metadata/owner_attestations.json` entry is added only after she posts `GO #1510` (done: comment 6806539641).
 - **Q3.** The code freeze is this pull request's merge commit.
 - **Q4.** The 3% threshold is registered; no separate MME is set.
 - **Q5.** The bootstrap seed is 1393.
 - **Q6.** No secondary candidates; (s3c) and the announced-flag arm are logged only.
 - **Q7.** B4 is reported beside the claim and is not in the confirmatory set.
-- **Q8.** Registration waits on the amendment 4 coverage report, built by directive #1512 (pending). `GO #1510` is not asked for until that report is merged.
+- **Q8.** Registration waited on the amendment 4 coverage report, built by directive #1512 (merged as #1513, `a30d3c5c`). `GO #1510` was asked for after it.
 
 ## Known limits
 
@@ -67,7 +67,7 @@ The candidate's own band still covers far less than 90% on these days, which is 
 
 ## What was not checked
 
-No score was run and no figure is new. The coverage report of amendment 4 is pending (#1512). Whether the validation report's own status line about the confirmation design is current is finding #1473, left alone. The capped baselines are not in the power study.
+No score was run and no figure is new. The coverage report of amendment 4 is merged (#1512, #1513). Whether the validation report's own status line about the confirmation design is current is finding #1473, left alone. The capped baselines are not in the power study.
 
 ## How to check it
 

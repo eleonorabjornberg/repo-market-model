@@ -1,18 +1,22 @@
-"""The H5 registration draft of #1510: `metadata/registrations/h5_s3c_ann_net.json` and its reader `docs/registrations/h5-s3c-ann-net.md`.
+"""The H5 registration of #1510: `metadata/registrations/h5_s3c_ann_net.json` and its reader `docs/registrations/h5-s3c-ann-net.md`.
 
-The record is a DRAFT for Eleonora. Registering (s3c-ann-net) is her own `GO #1510` and her merge; a session never posts the `GO`. What is pinned:
+Registered by Eleonora's own `GO #1510` (comment 6806539641) and her merge of #1511 (cf21d52f, 15 November 2026); a session never posts the `GO`. Brought to
+the registered state by #1629 (finding #1625; her ruling of 16 November 2026, option (a)). What is pinned:
 
-* the record says it is a draft, is not registered, and carries no attestation (the `owner_attestations.json` entry is appended only from her own comment);
+* the record says it is registered, carries the attestation (comment 6806539641, the entry of `metadata/owner_attestations.json`), the freeze commit and the
+  development variant count at it (scoring protocol section 2), and that the coverage report of #1512 is merged;
+* a dated note (finding #1625) gives the registration instant, says confirmation counts from the first business day the pinned live record carries the
+  forecast, that the days before are unused, not missing, and that no outcome of them has been read;
 * it names the candidate the manifest names and points at files that exist (the manifest, the validation report, the design, the power page);
 * the confirmation design it states equals `docs/decisions/h5-confirmation-design.md` (500 origins, at least 24 months, a 30-month ceiling, one final
   analysis, mean block 50, 50,000 replications, the claim against B1'*-cap alone with B2*-cap and B4 beside it), and invents no value of its own;
 * the power it states beside the design equals #1392's full-mode `result-full.json` (10% skill with B1'* binding, 10% on both baselines, and
   development-level skill, on both bootstraps, at 500 origins), recomputed here from the pass counts and not copied;
-* her eight rulings on the marked questions are recorded and in the reader (seed 1393, freeze at this PR's merge commit), and registration waits on #1512's coverage report;
+* her eight rulings on the marked questions are recorded and in the reader (seed 1393, freeze at #1511's merge commit);
 * it scores no day and moves no pin.
 
-Mutation: not a leakage, availability or staleness guard, so no recorded mutation. The test was run first against a tree without the record and failed with
-`FileNotFoundError`.
+Mutation: not a leakage, availability or staleness guard, so no recorded mutation. The draft-state test was run first against a tree without the record and failed with
+`FileNotFoundError`; the registered-state tests of #1629 were run first against the draft and failed with `AssertionError` (`status` still began with DRAFT).
 """
 
 from __future__ import annotations
@@ -27,6 +31,7 @@ READER = ROOT / "docs" / "registrations" / "h5-s3c-ann-net.md"
 DESIGN = ROOT / "docs" / "decisions" / "h5-confirmation-design.md"
 POWER = ROOT / "docs" / "research" / "confirmation-size-power-1392" / "result-full.json"
 MANIFEST = ROOT / "metadata" / "h5_registration_manifest.json"
+ATTESTATIONS = ROOT / "metadata" / "owner_attestations.json"
 
 
 def load(path):
@@ -39,12 +44,37 @@ class RecordShapeTests(unittest.TestCase):
         cls.record = load(RECORD)
         cls.reader = READER.read_text()
 
-    def test_it_is_a_draft_that_registers_nothing(self):
-        self.assertTrue(self.record["status"].startswith("DRAFT"))
-        self.assertIs(self.record["registered"], False)
-        self.assertIsNone(self.record["owner_attestation"])
+    def test_it_is_registered_and_carries_her_attestation(self):
+        self.assertTrue(self.record["status"].startswith("REGISTERED"))
+        self.assertIs(self.record["registered"], True)
+        attestation = self.record["owner_attestation"]
+        self.assertEqual(attestation["issue"], 1510)
+        self.assertEqual(attestation["comment_id"], 6806539641)
+        self.assertEqual(attestation["phrase"], "GO #1510")
+        entries = load(ATTESTATIONS)["attestations"]
+        self.assertTrue(any(e["kind"] == "registration" and e["issue"] == 1510 and e["comment_id"] == attestation["comment_id"] for e in entries))
         self.assertEqual(self.record["issue"], 1510)
         self.assertIn("H5", self.record["serves"])
+
+    def test_the_freeze_commit_and_the_variant_count_at_it_are_recorded(self):
+        """Scoring protocol section 2: the code commit and the development variant count to date. The freeze is her merge of #1511 (Q3)."""
+        freeze = self.record["freeze"]
+        self.assertEqual(freeze["commit"], "cf21d52fe12590f619f62a932104ea09abf3c290")
+        self.assertEqual((freeze["variants"], freeze["arms"]), (200, 261))
+        self.assertIn("emit_progress.py", freeze["source"])
+        for text in (freeze["commit"], f"{freeze['variants']} variants", f"{freeze['arms']} arms"):
+            self.assertIn(text, self.reader)
+
+    def test_the_dated_note_states_the_unused_band_and_that_no_outcome_was_read(self):
+        (note,) = self.record["dated_notes"]
+        self.assertEqual(note["finding"], 1625)
+        self.assertIn("cf21d52fe12590f619f62a932104ea09abf3c290", note["registration_instant"])
+        self.assertIn("first business day the pinned live record carries", note["confirmation_start"])
+        self.assertIn("16 November 2026", note["unused_band"])
+        self.assertIn("unused, not missing", note["unused_band"])
+        self.assertIn("No outcome of the unused band has been read", note["outcomes_read"])
+        self.assertIn("## Dated note", self.reader)
+        self.assertIn("No outcome of the unused band has been read", self.reader)
 
     def test_it_names_the_candidate_of_the_manifest(self):
         self.assertEqual(self.record["candidate"]["name"], load(MANIFEST)["candidate"]["name"])
@@ -60,9 +90,10 @@ class RecordShapeTests(unittest.TestCase):
         self.assertEqual(freeze["srf_cap"], "kept, margin 0 bp")
         self.assertIn("secondary", freeze["uncapped"])
 
-    def test_the_reader_links_the_record_and_says_draft(self):
+    def test_the_reader_links_the_record_and_says_registered(self):
         self.assertIn("metadata/registrations/h5_s3c_ann_net.json", self.reader)
-        self.assertIn("draft", self.reader.lower())
+        self.assertIn("**Status: registered.**", self.reader)
+        self.assertNotIn("not registered", self.reader.split("## ", 2)[0])
         self.assertIn("GO #1510", self.reader)
 
     def test_every_ruling_is_in_the_reader_and_the_settled_values_are_recorded(self):
@@ -75,9 +106,11 @@ class RecordShapeTests(unittest.TestCase):
         self.assertEqual(self.record["confirmation_design"]["primary_claim_against"], "B1'*-cap")
         self.assertNotIn("questions", self.record)
 
-    def test_registration_waits_on_the_coverage_report_of_1512(self):
-        self.assertEqual(self.record["pending"]["coverage_report"], {
-            "directive": 1512, "state": "pending", "requirement": "amendment 4 of docs/decisions/scoring-protocol.md"})
+    def test_the_coverage_report_of_1512_is_merged_and_nothing_is_pending(self):
+        self.assertNotIn("pending", self.record)
+        self.assertEqual(self.record["resolved"]["coverage_report"], {
+            "directive": 1512, "state": "merged", "pull_request": 1513, "merge_commit": "a30d3c5c72a82ee8c431ea4eed37190fc087ee1e",
+            "requirement": "amendment 4 of docs/decisions/scoring-protocol.md"})
         self.assertIn("#1512", self.reader)
         self.assertIn("merge commit", self.reader)
 
@@ -179,7 +212,6 @@ class QuarterEndKnownLimitTests(unittest.TestCase):
         self.assertIn("16:00", self.entry["caveat"])
         self.assertIn("18:00", self.entry["caveat"])
         self.assertIn("13 November 2026", self.entry["ruling"])
-        self.assertFalse(self.record["registered"])
 
 
 class NothingElseMovesTests(unittest.TestCase):

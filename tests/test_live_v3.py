@@ -31,6 +31,7 @@ from test_live_v2 import _record_v2
 from test_protocol_benchmarks import DECISION, REGISTRY, SPLITS, published_panel
 
 from repo_model import prospective_log as pl
+from repo_model import scoring_protocol as sp
 from repo_model.data import CALENDAR_COLUMN_RULES, DailyObservation
 from repo_model.splits import LookAheadError
 
@@ -134,24 +135,33 @@ class ProtocolForTests(unittest.TestCase):
         # the live run's extended panel: the real rows, then the decision day and five targets as placeholders
         self.extended = list(self.real) + [_placeholder(row.date, self.real[-1].values) for row in self.full[T:T + 6]]
         self.written = datetime.combine(self.day, time(16, 40), tzinfo=EASTERN)
+        # a stand-in forecast for each registered candidate: the block logs what it is given (the producer is tested in test_h5_live_candidate_1629)
+        self.candidates = {
+            name: {h: [float(i) for i in range(len(sp.GRID))] for h in sp.HORIZONS} for name in pl.REGISTERED_CANDIDATES
+        }
 
     def test_the_block_reads_nothing_off_a_placeholder(self):
         live_block = live.protocol_for(
-            self.extended, self.day, REGISTRY, SPLITS, self.written
+            self.extended, self.day, REGISTRY, SPLITS, self.written, candidates=self.candidates
         )
         full_block = pl.protocol_block(
-            self.full, T, registry=REGISTRY, decision_time=DECISION, splits=SPLITS, written_at=self.written
+            self.full, T, registry=REGISTRY, decision_time=DECISION, splits=SPLITS, written_at=self.written,
+            candidates=self.candidates,
         )
         self.assertEqual(live_block, full_block)
 
-    def test_no_candidate_is_logged_until_one_is_registered(self):
-        self.assertEqual(live.protocol_for(self.extended, self.day, REGISTRY, SPLITS, self.written)["candidates"], {})
+    def test_a_registered_candidate_is_logged_every_day(self):
+        """(s3c-ann-net) is registered (#1629): a block without its forecast is refused, and one with it carries it."""
+        with self.assertRaises(ValueError):
+            live.protocol_for(self.extended, self.day, REGISTRY, SPLITS, self.written)
+        block = live.protocol_for(self.extended, self.day, REGISTRY, SPLITS, self.written, candidates=self.candidates)
+        self.assertEqual(set(block["candidates"]), set(pl.REGISTERED_CANDIDATES))
 
     def test_a_record_made_after_its_outcome_is_refused(self):
         published = pl.outcome_published_at([r.date for r in self.extended], T, REGISTRY, DECISION)
         late = published.replace(tzinfo=EASTERN) + timedelta(minutes=5)
         with self.assertRaises(LookAheadError):
-            live.protocol_for(self.extended, self.day, REGISTRY, SPLITS, late)
+            live.protocol_for(self.extended, self.day, REGISTRY, SPLITS, late, candidates=self.candidates)
 
 
 if __name__ == "__main__":
