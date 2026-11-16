@@ -166,9 +166,15 @@ SATIATION_EXTRAS: Tuple[str, ...] = (SATIATION_DIST, SATIATION_HINGE)
 #: continuous states of the decision row, not 0/1 flags. (s3c-ann-net) reads neither; its scarcity state is held at its maximum.
 RS_RATIO, RS_STATE = "rs_ratio", "rs_state"
 RS_EXTRAS: Tuple[str, ...] = (RS_RATIO, RS_STATE)
+#: The business-day columns of the arm of #1631 (`repo_model.s3c_bday`): 0/1 flags of the target row's own date, business day 1, 2 and 3 of its month, the six of
+#: them crossed with the kind of the month-end before (quarter or other), and the one flag the candidate's `post_month_end_window` term carries (the control).
+#: They are named here so that the pool and the shift read them as extras; no published arm lists them.
+BDAY_EXTRAS: Tuple[str, ...] = (
+    ("bday_1", "bday_2", "bday_3") + tuple(f"bday_{b}_{kind}" for kind in ("quarter", "other") for b in (1, 2, 3)) + ("bday_le3",)
+)
 #: Every `extra` term: it is read from `pair.extras` and not from the flags.
 EXTRA_TERMS: Tuple[str, ...] = (
-    IORB_EXTRAS + SIZE_EXTRAS + CMB_EXTRAS + OPS_EXTRAS + MISSING_EXTRAS + PRICE_EXTRAS + (H9_FORECAST,) + SATIATION_EXTRAS + RS_EXTRAS
+    IORB_EXTRAS + SIZE_EXTRAS + CMB_EXTRAS + OPS_EXTRAS + MISSING_EXTRAS + PRICE_EXTRAS + (H9_FORECAST,) + SATIATION_EXTRAS + RS_EXTRAS + BDAY_EXTRAS
 )
 #: An IORB change that is not a multiple of 25 bp is a technical adjustment: the rule of `setup_diagnostic`.
 technical = setup_diagnostic.is_technical
