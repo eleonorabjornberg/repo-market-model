@@ -11,16 +11,23 @@ The centre, the shift, the scale at the anchor and the fit are the candidate's; 
 An event set with fewer than `MIN_ROWS` training pairs gets `w = 0` and the candidate's pool, exactly. The type of a day is a function of its date alone
 (`turn_days.reporting_day_type`), so reading it at a target day is the calendar rule; the pairs are the refit's own, at or before the anchor.
 
+#1622 adds `older_residuals` and `expand_estimate`: the residuals of pairs older than the refit's training window, standardised under the refit in force
+(its own coefficients, state slopes and the scale at each pair's origin), appended to the refit's own, so that `event_pool` can draw the event pool from every
+past turn up to the anchor. The pool the candidate uses (`estimate.pool`), the centre, the shift and the fit stay the refit's. The declaration is
+`metadata/qe_expanding_pool_1622.json`.
+
 Stdlib only. This module fits nothing.
 """
 
 from __future__ import annotations
 
-from typing import Dict, List, Mapping, Optional, Sequence
+import dataclasses
+from typing import Dict, List, Mapping, Optional, Sequence, Tuple
 
 from . import day_type_scale as dts
 from . import protocol_benchmarks as pb
 from . import scoring_protocol as sp
+from . import spread_mr_state_calendar as sc
 from .splits import LookAheadError
 
 #: The event set of #1548: the target days of these pressure-day types (the last business day of a calendar quarter and the first after it; #1531's group).
@@ -64,6 +71,55 @@ def event_pool(
         return {"n": n, "w": 0.0, "base": base, "pool": list(base), "event_pool": None}
     own = pb.empirical_quantiles(sorted(inside))
     return {"n": n, "w": w, "base": base, "pool": [p + w * (e - p) for p, e in zip(base, own)], "event_pool": own}
+
+
+def older_residuals(estimate, pairs: Sequence[sc.StatePair], anchor: int) -> Tuple[Tuple[int, ...], Tuple[float, ...]]:
+    """`(targets, z)` of `pairs` standardised under `estimate`, the refit in force: `raw / scale` less the estimate's own terms, the way `fit_state_terms`
+    leaves its pool, so that a pair the refit trained on gets the residual the refit stored.
+
+    `pairs` are `StatePair`s of the direct build (the flags, sizes, state and extras read at the pair's target row), older than the refit's training window.
+    Each one's target must be at or before `anchor`, the last row public at the refit's decision, and the pair must not be one the refit trained on.
+
+    Raises:
+        LookAheadError: a pair's target (or origin) is after `anchor`.
+        ValueError: a pair duplicates one of the estimate's own, or has a scale that is not positive.
+    """
+
+    held = set(zip(estimate.origins, estimate.targets))
+    targets: List[int] = []
+    values: List[float] = []
+    for p in pairs:
+        if p.target > anchor or p.origin > anchor:
+            raise LookAheadError(f"older pair (origin {p.origin}, target {p.target}) is after the anchor row {anchor}: its residual is not public at the decision")
+        if (p.origin, p.target) in held:
+            raise ValueError(f"pair (origin {p.origin}, target {p.target}) is already one of the refit's own")
+        if not p.scale > 0.0:
+            raise ValueError(f"pair (origin {p.origin}, target {p.target}) has scale {p.scale}")
+        s = 0.0 if p.state is None else p.state
+        z = (
+            p.raw / p.scale
+            - sum(e * sc.regressor(n, p.flags, p.sizes, p.state, estimate.sized) for n, e in estimate.effect.items() if n not in sc.EXTRA_TERMS)
+            - sum(e * sc.extra_value(n, p.extras, estimate.centre) for n, e in estimate.effect.items() if n in sc.EXTRA_TERMS)
+            - sum(g * p.flags[n] * s for n, g in estimate.slope.items())
+        )
+        targets.append(p.target)
+        values.append(z)
+    return tuple(targets), tuple(values)
+
+
+def expand_estimate(estimate, pairs: Sequence[sc.StatePair], anchor: int):
+    """`estimate` with the residuals of the older `pairs` appended (`older_residuals`). Its `pool`, effects and counts are the refit's, unchanged: only
+    `origins`, `targets` and `residuals` grow, so `event_pool` reads the whole public history and the candidate's own pool stays what it was.
+
+    Raises:
+        LookAheadError, ValueError: as `older_residuals`.
+    """
+
+    targets, values = older_residuals(estimate, pairs, anchor)
+    return dataclasses.replace(
+        estimate, origins=tuple(estimate.origins) + tuple(p.origin for p in pairs), targets=tuple(estimate.targets) + targets,
+        residuals=tuple(estimate.residuals) + values,
+    )
 
 
 def conditioned_quantiles(quantiles: Sequence[float], pool: Sequence[float], new_pool: Sequence[float], scale: float) -> List[float]:
