@@ -58,7 +58,7 @@ LOCKBOX_CRPS = {
         "delegates",
         "scores the cells of the walk files `walk_command` wrote; `walk_command` calls `require_exploratory_window` "
         "and `refuse_beyond` on every panel day, decision day and target day before it writes a file, and "
-        "`score_command` reads those files back without a second check (#1364, #1568)",
+        "`score_command` calls `refuse_beyond` on every decision and target day of the cells it reads back, before it scores one (#1619, #1364, #1568)",
     ),
 }
 
@@ -392,6 +392,7 @@ def score_command(args) -> int:
             continue
         raw = path.read_bytes()
         doc = json.loads(raw)
+        m1363.refuse_beyond(sorted({date.fromisoformat(c[k]) for c in doc["cells"] for k in (0, 2)}), WINDOW_LAST[name], where="h5_robustness_1364.score_command")
         if result.get("panel_sha256") not in (None, doc["panel_sha256"]):
             raise ValueError("the walk files were made from different panels")
         if set(doc["arms"]) != {n for n, _y, _e in plan} or any(doc["arms"][n] != {"train_years": y, "refit_every": e} for n, y, e in plan):

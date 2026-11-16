@@ -87,7 +87,7 @@ LOCKBOX_CRPS = {
         "delegates",
         "scores the cells of the walk files `walk_command` wrote; `walk_command` calls `require_exploratory_window` "
         "and `refuse_beyond` on every panel day, decision day and target day before it writes a file, and "
-        "`score_command` reads those files back without a second check (#1434, #1568)",
+        "`score_command` calls `refuse_beyond` on every decision and target day of the cells it reads back, before it scores one (#1619, #1434, #1568)",
     ),
 }
 
@@ -373,6 +373,7 @@ def score_command(args) -> int:
     m = _load("s3c_announced_settlement_1288", "s3c_announced_settlement_1288_in_1434")
     declared = m.s686.committed_declaration(DECLARATION)
     _STATE["m"] = m
+    m66 = _load("calibration_masking_candidate_1366", "calibration_masking_candidate_1366_in_1434")
     result: dict = {"issue": 1440, "study_of": 1421, "finding": 1434, "declaration": "metadata/capped_baselines_b2star_1434.json", "label": "development, not a verdict", "windows": {},
                     "walk_files": {}, "amendments": declared["amendments"], "draws": args.draws, "seed": SEED, "reps": REPS,
                     "models": {k: list(v) for k, v in MODELS.items()}, "supersedes": "docs/research/capped-baselines-1421-result.md (#1422): its B2-cap rows used plain B2 in B2*'s place"}
@@ -382,6 +383,7 @@ def score_command(args) -> int:
             continue
         raw = path.read_bytes()
         doc = json.loads(raw)
+        m66.refuse_beyond(sorted({date.fromisoformat(c[k]) for c in doc["cells"] for k in ("day", "target")}), WINDOW_LAST[name], where="capped_baselines_b2star_1434.score_command")
         if result.get("panel_sha256") not in (None, doc["panel_sha256"]):
             raise ValueError("the walk files were made from different panels")
         result["panel_sha256"] = doc["panel_sha256"]
