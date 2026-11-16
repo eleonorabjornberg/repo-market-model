@@ -165,8 +165,10 @@ class OneSource(unittest.TestCase):
         text = visible(PAGE)
         self.assertIn(html.unescape(plain["candidate"]["description"]), text)
         self.assertIn(plain["models"][src["incumbent"]["id"]]["name"], text)
-        self.assertFalse(src["state"]["registered"])
-        self.assertIn("is not registered", text)
+        self.assertEqual(src["state"]["registered"], "2026-11-15")  # her merge of #1511 (#1629)
+        self.assertNotIn("waiting_on", src["state"])
+        self.assertIn("was registered on " + research_view.long_date(src["state"]["registered"]), text)
+        self.assertNotIn("is not registered", text)
         self.assertIn(research_view.long_date(src["state"]["frozen"]), text)
         # the same current-model paragraph opens the executive summary and section 1
         self.assertEqual(PAGE.count('class="rs-current"'), 2)
