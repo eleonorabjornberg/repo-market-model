@@ -74,3 +74,12 @@ No score was run and no figure is new. The coverage report of amendment 4 is pen
 ```
 PYTHONPATH=src:tests python3 -B -m unittest test_h5_registration_1510 test_h5_registration_manifest_1391
 ```
+
+## Dated note, 2026-11-16 (finding #1625, directive #1629)
+
+Written at 2026-11-16T11:42:44-05:00 (the commit time of the commit that adds it), before any outcome of the days it names is read. Her ruling of 16 November 2026 (docket card `f1625-registered-1116`, option (a), relayed by the orchestrating session on #1629):
+
+- **The registration stands from her merge of #1511**, `cf21d52fe12590f619f62a932104ea09abf3c290`, merged 15 November 2026 at 19:40 New York time.
+- **Confirmation counts from the first business day the pinned live record carries the candidate's forecast.** That day is not known yet: it follows from her own `GO` on the pin, which the pull request that closes #1629 asks for.
+- **The unused band runs from 16 November 2026 to the business day before that day.** Those days are unused, not missing: they are not scored and not counted under section 11 of `docs/decisions/scoring-protocol.md`.
+- **No outcome of the unused band has been read.**
