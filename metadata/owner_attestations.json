@@ -335,6 +335,13 @@
       "comment_id": 6806539641,
       "phrase": "GO #1510",
       "what": "H5 registration of (s3c-ann-net): docs/registrations/h5-s3c-ann-net.md and metadata/registrations/h5_s3c_ann_net.json (PR #1511), with her Q1-Q8 rulings and the #1599 quarter-end result in the known limits (#1618); her GO #1510, posted 11 November 2026, and her 15 November 2026 chat answer (a) on the attestation card"
+    },
+    {
+      "kind": "claude-files",
+      "issue": 1620,
+      "comment_id": 6921791913,
+      "phrase": "GO #1620",
+      "what": ".claude/skills/directive-orchestrator/SKILL.md and .claude/agents/finding-triager.md: close a finding once its last directive closes (PR #1621, #1620); her GO #1620, posted 16 November 2026"
     }
   ],
   "rule": "docs/decisions/drafts/owner-attestation.md",
