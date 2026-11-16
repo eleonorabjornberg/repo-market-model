@@ -41,6 +41,7 @@ from typing import Callable, Dict, List, Mapping, Optional, Sequence, Tuple
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
+from repo_model import policy_events, s3c_candidate  # noqa: E402
 from repo_model import scoring_protocol as sp  # noqa: E402
 from repo_model.splits import LookAheadError  # noqa: E402
 
@@ -77,6 +78,7 @@ def _load(name: str, alias: str):
 
 
 q = _load("qe_diagnosis_1533", "qe_diagnosis_1533_in_1615")
+srf_cap = _load("srf_cap_1241", "srf_cap_1241_in_1615")
 prior = _load("post_month_end_split_1611", "post_month_end_split_1611_in_1615")
 MEDIAN_INDEX = sp.GRID.index(0.5)
 G05, G95 = q.G[0.05], q.G[0.95]
@@ -462,6 +464,167 @@ def score_command(args) -> int:
     return 0
 
 
+# -- the cap correction (#1630) -------------------------------------------------------------------------------------------------------
+
+CORRECTION = "cap-correction.json"
+CORRECTION_DATE = "16 November 2026"
+_REGISTER: List[policy_events.PolicyEntry] = []
+
+
+def register() -> List[policy_events.PolicyEntry]:
+    if not _REGISTER:
+        _REGISTER.extend(policy_events.load_register())
+    return _REGISTER
+
+
+def line_of(decision_day: str, target_day: str) -> Optional[float]:
+    """The candidate's line (`s3c_candidate.cap_line`, bp) for a target day as known at the decision instant of `decision_day`; None before full allotment."""
+
+    return s3c_candidate.cap_line(register(), srf_cap.decision_instant(date.fromisoformat(decision_day)), date.fromisoformat(target_day))
+
+
+def cap_arms(arms: Mapping[str, Sequence[float]], decision_day: str, target_day: str) -> Dict[str, List[float]]:
+    """Each arm's final quantiles clipped at the candidate's own line at full allotment: the rule for arms on the candidate (`cap_arm_quantiles`)."""
+
+    as_of, target = srf_cap.decision_instant(date.fromisoformat(decision_day)), date.fromisoformat(target_day)
+    return {a: s3c_candidate.cap_arm_quantiles(v, register(), as_of, target) for a, v in arms.items()}
+
+
+def breaches(rows: Sequence[Tuple[str, str, int, Sequence[float]]]) -> dict:
+    """Rows `(decision day, target day, lead, arm quantiles)`: the cells at full allotment, those with a quantile above the line, their target days
+    and the largest excess in bp."""
+
+    full, above, days, worst = 0, 0, set(), 0.0
+    for d, t, h, quantiles in rows:
+        line = line_of(d, t)
+        if line is None:
+            continue
+        full += 1
+        excess = max(quantiles) - line
+        if excess > 0.0:
+            above += 1
+            days.add(t)
+            worst = max(worst, excess)
+    return {"full_allotment_cells": full, "cells_above_the_line": above, "target_days_above_the_line": sorted(days), "largest_excess_bp": worst}
+
+
+def capped_cell(c: Mapping[str, object]) -> Tuple[dict, dict, Dict[str, List[float]]]:
+    """A built cell (`build_cells`) re-scored with every arm capped at the line: its vector, its scores and the uncapped arm quantiles."""
+
+    arms = {a: apply_terms(c["q"], c["raw"], *arm_terms(a, **{"shift": c["terms"]["shift"], "lower": c["terms"]["lower"], "upper": c["terms"]["upper"]}))
+            for a in ARMS}
+    vec, sc = cell_vec(cap_arms(arms, c["d"], c["t"]), c["q"], c["y"], c["refs"])
+    return vec, sc, arms
+
+
+def correction_figures(cells: Sequence[dict]) -> dict:
+    """The window, all-days and by-group figures of the primary arm capped at the line, for the cells of one window; uncapped breaches beside them."""
+
+    rescored = []
+    for c in cells:
+        vec, sc, arms = capped_cell(c)
+        rescored.append(dict(c, vec=vec, sc=sc, uncapped_arm=arms["arm"], changed=c["changed"]))
+    inside = [c for c in rescored if c["group"] is not None]
+    groups: Dict[str, List[dict]] = defaultdict(list)
+    for c in inside:
+        groups[c["group"]].append(c)
+    out = {
+        "cells": len(rescored),
+        "window": figures(inside),
+        "all days": figures(rescored),
+        "by_group": {g: figures(v) for g, v in sorted(groups.items())},
+        "breaches_in_the_window": breaches([(c["d"], c["t"], c["h"], c["uncapped_arm"]) for c in inside]),
+        "breaches_outside_the_window": breaches([(c["d"], c["t"], c["h"], c["uncapped_arm"]) for c in rescored if c["group"] is None]),
+        "window_cells": len(inside),
+        "window_target_days": len({c["t"] for c in inside}),
+        "cells_moved_by_the_cap": sum(1 for c in inside if c["uncapped_arm"] != cap_arms({"arm": c["uncapped_arm"]}, c["d"], c["t"])["arm"]),
+    }
+    return out
+
+
+def correction_command(args) -> int:
+    declared = committed_declaration()
+    record = json.loads(RECORD_1363.read_text(encoding="utf-8"))
+    loaded: Dict[str, "q.Window"] = {}
+    for name in q.WINDOWS:
+        window = q.load_window(name, Path(args.walks), Path(args.extensions), record)
+        if window is None:
+            continue
+        prior.check_flag_agreement(window.doc["targets"])
+        prior.check_unlocked(window.cells)
+        loaded[name] = window
+    if "development" not in loaded or "2026" not in loaded:
+        raise SystemExit("both walks (development and 2026) are required")
+    cells, _info = build_cells(loaded)
+    score = json.loads(Path(args.score).read_text(encoding="utf-8"))
+    out = {"issue": 1630, "of": 1615, "label": "development, not a verdict", "date": CORRECTION_DATE, "seed": SEED, "reps": REPS,
+           "amendments": declared["amendments"], "rule": "s3c_candidate.cap_arm_quantiles", "windows": {}}
+    for name in ("development", "2026"):
+        out["windows"][name] = correction_figures([c for c in cells if c["window"] == name])
+    dev, later = out["windows"]["development"], out["windows"]["2026"]
+    out["development_full_allotment_cells_in_a_group"] = dev["breaches_in_the_window"]["full_allotment_cells"]
+    out["development_full_allotment_cells_outside_a_group"] = dev["breaches_outside_the_window"]["full_allotment_cells"]
+    # the capped figures must equal the published ones wherever no cell is above the line, and the uncapped re-score must equal the published 2026 window
+    published = score["windows"]["2026"]["splits"]["window"]["post_month_end_window"]
+    uncapped = figures([c for c in cells if c["window"] == "2026" and c["group"] is not None])
+    out["uncapped_reproduces_the_page"] = all(abs(uncapped[k][0] - published[k][0]) < 1e-5 for k in ("d_arm_cand_crps", "d_arm_cand_tw"))
+    out["published_2026_window"] = {k: published[k] for k in ("cells", "d_arm_cand_crps", "d_arm_cand_tw", "d_loc_cand_crps", "d_loc_cand_tw", "d_scl_cand_crps", "d_scl_cand_tw")}
+    pub_all = score["windows"]["2026"]["splits"]["window"]["all days"]
+    out["published_2026_all_days"] = {k: pub_all[k] for k in ("cells", "d_arm_cand_crps", "d_arm_cand_tw")}
+    Path(args.output).parent.mkdir(parents=True, exist_ok=True)
+    Path(args.output).write_text(json.dumps(q.rounded(out), indent=1, sort_keys=True) + "\n", encoding="utf-8")
+    print(f"2026 breaches: {later['breaches_in_the_window']}", flush=True)
+    return 0
+
+
+def correction_note(c: Mapping[str, object], page_figures: Optional[Mapping[str, object]] = None) -> str:
+    """The dated note appended to the page: what was wrong, the breaches, the capped 2026 figures beside the original ones."""
+
+    later, dev = c["windows"]["2026"], c["windows"]["development"]
+    b = later["breaches_in_the_window"]
+    pub = c["published_2026_window"]
+    cap, cap_all = later["window"], later["all days"]
+    L: List[str] = []
+    w = L.append
+    w(f"## Dated note, {c['date']} (#1630): the cap is not kept on the 2026 days")
+    w("")
+    w("**The sentence \"the candidate's cap is not undone\" (in \"The arms\" above) is wrong.** The line under \"What this does and does not show\" (\"the cap is kept only where it bound on a cell\") states the limit correctly. "
+      "`apply_terms` re-clips an arm only where the candidate's cap had bound on the cell (a final value that differs from its raw one). A cell at full allotment on which the cap did not bind "
+      "keeps the arm's widened or shifted quantiles above the candidate's line. The text above is left as published; this note corrects it. Nothing in the development window is affected: "
+      f"it has {c['development_full_allotment_cells_in_a_group']} full-allotment cells in the post-month-end groups ({c['development_full_allotment_cells_outside_a_group']} elsewhere, where the arms are the candidate's own numbers), so its figures stand as published. "
+      "Development evidence, not a verdict; the page stays in `not_arms`.")
+    w("")
+    w(f"**Where the arm is above the line.** On the 2026 days, {b['cells_above_the_line']} of the {later['window_cells']} post-month-end cells (all {b['full_allotment_cells']} at full allotment) "
+      f"have an arm quantile above `s3c_candidate.cap_line`, on {len(b['target_days_above_the_line'])} of the {later['window_target_days']} post-month-end target days, by up to "
+      f"{b['largest_excess_bp']:.2f} bp. The target days: {', '.join(b['target_days_above_the_line'])}.")
+    w("")
+    w("**The 2026 figures with the primary arm capped at the line,** beside the published ones (paired against the candidate, positive favours the arm; 90% interval from the stationary bootstrap of "
+      f"the target days, mean block 10, {c['reps']} resamples, seed {c['seed']}, as the original splits). The published columns are the page's point values (it printed no interval for 2026); "
+      "their intervals follow.")
+    w("")
+    rows = []
+    rows.append(["post_month_end_window", str(cap["cells"]), f"{pub['d_arm_cand_crps'][0]:+.4f}", iv(cap["d_arm_cand_crps"], 4), f"{pub['d_arm_cand_tw'][0]:+.4f}", iv(cap["d_arm_cand_tw"], 4)])
+    pub_all = c["published_2026_all_days"]
+    rows.append(["all days", str(cap_all["cells"]), f"{pub_all['d_arm_cand_crps'][0]:+.4f}", iv(cap_all["d_arm_cand_crps"], 4), f"{pub_all['d_arm_cand_tw'][0]:+.4f}", iv(cap_all["d_arm_cand_tw"], 4)])
+    L += table(["scope (2026)", "cells", "grid CRPS, published", "grid CRPS, capped at the line", "twCRPS, published", "twCRPS, capped at the line"], rows)
+    w("")
+    w("Published, with intervals (the same bootstrap, uncapped): grid CRPS " + iv(pub["d_arm_cand_crps"], 4) + ", twCRPS " + iv(pub["d_arm_cand_tw"], 4) + " on the window. "
+      "The location and scale arms capped at the line: grid CRPS " + iv(cap["d_loc_cand_crps"], 4) + " and " + iv(cap["d_scl_cand_crps"], 4) + "; twCRPS " + iv(cap["d_loc_cand_tw"], 4) + " and "
+      + iv(cap["d_scl_cand_tw"], 4) + ".")
+    w("")
+    rows = []
+    for g, v in later["by_group"].items():
+        rows.append([g, str(v["cells"]), "too few" if "note" in v else f"{v['d_arm_cand_crps'][0]:+.3f}", "too few" if "note" in v else f"{v['d_arm_cand_tw'][0]:+.3f}"])
+    L += table(["group (2026), capped at the line", "cells", "CRPS, arm vs candidate", "twCRPS, arm vs candidate"], rows)
+    w("")
+    w("**The rule for future arms.** Any development arm built on the frozen candidate applies the candidate's own line at full allotment to its final quantiles, "
+      "`repo_model.s3c_candidate.cap_arm_quantiles`, and not only where the cap had bound. This page's script applies it in `scripts/post_month_end_terms_1615.py cap-correction`; the "
+      "arms' published figures are not re-scored in place. Figures: `docs/research/post-month-end-terms-1615/cap-correction.json`.")
+    w("")
+    return "\n".join(L)
+
+
+
 # -- the page -------------------------------------------------------------------------------------------------------------------------
 
 
@@ -625,7 +788,11 @@ def page(r: Mapping[str, object]) -> str:
 
 def page_command(args) -> int:
     r = json.loads(Path(args.score).read_text(encoding="utf-8"))
-    Path(args.output).write_text(page(r), encoding="utf-8")
+    text = page(r)
+    note = Path(args.score).with_name(CORRECTION)
+    if note.exists():
+        text = text.rstrip("\n") + "\n\n" + correction_note(json.loads(note.read_text(encoding="utf-8"))) + "\n"
+    Path(args.output).write_text(text, encoding="utf-8")
     return 0
 
 
@@ -637,6 +804,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     s.add_argument("--extensions", required=True)
     s.add_argument("--output", required=True)
     s.set_defaults(func=score_command)
+    c = sub.add_parser("cap-correction", help="the 2026 figures with the arms capped at the candidate's line (#1630)")
+    c.add_argument("--walks", required=True)
+    c.add_argument("--extensions", required=True)
+    c.add_argument("--score", required=True, help="the published result.json, read for the figures to reproduce")
+    c.add_argument("--output", required=True)
+    c.set_defaults(func=correction_command)
     g = sub.add_parser("page", help="write the result page from a score file")
     g.add_argument("--score", required=True)
     g.add_argument("--output", required=True)
