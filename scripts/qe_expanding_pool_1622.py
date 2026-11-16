@@ -357,6 +357,28 @@ def against_lines(arm: str, w: Mapping[str, object]) -> List[str]:
     return out
 
 
+def answer(r: Mapping[str, object]) -> List[str]:
+    """The answer on the development window, per arm, from the score file: coverage, the gap to 90%, grid CRPS, the weight reached and the declared kill."""
+
+    out: List[str] = []
+    w = r["windows"]["development"]
+    for arm in r["arms"]:
+        g = w[arm]["group"]
+        pools = w[arm]["pools"]
+        weights = {name: p["by_lead"]["1"]["w"] for name, p in pools.items()}
+        reached = "; ".join(f"{'the pool' if name == 'all' else name.replace('_', ' ') + ' pool'}: mean {x['mean']:.3f}, greatest {x['max']:.3f}" for name, x in weights.items())
+        kill = g["kill"]
+        out.append(
+            f"**{ARM_LABELS[arm]}.** {m1548.short_of_nominal(g)} Coverage gain, arm minus candidate: {_signed(kill['coverage_gain'])} "
+            f"{_siv(kill['coverage_gain_interval'])}. Grid CRPS on the group, arm minus candidate: {_signed(kill['group_crps_diff'], 3)} "
+            f"{_siv(kill['group_crps_diff_interval'])} bp. Weight w reached (lead 1; every lead reads the same turns): {reached}. "
+            f"**Against the declared kill: {'killed' if kill['killed'] else 'not killed'}.**")
+        out.append("")
+    out.append("The regime table under each arm below is the one to read first: older turns come from other regimes, and a gain that sits in one regime or in a few "
+               "events is not one to lean on.")
+    return out
+
+
 def render(r: dict) -> str:
     """The page. Every figure is read from `r` (the score file)."""
 
@@ -369,6 +391,7 @@ def render(r: dict) -> str:
         "under half. This study gives the same correction the whole public history up to the decision. It is H5, step 3, a development study.", "",
         "Register: settled-questions entry Q9 (the quarter-end family) is the one touched; S5 (a longer history for the whole fit, which lost) is a different "
         "question, because here the fit, the centre and the candidate's own pool keep their two-year window and only the quarter-end residuals reach back.", "",
+        "## The answer", ""] + answer(r) + ["",
         "## Method", "",
         "On quarter-end and year-end target days the candidate's band is blended with one built from past quarter-end errors, as in #1548; the weight is "
         f"n / (n + {r['k']}), n the number of past pairs at that lead. What changes is n: every past pair up to the decision counts, and an older pair's error is "
