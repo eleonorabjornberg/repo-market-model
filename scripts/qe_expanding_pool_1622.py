@@ -57,15 +57,6 @@ def _load(name: str):
     return module
 
 
-# Lockbox classification (#1058): tests/test_lockbox.py reads these literals from this file's syntax tree.
-LOCKBOX_CRPS = {
-    "arm_cells": (
-        "delegates",
-        "the cells of both arms on the frame's days are scored by `qe_event_model_1548.run_window`; `_score` calls `require_exploratory_window` on every "
-        "panel day before any frame is built (#1622)",
-    ),
-}
-
 m1548 = _load("qe_event_model_1548")
 m1572 = _load("qe_event_regime_1572")
 from repo_model import announced_iorb, policy_events, s3c_announced, s3c_net  # noqa: E402
