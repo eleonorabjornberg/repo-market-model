@@ -72,6 +72,47 @@ class RealRegisterTests(unittest.TestCase):
         self.assertEqual(s3c.MARGIN_BP, 0.0)
 
 
+class CapArmQuantilesTests(unittest.TestCase):
+    """The rule for development arms built on the candidate (#1630): the candidate's own line, at full allotment, applied to the arm's FINAL quantiles.
+
+    Not a guard. `cap_arm_quantiles` is the one helper an arm calls after its own transform, so an arm that widens or shifts quantiles above
+    the line cannot keep them there (#1615's `apply_terms` re-clipped only where the cap had bound).
+    """
+
+    def setUp(self):
+        self.register = pe.known_entries([
+            entry("iorb-0", "iorb_rate", date(2021, 6, 16), date(2021, 6, 17), 0.15),
+            entry("srf-0", "standing_repo", date(2021, 7, 28), date(2021, 7, 29), 0.25, limit=500),
+            entry("srf-full", "standing_repo", date(2024, 2, 28), date(2024, 3, 4), 0.25, limit=None),
+        ], datetime(2030, 1, 1))
+
+    def test_a_cell_at_full_allotment_above_the_line_comes_out_at_the_line(self):
+        arm = [1.0, 4.0, 9.5, 10.0 + 12.69, 10.0 + 3.0]
+        out = s3c.cap_arm_quantiles(arm, self.register, decision(date(2024, 3, 1)), date(2024, 3, 4))
+        self.assertEqual(out, [1.0, 4.0, 9.5, 10.0, 10.0])
+        self.assertAlmostEqual(arm[3], 22.69)
+
+    def test_a_cell_not_at_full_allotment_is_the_arm_itself(self):
+        arm = [1.0, 4.0, 30.0]
+        out = s3c.cap_arm_quantiles(arm, self.register, decision(date(2024, 2, 28)), date(2024, 3, 1))
+        self.assertEqual(out, arm)
+        self.assertIsNot(out, arm)
+
+    def test_it_is_the_candidates_cap_on_the_candidates_own_quantiles(self):
+        out = s3c.cap_arm_quantiles(Q, self.register, decision(date(2024, 3, 1)), date(2024, 3, 4))
+        self.assertEqual(out, s3c.capped_quantiles(Q, self.register, decision(date(2024, 3, 1)), date(2024, 3, 4)))
+
+    def test_the_line_is_read_at_the_decision_instant(self):
+        # the removal of the limit is announced on 28 February 2024, 14:00: a decision at 13:59 does not know it.
+        arm = [1.0, 40.0]
+        out = s3c.cap_arm_quantiles(arm, self.register, datetime(2024, 2, 28, 13, 59), date(2024, 3, 4))
+        self.assertEqual(out, arm)
+
+    def test_the_levels_stay_ordered(self):
+        out = s3c.cap_arm_quantiles([-2.0, 0.0, 5.0, 40.0, 41.0], self.register, decision(date(2024, 3, 1)), date(2024, 3, 4))
+        self.assertEqual(out, sorted(out))
+
+
 class SyntheticRegisterTests(unittest.TestCase):
     """Facility with a $500bn limit from 2021, full allotment from Mon 2024-03-04, a limit re-imposed from Mon 2024-06-03 and removed
     again from Mon 2024-09-02, with IORB at 0.15 throughout."""

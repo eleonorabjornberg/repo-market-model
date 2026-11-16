@@ -172,3 +172,30 @@ Strict share of cells below q05 and above q95 (nominal 0.05 each), the candidate
 ## Reproduction
 
 See the header of `scripts/post_month_end_terms_1615.py`; the test is `tests/test_post_month_end_terms_1615.py`. Seed 1615 throughout.
+
+## Dated note, 16 November 2026 (#1630): the cap is not kept on the 2026 days
+
+**The sentence "the candidate's cap is not undone" (in "The arms" above) is wrong.** The line under "What this does and does not show" ("the cap is kept only where it bound on a cell") states the limit correctly. `apply_terms` re-clips an arm only where the candidate's cap had bound on the cell (a final value that differs from its raw one). A cell at full allotment on which the cap did not bind keeps the arm's widened or shifted quantiles above the candidate's line. The text above is left as published; this note corrects it. Nothing in the development window is affected: it has 0 full-allotment cells in the post-month-end groups (50 elsewhere, where the arms are the candidate's own numbers), so its figures stand as published. Development evidence, not a verdict; the page stays in `not_arms`.
+
+**Where the arm is above the line.** On the 2026 days, 29 of the 117 post-month-end cells (all 117 at full allotment) have an arm quantile above `s3c_candidate.cap_line`, on 10 of the 27 post-month-end target days, by up to 12.69 bp. The target days: 2026-02-02, 2026-02-03, 2026-04-01, 2026-04-02, 2026-04-06, 2026-07-01, 2026-07-02, 2026-07-06, 2026-09-01, 2026-09-02.
+
+**The 2026 figures with the primary arm capped at the line,** beside the published ones (paired against the candidate, positive favours the arm; 90% interval from the stationary bootstrap of the target days, mean block 10, 1000 resamples, seed 1615, as the original splits). The published columns are the page's point values (it printed no interval for 2026); their intervals follow.
+
+| scope (2026) | cells | grid CRPS, published | grid CRPS, capped at the line | twCRPS, published | twCRPS, capped at the line |
+|---|---|---|---|---|---|
+| post_month_end_window | 117 | -0.0096 | -0.0067 [-0.0536, +0.0458] | -0.0369 | -0.0341 [-0.0851, +0.0253] |
+| all days | 825 | -0.0014 | -0.0010 [-0.0111, +0.0077] | -0.0052 | -0.0048 [-0.0162, +0.0049] |
+
+Published, with intervals (the same bootstrap, uncapped): grid CRPS -0.0096 [-0.0575, +0.0442], twCRPS -0.0369 [-0.0886, +0.0239] on the window. The location and scale arms capped at the line: grid CRPS +0.0221 [+0.0050, +0.0409] and -0.0204 [-0.0724, +0.0376]; twCRPS +0.0176 [+0.0036, +0.0338] and -0.0461 [-0.0951, +0.0121].
+
+| group (2026), capped at the line | cells | CRPS, arm vs candidate | twCRPS, arm vs candidate |
+|---|---|---|---|
+| bd1_other | 28 | too few | too few |
+| bd1_quarter | 11 | too few | too few |
+| bd2_other | 27 | too few | too few |
+| bd2_quarter | 12 | too few | too few |
+| bd3_other | 26 | too few | too few |
+| bd3_quarter | 13 | too few | too few |
+
+**The rule for future arms.** Any development arm built on the frozen candidate applies the candidate's own line at full allotment to its final quantiles, `repo_model.s3c_candidate.cap_arm_quantiles`, and not only where the cap had bound. This page's script applies it in `scripts/post_month_end_terms_1615.py cap-correction`; the arms' published figures are not re-scored in place. Figures: `docs/research/post-month-end-terms-1615/cap-correction.json`.
+

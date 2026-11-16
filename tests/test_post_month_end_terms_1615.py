@@ -234,5 +234,43 @@ class IntervalTests(unittest.TestCase):
         self.assertEqual(script.verdict_of([0.02, 0.01, 0.03]), "wins")
 
 
+class CapCorrectionTests(unittest.TestCase):
+    """The 2026 correction (#1630): the arm re-clipped at the candidate's own line at full allotment, `s3c_candidate.cap_arm_quantiles`."""
+
+    FULL_DAY, FULL_TARGET = "2026-03-02", "2026-03-03"
+
+    def arms_above_the_line(self):
+        raw = [10.0 + (lvl - 0.5) * 20.0 for lvl in script.q.GRID]
+        return {a: script.apply_terms(raw, raw, 0.0, 1.0, 1.5) for a in script.ARMS}, raw
+
+    def test_an_arm_cell_at_full_allotment_comes_out_at_the_line(self):
+        arms, _ = self.arms_above_the_line()
+        line = script.line_of(self.FULL_DAY, self.FULL_TARGET)
+        self.assertIsNotNone(line)
+        self.assertGreater(max(arms["arm"]), line)
+        capped = script.cap_arms(arms, self.FULL_DAY, self.FULL_TARGET)
+        for a in script.ARMS:
+            self.assertEqual(max(capped[a]), line)
+            self.assertEqual(capped[a], sorted(capped[a]))
+
+    def test_an_arm_cell_before_full_allotment_is_the_arm_itself(self):
+        arms, _ = self.arms_above_the_line()
+        self.assertIsNone(script.line_of("2025-06-02", "2025-06-03"))
+        self.assertEqual(script.cap_arms(arms, "2025-06-02", "2025-06-03"), arms)
+
+    def test_a_breach_counts_cells_and_target_days_above_the_line_and_the_largest_excess(self):
+        line = script.line_of(self.FULL_DAY, self.FULL_TARGET)
+        low = [line - 5.0] * len(script.q.GRID)
+        high = [line - 5.0] * (len(script.q.GRID) - 1) + [line + 4.0]
+        higher = [line - 5.0] * (len(script.q.GRID) - 1) + [line + 12.5]
+        rows = [(self.FULL_DAY, self.FULL_TARGET, 1, low), (self.FULL_DAY, self.FULL_TARGET, 2, high), (self.FULL_DAY, "2026-03-04", 3, higher),
+                ("2026-03-03", "2026-03-04", 1, higher), ("2025-06-02", "2025-06-03", 1, higher)]
+        out = script.breaches(rows)
+        self.assertEqual(out["full_allotment_cells"], 4)
+        self.assertEqual(out["cells_above_the_line"], 3)
+        self.assertEqual(out["target_days_above_the_line"], ["2026-03-03", "2026-03-04"])
+        self.assertAlmostEqual(out["largest_excess_bp"], 12.5)
+
+
 if __name__ == "__main__":
     unittest.main()

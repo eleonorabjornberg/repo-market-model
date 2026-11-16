@@ -36,7 +36,7 @@ from . import capped_law as _law
 from .policy_events import PolicyEntry, known_entries, require_announced
 from .srf_line import _in_force, cap_quantiles, srf_line_bps
 
-__all__ = ["MARGIN_BP", "PROBABILITY_RULE", "candidate_exceedance", "candidate_law", "candidate_pit_interval", "cap_line", "capped_quantiles",
+__all__ = ["MARGIN_BP", "PROBABILITY_RULE", "candidate_exceedance", "candidate_law", "candidate_pit_interval", "cap_arm_quantiles", "cap_line", "capped_quantiles",
            "full_allotment"]
 
 #: The margin above the line, in bp. Declared primary by #1241 and #1252 and not tuned.
@@ -80,6 +80,18 @@ def capped_quantiles(quantiles: Sequence[float], register: Sequence[PolicyEntry]
     """(s3)'s quantiles for `target` as (s3c) forecasts them: clipped at the line at full allotment, a copy of them otherwise."""
 
     return cap_quantiles(quantiles, cap_line(register, as_of, target), MARGIN_BP)
+
+
+def cap_arm_quantiles(arm_quantiles: Sequence[float], register: Sequence[PolicyEntry], as_of: datetime, target: date) -> List[float]:
+    """The rule for a development arm built on the frozen candidate (#1630): its FINAL quantiles for `target`, clipped at the candidate's own line.
+
+    At full allotment (`cap_line` is not `None`) no quantile ends above the line (margin 0 bp); otherwise a copy of them. An arm applies it after its own
+    transform (a shift, a scale, a blend), whatever the candidate's cap did to the quantiles it started from: re-clipping only where the cap had bound
+    on the cell (#1615) leaves a widened quantile above the line. It is `capped_quantiles` under the name an arm's author looks for, and the line is read
+    at `as_of` under the candidate's information rule.
+    """
+
+    return capped_quantiles(arm_quantiles, register, as_of, target)
 
 
 def candidate_law(quantiles: Sequence[float], register: Sequence[PolicyEntry], as_of: datetime, target: date) -> _law.PiecewiseLaw:
