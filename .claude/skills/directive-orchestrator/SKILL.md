@@ -68,6 +68,10 @@ this file.
    (citing the PR), covered by a queued directive (linked from the finding), or carrying a card on the docket.
    The `finding-triager` subagent triages the new and untriaged ones. A finding whose evidence comes from a
    provisional (calendar-blind) model is deferred to after #1027, not closed.
+   **Close a finding when its work is done** (Eleonora, 15 November 2026, #1620). When a finding or question
+   issue has no queued directive left open and the PR that answers it has merged, close it. Leave a comment naming
+   that PR or directive, and remove `needs-eleonora`. A directive's PR closes only the directive, so check the
+   source issue every hour. One whose ruling is still open, or that is deferred to after #1027, stays open.
 5. **Mac runs.** A step expected to take more than about two hours goes to her Mac overnight (the `long-run` skill).
    Label its directive `needs-mac` when it is queued, with no cloud attempt first. The paste is in the PR's
    `needs-mac:` comment; check it is there and complete.

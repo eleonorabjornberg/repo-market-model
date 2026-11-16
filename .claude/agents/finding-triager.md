@@ -14,7 +14,8 @@ For each open `finding` or `avenue` issue you are given:
    - **Resolved:** a merged PR fixed it, and you confirmed that in the tree. Report the PR; the orchestrating session
      closes the issue citing it.
    - **Covered:** a queued directive on #46 does what it asks. Report the directive, so the session links it from the
-     finding.
+     finding. If that directive has closed and its PR has merged, with no other directive left open for the
+     finding, the finding is **resolved** instead: report it that way, so the session closes it (#1620).
    - **Briefed:** neither. Draft a brief for a docket card: the question; numbered options with your
      recommendation first and the default if she does not answer; what it blocks. Check the recommendation against
      the five-lens reports (`docs/reviews/2026-10-19-five-lens/`).
