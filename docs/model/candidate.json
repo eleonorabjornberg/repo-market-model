@@ -196,8 +196,8 @@
     {
       "id": "quarter-end-coverage",
       "title": "Quarter-end band coverage",
-      "limit": "On quarter-end target days the central bands cover far less than their nominal level, the 50 per cent band even more than the 90 per cent band. The central 90 per cent band is also under-covered pooled on the development window, in the IORB window, at month-end, after month-end and on coupon settlement days, and the 50 per cent band on tax dates and FOMC days; the 90 per cent band is over-covered on ordinary days. The misses cluster in time: every one of the candidate's hit sequences reads as serially dependent. A residual scale by type of target day (not adopted) did not fix this: its typed arm is worse than the candidate on pooled grid CRPS on the development window.",
-      "status": "A known limit by her ruling of 2 November 2026 on #1363 (evidence for the known limits) and on avenue #1387 (option 1: #1402 goes to the known limits and does not reopen the candidate).",
+      "limit": "On quarter-end target days the central bands cover far less than their nominal level, the 50 per cent band even more than the 90 per cent band. The central 90 per cent band is also under-covered pooled on the development window, in the IORB window, at month-end, after month-end and on coupon settlement days, and the 50 per cent band on tax dates and FOMC days; the 90 per cent band is over-covered on ordinary days. The misses cluster in time: every one of the candidate's hit sequences reads as serially dependent. A residual scale by type of target day (not adopted) did not fix this: its typed arm is worse than the candidate on pooled grid CRPS on the development window. Whether the calendar-aware gradient-boosted model on direct pairs forecasts quarter-end turns and year-ends better than the candidate was measured (#1599, for #1593): on the quarter-end turns alone the point estimates favour the candidate on grid CRPS and on upper-tail twCRPS, and the intervals of those differences, and of the difference in the 90 per cent band's coverage, hold zero; the model's own band covers less than the candidate's there. Its walks were made at the 16:00 instant and the candidate's at 18:00, which favours the candidate by an amount not measured. The candidate keeps these days and the band's failure on them stands.",
+      "status": "A known limit by her ruling of 2 November 2026 on #1363 (evidence for the known limits) and on avenue #1387 (option 1: #1402 goes to the known limits and does not reopen the candidate). The comparison with the calendar-aware gradient-boosted model (#1599) is added to the evidence by her ruling of 13 November 2026 on #1593 (option (a)): no swap, no combination arm.",
       "sources": [
         {
           "issue": "#1378",
@@ -208,6 +208,11 @@
           "issue": "#1402",
           "page": "docs/research/day-type-scale-1402-result.md",
           "note": "the typed residual scale arm, by type of target day"
+        },
+        {
+          "issue": "#1599",
+          "note": "the pull request of #1593: the candidate against the calendar-aware gradient-boosted model on quarter-end turns and year-ends, from existing walks; development data, no verdict",
+          "page": "docs/research/qe-vs-calendar-gbm-1593-result.md"
         }
       ]
     },

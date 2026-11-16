@@ -276,6 +276,20 @@ class KnownLimitsTests(unittest.TestCase):
                     self.assertTrue(source.get("why_no_page"), "%s names no page and no reason" % limit["id"])
             self.assertIn(limit["limit"], self.block)
 
+    def test_the_quarter_end_limit_cites_the_comparison_with_the_calendar_gbm(self):
+        """#1618: the quarter-end limit carries the result of #1599 and links its page; the report types no figure of it.
+
+        Recorded mutation: not a guard (a documentation link), so none.
+        """
+
+        limit = next(l for l in self.limits if l["id"] == "quarter-end-coverage")
+        issues = [s["issue"] for s in limit["sources"]]
+        self.assertIn("#1599", issues)
+        source = limit["sources"][issues.index("#1599")]
+        self.assertEqual(source["page"], "docs/research/qe-vs-calendar-gbm-1593-result.md")
+        self.assertIn("1599", limit["limit"])
+        self.assertIn("calendar-aware", limit["limit"])
+
     def test_the_rulings_that_accept_or_keep_a_limit_are_cited(self):
         text = self.block
         for needle in ("2 November 2026", "3 November 2026", "#1187", "#1316", "#1378", "#1402", "#1223", "#1004"):
