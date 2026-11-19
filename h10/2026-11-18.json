@@ -1,0 +1,49 @@
+{
+ "decision_day": "2026-11-18",
+ "hypothesis": "H10",
+ "label": "prospective",
+ "onsets_checked_from": "2026-11-03",
+ "onsets_found": [
+  "2026-11-03"
+ ],
+ "panel_last_day": "2026-11-17",
+ "panel_rows": 2154,
+ "registered": {
+  "liquidity_commit": "b4737219c8d443041bbc406cc97dfb584cbbcc2d",
+  "method_digest": "54b5f151c757b1cff5d3ebe6e8ce202bd41cafc4d8104effb00f3da4617c8770",
+  "parent_commit": "2032de4a7d7802289bc5a78dfc02599752bc7c5c",
+  "parent_panel_sha256": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+  "registered_on": "2026-11-03",
+  "registration": "https://github.com/eleonorabjornberg/repo-market-liquidity/issues/23#issuecomment-6618862828",
+  "report_days": 10
+ },
+ "rows": [
+  {
+   "beats_null": false,
+   "counted": false,
+   "imported_parent_clean": true,
+   "imported_parent_commit": "2032de4a7d7802289bc5a78dfc02599752bc7c5c",
+   "index": 2144,
+   "label": "prospective",
+   "last_day_read": "2026-11-10",
+   "method_digest": "54b5f151c757b1cff5d3ebe6e8ce202bd41cafc4d8104effb00f3da4617c8770",
+   "on_rrp_at_onset": null,
+   "onset": "2026-11-03",
+   "panel_rows_sha256": "cdedd89f4764265e25ddd5d93517b33779f55c10d99e013e615aa18c66fbb563",
+   "parent_commit": "2032de4a7d7802289bc5a78dfc02599752bc7c5c",
+   "parent_override": false,
+   "parent_panel_sha256": "4ddc3882cd6d406b11e1088f8ff6195e16dde175a0ad6818abe40dd5bdac8999",
+   "quarter_end": false,
+   "reason": "an input of the window is missing or the window is incomplete",
+   "regime": null,
+   "report_day": "2026-11-17",
+   "report_deadline": null,
+   "rise_bp": null,
+   "rows_are_published_panel": false,
+   "status": "not attributable",
+   "under_bar": false
+  }
+ ],
+ "status": "ok",
+ "version": 1
+}
