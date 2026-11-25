@@ -1,0 +1,12 @@
+{
+ "bytes": 18601,
+ "error": null,
+ "et_date": "2026-11-24",
+ "fetched_at": "2026-11-25T03:22:36.452493+00:00",
+ "kind": "catch_up",
+ "latest_date": "2026-11-24",
+ "sha256": "0b3ca2584234eed253c7538270fbeeb96fb6bc396c9880f29307698a13158329",
+ "source": "treasury_bill_rates",
+ "status": 200,
+ "url": "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/daily-treasury-rates.csv/2026/all?type=daily_treasury_bill_rates&field_tdr_date_value=2026&_format=csv"
+}
